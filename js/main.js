@@ -750,38 +750,14 @@ function showAchievementToast(ach){
 }
 let _worldsUnlocked=new Set(['grandprix']);
 let _trackRecords={};
+
+// ── PERSISTENCE FUNCTIONS — verplaatst naar js/persistence/save.js + progression.js ──
+// loadPersistent, savePersistent, awardCoins, buyCar, buyWorld,
+// checkUnlocks, showUnlockToast, showUnlocks, updateTitleHighScore
+// zijn beschikbaar via window.xxx (module laadt deze op DOMContentLoaded).
+
 let CAR_PRICES={};      // gevuld door loadGameData
 let WORLD_PRICES={};    // gevuld door loadGameData
-function loadPersistent(){
-  try{const d=JSON.parse(localStorage.getItem('spencerRC')||'{}');
-    _savedHS=d.hs||0;_savedBL=d.bl||Infinity;
-    _raceCount=d.rc||0;_podiumCount=d.pc||0;_speedTrapAllTime=d.st||0;
-    if(d.unlocked)d.unlocked.forEach(id=>_unlockedCars.add(id));
-    // First 4 always unlocked
-    [0,1,2,3].forEach(id=>_unlockedCars.add(id));
-    _coins=d.coins||0;_totalCoinsEarned=d.totalCoins||0;
-    if(d.worlds)d.worlds.forEach(w=>_worldsUnlocked.add(w));
-    if(d.records)_trackRecords=d.records;
-    // Progressive unlock
-    if(_raceCount>=2)_worldsUnlocked.add('space');
-    if(_raceCount>=4)_worldsUnlocked.add('deepsea');
-    if(_raceCount>=7)_worldsUnlocked.add('candy');
-    if(_raceCount>=10)_worldsUnlocked.add('neoncity');
-    if(_podiumCount>=3)_worldsUnlocked.add('volcano');
-    if(_podiumCount>=6)_worldsUnlocked.add('arctic');
-  }catch(e){_savedHS=0;_savedBL=Infinity;}
-}
-function savePersistent(){
-  try{
-    const d={};
-    if(totalScore>(_savedHS||0)){d.hs=totalScore;_savedHS=totalScore;}else{d.hs=_savedHS;}
-    if(bestLapTime<(_savedBL||Infinity)&&bestLapTime!==Infinity){d.bl=bestLapTime;_savedBL=bestLapTime;}else{d.bl=_savedBL===Infinity?undefined:_savedBL;}
-    d.rc=_raceCount;d.pc=_podiumCount;d.st=_speedTrapAllTime;
-    d.unlocked=[..._unlockedCars];
-    d.coins=_coins;d.totalCoins=_totalCoinsEarned;d.worlds=[..._worldsUnlocked];d.records=_trackRecords;
-    localStorage.setItem('spencerRC',JSON.stringify(d));
-  }catch(e){}
-}
 function getSector(progress){if(progress<0.33)return 0;if(progress<0.67)return 1;return 2;}
 function showSectorFlash(label,time,delta,color){
   var el=document.getElementById('sectorPanel');if(!el)return;
@@ -804,64 +780,6 @@ function resetCombo(){
   _comboCount=0;_comboMult=1.0;
   const ce=document.getElementById('comboEl');if(ce)ce.style.opacity='0';
 }
-function awardCoins(pos){
-  const base=[200,140,100,70,50,35,20,10];
-  let earned=base[pos-1]||10;
-  const pCar=carObjs[playerIdx];
-  if(pCar&&bestLapTime!==Infinity&&bestLapTime<=_overallFastestLap+0.001)earned+=80;
-  if(pCar&&pCar.hitCount===0)earned+=50;
-  else if(pCar&&pCar.hitCount<=2)earned+=20;
-  earned+=TOTAL_LAPS*15;
-  const diffMult=difficulty===2?1.8:difficulty===0?0.8:1.0;
-  earned=Math.round(earned*diffMult);
-  if(typeof _comboMult!=='undefined'&&_comboMult>1)earned=Math.round(earned*_comboMult);
-  _coins+=earned;_totalCoinsEarned+=earned;
-  _lastRaceCoins=earned;
-  return earned;
-}
-function buyCar(id){const p=CAR_PRICES[id]||0;if(p<=0||_unlockedCars.has(id)||_coins<p)return false;_coins-=p;_unlockedCars.add(id);savePersistent();return true;}
-function buyWorld(w){
-  var p=(WORLD_PRICES&&WORLD_PRICES[w])||0;if(_worldsUnlocked.has(w))return false;if(p>0&&_coins<p)return false;
-  if(p>0)_coins-=p;_worldsUnlocked.add(w);savePersistent();return true;
-}
-// Check unlock conditions after a race
-function checkUnlocks(finishPos){
-  const newOnes=[];
-  // Red Bull F1 (4): Finish P1
-  if(finishPos===1&&!_unlockedCars.has(4)){_unlockedCars.add(4);newOnes.push(4);}
-  // Mustang (5): Set overall fastest lap
-  if(_overallFastestLap<Infinity&&bestLapTime<=_overallFastestLap+.01&&!_unlockedCars.has(5)){_unlockedCars.add(5);newOnes.push(5);}
-  // Tesla (6): Complete 5 races
-  if(_raceCount>=5&&!_unlockedCars.has(6)){_unlockedCars.add(6);newOnes.push(6);}
-  // Audi (7): 3 podium finishes
-  if(_podiumCount>=3&&!_unlockedCars.has(7)){_unlockedCars.add(7);newOnes.push(7);}
-  return newOnes;
-}
-function showUnlockToast(carDef){
-  const el=document.getElementById('unlockToast');if(!el)return;
-  el.textContent='🔓 UNLOCKED: '+carDef.brand+' '+carDef.name;
-  el.style.opacity='1';
-  setTimeout(()=>el.style.opacity='0',3200);
-}
-// Sequential unlock toasts for multiple unlocks
-function showUnlocks(ids,idx=0){
-  if(idx>=ids.length)return;
-  const def=CAR_DEFS[ids[idx]];
-  if(def)showUnlockToast(def);
-  setTimeout(()=>showUnlocks(ids,idx+1),3800);
-}
-function updateTitleHighScore(){
-  loadPersistent();
-  const el=document.getElementById('titleHighScore');if(!el)return;
-  const lines=[];
-  if(_savedHS>0)lines.push('HIGH SCORE: '+_savedHS.toLocaleString());
-  if(_savedBL<Infinity)lines.push('BEST LAP: '+fmtTime(_savedBL));
-  if(_speedTrapAllTime>0)lines.push('⚡ SPEED TRAP: '+_speedTrapAllTime+' km/h');
-  if(_raceCount>0)lines.push('RACES: '+_raceCount+' · PODIUMS: '+_podiumCount);
-  el.innerHTML=lines.join('<br>');
-  const coinEl=document.getElementById('titleCoins');if(coinEl&&_coins>0)coinEl.textContent='💰 '+_coins.toLocaleString()+' COINS';
-}
-
 // ══ TITLE MUSIC ══════════════════════════════
 // Cinematic Am-F-C-G synth pad + beat, BPM 112
 // ══ EXACT FREQUENCY LOOKUP (equal temperament, A4=440Hz) ════════════
