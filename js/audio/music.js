@@ -12,6 +12,7 @@ function noteFreq(note,octave){
   const midi=n[note]+(octave+1)*12;
   return 440*Math.pow(2,(midi-69)/12);
 }
+const NF=noteFreq; // shorthand — nodig voor alle NF('A',3) calls in de class bodies
 
 function _ensureMusicMaster(){
   if(!window.audioCtx||window._musicMaster)return;

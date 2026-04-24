@@ -14,6 +14,37 @@
 <link rel="stylesheet" href="css/screens.css">
 </head>
 <body>
+<div id="__dbg_overlay" style="position:fixed;top:0;left:0;right:0;max-height:50vh;background:rgba(180,0,0,.92);color:#fff;font-family:monospace;font-size:11px;padding:8px;z-index:99999;overflow-y:auto;display:none;white-space:pre-wrap;word-break:break-word"></div>
+<script>
+(function(){
+  var box=document.getElementById('__dbg_overlay');
+  var lines=[];
+  function show(msg){
+    lines.push(msg);
+    if(lines.length>25)lines=lines.slice(-25);
+    if(box){box.textContent=lines.join('\n\n');box.style.display='block';}
+  }
+  window.addEventListener('error',function(e){
+    show('❌ '+e.message+'\nat '+(e.filename||'?')+':'+(e.lineno||'?'));
+  });
+  window.addEventListener('unhandledrejection',function(e){
+    show('❌ Unhandled promise: '+(e.reason&&(e.reason.message||e.reason)));
+  });
+  // Ook console.error routen
+  var oe=console.error;
+  console.error=function(){
+    var args=Array.prototype.slice.call(arguments);
+    show('⚠ '+args.map(function(a){
+      if(a instanceof Error)return a.message+(a.stack?'\n'+a.stack.split('\n')[0]:'');
+      if(typeof a==='object')try{return JSON.stringify(a);}catch(_){return String(a);}
+      return String(a);
+    }).join(' '));
+    return oe.apply(console,args);
+  };
+  // Tap to dismiss
+  if(box)box.addEventListener('click',function(){box.style.display='none';});
+})();
+</script>
 
 <div id="sTitle" class="screen">
   <div id="titleFlames"></div>
