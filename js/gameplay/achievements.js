@@ -1,0 +1,97 @@
+// js/gameplay/achievements.js — auto-extracted in Fase 4
+
+// Non-module script: functies blijven globals. Consumeert state
+
+// direct (scene, carObjs, etc.) zonder window-prefix.
+
+
+function unlockAchievement(id){
+  if(_achieveUnlocked.has(id))return;
+  _achieveUnlocked.add(id);
+  var a=_RACE_ACHIEVEMENTS[id];
+  if(!a)return;
+  showAchievementToast({icon:a.icon||'🏆',title:a.label,desc:a.desc||''});
+  if(typeof playCrowdCheer==='function')Audio.playCrowdCheer();
+}
+
+
+function updateAchievements(dt){
+  const car=carObjs[playerIdx];if(!car)return;
+  // Track max speed
+  if(car.speed>_raceMaxSpeed)_raceMaxSpeed=car.speed;
+  // Speed demon
+  if(car.speed>=car.def.topSpd*.95)unlockAchievement('SPEED_DEMON');
+  // Drift king
+  if(driftTimer>0)_driftAccum+=dt;else _driftAccum=0;
+  if(_driftAccum>=3.0)unlockAchievement('DRIFT_KING');
+  // Airborne
+  if(car.inAir)_airborneAccum+=dt;else _airborneAccum=0;
+  if(_airborneAccum>=2.0)unlockAchievement('FLYING');
+  // Overtakes: detect when player position improves
+  const curPos=getPositions().findIndex(c=>c.isPlayer)+1;
+  if(curPos<_lastPlayerPos){
+    _raceOvertakes+=(_lastPlayerPos-curPos);
+    if(curPos===1)unlockAchievement('FIRST_BLOOD');
+  }
+  _lastPlayerPos=curPos;
+  if(_raceOvertakes>=5)unlockAchievement('OVERTAKER');
+  // Clean lap — reset on recovery
+  if(recoverActive)_cleanLapFlag=false;
+  // Nitro junkie tracked via activations in updatePlayer
+}
+
+
+function updateAchievementToast(dt){
+  if(!_achieveToastEl){_achieveToastEl=document.getElementById('achieveToast');}
+  if(_achieveTimer>0){
+    _achieveTimer-=dt;
+    if(_achieveTimer<=0&&_achieveToastEl){
+      _achieveToastEl.style.opacity='0';
+      _achieveTimer=0;
+      // Show next queued achievement after short gap
+      if(_achieveQueue.length>0)setTimeout(()=>{showNextAchievement();},500);
+    }
+    return;
+  }
+  if(_achieveQueue.length>0&&_achieveTimer<=0)showNextAchievement();
+}
+
+function showNextAchievement(){
+  if(_achieveQueue.length===0)return;
+  const txt=_achieveQueue.shift();
+  if(!_achieveToastEl){_achieveToastEl=document.getElementById('achieveToast');}
+  if(!_achieveToastEl)return;
+  _achieveToastEl.textContent='🏅 '+txt;
+  _achieveToastEl.style.opacity='1';
+  _achieveTimer=3.0;
+}
+
+
+function onNitroActivate(){
+  _nitroUseCount++;
+  if(_nitroUseCount>=10)unlockAchievement('NITRO_JUNKIE');
+}
+
+function onLapComplete(){
+  if(_cleanLapFlag)unlockAchievement('CLEAN_LAP');
+  _cleanLapFlag=true; // reset for next lap
+}
+
+
+function showAchievementToast(ach){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,#1a0035,#2d0050);border:1px solid rgba(180,80,255,.5);border-radius:14px;padding:14px 24px;display:flex;align-items:center;gap:14px;font-family:Orbitron,sans-serif;z-index:var(--z-toast);box-shadow:0 0 30px rgba(180,80,255,.4);opacity:0;transition:all .4s cubic-bezier(.34,1.3,.64,1)';
+  t.innerHTML='<span style="font-size:28px">'+ach.icon+'</span><div><div style="font-size:8px;color:#cc88ff;letter-spacing:3px">ACHIEVEMENT</div><div style="font-size:13px;color:#fff;letter-spacing:2px">'+ach.title+'</div><div style="font-size:9px;color:#886699;margin-top:2px">'+ach.desc+'</div></div>';
+  document.body.appendChild(t);
+  requestAnimationFrame(()=>{t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';});
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400);},3500);
+}
+
+function initDailyChallenge(){
+  var di=new Date().getDate()%DAILY_CHALLENGES.length;
+  _todayChallenge=DAILY_CHALLENGES[di];
+  var ce=document.getElementById('dailyChallengeEl');
+  if(ce&&_todayChallenge){
+    ce.innerHTML='<div style="font-size:9px;color:#884499;letter-spacing:2px">DAGELIJKSE UITDAGING</div><div style="font-size:11px;color:#cc88ff;margin-top:3px">'+_todayChallenge.text+'</div><div style="font-size:10px;color:#ffd700;margin-top:2px">+'+_todayChallenge.reward+' \u{1F4B0}</div>';
+  }
+}
