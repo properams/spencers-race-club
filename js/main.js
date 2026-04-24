@@ -641,7 +641,7 @@ function playThunder(){
 function updateThunder(dt){
   if(!isRain||!audioCtx)return;
   _thunderTimer-=dt;
-  if(_thunderTimer<=0){playThunder();_thunderTimer=9+Math.random()*20;}
+  if(_thunderTimer<=0){Audio.playThunder();_thunderTimer=9+Math.random()*20;}
 }
 // ── Crowd noise ───────────────────────────────
 function initCrowdNoise(){
@@ -2942,7 +2942,7 @@ function updateSpaceWorld(dt){
         if(dd<3.5){
           car.speed*=.4;car.hitCount=(car.hitCount||0)+1;
           floatText('☄ METEOR HIT!','#ff4400',innerWidth*.5,innerHeight*.45);
-          playCollisionSound();m.active=false;m.mesh.visible=false;m.pl.intensity=0;
+          Audio.playCollision();m.active=false;m.mesh.visible=false;m.pl.intensity=0;
         }
       }
     }
@@ -4942,7 +4942,7 @@ function updateStormFlash(dt){
     setTimeout(()=>{ambientLight.intensity=.18;},80);
     setTimeout(()=>{ambientLight.intensity=1.4;},140);
     setTimeout(()=>{ambientLight.intensity=.18;},200);
-    playThunder();
+    Audio.playThunder();
     _stormFlashTimer=8+Math.random()*7;
   }
 }
@@ -5789,7 +5789,7 @@ function updatePlayer(dt){
   const finalLapBonus=car.lap>=TOTAL_LAPS?1.4:1;
   if(nit&&nitroLevel>0){nitroActive=true;nitroLevel=Math.max(0,nitroLevel-20*dt);}
   else{nitroLevel=Math.min(100,nitroLevel+16*dt*finalLapBonus);}
-  if(nitroActive&&!_prevNitro){playNitroActivate();onNitroActivate();if(musicSched&&musicSched.setNitro)musicSched.setNitro(true);}
+  if(nitroActive&&!_prevNitro){Audio.playNitro();onNitroActivate();Audio.setNitro(true);}
   if(!nitroActive&&_prevNitro&&musicSched&&musicSched.setNitro)musicSched.setNitro(false);
   if(_elNitro)_elNitro.style.height=nitroLevel+'%';
 
@@ -5817,7 +5817,7 @@ function updatePlayer(dt){
   if(hbk)car.speed*=Math.pow(.875,dt*60);
   if(Math.abs(car.speed)<.0008)car.speed=0;
 
-  if(hbk&&Math.abs(car.speed)>.5){addSkidMark(car);if(Math.random()<.22)playTireScreech();}
+  if(hbk&&Math.abs(car.speed)>.5){addSkidMark(car);if(Math.random()<.22)Audio.playScreech();}
   // Skid marks on hard braking
   if(brk&&Math.abs(car.speed)>.95&&Math.random()<.28){addSkidMark(car,0.55);}
   // Tire smoke on hard braking
@@ -5884,7 +5884,7 @@ function updatePlayer(dt){
       car.mesh.position.y=.35;car.vy=0;car.inAir=false;
       camShake=0.18+landSpeed*.012;
       if(landSpeed>14)showPopup('💥 HARD LANDING!','#ffaa00',600);
-      playLandSound();
+      Audio.playLand();
       _plBk.set(0,0,-1).applyQuaternion(car.mesh.quaternion);
       sparkSystem.emit(car.mesh.position.x,.5,car.mesh.position.z,-_plBk.x*.05,0,-_plBk.z*.05,20,.6,.5,.4,.8);
     }
@@ -5965,7 +5965,7 @@ function updatePlayer(dt){
         floatText('⚡ NEAR MISS +'+bonus,'#ffdd00',innerWidth*.5,innerHeight*.4);
         triggerCombo('NEAR MISS');
         beep(880,.06,.18,0,'sine');beep(1320,.05,.12,.06,'sine');
-        if(Math.random()<.4)playCrowdCheer();
+        if(Math.random()<.4)Audio.playCrowdCheer();
       }
       if((_nearMissCooldown[i]||0)>0)_nearMissCooldown[i]-=dt;
     });
@@ -6212,7 +6212,7 @@ function checkJumps(){
         car.mesh.rotation.x=-0.22;
         car.inAir=true;
         car._rampCooldown=1.2;
-        playJumpSound();showPopup(ramp.label,'#00ccff',1000);
+        Audio.playJump();showPopup(ramp.label,'#00ccff',1000);
         sparkSystem.emit(car.mesh.position.x,car.mesh.position.y+.2,car.mesh.position.z,0,.3,0,28,.9,.6,1,.8);
       }
     }
@@ -6231,7 +6231,7 @@ function checkSpinPads(dt){
     const dx=car.mesh.position.x-pad.pos.x,dz=car.mesh.position.z-pad.pos.z;
     if(dx*dx+dz*dz<pad.radius*pad.radius&&car.spinTimer<=0){
       car.spinTimer=1.0;
-      playSpinSound();showPopup('SPINNING! 🌀','#aa44ff',1200);
+      Audio.playSpin();showPopup('SPINNING! 🌀','#aa44ff',1200);
       sparkSystem.emit(pad.pos.x,.5,pad.pos.z,0,.05,0,20,.6,.2,1,.6);
     }
   });
@@ -6248,9 +6248,9 @@ function checkBoostPads(){
     if(dx*dx+dz*dz<bR2&&car.boostTimer<=0){
       car.boostTimer=2.0;car.speed=Math.min(car.def.topSpd*1.55,car.speed+.4);
       totalScore+=10;
-      playBoostSound();showPopup('BOOST! ⚡','#00ffff',800);
+      Audio.playBoost();showPopup('BOOST! ⚡','#00ffff',800);
       sparkSystem.emit(car.mesh.position.x,.4,car.mesh.position.z,0,.06,0,18,.3,.9,1,.5);
-      if(Math.random()<.55)playCrowdCheer();
+      if(Math.random()<.55)Audio.playCrowdCheer();
     }
     // Boost AI cars too
     for(let i=0;i<carObjs.length;i++){
@@ -6289,7 +6289,7 @@ function checkCollectibles(){
     const dx=car.mesh.position.x-c.pos.x,dz=car.mesh.position.z-c.pos.z;
     if(dx*dx+dz*dz<c.radius*c.radius){
       c.collected=true;c.mesh.visible=false;if(c.light)c.light.visible=false;c.respawn=now+(c.type==='repair'?15:10);
-      playCollectSound();
+      Audio.playCollect();
       sparkSystem.emit(c.pos.x,c.pos.y,c.pos.z,0,.06,0,16,
         c.type==='repair'?.1:.9, c.type==='repair'?.9:.9, c.type==='repair'?.2:.2,.8);
       if(c.type==='repair'){
@@ -6353,7 +6353,7 @@ function triggerRecovery(car){
   car.mesh.position.copy(pt);car.mesh.position.y=.35;
   car.mesh.rotation.set(0,Math.atan2(-tgR.x,-tgR.z),0); // clean Euler — avoids gimbal-lock steering flip
   const off=new THREE.Vector3(0,5.8,13.5).applyQuaternion(car.mesh.quaternion);camPos.copy(car.mesh.position).add(off);
-  camShake=.5;playRecoverySound();showBanner('RECOVERED','#ff4400',2000);
+  camShake=.5;Audio.playRecovery();showBanner('RECOVERED','#ff4400',2000);
   spawnSafetyCar((car.progress+.055)%1);
 }
 function triggerDeepSeaRecovery(car){
@@ -6368,7 +6368,7 @@ function triggerDeepSeaRecovery(car){
   car.mesh.rotation.set(0,Math.atan2(-tgR.x,-tgR.z),0);
   const off=new THREE.Vector3(0,5.8,13.5).applyQuaternion(car.mesh.quaternion);
   camPos.copy(car.mesh.position).add(off);
-  camShake=.4;playRecoverySound();
+  camShake=.4;Audio.playRecovery();
   showBanner('🐠 RESCUED BY DOLPHINS','#00ddaa',2000);
   // Bubble burst at recovery point
   sparkSystem.emit(pt.x,.5,pt.z,0,.14,0,20,.2,.9,.9,1);
@@ -6388,7 +6388,7 @@ function checkCollisions(dt){
       player.speed*=.70;other.speed*=.70;
       const heavy=relSpd>.18;
       camShake=heavy?.88:.42;
-      playCollisionSound();
+      Audio.playCollision();
       const eX=player.mesh.position.x,eZ=player.mesh.position.z;
       sparkSystem.emit(eX,.5,eZ,nx*.05,.06,nz*.05,heavy?36:16,1,.65,.1,.45);
       if(heavy){
@@ -6516,20 +6516,20 @@ function tickProgress(car){
       if(car.lap===TOTAL_LAPS){
         showBanner('🏁 FINAL LAP!','#ffee00',2800);
         beep(880,.14,.42,0,'square');beep(1320,.1,.32,.12,'square');beep(1760,.08,.22,.22,'square');
-        if(musicSched){musicSched.setFinalLap();if(musicSched.setIntensity)musicSched.setIntensity(1);}
+        Audio.setFinalLap();
         // Big crowd reaction for final lap
-        playCrowdCheer();setTimeout(()=>playCrowdCheer(),250);setTimeout(()=>playCrowdCheer(),500);
+        Audio.playCrowdCheer();setTimeout(()=>Audio.playCrowdCheer(),250);setTimeout(()=>Audio.playCrowdCheer(),500);
         if(_crowdGain&&audioCtx){_crowdGain.gain.setTargetAtTime(0.085,audioCtx.currentTime,.15);setTimeout(()=>{if(_crowdGain&&audioCtx)_crowdGain.gain.setTargetAtTime(0.062,audioCtx.currentTime,2.0);},2000);}
       }else{
         showBanner('LAP '+car.lap+' / '+TOTAL_LAPS,'#00ccff',1600);
-        playCrowdCheer();
+        Audio.playCrowdCheer();
       }
     }
     // Finish: set FINISH state immediately for victory orbit, show overlay after 5.5s
     if(car.lap>TOTAL_LAPS&&!car.finished){
       car.finished=true;car._finishTime=now;
       if(car.isPlayer){
-        playFanfare();
+        Audio.playFanfare();
         // Check for champion achievement — only if player truly finished 1st
         const _finPos=getPositions().findIndex(c=>c.isPlayer)+1;
         if(_finPos===1)unlockAchievement('CHAMPION');
@@ -6828,13 +6828,13 @@ function updateHUD(dt){
           showBanner('🏆 RACE LEADER!','#ffd700',2400);
           totalScore+=150;
           beep(880,.1,.42,0,'square');beep(1320,.08,.38,.1,'square');beep(1760,.12,.32,.2,'square');
-          playCrowdCheer();setTimeout(()=>playCrowdCheer(),200);setTimeout(()=>playCrowdCheer(),400);
+          Audio.playCrowdCheer();setTimeout(()=>Audio.playCrowdCheer(),200);setTimeout(()=>Audio.playCrowdCheer(),400);
           if(_crowdGain&&audioCtx){_crowdGain.gain.setTargetAtTime(0.09,audioCtx.currentTime,.1);setTimeout(()=>{if(_crowdGain&&audioCtx)_crowdGain.gain.setTargetAtTime(0.062,audioCtx.currentTime,1.2);},1500);}
         }else{
           showPopup('▲ P'+pPos+' OVERTAKE!','#00ff88',1400);
           triggerCombo('OVERTAKE');
           totalScore+=50;
-          playCrowdCheer();
+          Audio.playCrowdCheer();
         }
         floatText('▲ P'+pPos,'#00ff88',innerWidth*.5,innerHeight*.42);
       }else{
@@ -6992,7 +6992,7 @@ function runCountdown(onGo){
       try{
         if(i<lights.length){
           var el=document.getElementById(lights[i]);if(el)el.classList.add('on');
-          try{playCountBeep(1);}catch(e){}
+          try{Audio.playCount(1);}catch(e){}
           i++;
           setTimeout(lightOn,700);
         }else{
@@ -7002,8 +7002,8 @@ function runCountdown(onGo){
                 var el=document.getElementById(id);
                 if(el)setTimeout(function(){el.classList.remove('on');el.classList.add('extinguish');setTimeout(function(){el.classList.remove('extinguish');},420);},idx*45);
               });
-              try{playCountBeep(0);}catch(e){}
-              try{playCrowdCheer();setTimeout(playCrowdCheer,180);setTimeout(playCrowdCheer,360);}catch(e){}
+              try{Audio.playCount(0);}catch(e){}
+              try{Audio.playCrowdCheer();setTimeout(playCrowdCheer,180);setTimeout(playCrowdCheer,360);}catch(e){}
               if(audioCtx){try{
                 var t=audioCtx.currentTime;
                 var o=audioCtx.createOscillator(),g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();
@@ -7040,7 +7040,7 @@ function showFinish(){
   // Resume title music on finish screen (after a short beat for the race-end feel)
   setTimeout(()=>{if(gameState==='FINISH')startTitleMusic();},900);
   // Stop all ambient audio — prevents harsh noise on finish screen
-  stopAmbientWind();
+  Audio.stopWind();
   if(_crowdGain&&audioCtx)_crowdGain.gain.setTargetAtTime(0.0,audioCtx.currentTime,.8);
   // Stop engine oscillator
   if(engineGain&&audioCtx)engineGain.gain.setTargetAtTime(0.0,audioCtx.currentTime,.4);
@@ -7101,7 +7101,7 @@ function showFinish(){
   const _newHS=_savedHS>_preHS,_newBL=_savedBL<_preBL;
   if(_newHS||_newBL){
     const rtxt=_newHS&&_newBL?'🏆 NEW RECORDS! SCORE + LAP':_newHS?'🏆 NEW HIGH SCORE!':'⏱ NEW BEST LAP!';
-    setTimeout(()=>{showBanner(rtxt,'#ffd700',3200);playCrowdCheer();},900);
+    setTimeout(()=>{showBanner(rtxt,'#ffd700',3200);Audio.playCrowdCheer();},900);
     const fhs=document.getElementById('finHighScore');
     if(fhs){fhs.textContent=_newHS?'HIGH SCORE: '+_savedHS.toLocaleString():'';fhs.style.color='#ffd700';fhs.style.textShadow='0 0 14px #ffd700';}
   }
@@ -7171,7 +7171,7 @@ function showFinish(){
   if(mf)mf.style.display='none';if(ml)ml.style.display='none';
   if(p<=3)launchConfetti();
   if(p===1){
-    playVictoryFanfare();
+    Audio.playVictory();
     const gc=document.getElementById('goldCelebration');
     if(gc){gc.style.opacity='1';setTimeout(()=>{gc.style.opacity='0';},3500);}
     // Staggered personal message
@@ -7452,7 +7452,7 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
           }
         }
       },380);
-      startAmbientWind();initCrowdNoise();
+      Audio.startWind();Audio.initCrowd();
     }
     // Show touch controls during race if on a touch device — but not if a hardware keyboard was detected
     const tc=document.getElementById('touchControls');
@@ -7639,7 +7639,7 @@ function unlockAchievement(id){
   var a=_RACE_ACHIEVEMENTS[id];
   if(!a)return;
   showAchievementToast({icon:a.icon||'🏆',title:a.label,desc:a.desc||''});
-  if(typeof playCrowdCheer==='function')playCrowdCheer();
+  if(typeof playCrowdCheer==='function')Audio.playCrowdCheer();
 }
 
 function updateAchievements(dt){
@@ -8189,7 +8189,7 @@ function loop(){
     }
     sparkSystem.update(dt);exhaustSystem.update(dt);
     updateCamera(dt);updateCarLights();updateBoostGlow();updateFlags();
-    updateSkidMarks();updateWeather(dt);updateSky(dt);updateThunder(dt);updateSnow(dt);updateStormFlash(dt);
+    updateSkidMarks();updateWeather(dt);updateSky(dt);Audio.updateThunder(dt);updateSnow(dt);updateStormFlash(dt);
     if(activeWorld==='space')updateSpaceWorld(dt);
     if(activeWorld==='deepsea')updateDeepSeaWorld(dt);
     if(activeWorld==='candy')updateCandyWorld(dt);
@@ -8200,7 +8200,7 @@ function loop(){
     if(gameState==='RACE'){
       updateHUD(dt);updateSpeedOverlay();
       const _pp=getPositions().findIndex(c=>c.isPlayer)+1;
-      updateCrowdNoise(_pp);
+      Audio.updateCrowd(_pp);
       updateAmbientWindSpeed(dt);
       updateAchievements(dt);
       updateAchievementToast(dt);
@@ -8366,7 +8366,7 @@ function _resetRaceState(){
   if(selectMusic){selectMusic.stop();selectMusic=null;}
   // Reset dynamic music state for clean slate
   _musicDuck=1.0;_applyMusicGain(0);
-  stopAmbientWind();stopCrowdNoise();
+  Audio.stopWind();Audio.stopCrowd();
   carObjs.forEach(c=>scene.remove(c.mesh));carObjs=[];
   skidMarks.forEach(s=>{const m=s.mesh||s;if(m.geometry)m.geometry.dispose();if(m.material)m.material.dispose();scene.remove(m);});
   skidMarks.length=0;
