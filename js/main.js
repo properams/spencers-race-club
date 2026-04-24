@@ -1,6 +1,8 @@
-// js/main.js — Spencer's Race Club main game module
-// Extracted from inline <script> in index.html during Fase 2 voorbereiding.
-// Strict mode is automatic in ES modules — 'use strict' prune was applied.
+// js/main.js — Spencer's Race Club main game
+// Loaded als gewoon <script> (non-module) zodat top-level let/const/var globals
+// blijven voor submodule-access via window.*. Submodules zijn wel ES modules
+// (zie js/persistence/*, js/audio/*, js/ui/*).
+'use strict';
 
 // ══ CONSTANTS ═══════════════════════════════
 let TOTAL_LAPS=3;
@@ -9574,16 +9576,3 @@ async function boot(){
   },50);
 }
 boot();
-
-
-// ══ WINDOW EXPOSURE — voor HTML onclick/onchange handlers ════════════════════
-// Modules hebben eigen scope; HTML-attribute event-handlers verwachten globals.
-// Hier expliciet op window zetten na definitie.
-window.goToTitle=goToTitle;
-window.goToWorldSelect=goToWorldSelect;
-window.goToSelectAgain=goToSelectAgain;
-window.setCamView=setCamView;
-window.toggleMute=toggleMute;
-window.togglePause=togglePause;
-// Voor toekomstige sub-module consumenten (Fase 2.1+)
-window._musicDebug=window._musicDebug||(()=>null);
