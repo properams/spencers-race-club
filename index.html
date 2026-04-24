@@ -362,94 +362,28 @@ if(new URLSearchParams(location.search).has('debug')){
 function _mobCount(n){return window._isMobile?Math.ceil(n*.45):n;}
 function disposeScene(){if(!scene)return;scene.traverse(obj=>{if(obj.isMesh||obj.isPoints||obj.isLine){if(obj.geometry)obj.geometry.dispose();if(obj.material){if(Array.isArray(obj.material))obj.material.forEach(m=>{if(m.map)m.map.dispose();m.dispose();});else{if(obj.material.map)obj.material.map.dispose();obj.material.dispose();}}}});while(scene.children.length>0)scene.remove(scene.children[0]);if(scene.background&&scene.background.isTexture){scene.background.dispose();scene.background=null;}if(scene.environment&&scene.environment.isTexture){scene.environment.dispose();scene.environment=null;}if(renderer)renderer.renderLists.dispose();}
 
-const CAR_DEFS=[
-  {id:0,brand:'BUGATTI',    name:'Chiron',   color:0x1a3a6b,accent:0xc8a84b,type:'super',  topSpd:1.22,accel:0.020,hdlg:0.052},
-  {id:1,brand:'LAMBORGHINI',name:'Huracán',  color:0xe8a000,accent:0x111111,type:'super',  topSpd:1.16,accel:0.019,hdlg:0.049},
-  {id:2,brand:'MASERATI',   name:'MC20',     color:0x1a44bb,accent:0xffffff,type:'super',  topSpd:1.10,accel:0.018,hdlg:0.047},
-  {id:3,brand:'FERRARI',    name:'SF90',     color:0xcc0000,accent:0xffcc00,type:'super',  topSpd:1.19,accel:0.019,hdlg:0.051},
-  {id:4,brand:'RED BULL',   name:'RB F1',    color:0x1e0a5a,accent:0xff1e00,type:'f1',     topSpd:1.35,accel:0.025,hdlg:0.058},
-  {id:5,brand:'FORD',       name:'Mustang',  color:0xf0f0f0,accent:0x003087,type:'muscle', topSpd:1.05,accel:0.017,hdlg:0.044},
-  {id:6,brand:'TESLA',      name:'Model S',  color:0xc0c0c0,accent:0xcc0000,type:'electric',topSpd:1.14,accel:0.024,hdlg:0.046},
-  {id:7,brand:'AUDI',       name:'R8',       color:0x111111,accent:0xcc0000,type:'super',  topSpd:1.13,accel:0.018,hdlg:0.048},
-  {id:8, brand:'PORSCHE',    name:'GT3 RS',  color:0xffffff,accent:0xcc0000,type:'super',  topSpd:1.18,accel:0.019,hdlg:0.056},
-  {id:9, brand:'MCLAREN',    name:'P1',      color:0xff6600,accent:0x111111,type:'super',  topSpd:1.25,accel:0.022,hdlg:0.054},
-  {id:10,brand:'MERCEDES',   name:'W14 F1',  color:0x00d2be,accent:0xcccccc,type:'f1',     topSpd:1.38,accel:0.026,hdlg:0.060},
-  {id:11,brand:'KOENIGSEGG', name:'Jesko',   color:0xffffff,accent:0x0044cc,type:'super',  topSpd:1.32,accel:0.024,hdlg:0.055},
-];
+// ══ DATA — gevuld door loadGameData() (zie boot) ══════════════════════════
+let CAR_DEFS=[];        // fetch data/cars.json
+let TRACK_WP=[];        // active world waypoints (muteerbaar in buildScene)
+let _GP_WP=[];          // snapshot grand prix waypoints
+let _TRACKS={};         // alle werelden keyed by name
+// CAR_PRICES + WORLD_PRICES komen verderop — na persistence helpers
 
-// ── Spencer Grand Prix Circuit — 22-waypoint layout ──
-// S/F on main straight running W→E at Z=195
-// Grid cars sit at t≈0.95–0.99 on the final straight approach (all facing East)
-const TRACK_WP=[
-  [0,195],[80,195],[180,195],[270,195],
-  [350,140],[380,40],
-  [370,-80],[340,-160],
-  [250,-270],[130,-330],
-  [0,-375],[-130,-330],
-  [-270,-245],[-380,-120],[-400,-20],
-  [-370,110],
-  [-310,170],[-200,195],[-100,195]
-];
-// Snapshot of GP waypoints (TRACK_WP is mutated at world switch)
-const _GP_WP=TRACK_WP.map(wp=>[wp[0],wp[1]]);
-
-// ── Cosmic Circuit — space layout with clean S/F straight ──────
-// S/F on north straight running W→E at Z≈260
-const SPACE_TRACK_WP=[
-  [0,260],[100,260],[200,255],[280,200],[330,80],[340,-60],[310,-180],
-  [220,-270],[100,-330],[-40,-350],[-180,-320],[-300,-240],[-380,-120],
-  [-370,20],[-310,140],[-220,230],[-100,260]
-];
-
-// ── Deep Sea Circuit — underwater coral reef layout with clean S/F straight ──
-// S/F on northern straight running W→E at Z≈250
-const DEEP_SEA_TRACK_WP=[
-  [0,240],[90,240],[180,240],
-  [260,180],[300,80],[295,-30],
-  [260,-140],[190,-240],[90,-310],
-  [-30,-355],[-160,-340],
-  [-280,-260],[-360,-140],[-390,-10],
-  [-360,100],[-290,185],[-190,230],[-90,240]
-];
-
-// ── Neon City Circuit — cyberpunk layout with clean S/F straight ──
-// S/F on north straight running W→E at Z≈200
-const NEONCITY_TRACK_WP=[
-  [0,280],[112,280],[224,275],[315,210],[371,75],[364,-70],
-  [294,-196],[182,-294],[28,-350],[-140,-336],[-273,-266],
-  [-357,-140],[-343,14],[-273,140],[-182,231],[-84,280]
-];
-
-// ── Sugar Rush Circuit — candy layout with clean S/F straight ──
-// S/F on north straight running W→E at Z≈285
-// ── Sugar Rush Circuit — clean closed loop (no hairpin dips, no odd crossings) ──
-// Start straight W→E at Z≈280, smooth arcs forming a kidney/oval shape.
-const CANDY_TRACK_WP=[
-  [0,280],[100,280],[200,280],           // start straight
-  [280,230],[310,140],[300,40],          // NE arc down
-  [260,-60],[190,-150],[100,-220],       // SE arc
-  [-20,-260],[-140,-240],[-240,-170],    // S sweep
-  [-290,-70],[-280,50],[-230,150],       // W side rising
-  [-150,220],[-60,260]                   // back to start straight
-];
-const VOLCANO_TRACK_WP=[[0,215],[80,215],[160,210],[230,150],[275,45],[280,-65],[240,-165],[160,-240],[50,-280],[-80,-285],[-190,-245],[-265,-160],[-300,-50],[-285,70],[-240,160],[-165,220],[-70,240],[-30,225]];
-const ARCTIC_TRACK_WP=[
-  [0,230],[85,230],[175,220],[248,150],[292,48],
-  [285,-58],[238,-158],[155,-238],[35,-285],
-  [-95,-278],[-200,-220],[-268,-120],[-272,-10],
-  [-230,105],[-150,195],[-48,232]
-];
-// ── Thrill Park Circuit — amusement park layout with clean S/F straight ──
-// S/F on north straight running W→E at Z≈260
-const THEMEPARK_TRACK_WP=[
-  [0,260],[100,260],[200,258],
-  [272,200],[305,95],[295,-10],
-  [265,-105],[210,-190],[125,-255],
-  [15,-290],[-105,-275],[-215,-215],
-  [-290,-115],[-305,10],[-262,130],
-  [-185,220],[-90,260]
-];
-
+async function loadGameData(){
+  const [cars,tracks,prices]=await Promise.all([
+    fetch('data/cars.json').then(r=>r.json()),
+    fetch('data/tracks.json').then(r=>r.json()),
+    fetch('data/prices.json').then(r=>r.json())
+  ]);
+  CAR_DEFS=cars.map(c=>({...c,color:parseInt(c.color,16),accent:parseInt(c.accent,16)}));
+  _TRACKS=tracks;
+  _GP_WP=_TRACKS.grandprix.map(wp=>[wp[0],wp[1]]);
+  TRACK_WP.length=0;
+  _TRACKS.grandprix.forEach(wp=>TRACK_WP.push(wp));
+  CAR_PRICES={};
+  Object.keys(prices.cars).forEach(k=>{CAR_PRICES[Number(k)]=prices.cars[k];});
+  WORLD_PRICES=prices.worlds;
+}
 // ── World state ───────────────────────────────
 let activeWorld='grandprix';  // 'grandprix' | 'space' | 'deepsea' | 'candy'
 let _spaceAsteroids=[];
@@ -1115,7 +1049,8 @@ function showAchievementToast(ach){
 }
 let _worldsUnlocked=new Set(['grandprix']);
 let _trackRecords={};
-const CAR_PRICES={0:0,1:0,2:0,3:0,4:400,5:300,6:500,7:600,8:800,9:1200,10:1500,11:2000};
+let CAR_PRICES={};      // gevuld door loadGameData
+let WORLD_PRICES={};    // gevuld door loadGameData
 function loadPersistent(){
   try{const d=JSON.parse(localStorage.getItem('spencerRC')||'{}');
     _savedHS=d.hs||0;_savedBL=d.bl||Infinity;
@@ -1185,8 +1120,7 @@ function awardCoins(pos){
 }
 function buyCar(id){const p=CAR_PRICES[id]||0;if(p<=0||_unlockedCars.has(id)||_coins<p)return false;_coins-=p;_unlockedCars.add(id);savePersistent();return true;}
 function buyWorld(w){
-  var prices={space:0,deepsea:0,candy:0,neoncity:300,volcano:500,arctic:700};
-  var p=prices[w]||0;if(_worldsUnlocked.has(w))return false;if(p>0&&_coins<p)return false;
+  var p=(WORLD_PRICES&&WORLD_PRICES[w])||0;if(_worldsUnlocked.has(w))return false;if(p>0&&_coins<p)return false;
   if(p>0)_coins-=p;_worldsUnlocked.add(w);savePersistent();return true;
 }
 // Check unlock conditions after a race
@@ -2163,7 +2097,7 @@ function makeSkyTex(top,bot){
 function buildScene(){
   disposeScene();
   // ── Swap TRACK_WP data for active world ───────────────────────
-  {const src=activeWorld==='space'?SPACE_TRACK_WP:activeWorld==='deepsea'?DEEP_SEA_TRACK_WP:activeWorld==='candy'?CANDY_TRACK_WP:activeWorld==='neoncity'?NEONCITY_TRACK_WP:activeWorld==='volcano'?VOLCANO_TRACK_WP:activeWorld==='arctic'?ARCTIC_TRACK_WP:activeWorld==='themepark'?THEMEPARK_TRACK_WP:_GP_WP;
+  {const src=(_TRACKS&&_TRACKS[activeWorld])||_GP_WP;
    TRACK_WP.length=0;src.forEach(wp=>TRACK_WP.push(wp));}
   // ── Reset global arrays populated during scene build ──────────
   trackLightList.length=0;trackPoles.length=0;_trackFlags.length=0;_aiHeadPool.length=0;
@@ -9829,9 +9763,11 @@ function toggleMute(){
 }
 
 // ══ BOOT ════════════════════════════════════
-function boot(){
+async function boot(){
   // SW disabled for file:// compat
   const _loadEl=document.getElementById('loadingScreen');
+  // Load game data (cars/tracks/prices) before scene init
+  try{await loadGameData();}catch(e){console.error('loadGameData failed:',e);if(_loadEl){_loadEl.innerHTML='<div style="padding:40px;color:#ff6600;font-family:Orbitron,sans-serif">⚠ DATA LOAD FAILED<br><span style="font-size:12px;color:#888">'+e.message+'</span></div>';}return;}
   // ── Global iOS long-press / context-menu / selection prevention ──
   // Kills the "Copy | Translate" popup that appears mid-gameplay when holding a button.
   document.addEventListener('contextmenu',e=>e.preventDefault(),{capture:true});
