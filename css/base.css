@@ -1,0 +1,231 @@
+/* base.css — auto-split from index.html */
+*{margin:0;padding:0;box-sizing:border-box}
+button{-webkit-appearance:none;appearance:none;outline:none;-webkit-tap-highlight-color:transparent;font-family:inherit}
+button:focus,button:focus-visible{outline:none}
+html,body,canvas,button,[id^="hud"],[id^="tc"],.tcBtn,.banner,#glCanvas,#popupMsg,#bannerOverlay,#warnOverlay,#wrongWayOverlay,#nitroBar,#nitroFill,#nitroLbl,#slipIndicator,#cdNum,#cdOverlay{
+  -webkit-touch-callout:none !important;
+  -webkit-user-select:none !important;
+  -moz-user-select:none !important;
+  -ms-user-select:none !important;
+  user-select:none !important;
+  -webkit-tap-highlight-color:transparent !important;
+}
+canvas,#glCanvas{touch-action:none !important}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;touch-action:none;-webkit-overflow-scrolling:none;overscroll-behavior:none}
+:root{
+  --z-game:0;
+  --z-mirror:11;
+  --z-screen:20;
+  --z-banner:40;
+  --z-popup:45;
+  --z-flash:52;
+  --z-toast:999;
+  --z-modal:9999;
+  --z-critical:10000;
+}
+#glCanvas{position:fixed;top:0;left:0;width:100%;height:100%}
+.screen{position:fixed;inset:0;z-index:var(--z-screen);display:flex;flex-direction:column;align-items:center;justify-content:center}
+#sTitle{background:radial-gradient(ellipse at 50% 55%,#250a00 0%,#050000 55%,#000 100%)}
+#titleFlames{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.flame{position:absolute;bottom:-10px;border-radius:50% 50% 30% 30%;animation:flameRise linear infinite;filter:blur(1px)}
+@keyframes flameRise{0%{transform:translateY(0) scaleX(1);opacity:.9}100%{transform:translateY(-110vh) scaleX(.2);opacity:0}}
+.tLogo{font-family:'Orbitron',sans-serif;font-weight:900;text-align:center;font-size:clamp(34px,7vw,88px);line-height:1.08;letter-spacing:3px;
+  background:linear-gradient(175deg,#fff 0%,#ffe566 25%,#ff9500 58%,#cc1100 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 22px #ff6a00aa);animation:lglow 2.2s ease-in-out infinite;position:relative;z-index:2}
+@keyframes lglow{0%,100%{filter:drop-shadow(0 0 22px #ff6a00aa)}50%{filter:drop-shadow(0 0 40px #ffa500cc)}}
+.tSub{font-family:'Rajdhani',sans-serif;font-size:clamp(12px,2vw,20px);color:#888;letter-spacing:9px;text-transform:uppercase;margin-top:10px;z-index:2}
+.tStart{font-family:'Orbitron',sans-serif;font-size:clamp(12px,1.8vw,18px);color:#ff7700;letter-spacing:5px;margin-top:48px;cursor:pointer;z-index:2;animation:blink 1.15s ease-in-out infinite}
+@keyframes starDrift{from{background-position:0 0,70px 40px,150px 90px}to{background-position:220px 180px,210px 200px,450px 340px}}
+.tTip{font-family:'Rajdhani',sans-serif;font-size:13px;color:#555;letter-spacing:2px;margin-top:10px;z-index:2}
+.tRow{display:flex;gap:10px;margin-top:16px;z-index:2;flex-wrap:wrap;justify-content:center}
+.tBtn{font-family:'Orbitron',sans-serif;font-size:12px;color:#aaa;background:rgba(255,255,255,.07);border:1px solid #444;border-radius:20px;padding:7px 18px;cursor:pointer;letter-spacing:2px;transition:all .2s}
+.tBtn:hover{background:rgba(255,255,255,.15);color:#fff}
+.weatherBtn.wSel{background:rgba(255,102,0,.22);border-color:#ff6600;color:#ff9944}
+#sTitle::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,150,30,.04) 48%,rgba(255,200,80,.10) 50%,rgba(255,150,30,.04) 52%,transparent 70%);animation:titleSweep 4.5s ease-in-out infinite;pointer-events:none;z-index:1}
+@keyframes titleSweep{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}
+.previewName{font-family:'Orbitron',sans-serif;font-size:clamp(14px,2vw,22px);color:#fff;letter-spacing:3px;text-align:center;text-shadow:0 0 20px rgba(180,100,255,.5)}
+.previewBrand{font-family:'Rajdhani',sans-serif;font-size:11px;color:#886699;letter-spacing:4px;text-align:center;text-transform:uppercase}
+.statRow{display:flex;align-items:center;gap:8px;margin:4px 0}
+.statLbl{font-family:'Orbitron',sans-serif;font-size:8px;color:#00ccff;letter-spacing:2px;width:32px}
+.statFill{height:100%;border-radius:3px;transition:width .4s cubic-bezier(.34,1.3,.64,1)}
+.colorDot{width:24px;height:24px;border-radius:50%;cursor:pointer;border:2px solid rgba(255,255,255,.12);transition:all .15s;flex-shrink:0;box-shadow:0 0 8px rgba(0,0,0,.5)}
+.colorDot:hover{transform:scale(1.3);border-color:rgba(255,255,255,.5)}
+.colorDot.cSel{border-color:#cc44ff;box-shadow:0 0 12px #cc44ff88}
+.carSwatch{width:40px;height:40px;border-radius:10px;flex-shrink:0;position:relative;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+.carSwatch::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.22) 0%,transparent 55%);border-radius:10px}
+.carBrand{font-family:'Rajdhani',sans-serif;font-size:9px;color:#664488;letter-spacing:2px;text-transform:uppercase}
+.carName{font-family:'Orbitron',sans-serif;font-size:11px;color:#ccbbdd;font-weight:700;letter-spacing:1px}
+.setLabel{font-family:'Orbitron',sans-serif;font-size:8px;color:#00ccff;letter-spacing:3px;margin-bottom:8px;display:block}
+.lapRow{display:flex;gap:7px}
+.diffRow{display:flex;gap:7px}
+.toggleRow{display:flex;gap:8px;align-items:center}
+.statFill{transition:width .5s cubic-bezier(.34,1.3,.64,1)!important}
+.colorDot{width:24px!important;height:24px!important;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+.colorDot.cSel{box-shadow:0 0 0 2px #fff,0 0 12px rgba(255,255,255,.5)!important}
+.lapSummary{font-family:'Rajdhani',sans-serif;font-size:11px;color:#664488;letter-spacing:2px;text-align:center;margin-top:4px}
+#mapCvs{width:100%;height:100%}
+#rainCanvas{position:fixed;inset:0;pointer-events:none;z-index:8;display:none}
+#warnOverlay{position:fixed;top:38%;left:50%;transform:translateX(-50%);z-index:38;pointer-events:none;display:none}
+.warn{font-family:'Orbitron',sans-serif;font-size:18px;color:#ffcc00;background:rgba(0,0,0,.7);padding:8px 24px;border-radius:8px;border:2px solid #ffcc00;letter-spacing:3px}
+#finTop{text-align:center;width:100%;padding-bottom:10px;border-bottom:1px solid rgba(180,80,255,.25);position:relative;z-index:1}
+#finScoreRow{display:flex;gap:18px;justify-content:center;align-items:baseline;flex-wrap:wrap;margin:4px 0}
+#finStats{font-family:'Rajdhani',sans-serif;font-size:clamp(11px,1.5vw,16px);color:#664488;letter-spacing:2px;margin:3px 0}
+#finMid{display:flex;gap:24px;justify-content:center;align-items:flex-start;flex-wrap:wrap;margin-top:12px;width:100%;position:relative;z-index:1}
+#finLeft{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:220px}
+#finRight{flex:1;max-width:380px}
+#finLapTimes{font-family:'Orbitron',sans-serif;font-size:clamp(9px,1.2vw,12px);letter-spacing:1px;text-align:center;color:#886699}
+#finBtns{display:flex;gap:12px;justify-content:center;margin-top:14px;flex-wrap:wrap;position:relative;z-index:1}
+.leaderTable{border-collapse:collapse;margin:10px 0;width:min(480px,90vw)}
+.leaderTable th{font-family:'Orbitron',sans-serif;font-size:9px;color:#00ccff;letter-spacing:2px;padding:5px 12px;border-bottom:1px solid rgba(0,200,255,.25);text-align:left}
+.leaderTable td{font-family:'Rajdhani',sans-serif;font-size:14px;color:#ccbbdd;padding:4px 12px;border-bottom:1px solid rgba(180,80,255,.08)}
+.leaderTable tr.pRow td{color:#cc44ff;font-weight:700;text-shadow:0 0 8px #cc44ff44}
+.lRow{font-family:'Rajdhani',sans-serif;font-size:11px;color:#666;letter-spacing:1px;line-height:1.6;display:flex;gap:6px}
+.lRow.lMe{color:#ff7700;font-weight:700}
+.lPos{width:22px;text-align:right}
+.lName{flex:1}
+.pauseTitle{font-family:'Orbitron',sans-serif;font-size:clamp(30px,6vw,72px);font-weight:900;letter-spacing:5px;position:relative;z-index:1;background:linear-gradient(168deg,#ffffff 0%,#00eeff 30%,#cc44ff 70%,#ff22aa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 36px #cc44ffbb) drop-shadow(0 0 60px #00eeff44)}
+.pauseSubtitle{font-family:'Rajdhani',sans-serif;font-size:14px;color:#664488;letter-spacing:4px;position:relative;z-index:1}
+#hdLapDelta{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;margin-left:7px;vertical-align:middle}
+#confettiCvs{position:fixed;inset:0;pointer-events:none;z-index:35;display:none}
+#hdTire{font-family:'Orbitron',sans-serif;font-size:15px;letter-spacing:3px;transition:color .4s}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:8px;margin:10px 0}
+.podBox{display:flex;flex-direction:column;align-items:center}
+.podPlatform{width:86px;border-radius:4px 4px 0 0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900}
+.podLabel{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;margin:3px 0 2px;text-align:center}
+.podCarName{font-family:'Rajdhani',sans-serif;font-size:11px;color:#999;letter-spacing:1px;margin-bottom:4px;text-align:center}
+.podCarBlock{width:72px;height:28px;border-radius:5px;margin-bottom:2px}
+.tHighScore{font-family:'Rajdhani',sans-serif;font-size:13px;color:#888;letter-spacing:3px;margin-top:8px;z-index:2;text-align:center}
+#sectorInfo{position:absolute;top:31%;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:2px;pointer-events:none;opacity:0;transition:opacity .25s;text-align:center}
+#mirrorFrame{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:204px;height:82px;border:3px solid rgba(255,255,255,.35);border-radius:10px 10px 14px 14px;pointer-events:none;z-index:var(--z-mirror);display:none;background:transparent;box-shadow:0 0 12px rgba(0,0,0,.8),inset 0 0 4px rgba(0,0,0,.5)}
+#mirrorLabel{position:fixed;top:102px;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:8px;color:rgba(255,255,255,.5);letter-spacing:3px;pointer-events:none;z-index:var(--z-mirror);display:none;text-align:center}
+.f1-gantry{
+  background:linear-gradient(180deg,#2e2e2e 0%,#141414 55%,#1e1e1e 100%);
+  border:2px solid #444;border-top:2px solid #666;
+  border-radius:10px;padding:10px 20px 14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.9),0 0 0 1px rgba(255,255,255,.07),inset 0 1px 0 rgba(255,255,255,.1);
+}
+.f1-gantry-label{
+  font-family:'Orbitron',sans-serif;font-size:7px;color:rgba(255,255,255,.35);
+  letter-spacing:4px;text-align:center;margin-bottom:10px;text-transform:uppercase;
+}
+.f1-panel{display:flex;gap:12px;align-items:center;}
+.f1-light-unit{
+  display:flex;align-items:center;justify-content:center;
+  background:#0c0c0c;border:2px solid #2a2a2a;border-bottom:2px solid #111;
+  border-radius:7px;padding:7px;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.8),0 2px 4px rgba(0,0,0,.5);
+}
+.f1Light{
+  width:52px;height:52px;border-radius:50%;
+  background:radial-gradient(circle at 38% 32%,#2d0000 0%,#0e0000 100%);
+  border:3px solid #1a0000;
+  transition:none; /* instant on — syncs with audio beep */
+  position:relative;
+  box-shadow:inset 0 0 10px rgba(0,0,0,.95);
+}
+.f1Light::after{
+  content:'';position:absolute;top:6px;left:9px;
+  width:16px;height:9px;border-radius:50%;
+  background:rgba(255,255,255,.07);transform:rotate(-25deg);
+}
+.f1Light.on{
+  background:radial-gradient(circle at 38% 32%,#ff5500 0%,#cc0000 45%,#7a0000 100%);
+  border-color:#ff2200;
+  box-shadow:0 0 18px #ff2200,0 0 45px #ff000077,0 0 80px #ff000033,inset 0 2px 6px rgba(255,120,80,.25);
+}
+.f1Light.flash{
+  background:radial-gradient(circle at 38% 32%,#ffffff 0%,#ffcc44 40%,#ff8800 100%);
+  border-color:#ffcc00;
+  box-shadow:0 0 30px #ffdd00,0 0 70px #ffaa0099,0 0 120px #ff880055;
+}
+@keyframes f1LightOff{
+  0%{box-shadow:0 0 30px #ffdd00,0 0 70px #ffaa0099;background:radial-gradient(circle at 38% 32%,#ffcc44 0%,#ff8800 100%);}
+  100%{box-shadow:inset 0 0 10px rgba(0,0,0,.95);background:radial-gradient(circle at 38% 32%,#2d0000 0%,#0e0000 100%);}
+}
+.f1Light.extinguish{animation:f1LightOff .35s ease-out forwards;}
+#rstFill{height:100%;width:0%;background:linear-gradient(90deg,#ff7700,#ffee00);border-radius:3px;transition:width .05s linear}
+#rstLabel{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:9px;color:rgba(255,255,255,.5);letter-spacing:3px;display:none;z-index:20}
+.gapLine{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;padding:2px 10px;margin:1px 0;border-radius:4px;background:rgba(0,0,0,.68)}
+#gapAhead{color:#ff6644}
+#gapBehind{color:#44cc88}
+.floatText{position:fixed;font-family:'Orbitron',sans-serif;font-size:clamp(14px,2.2vw,26px);font-weight:900;pointer-events:none;z-index:200;white-space:nowrap;animation:floatUp 1.15s ease-out forwards;transform:translateX(-50%)}
+@keyframes floatUp{0%{opacity:1;transform:translateX(-50%) translateY(0) scale(1.1)}60%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-70px) scale(.75)}}
+#speedLines{position:fixed;inset:0;pointer-events:none;z-index:9;opacity:0;transition:opacity .08s}
+#goldCelebration{position:fixed;inset:0;pointer-events:none;z-index:var(--z-popup);opacity:0;background:radial-gradient(ellipse 80% 60% at 50% 30%,rgba(255,215,0,.45) 0%,rgba(255,140,0,.18) 55%,transparent 100%);transition:opacity 1.8s}
+#driftLabel{position:fixed;bottom:64px;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:9px;color:#ff8800;letter-spacing:3px;display:none;z-index:12;text-shadow:0 0 8px #ff8800}
+#ghostLabel{position:absolute;top:54%;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(160,180,255,.7);letter-spacing:3px;pointer-events:none;display:none}
+#pitCountbar{width:260px;height:8px;background:rgba(0,255,100,.15);border:1px solid #00ee66;border-radius:4px;margin-top:18px;overflow:hidden}
+.lGap{font-family:'Rajdhani',sans-serif;font-size:10px;color:#666;min-width:36px;text-align:right}
+.lMe .lGap{color:#ff9900}
+#sectorPanel{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.72);border:1px solid #1a1a2a;border-radius:8px;padding:5px 10px;pointer-events:none;min-width:130px;opacity:0;transition:opacity .3s}
+.secRow{display:flex;justify-content:space-between;gap:8px;font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:1px;line-height:1.7}
+.secLabel{color:#555}
+.secTime{font-weight:700}
+#speedTrapEl{position:absolute;top:11%;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:clamp(12px,1.7vw,17px);font-weight:900;letter-spacing:3px;color:#ffdd00;text-shadow:0 0 14px #ffdd00,0 2px 6px rgba(0,0,0,.8);pointer-events:none;display:none;text-align:center}
+.tireGrid{display:grid;grid-template-columns:1fr 1fr;gap:3px;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700}
+.tireDot{width:14px;height:14px;border-radius:50%;display:inline-block;margin:1px;transition:background .4s}
+.carLock{position:absolute;inset:0;background:rgba(0,0,0,.72);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:10px;color:#666;letter-spacing:1px;gap:4px;pointer-events:none}
+.tDedicated{font-family:'Rajdhani',sans-serif;font-size:clamp(10px,1.4vw,14px);color:#ff7700;letter-spacing:4px;margin-top:6px;z-index:2;opacity:.7;text-align:center}
+@keyframes posFlash{0%{transform:scale(1);color:#ff7700}20%{transform:scale(1.45);color:#ffffff;text-shadow:0 0 24px #ffffff,0 0 48px #00ff88}60%{transform:scale(1.15);color:#00ff88}100%{transform:scale(1);color:#ff7700}}
+.posPulse{animation:posFlash .6s cubic-bezier(.34,1.56,.64,1)}
+.previewName{font-family:'Orbitron',sans-serif;font-size:clamp(14px,2vw,22px);color:#fff;letter-spacing:3px;text-align:center;text-shadow:0 0 20px rgba(180,100,255,.5)}
+.previewBrand{font-family:'Rajdhani',sans-serif;font-size:11px;color:#886699;letter-spacing:4px;text-align:center;text-transform:uppercase}
+.previewType{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:3px;padding:3px 10px;border-radius:10px;background:rgba(180,80,255,.15);border:1px solid rgba(180,80,255,.3);color:#cc88ff}
+.carInfo{flex:1;min-width:0}
+.carBrand{font-family:'Rajdhani',sans-serif;font-size:8px;color:#664488;letter-spacing:2px;text-transform:uppercase}
+.carName{font-family:'Orbitron',sans-serif;font-size:10px;color:#ccbbdd;font-weight:700;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.carTypeBadge{font-family:'Orbitron',sans-serif;font-size:7px;color:#886699;letter-spacing:1px;margin-top:1px}
+#sTitle{background:radial-gradient(ellipse at 50% 42%,#140030 0%,#070018 45%,#030010 80%,#000007 100%)!important}
+.tLogo{
+  background:linear-gradient(168deg,#ffffff 0%,#00eeff 18%,#ff22cc 55%,#ff6600 100%)!important;
+  -webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important;
+  background-clip:text!important;
+  filter:drop-shadow(0 0 30px #cc44ffbb) drop-shadow(0 2px 40px #ff22ccaa)!important;
+  animation:lglow 2.2s ease-in-out infinite;
+}
+@keyframes lglow{0%,100%{filter:drop-shadow(0 0 28px #aa44ffcc) drop-shadow(0 2px 35px #ff22ccaa)}50%{filter:drop-shadow(0 0 52px #cc66ffee) drop-shadow(0 2px 60px #ff44ddcc)}}
+.flame{background:linear-gradient(to top,#aa00ff,#ff00aa,#00eeff)!important}
+#sTitle::before{background:linear-gradient(105deg,transparent 30%,rgba(140,60,255,.04) 48%,rgba(180,80,255,.09) 50%,rgba(100,200,255,.04) 52%,transparent 70%)!important}
+.tStart{color:#cc66ff!important;animation:blink 1.15s ease-in-out infinite}
+.tSub{color:#664488!important}
+@media(max-width:600px){
+.setLabel{margin-bottom:5px!important}
+.colorDot{width:36px!important;height:36px!important}
+.previewName{font-size:15px!important;letter-spacing:2px!important}
+.carSwatch{width:46px!important;height:46px!important;border-radius:12px!important}
+.carName{font-size:13px!important}
+.carBrand{font-size:10px!important}
+.carTypeBadge{font-size:9px!important;color:#aa77cc!important}
+}
+@media(max-width:600px),(pointer:coarse) and (max-width:900px){
+#warnOverlay{top:48%!important}
+.warn{font-size:14px!important;padding:6px 16px!important;letter-spacing:2px!important}
+}
+@media(min-width:769px) and (max-width:1200px){
+.tLogo{font-size:clamp(44px,6vw,72px)!important}
+}
+@media(max-width:600px){
+#finMid{flex-direction:column!important;gap:10px!important;align-items:center!important;margin-top:8px!important}
+#finLeft{min-width:0!important;width:100%!important}
+#finRight{max-width:100%!important;width:100%!important}
+.leaderTable{width:100%!important;margin:6px 0!important}
+.leaderTable th{padding:4px 6px!important;font-size:8px!important;letter-spacing:1px!important}
+.leaderTable td{padding:3px 6px!important;font-size:12px!important}
+#finLapTimes{font-size:10px!important;line-height:1.6!important}
+#finStats{font-size:10px!important;letter-spacing:1px!important}
+#finBtns{position:fixed!important;left:10px!important;right:10px!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;margin:0!important;padding:8px 10px!important;background:linear-gradient(135deg,rgba(15,0,30,.94),rgba(5,0,15,.96))!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important;border:1px solid rgba(180,80,255,.3)!important;border-radius:14px!important;z-index:10!important;gap:8px!important}
+#finPodium{transform:scale(.85)!important;transform-origin:top center!important}
+}
+@media(max-width:600px){
+.pauseTitle{letter-spacing:3px!important}
+.pauseSubtitle{font-size:11px!important;letter-spacing:2px!important;text-align:center}
+}
+@media(max-width:600px){
+.tSub{letter-spacing:4px!important;margin-top:8px!important}
+.tStart{margin-top:28px!important;letter-spacing:3px!important}
+.tTip{padding:0 16px!important;letter-spacing:1px!important;line-height:1.5!important;max-width:340px!important;word-wrap:break-word!important}
+.tRow{padding:0 12px!important;gap:6px!important}
+.tBtn{padding:5px 12px!important;font-size:10px!important;letter-spacing:1px!important}
+}
+@keyframes loadAnim{from{width:10%}to{width:100%}}

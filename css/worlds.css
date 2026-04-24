@@ -1,0 +1,86 @@
+/* worlds.css — auto-split from index.html */
+#sWorld{background:radial-gradient(ellipse at 50% 40%,#0a0020 0%,#050015 55%,#000005 100%);flex-direction:column;gap:0;padding:0;overflow:hidden}
+#sWorld::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(180,100,255,.5) 1px,transparent 1px),radial-gradient(circle,rgba(100,180,255,.3) .7px,transparent .7px),radial-gradient(circle,rgba(255,100,200,.25) .6px,transparent .6px);background-size:22px 22px,14px 14px,9px 9px;background-position:3px 4px,8px 9px,1px 6px;pointer-events:none;z-index:0;opacity:.6;animation:starDrift2 14s linear infinite}
+@keyframes starDrift2{0%{transform:translateY(0)}100%{transform:translateY(-22px)}}
+.worldSelHeader{display:flex;align-items:center;justify-content:space-between;width:100%;padding:18px 28px;z-index:2;flex-shrink:0}
+.worldSelTitle{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(16px,2.5vw,28px);letter-spacing:6px;background:linear-gradient(90deg,#ffffff,#cc88ff,#ff44aa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 14px #aa44ff88)}
+.worldSelBack{font-family:'Orbitron',sans-serif;font-size:11px;color:#664488;background:rgba(100,40,160,.12);border:1px solid #442266;border-radius:20px;padding:7px 18px;cursor:pointer;letter-spacing:2px;transition:all .18s}
+.worldSelBack:hover{color:#cc88ff;border-color:#8844cc}
+.worldGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:clamp(12px,2.5vw,28px);flex:1;z-index:2;width:100%;max-width:1000px;margin:0 auto;overflow-y:auto;align-content:start}
+.worldBigCard{aspect-ratio:4/3;border-radius:16px;cursor:pointer;overflow:hidden;position:relative;border:2px solid #2a1a4a;transition:all .25s cubic-bezier(.34,1.3,.64,1);display:flex;flex-direction:column;justify-content:flex-end}
+.worldBigCard:hover{transform:translateY(-10px) scale(1.03);border-color:#aa44ff;box-shadow:0 0 38px #8822cc66,0 20px 60px rgba(0,0,0,.6),inset 0 0 30px rgba(180,80,255,.08)}
+.worldBigCard.wBigSel{border-color:#cc44ff;box-shadow:0 0 40px #aa44ff88,inset 0 0 30px rgba(180,80,255,.12)}
+.worldCardBg{position:absolute;inset:0;z-index:0;transition:transform .3s}
+.worldBigCard:hover .worldCardBg{transform:scale(1.06)}
+.worldBgGP{background:linear-gradient(170deg,#0a2010 0%,#1a4020 30%,#2a6030 60%,#3a8040 85%,#5aaa60 100%)}
+.worldBgGP::after{content:'';position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(0deg,rgba(20,60,20,.85) 0%,transparent 100%);z-index:1}
+.worldBgGP::before{content:'';position:absolute;inset:0;background-image:radial-gradient(ellipse 80% 50% at 50% 110%,#2a5a2a 0%,transparent 60%);pointer-events:none;z-index:1}
+.worldBgSpace{background:linear-gradient(170deg,#0a0020 0%,#1a0040 35%,#2a1060 65%,#0a1044 100%)}
+.worldBgSpace::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.7) 1px,transparent 1px),radial-gradient(circle,rgba(200,180,255,.4) .8px,transparent .8px);background-size:32px 32px,20px 20px;background-position:0 0,12px 12px;animation:starDrift2 9s linear infinite;pointer-events:none;z-index:1;opacity:.5}
+.worldBgSpace::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 70% 30%,rgba(180,80,255,.22) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 20% 70%,rgba(0,150,255,.15) 0%,transparent 60%);pointer-events:none;z-index:1}
+.worldBgSea{background:linear-gradient(170deg,#020c14 0%,#052a3a 35%,#0a4555 65%,#1a6a7a 100%)}
+.worldBgSea::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(0,220,200,.4) 1px,transparent 1px),radial-gradient(circle,rgba(0,150,255,.25) 1.2px,transparent 1.2px);background-size:18px 18px,27px 27px;background-position:0 0,9px 10px;animation:bubbleRise 4.5s ease-in-out infinite;pointer-events:none;z-index:1;opacity:.5}
+@keyframes bubbleRise{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.worldBgSea::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 50% at 30% 80%,rgba(0,200,180,.12) 0%,transparent 60%);pointer-events:none;z-index:1}
+.worldCardContent{position:relative;z-index:2;padding:clamp(16px,2.5vw,26px);background:linear-gradient(0deg,rgba(0,0,0,.82) 0%,rgba(0,0,0,.45) 55%,transparent 100%);pointer-events:none}
+.worldCardIcon{font-size:clamp(40px,6vw,58px);line-height:1;margin-bottom:10px;filter:drop-shadow(0 0 16px rgba(255,255,255,.4))}
+.worldCardName{font-family:'Orbitron',sans-serif;font-size:clamp(14px,2.2vw,22px);font-weight:900;color:#ffffff;letter-spacing:3px;text-shadow:0 0 20px rgba(255,255,255,.35);margin-bottom:6px}
+.worldCardDesc{font-family:'Rajdhani',sans-serif;font-size:clamp(11px,1.5vw,14px);color:rgba(255,255,255,.55);letter-spacing:1px;line-height:1.4}
+.worldCardSel{display:none;position:absolute;top:12px;right:12px;z-index:3;font-family:'Orbitron',sans-serif;font-size:9px;color:#cc44ff;background:rgba(120,40,200,.25);border:1px solid #aa44ff;border-radius:12px;padding:4px 10px;letter-spacing:2px}
+.worldBigCard.wBigSel .worldCardSel{display:block}
+@media(max-width:768px){
+.worldGrid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+.worldGrid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+.worldBigCard{min-height:140px;width:100%}
+}
+.worldBigCard{min-height:0!important;aspect-ratio:4/3!important}
+.worldBgGP{background:linear-gradient(180deg,#1262a8 0%,#3a8fcc 32%,#6ab6e8 47%,#3a8a44 50%,#2a6a34 72%,#1a4824 100%)!important}
+.worldBgGP::before{content:'';position:absolute;bottom:22%;left:10%;right:10%;height:12%;background:linear-gradient(180deg,#333,#222);border-radius:2px;border-top:2px solid rgba(255,255,255,.5);z-index:1;pointer-events:none}
+.worldBgGP::after{content:'';position:absolute;bottom:26%;left:15%;right:15%;height:2px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.7) 0px,rgba(255,255,255,.7) 12px,transparent 12px,transparent 24px);z-index:2;pointer-events:none}
+.worldBgSpace{background:linear-gradient(170deg,#040012 0%,#0e0030 35%,#1a0848 65%,#070f30 100%)!important}
+.worldBgSpace::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.8) 1px,transparent 1px),radial-gradient(circle,rgba(220,200,255,.5) .8px,transparent .8px),radial-gradient(circle,rgba(180,230,255,.4) .6px,transparent .6px);background-size:38px 38px,22px 22px,14px 14px;background-position:4px 5px,13px 11px,7px 20px;animation:starDrift2 8s linear infinite;pointer-events:none;z-index:1;opacity:.7}
+.worldBgSpace::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 74% 68%,#2a1060 0%,#1a0840 22%,transparent 28%),radial-gradient(ellipse 55% 35% at 68% 30%,rgba(160,80,255,.28) 0%,transparent 65%),radial-gradient(ellipse 35% 25% at 22% 72%,rgba(0,140,255,.18) 0%,transparent 60%);pointer-events:none;z-index:1}
+.worldBgSea{background:linear-gradient(180deg,#062c40 0%,#083d52 28%,#094858 55%,#052838 80%,#021820 100%)!important}
+.worldBgSea::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(0,230,210,.45) 1px,transparent 1px),radial-gradient(circle,rgba(0,160,255,.28) 1.2px,transparent 1.2px);background-size:20px 20px,30px 30px;background-position:2px 3px,11px 12px;animation:bubbleRise 4s ease-in-out infinite;pointer-events:none;z-index:1;opacity:.55}
+.worldBgSea::after{content:'';position:absolute;inset:0;background:linear-gradient(158deg,rgba(80,195,215,.14) 0%,transparent 38%),linear-gradient(163deg,rgba(60,170,190,.09) 5%,transparent 32%),radial-gradient(ellipse 60% 45% at 32% 85%,rgba(0,200,170,.10) 0%,transparent 60%);pointer-events:none;z-index:1}
+.worldBgCandy{background:linear-gradient(170deg,#ff44aa 0%,#ff88cc 35%,#ffccee 65%,#ffe4aa 100%)}
+.worldBgCandy::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.9) 2px,transparent 2px),radial-gradient(circle,rgba(255,200,50,.8) 1.5px,transparent 1.5px),radial-gradient(circle,rgba(80,255,160,.7) 1px,transparent 1px),radial-gradient(circle,rgba(80,160,255,.7) 1px,transparent 1px);background-size:22px 22px,17px 17px,11px 11px,14px 14px;background-position:3px 4px,9px 10px,5px 13px,14px 6px;animation:sprinkleShimmer 2.2s linear infinite;pointer-events:none;z-index:1;opacity:.75}
+.worldBgCandy::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 50% 30%,rgba(255,255,255,.28) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 20% 80%,rgba(255,160,80,.18) 0%,transparent 60%);pointer-events:none;z-index:1}
+@keyframes sprinkleShimmer{0%{background-position:3px 4px,9px 10px,5px 13px,14px 6px}100%{background-position:3px 26px,9px 27px,5px 24px,14px 20px}}
+@media(max-width:768px){
+.worldGrid{grid-template-columns:1fr!important;padding:14px 14px 28px!important;gap:14px!important;max-width:100%!important;box-sizing:border-box!important;width:100%!important}
+.worldBigCard{aspect-ratio:auto!important;min-height:0!important;height:96px!important;max-height:96px!important;width:100%!important;max-width:100%!important;margin:0!important;border:2px solid rgba(90,50,160,.5)!important;transform:none!important;transition:background .18s,border-color .18s!important;box-sizing:border-box!important;contain:layout style!important;position:relative!important;z-index:1;display:flex!important;align-items:stretch!important;overflow:hidden!important}
+.worldBigCard:hover,.worldBigCard:active,.worldBigCard:focus{transform:none!important;box-shadow:none!important}
+.worldBigCard.wBigSel{transform:none!important;border-color:#cc44ff!important;box-shadow:inset 0 0 0 2px rgba(204,68,255,.9)!important;z-index:2!important}
+.worldCardBg{position:absolute!important;inset:0!important;z-index:0!important;transform:none!important}
+.worldBigCard .worldCardBg::before,.worldBigCard .worldCardBg::after,
+  .worldBgGP::before,.worldBgGP::after,.worldBgSpace::before,.worldBgSpace::after,
+  .worldBgSea::before,.worldBgSea::after,.worldBgCandy::before,.worldBgCandy::after,
+  .worldBgNeonCity::before,.worldBgNeonCity::after,.worldBgThemepark::before,.worldBgThemepark::after{display:none!important}
+.worldCardContent{padding:12px 16px 12px 18px!important;z-index:2!important;position:relative!important;width:100%!important;background:linear-gradient(90deg,rgba(0,0,0,.78) 0%,rgba(0,0,0,.5) 60%,transparent 100%)!important;align-self:center!important;display:flex!important;flex-direction:column!important;justify-content:center!important}
+.worldCardIcon{position:absolute!important;right:14px!important;top:50%!important;transform:translateY(-50%)!important;font-size:44px!important;margin:0!important;line-height:1!important;filter:drop-shadow(0 3px 8px rgba(0,0,0,.8))!important;opacity:.92!important;z-index:1!important}
+.worldCardName{font-size:16px!important;letter-spacing:2px!important;margin-bottom:3px!important;text-shadow:0 2px 6px rgba(0,0,0,.95)!important;z-index:3!important;position:relative!important}
+.worldCardDesc{font-size:10.5px!important;line-height:1.3!important;letter-spacing:.3px!important;max-height:28px!important;overflow:hidden!important;text-overflow:ellipsis!important;display:-webkit-box!important;-webkit-line-clamp:2!important;-webkit-box-orient:vertical!important;color:rgba(255,255,255,.78)!important;padding-right:58px!important;z-index:3!important;position:relative!important}
+.worldCardSel{display:none!important}
+.worldSelHeader{padding:10px 14px!important;flex-shrink:0!important}
+.worldSelTitle{font-size:14px!important;letter-spacing:3px!important}
+}
+@media(min-width:769px) and (max-width:1200px){
+.worldGrid{grid-template-columns:repeat(3,1fr)!important;gap:38px!important;padding:24px!important;max-width:1140px!important;max-height:calc(100vh - 90px)!important;overflow-y:auto!important}
+.worldBigCard{aspect-ratio:16/9!important;min-height:110px!important;height:auto!important;max-height:none!important}
+.worldBigCard:hover{transform:none!important;box-shadow:none!important}
+.worldBigCard.wBigSel{box-shadow:0 0 20px rgba(204,68,255,.5),inset 0 0 0 2px rgba(204,68,255,.9)!important}
+.worldSelTitle{font-size:18px!important}
+}
+.worldBgThemepark{background:linear-gradient(170deg,#1a0030 0%,#4a1060 25%,#cc2288 55%,#ff6622 85%,#ffaa00 100%)}
+.worldBgThemepark::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,240,100,.9) 1.2px,transparent 1.2px),radial-gradient(circle,rgba(255,150,200,.6) 1px,transparent 1px),radial-gradient(circle,rgba(100,220,255,.5) .8px,transparent .8px);background-size:26px 26px,18px 18px,33px 33px;background-position:4px 6px,12px 14px,18px 8px;animation:parkLights 2.2s ease-in-out infinite alternate;pointer-events:none;z-index:1;opacity:.65}
+.worldBgThemepark::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 55% at 30% 25%,rgba(255,220,80,.28) 0%,transparent 60%),radial-gradient(ellipse 50% 40% at 80% 70%,rgba(255,80,180,.22) 0%,transparent 60%);pointer-events:none;z-index:1}
+@keyframes parkLights{0%{opacity:.35}100%{opacity:.8}}
+.worldBgNeonCity{background:linear-gradient(180deg,#000008 0%,#050020 40%,#0a0030 60%,#050015 80%,#000008 100%)}
+.worldBgNeonCity::before{content:'';position:absolute;inset:0;background-image:linear-gradient(transparent 55%,#0a0a1a 55%,#0a0a1a 100%),linear-gradient(transparent 35%,#080818 35%,#080818 55%,transparent 55%);background-size:100% 100%,12px 100%;background-position:0 0,8px 0;pointer-events:none;z-index:1}
+.worldBgNeonCity::after{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(0,255,238,.8) 1px,transparent 1px),radial-gradient(circle,rgba(255,0,170,.6) 1px,transparent 1px),radial-gradient(circle,rgba(238,255,0,.5) 1px,transparent 1px);background-size:28px 35px,22px 28px,35px 42px;background-position:3px 4px,15px 18px,8px 12px;animation:neonPulse 2s ease-in-out infinite alternate;pointer-events:none;z-index:2;opacity:.6}
+@keyframes neonPulse{0%{opacity:.3}100%{opacity:.7}}

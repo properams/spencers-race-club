@@ -1,0 +1,76 @@
+/* select.css — auto-split from index.html */
+#sSelect{background:radial-gradient(ellipse at 50% 30%,#0a0025 0%,#050015 55%,#000008 100%);justify-content:flex-start;padding:0;overflow:hidden}
+#sSelect::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(180,100,255,.3) 1px,transparent 1px),radial-gradient(circle,rgba(100,200,255,.15) .7px,transparent .7px);background-size:32px 32px,20px 20px;background-position:3px 4px,12px 14px;pointer-events:none;opacity:.2;z-index:0}
+.selHeader{display:flex;align-items:center;justify-content:space-between;width:100%;padding:12px 24px 10px;border-bottom:1px solid rgba(180,80,255,.15);flex-shrink:0;position:relative;z-index:1;background:rgba(0,0,0,.3)}
+.selTitle{font-family:'Orbitron',sans-serif;font-size:clamp(13px,2vw,22px);letter-spacing:5px;margin:0;background:linear-gradient(90deg,#ffffff,#cc88ff,#00ccff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 14px #aa44ff55)}
+.selBack{font-family:'Orbitron',sans-serif;font-size:11px;color:#886699;background:rgba(100,40,160,.12);border:1px solid #442266;border-radius:20px;padding:6px 16px;cursor:pointer;letter-spacing:2px;transition:all .18s}
+.selBack:hover{color:#cc88ff;border-color:#8844cc}
+.selBody{display:grid;grid-template-columns:220px 1fr 280px;gap:0;flex:1;overflow:hidden;width:100%;height:calc(100vh - 54px);height:calc(100dvh - 54px);position:relative;z-index:1}
+.selLeft{display:flex;flex-direction:column;border-right:1px solid rgba(180,80,255,.10);overflow-y:auto;padding:0;gap:0;background:rgba(0,0,0,.25)}
+.selRight{flex:1;display:flex;flex-direction:column;padding:12px 16px;gap:8px;overflow-y:auto;background:rgba(0,0,0,.15)}
+#carPreviewCvs{border-radius:14px;border:1px solid rgba(180,80,255,.2);background:radial-gradient(ellipse at 50% 60%,#0a0518,#040610);width:100%;max-width:420px;height:auto;aspect-ratio:400/220;box-shadow:0 0 40px rgba(140,60,255,.10),0 20px 60px rgba(0,0,0,.5)}
+.statBars{width:100%;max-width:320px;padding:6px 0}
+.statBar{flex:1;height:6px;background:rgba(180,80,255,.08);border-radius:3px;overflow:hidden;border:1px solid rgba(180,80,255,.12)}
+.colorRow{display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap;justify-content:center}
+.carGridWrap{padding:8px 0}
+.carGridLabel{font-family:'Orbitron',sans-serif;font-size:9px;color:#442255;letter-spacing:3px;margin-bottom:6px}
+.carGrid{display:flex;flex-direction:column;gap:0;width:100%}
+.carCard{background:transparent;border:none;border-bottom:1px solid rgba(180,80,255,.06);border-left:3px solid transparent;padding:12px 12px;cursor:pointer;transition:all .2s;overflow:hidden;position:relative;display:flex;align-items:center;gap:12px}
+.carCard:hover{background:rgba(180,80,255,.08);border-left-color:rgba(180,80,255,.3)}
+.carCard.sel{background:rgba(180,80,255,.14);border-left-color:#cc44ff;box-shadow:inset 0 0 20px rgba(180,80,255,.06)}
+.settingsPanel{background:rgba(10,0,25,.45);border:1px solid rgba(180,80,255,.12);border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.lapBtn{font-family:'Orbitron',sans-serif;font-size:12px;color:#664488;background:rgba(180,80,255,.06);border:1px solid rgba(180,80,255,.15);border-radius:8px;padding:7px 18px;cursor:pointer;letter-spacing:1px;transition:all .15s;font-weight:700}
+.lapBtn:hover{color:#cc88ff;border-color:#664488}
+.lapBtn.lapSel{color:#fff;border-color:#cc44ff;background:rgba(180,80,255,.18);box-shadow:0 0 10px #cc44ff33}
+.diffBtn{font-family:'Orbitron',sans-serif;font-size:10px;color:#664488;background:rgba(180,80,255,.06);border:1px solid rgba(180,80,255,.15);border-radius:8px;padding:7px 16px;cursor:pointer;letter-spacing:2px;transition:all .15s}
+.diffBtn:hover{color:#cc88ff;border-color:#664488}
+.diffBtn.diffSel{color:#fff;border-color:#cc44ff;background:rgba(180,80,255,.18);box-shadow:0 0 10px #cc44ff33}
+.togBtn{font-family:'Orbitron',sans-serif;font-size:10px;color:#664488;background:rgba(180,80,255,.06);border:1px solid rgba(180,80,255,.15);border-radius:8px;padding:7px 14px;cursor:pointer;letter-spacing:2px;transition:all .15s}
+.togBtn:hover{color:#cc88ff;border-color:#664488}
+.togBtn.togSel{color:#fff;border-color:#cc44ff;background:rgba(180,80,255,.18);box-shadow:0 0 10px #cc44ff33}
+.startBtnWrap{padding:8px 0;display:flex;gap:10px;align-items:center}
+.startBtn{font-family:'Orbitron',sans-serif;font-size:14px;color:#fff;background:linear-gradient(90deg,#8833cc,#ff3388,#ff6600);border:none;border-radius:10px;padding:14px 44px;cursor:pointer;letter-spacing:4px;font-weight:900;box-shadow:0 0 24px #aa44ff55,0 0 60px #ff338833;transition:all .16s;flex:1;position:relative;overflow:hidden}
+.startBtn::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.12) 48%,rgba(255,255,255,.06) 52%,transparent 70%);animation:btnSweep 3s ease-in-out infinite}
+@keyframes btnSweep{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}
+.startBtn:hover{transform:translateY(-2px);box-shadow:0 0 36px #cc44ffaa,0 0 80px #ff338855}
+#sSelect{background:radial-gradient(ellipse at 30% 50%,#0d0020,#050010,#000005)!important}
+#carPreviewCvs{border-radius:16px!important;border:1px solid rgba(180,80,255,.25)!important;box-shadow:0 0 60px rgba(140,60,255,.15),0 30px 80px rgba(0,0,0,.6)!important}
+.selCenter::after{content:'';position:absolute;bottom:0;left:0;right:0;height:35%;background:repeating-linear-gradient(90deg,transparent,transparent 38px,rgba(180,80,255,.07) 38px,rgba(180,80,255,.07) 39px),repeating-linear-gradient(0deg,transparent,transparent 38px,rgba(180,80,255,.07) 38px,rgba(180,80,255,.07) 39px),linear-gradient(transparent,rgba(180,80,255,.03));pointer-events:none;z-index:0;animation:gridScroll 8s linear infinite}
+@keyframes gridScroll{from{background-position:0 0,0 0,0 0}to{background-position:38px 0,0 38px,0 0}}
+.statBar{height:6px!important}
+.startBtn{padding:16px 0!important;font-size:15px!important}
+.carCard{position:relative}
+.selCenter{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:10px;position:relative;overflow:hidden}
+.selCenter::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(140,60,255,.08) 0%,transparent 70%),radial-gradient(ellipse 40% 30% at 30% 70%,rgba(0,200,255,.04) 0%,transparent 60%);pointer-events:none}
+#carPreviewCvs{border-radius:14px;border:1px solid rgba(180,80,255,.2);background:radial-gradient(ellipse at 50% 60%,#0a0518,#040610);width:100%;max-width:420px;height:auto;aspect-ratio:400/220;box-shadow:0 0 40px rgba(140,60,255,.10),0 20px 60px rgba(0,0,0,.5)}
+#worldIndicator{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;color:#cc88ff;background:rgba(120,40,200,.22);border:1px solid #663388;border-radius:14px;padding:5px 12px;cursor:pointer;transition:all .18s}
+#worldIndicator:hover{border-color:#cc44ff;color:#eeccff}
+@media(max-width:600px){
+.selHeader{padding:8px 14px 7px!important}
+.selTitle{font-size:13px!important;letter-spacing:3px!important}
+.selBack{font-size:10px!important;padding:5px 12px!important}
+.selBody{grid-template-columns:1fr!important;grid-template-rows:auto auto auto;height:auto!important;min-height:calc(100dvh - 48px)!important;overflow-y:auto!important;overflow-x:hidden!important}
+.selLeft{order:3;border-right:none!important;border-top:1px solid rgba(180,80,255,.12);max-height:42vh;min-height:200px}
+.selCenter{order:1;padding:10px 12px!important;gap:6px!important}
+.selRight{order:2;padding:6px 12px 10px!important;gap:6px!important}
+#carPreviewCvs{max-width:280px!important;aspect-ratio:4/2!important}
+.settingsPanel{padding:8px 10px!important;margin-bottom:6px!important}
+.lapBtn,.diffBtn,.togBtn{padding:10px 14px!important;font-size:11px!important;min-width:44px!important;min-height:44px!important}
+.selBack{padding:8px 14px!important;min-height:36px!important}
+.startBtn{padding:12px 0!important;font-size:13px!important;letter-spacing:2px!important}
+.statBars{max-width:100%!important}
+.selCenter::after{display:none!important}
+.selLeft{padding:10px 10px 20px!important;gap:8px!important}
+.carGrid{gap:8px!important}
+.carCard{padding:12px 14px!important;gap:14px!important;border:1px solid rgba(180,80,255,.15)!important;border-bottom:1px solid rgba(180,80,255,.15)!important;border-left:3px solid transparent!important;border-radius:14px!important;background:linear-gradient(135deg,rgba(30,10,50,.5),rgba(12,4,28,.4))!important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);margin-bottom:0!important}
+.carCard.sel{border:1px solid #cc44ff!important;border-left:3px solid #cc44ff!important;background:linear-gradient(135deg,rgba(180,80,255,.25),rgba(100,40,200,.15))!important;box-shadow:0 0 18px rgba(204,68,255,.35),inset 0 0 20px rgba(180,80,255,.08)!important}
+}
+@media(min-width:769px) and (max-width:1200px){
+.selBody{grid-template-columns:200px 1fr 260px!important}
+.startBtnWrap{position:relative!important;background:transparent!important;border:none!important;box-shadow:none!important;padding:0!important}
+}
+@media(max-width:600px){
+.selRight{padding-bottom:82px!important}
+.startBtnWrap{position:fixed!important;left:10px!important;right:10px!important;bottom:10px!important;z-index:10!important;padding:10px 12px!important;background:linear-gradient(135deg,rgba(15,0,30,.94),rgba(5,0,15,.96))!important;backdrop-filter:blur(12px)!important;-webkit-backdrop-filter:blur(12px)!important;border:1px solid rgba(180,80,255,.3)!important;border-radius:14px!important;box-shadow:0 -6px 28px rgba(0,0,0,.55),0 0 24px rgba(180,80,255,.25)!important}
+.startBtn{padding:13px 0!important;font-size:14px!important;letter-spacing:3px!important;margin:0!important}
+}
