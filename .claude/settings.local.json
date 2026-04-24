@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p backups)",
+      "Bash(cp index.html backups/music_start.html)",
+      "Bash(node --check index.html)",
+      "Bash(awk '/^class TitleMusic/,/^class RaceMusic/' index.html)",
+      "Bash(awk '/^class RaceMusic/,/^}$/' index.html)",
+      "Bash(awk '/^class RaceMusic/,/^}$/{print NR\": \"$0}' index.html)",
+      "Bash(python3)",
+      "Bash(awk '/^class TitleMusic/,/^class SelectMusic/' index.html)",
+      "Bash(awk '/^class SelectMusic/,/^class RaceMusic/' index.html)",
+      "Bash(awk '/^class RaceMusic/,/^\\\\/\\\\/ ══ RENDERER/' index.html)",
+      "Bash(git init *)",
+      "Bash(git config *)",
+      "Bash(git add *)",
+      "Bash(git commit -q -m 'Fase 0: Initial commit — single-file game + music overhaul + refactor docs *)"
+    ]
+  }
+}
