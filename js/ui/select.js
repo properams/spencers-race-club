@@ -29,7 +29,7 @@ function initCarPreview(){
   }
   _prevRen.setPixelRatio(Math.min(devicePixelRatio,2));_prevRen.setSize(400,220,false);
   _prevRen.toneMapping=THREE.ACESFilmicToneMapping;_prevRen.toneMappingExposure=1.35;
-  _prevRen.outputColorSpace=THREE.SRGBColorSpace;_prevRen.setClearColor(0x050812,1);
+  _prevRen.outputEncoding=THREE.sRGBEncoding;_prevRen.setClearColor(0x050812,1);
   _prevScene=new THREE.Scene();
   _prevCam=new THREE.PerspectiveCamera(36,400/220,.1,100);_prevCam.position.set(4.5,2.2,5.5);_prevCam.lookAt(0,.5,0);
   var sun=new THREE.DirectionalLight(0xfff8f0,2.5);sun.position.set(4,8,5);_prevScene.add(sun);
@@ -66,7 +66,7 @@ function buildCarPreviews(){
   const pr=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
   pr.setSize(W,H);pr.setPixelRatio(Math.min(devicePixelRatio,2));
   pr.toneMapping=THREE.ACESFilmicToneMapping;pr.toneMappingExposure=1.3;
-  pr.outputColorSpace=THREE.SRGBColorSpace;pr.setClearColor(0x000000,0);
+  pr.outputEncoding=THREE.sRGBEncoding;pr.setClearColor(0x000000,0);
   const ps=new THREE.Scene();
   const pc=new THREE.PerspectiveCamera(36,W/H,.1,100);
   pc.position.set(4.0,2.0,5.2);pc.lookAt(0,.45,0);

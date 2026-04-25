@@ -40,10 +40,7 @@ function initRenderer(){
   renderer.setSize(innerWidth,innerHeight);
   renderer.shadowMap.enabled=!_mob;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
-  renderer.outputColorSpace=THREE.SRGBColorSpace; // r152+ rename (was outputEncoding=sRGBEncoding)
-  // r155+ changed default lighting from legacy → physically-correct (alles wordt 2-3× helderder).
-  // useLegacyLights = true behoudt oude appearance; r163+ verwijdert dit en vereist intensity*PI scaling.
-  if('useLegacyLights' in renderer)renderer.useLegacyLights=true;
+  renderer.outputEncoding=THREE.sRGBEncoding;
   // Single resize pipeline: one rAF-debounced handler bound to resize, orientationchange and
   // visualViewport.resize. Re-evaluates device flags so portrait↔landscape (and split-view)
   // switches the iPad cleanly between mobile/tablet branches without a page reload.

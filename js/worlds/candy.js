@@ -433,8 +433,7 @@ function buildIceCreamCones(){
 
 
 function buildCookieSpectators(){
-  // Round cookie "faces" lined up outside barriers — simple spectator stand-ins.
-  // Fase 5 stap 3: cookies + chocolate chips → InstancedMesh (32 + 96 = 128 → 2 draw calls).
+  // Round cookie "faces" lined up outside barriers — simple spectator stand-ins
   const positions=[];
   for(let i=0;i<32;i++){
     const t=i/32;
@@ -443,36 +442,28 @@ function buildCookieSpectators(){
     const side=(i%2===0?1:-1)*(BARRIER_OFF+8+Math.random()*4);
     positions.push({x:p.x+nr.x*side,z:p.z+nr.z*side,tg});
   }
-  // Cookie body InstancedMesh (cylinder, tilted back, oriented per track tangent)
-  const cookieMat=new THREE.MeshLambertMaterial({color:0xcc8844});
-  const cookieGeo=new THREE.CylinderGeometry(1.2,1.2,.22,12);
-  const cookieInst=new THREE.InstancedMesh(cookieGeo,cookieMat,positions.length);
-  // Chocolate chip InstancedMesh (3 chips per cookie)
-  const chipMat=new THREE.MeshLambertMaterial({color:0x331100});
-  const chipGeo=new THREE.SphereGeometry(.14,4,4);
-  const chipInst=new THREE.InstancedMesh(chipGeo,chipMat,positions.length*3);
-  // Build matrices via a temp Object3D — easier rotation order dan handmatige Matrix4 (we
-  // need rotation.x dan rotation.z, wat .matrix.compose() correct doet via Euler XYZ default).
-  const _tmp=new THREE.Object3D();
-  let chipIdx=0;
-  positions.forEach(({x,z,tg},ci)=>{
-    _tmp.position.set(x,1.5,z);
-    _tmp.rotation.set(Math.PI/2-.15,0,Math.atan2(tg.x,tg.z));
-    _tmp.scale.set(1,1,1);
-    _tmp.updateMatrix();
-    cookieInst.setMatrixAt(ci,_tmp.matrix);
-    // 3 chips per cookie
+  positions.forEach(({x,z,tg})=>{
+    // Cookie body (cylinder, slightly tilted back)
+    const cookieMat=new THREE.MeshLambertMaterial({color:0xcc8844});
+    const cookie=new THREE.Mesh(new THREE.CylinderGeometry(1.2,1.2,.22,12),cookieMat);
+    cookie.position.set(x,1.5,z);
+    cookie.rotation.x=Math.PI/2-.15;
+    const fwdY=Math.atan2(tg.x,tg.z);cookie.rotation.z=fwdY;
+    scene.add(cookie);
+    // Chocolate chip spots
+    const chipMat=new THREE.MeshLambertMaterial({color:0x331100});
     for(let c=0;c<3;c++){
       const ang=Math.random()*Math.PI*2,dist=Math.random()*.7;
-      _tmp.position.set(x+Math.cos(ang)*dist*.8,1.6,z+Math.sin(ang)*dist*.8);
-      _tmp.rotation.set(0,0,0);
-      _tmp.updateMatrix();
-      chipInst.setMatrixAt(chipIdx++,_tmp.matrix);
+      const chip=new THREE.Mesh(new THREE.SphereGeometry(.14,4,4),chipMat);
+      chip.position.set(x+Math.cos(ang)*dist,.13,z+Math.sin(ang)*dist);
+      // Orient chip on cookie face
+      chip.position.copy(cookie.position);
+      chip.position.x+=Math.cos(ang)*dist*.8;
+      chip.position.z+=Math.sin(ang)*dist*.8;
+      chip.position.y=1.5+.1;
+      scene.add(chip);
     }
   });
-  cookieInst.instanceMatrix.needsUpdate=true;
-  chipInst.instanceMatrix.needsUpdate=true;
-  scene.add(cookieInst);scene.add(chipInst);
 }
 
 
