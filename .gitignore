@@ -1,2 +1,11 @@
 backups/
 .claude/
+
+# Werk-documentatie / planning — lokaal houden, niet publiceren
+CLAUDE.md
+CLAUDE_CODE_PROMPTS.md
+REFACTOR_PLAN.md
+PHASE_0_1.md
+PHASE_2.md
+PHASE_3_4.md
+MUSIC_CHANGES.md
