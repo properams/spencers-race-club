@@ -286,11 +286,7 @@ let _selectedLaps=3;
 
 // ══ AUDIO ════════════════════════════════════
 let _master=null;
-// Retry resume — iOS can suspend context on backgrounding
-// Multi-oscillator engine
-let _lastGear=1;
-// ── Thunder ───────────────────────────────────
-// ── Crowd noise ───────────────────────────────
+let _lastGear=1; // multi-oscillator engine state
 // ══ PERSISTENCE ══════════════════════════════
 let _coins=0,_totalCoinsEarned=0;
 let _lastRaceCoins=0,_comboMult=1.0,_comboTimer=0,_comboCount=0;
@@ -308,32 +304,12 @@ let _trackRecords={};
 
 let CAR_PRICES={};      // gevuld door loadGameData
 let WORLD_PRICES={};    // gevuld door loadGameData
-// (TitleMusic + SelectMusic + RaceMusic classes + MusicLib + music-master
-//  state + helper-functies zijn verhuisd naar js/audio/music.js tijdens
-//  Fase 2.2a. Dit zijn dead fragments van comments die daarbij zijn
-//  achtergebleven — hier opgeruimd.)
+// (Music subsysteem → js/audio/music.js;
+//  initRenderer → js/core/renderer.js;
+//  disposeScene/makeSkyTex/buildScene → js/core/scene.js.)
 
-// ══ RENDERER ═════════════════════════════════
-// initRenderer → js/core/renderer.js (non-module, geladen vóór main.js).
-
-// ══ SCENE ════════════════════════════════════
-// makeSkyTex + buildScene → js/core/scene.js
-
-// ══ TRACK ════════════════════════════════════
-// ══ JUMP PADS (flat launchpads — no physical ramp surface, just a trigger zone) ══
-// ══ SPIN PADS ════════════════════════════════
-// ══ BOOST PADS (modern clean design) ═════════
-// ══ COLLECTIBLES (modern holographic tokens) ═════════════════════
-// ══ WORLD-SPECIFIC TRACK ELEMENTS ═══════════
-// ── GP: Water Puddles ─────────────────────────────────
-// ── GP: DRS Zone ─────────────────────────────────────
-// ── GP: Tyre Barriers (visual only at key corners) ────
-// ── Space: Gravity Zones ──────────────────────────────
-// ── Space: Orbiting Asteroids ─────────────────────────
-// ── Space: Warp Tunnels ───────────────────────────────
-// ── DeepSea: Current Streams ──────────────────────────
-// ── DeepSea: Abyss Cracks ────────────────────────────
-// ── DeepSea: Treasure Trail ───────────────────────────
+// (Track, jump/spin/boost pads, collectibles, world-specific track elements
+//  → js/track/* en js/worlds/*; alleen SimpleParticles is hier nog inline.)
 // ══ PARTICLE SYSTEMS ════════════════════════
 class SimpleParticles{
   constructor(maxP,scene){
@@ -383,54 +359,18 @@ class SimpleParticles{
     this.geo.attributes.size.needsUpdate=true;
   }
 }
-// ══ MOUNTAINS ════════════════════════════════
-// ══ LAKE ═════════════════════════════════════
-// ══ PIT BUILDING ─────────────────────────────
-// ══ GRAVEL TRAPS ─────────────────────────────
-// ══ ENVIRONMENT TREES ────────────────────────
-// ══ GP TRACK-SIDE PROPS (Candy-style close placement) ══════════
-// ══ TRACK FLAGS ══════════════════════════════
-// ══ SUN LENS FLARE ═══════════════════════════
-// ══ CORNER BOARDS ════════════════════════════
-// ══ ADVERTISING BOARDS ═══════════════════════
-// ══ DYNAMIC SKY ═══════════════════════════════
-// ══ NIGHT MODE ═══════════════════════════════
-// ══ SPACE WORLD ═══════════════════════════════
-// ══ DEEP SEA WORLD ═══════════════════════════════════════════════════════════
-
-// ══ NEON CITY WORLD ═══════════════════════════════════════════════════════════
-// ── Neon City Gameplay Elements ───────────────────────────────────────────────
-// ── Neon City Update Loop ─────────────────────────────────────────────────────
-// ══ CANDY WORLD ═══════════════════════════════════════════════════════════════
-// ── Space fall / tractor beam recovery ────────────────────────────────────────
-// Space audio helpers
-// ── Space railgun player check ──────────────────────────────────────────────
-// ── Space wormhole player check ────────────────────────────────────────────
-// Wormholes stored as individual portal objects: {t, linkedT, ring, portal, ...}
-// Portals come in pairs: index 0+1 for pair 1, index 2+3 for pair 2
-let _wormholeCooldown=0;
-// ══ NIGHT MODE ═══════════════════════════════
-// ══ RAIN ═════════════════════════════════════
-// ══ CAR BUILDING ════════════════════════════
-// ══ THRILL PARK WORLD ═════════════════════════
-// ══ SPAWN CARS ════════════════════════════════
-// ══ PLAYER PHYSICS ══════════════════════════
-// ══ AI ═══════════════════════════════════════
-// ══ SPECIAL OBJECT CHECKS ════════════════════
-// ══ TRACK LIMITS ════════════════════════════
-// Skid marks
-// ══ CAMERA ══════════════════════════════════
-// ══ HUD ════════════════════════════════════
-// Cached DOM refs → ui/hud.js (top of file)
+// (Environment, world builders en gameplay-checks zijn verhuisd naar
+//  js/track/environment.js, js/worlds/*, js/effects/*, js/gameplay/*.)
+let _wormholeCooldown=0; // wormhole cooldown — gelezen door worlds/space.js
+// (Night/rain/cars/physics/AI/special-checks/track-limits/camera/HUD-refs
+//  → respective js/* modules.)
 let popupTimeouts=[];
 let bannerTimer=null;
 const fmtTime=s=>s<60?s.toFixed(2)+'s':Math.floor(s/60)+'m'+(s%60).toFixed(2)+'s';
 let _lastPPos=0;
-// ══ COUNTDOWN / FINISH ══════════════════════
-// ══ TITLE / SELECT ══════════════════════════
+// (Countdown, finish, title, select → gameplay/* en ui/*.)
 // ══ CAR PREVIEWS (3D render per card) ═══════
 let carPreviews={};
-// ── Live car preview (SELECT screen) ──────────
 let _prevRen=null,_prevScene=null,_prevCam=null,_prevCarMesh=null,_prevDefId=-1;
 const _unlockHints=[
   '','','','',
@@ -443,14 +383,8 @@ const _unlockHints=[
   '💰 1500 coins',   // 10
   '💰 2000 coins',   // 11
 ];
-// Dispatcher — momenteel keert RaceMusic terug (interne per-world switch op activeWorld).
-// Hier zodat toekomstige world-specifieke classes in plaats ervan kunnen komen.
-// ══ SPEED OVERLAY ════════════════════════════
-// ══ CONFETTI ═════════════════════════════════
-// ══ BOOST RING ANIMATION ═════════════════════
-// ══ SLIPSTREAM VISUALS ═══════════════════════
-// ══ SMOOTH WEATHER TRANSITION ════════════════
-// ══ SAFETY CAR ═══════════════════════════════
+// (Speed overlay, confetti, boost ring, slipstream, weather-transition,
+//  safety car → js/effects/* en js/gameplay/safetycar.js.)
 // ══ ACHIEVEMENTS (in-race) ═══════════════════
 const _RACE_ACHIEVEMENTS={
   SPEED_DEMON: {label:'SPEED DEMON',desc:'Exceed 95% top speed',icon:'⚡'},
@@ -465,37 +399,18 @@ const _RACE_ACHIEVEMENTS={
 
 let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true,_driftAccum=0;
 
-// Call when nitro activates
-// Call on lap complete for clean lap check
 let _achieveToastEl=null;
-// ══ FLOATING TEXT ════════════════════════════
-// Stagger counter so simultaneous messages don't overlap
-let _floatSlot=0,_floatSlotTimer=0;
-// ══ SPEED LINES ════════════════════════════
+let _floatSlot=0,_floatSlotTimer=0; // float-text stagger
 let _speedLinesFadeT=0,_speedLinesRedrawT=0;
-// ══ DRIFT VISUALS ════════════════════════════
-// ══ NITRO VISUALS ════════════════════════════
-// ══ BOOST TRAIL ══════════════════════════════
-// ══ GHOST CAR ════════════════════════════════
-// ══ PIT STOP ═════════════════════════════════
-// ══ AI MISTAKES ══════════════════════════════
-// Applied in updateAI — cars occasionally wobble on corners
-// (stored per car as car._mtimer, car._mActive)
-
-// ══ REV LIMITER ══════════════════════════════
-// ══ GAP DISPLAY ══════════════════════════════
-// ══ COLLISION FLASH ══════════════════════════
-// ══ QUICK RESTART ════════════════════════════
-// ══ WEATHER FORECAST (MID-RACE) ══════════════
-// ══ REAR VIEW MIRROR ═════════════════════════
+// (Drift/nitro/boost-trail/ghost/pitstop/AI-mistakes/rev-limiter/gap/
+//  collision-flash/quick-restart/weather-forecast/rear-mirror visuals
+//  → js/effects/visuals.js, gameplay/*, ui/hud.js.)
 // ══ RPM BAR ════════════════════════════════
 const _RPM_GRAD_REDLINE='linear-gradient(180deg,#ff0000,#ff4400)';
 const _RPM_GRAD_NORMAL='linear-gradient(180deg,#00cc88,#00ff99)';
 const _RPM_GEAR_RANGES=[0,.18,.36,.54,.72,.9];
 let _lastRedline=null;
-// ══ DAMAGE SMOKE PARTICLES ═════════════════���══
-// ══ SET CAM VIEW (pause menu buttons) ════════
-// ══ AMBIENT WIND SPEED ══════════════════════
+// (Damage smoke, set-cam-view, ambient-wind-speed → effects/* en gameplay/camera.js.)
 // ══ MAIN LOOP ════════════════════════════════
 clock=new THREE.Clock();
 // loop() + FPS/quality state → js/core/loop.js
@@ -512,8 +427,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 const _HAPTIC_MS={ArrowLeft:8,ArrowRight:8,ArrowUp:0,ArrowDown:12,KeyN:18,Space:15};
 // Buttons that should also trigger gas (ArrowUp) — makes nitro/drift usable with one hand
 const _ALSO_GAS={KeyN:true,Space:true};
-// ══ RESET / NAVIGATION ══════════════════════
-// _resetRaceState → js/gameplay/race.js
+// (_resetRaceState → js/gameplay/race.js)
 // ══ BOOT ════════════════════════════════════
 async function boot(){
   // SW disabled for file:// compat
