@@ -133,23 +133,44 @@ function buildGravelTraps(){
 
 
 function buildEnvironmentTrees(){
+  // Fase 5 stap 3: 142 trees × 3 meshes = 426 → 3 InstancedMeshes.
+  // Per-tree leaf color preserved via setColorAt.
   const trunkGeo=new THREE.CylinderGeometry(.11,.17,1.5,5);
   const cGeo1=new THREE.ConeGeometry(1,4.5,7);
   const cGeo2=new THREE.ConeGeometry(.62,3.5,7);
   const tMat=new THREE.MeshLambertMaterial({color:0x6b4226});
-  const lMats=[0x1d6b32,0x2a8040,0x145a28,0x226b35,0x1a5c2a,0x2d7a3a]
-    .map(c=>new THREE.MeshLambertMaterial({color:c}));
+  // White base material for cones — instance color modulates this (material.color × instanceColor).
+  const lMatBase=new THREE.MeshLambertMaterial({color:0xffffff});
+  const leafColors=[0x1d6b32,0x2a8040,0x145a28,0x226b35,0x1a5c2a,0x2d7a3a]
+    .map(c=>new THREE.Color(c));
 
+  // Compute total tree count up-front (border 55*2 + infield 32 = 142)
+  const TREE_COUNT=55*2+32;
+  const trunkInst=new THREE.InstancedMesh(trunkGeo,tMat,TREE_COUNT);
+  const c1Inst=new THREE.InstancedMesh(cGeo1,lMatBase,TREE_COUNT);
+  const c2Inst=new THREE.InstancedMesh(cGeo2,lMatBase,TREE_COUNT);
+  // Enable per-instance color buffer for the cones.
+  c1Inst.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(TREE_COUNT*3),3);
+  c2Inst.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(TREE_COUNT*3),3);
+
+  const _tmp=new THREE.Object3D();
+  let _treeIdx=0;
   function placeTree(x,z,s=1){
     const sc=s*(0.82+Math.random()*.44);
-    const lm=lMats[Math.floor(Math.random()*lMats.length)];
+    const leafCol=leafColors[Math.floor(Math.random()*leafColors.length)];
     const ry=Math.random()*Math.PI*2;
-    const trunk=new THREE.Mesh(trunkGeo,tMat);
-    trunk.position.set(x,.75*sc,z);trunk.scale.setScalar(sc);scene.add(trunk);
-    const c1=new THREE.Mesh(cGeo1,lm);
-    c1.position.set(x,2.5*sc,z);c1.scale.setScalar(sc);c1.rotation.y=ry;scene.add(c1);
-    const c2=new THREE.Mesh(cGeo2,lm);
-    c2.position.set(x,4.2*sc,z);c2.scale.setScalar(sc);c2.rotation.y=ry+.55;scene.add(c2);
+    // Trunk: position + uniform scale, no rotation needed (cylinder is symmetric)
+    _tmp.position.set(x,.75*sc,z);_tmp.rotation.set(0,0,0);_tmp.scale.setScalar(sc);
+    _tmp.updateMatrix();trunkInst.setMatrixAt(_treeIdx,_tmp.matrix);
+    // Cone 1: y=2.5*sc, rotation.y=ry
+    _tmp.position.set(x,2.5*sc,z);_tmp.rotation.set(0,ry,0);_tmp.scale.setScalar(sc);
+    _tmp.updateMatrix();c1Inst.setMatrixAt(_treeIdx,_tmp.matrix);
+    c1Inst.setColorAt(_treeIdx,leafCol);
+    // Cone 2: y=4.2*sc, rotation.y=ry+.55
+    _tmp.position.set(x,4.2*sc,z);_tmp.rotation.set(0,ry+.55,0);_tmp.scale.setScalar(sc);
+    _tmp.updateMatrix();c2Inst.setMatrixAt(_treeIdx,_tmp.matrix);
+    c2Inst.setColorAt(_treeIdx,leafCol);
+    _treeIdx++;
   }
 
   // Trees just outside the track barriers (55 sample points, both sides)
@@ -171,6 +192,13 @@ function buildEnvironmentTrees(){
     const a=Math.random()*Math.PI*2,d=68+Math.random()*85;
     placeTree(-10+Math.cos(a)*d,-50+Math.sin(a)*d,.85+Math.random()*.3);
   }
+
+  trunkInst.instanceMatrix.needsUpdate=true;
+  c1Inst.instanceMatrix.needsUpdate=true;
+  c2Inst.instanceMatrix.needsUpdate=true;
+  c1Inst.instanceColor.needsUpdate=true;
+  c2Inst.instanceColor.needsUpdate=true;
+  scene.add(trunkInst);scene.add(c1Inst);scene.add(c2Inst);
 }
 
 
