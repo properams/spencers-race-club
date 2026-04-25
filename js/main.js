@@ -304,26 +304,8 @@ let _lastGear=1;
 let _coins=0,_totalCoinsEarned=0;
 let _lastRaceCoins=0,_comboMult=1.0,_comboTimer=0,_comboCount=0;
 let _bestS1=Infinity,_bestS2=Infinity,_bestS3=Infinity;
-const ACHIEVEMENTS=[
-  {id:'first_win',icon:'🏆',title:'FIRST WIN',desc:'Win your first race',check:function(p){return p===1&&_raceCount<=1;}},
-  {id:'clean',icon:'✨',title:'CLEAN RACER',desc:'Zero damage finish',check:function(p,s){return s.hits===0;}},
-  {id:'speed300',icon:'⚡',title:'SPEED DEMON',desc:'Hit 300+ km/h',check:function(p,s){return s.maxSpd>=300;}},
-  {id:'collector',icon:'🚗',title:'COLLECTOR',desc:'Own 6+ cars',check:function(){return _unlockedCars.size>=6;}},
-  {id:'rich',icon:'💰',title:'COIN MASTER',desc:'Earn 1000+ total coins',check:function(){return _totalCoinsEarned>=1000;}},
-  {id:'fl',icon:'💜',title:'PURPLE RIBBON',desc:'Set fastest lap',check:function(p,s){return s.fl;}},
-  {id:'podium5',icon:'🥇',title:'VETERAN',desc:'5 podium finishes',check:function(){return _podiumCount>=5;}},
-  {id:'combo4',icon:'🔥',title:'ON FIRE',desc:'4x combo in a race',check:function(){return _comboCount>=4;}},
-];
+// ACHIEVEMENTS + DAILY_CHALLENGES → js/gameplay/achievements.js (top of file).
 let _totalNitroUses=0,_winStreak=0;
-var DAILY_CHALLENGES=[
-  {id:'win',text:'Win een race',reward:150,check:function(p){return p===1;}},
-  {id:'clean',text:'Finish zonder schade',reward:200,check:function(p,s){return s.hits===0;}},
-  {id:'fl',text:'Zet de snelste ronde',reward:120,check:function(p,s){return s.fl;}},
-  {id:'night',text:'Win een nachtrace',reward:160,check:function(p){return p===1&&isDark;}},
-  {id:'hard',text:'Top 3 op Hard',reward:250,check:function(p){return p<=3&&difficulty===2;}},
-  {id:'p3',text:'Podium finish',reward:100,check:function(p){return p<=3;}},
-  {id:'combo3',text:'Haal een 3x combo',reward:180,check:function(){return _comboCount>=3;}},
-];
 var _todayChallenge=null,_challengeCompleted=false,_todayRaces=0;
 let _worldsUnlocked=new Set(['grandprix']);
 let _trackRecords={};
