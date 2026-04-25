@@ -5,8 +5,8 @@
 'use strict';
 
 // ══ CONSTANTS ═══════════════════════════════
-let TOTAL_LAPS=3;
-const TW=13, BARRIER_OFF=16, RECOVER_DIST=30, WARN_DIST=22;
+// TOTAL_LAPS, TW, BARRIER_OFF, RECOVER_DIST, WARN_DIST,
+// DIFF_MULT, GRIP_BONUS_ZONES, CAR_COLOR_PRESETS → js/config.js
 // Touch device = any device with touch support (phones + tablets)
 // iPad in Safari "Request Desktop Website" mode reports UA as Macintosh but keeps maxTouchPoints>1 —
 // detect that explicitly so iPad is still treated as a tablet.
@@ -154,9 +154,8 @@ let _miniTurboReady=false;
 // Score system
 let totalScore=0;
 let _elScore=null,_elLapDelta=null;
-// Difficulty (0=easy 1=normal 2=hard)
+// Difficulty (0=easy 1=normal 2=hard) — DIFF_MULT in js/config.js
 let difficulty=1;
-const DIFF_MULT=[0.75,1.0,1.22];
 // Boost glow light
 let _boostLight=null;
 // Ambient wind
@@ -285,11 +284,10 @@ let _sectorPanelEl=null;
 let _speedTrapEl=null;
 // Brake heat glow
 let _brakeHeatTimer=0;
-// Racing line grip bonus zones (progress ranges)
-const GRIP_BONUS_ZONES=[[0.93,0.09,.04],[0.30,.42,.03],[0.63,.75,.03]]; // [start, end, bonus]
+// GRIP_BONUS_ZONES → js/config.js
 // Car color customization — overrides per car ID (null = use default)
 const _carColorOverride={};
-const CAR_COLOR_PRESETS=[0x1a3a6b,0xe8a000,0xcc0000,0xffffff,0x111111,0x00cc44,0x8800cc,0x888888];
+// CAR_COLOR_PRESETS → js/config.js
 // Lap count selection
 let _selectedLaps=3;
 
