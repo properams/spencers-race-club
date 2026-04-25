@@ -1,5 +1,19 @@
 // js/ui/select.js — Fase 2.3/2.4 extraction. Non-module script.
 
+// Car-preview state (uit main.js verhuisd) — gebruikt in initCarPreview/updateCarPreview.
+let carPreviews={};
+let _prevRen=null,_prevScene=null,_prevCam=null,_prevCarMesh=null,_prevDefId=-1;
+const _unlockHints=[
+  '','','','',
+  '🏆 Finish P1',       // 4 Red Bull
+  '💜 Fastest Lap',    // 5 Mustang
+  '🔢 5 Races',        // 6 Tesla
+  '🥉 3 Podiums',      // 7 Audi
+  '💰 800 coins',    // 8
+  '💰 1200 coins',   // 9
+  '💰 1500 coins',   // 10
+  '💰 2000 coins',   // 11
+];
 
 function initCarPreview(){
   if(_prevRen&&_prevScene)return;

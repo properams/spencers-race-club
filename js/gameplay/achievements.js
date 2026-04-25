@@ -4,6 +4,19 @@
 
 // direct (scene, carObjs, etc.) zonder window-prefix.
 
+// In-race achievement lookup table (uit main.js verhuisd).
+// Gebruikt door unlockAchievement() hieronder.
+const _RACE_ACHIEVEMENTS={
+  SPEED_DEMON: {label:'SPEED DEMON',desc:'Exceed 95% top speed',icon:'⚡'},
+  DRIFT_KING:  {label:'DRIFT KING', desc:'Drift 3+ seconds',icon:'🔥'},
+  CLEAN_LAP:   {label:'CLEAN LAP',  desc:'Lap without recovery',icon:'✨'},
+  OVERTAKER:   {label:'OVERTAKER',  desc:'Pass 5 cars',icon:'🚀'},
+  NITRO_JUNKIE:{label:'NITRO JUNKIE',desc:'Use nitro 10x',icon:'💜'},
+  FLYING:      {label:'AIRBORNE',   desc:'Airborne 2+ seconds',icon:'🛸'},
+  FIRST_BLOOD: {label:'FIRST BLOOD',desc:'Reach P1',icon:'🏅'},
+  CHAMPION:    {label:'CHAMPION',   desc:'Finish in 1st place',icon:'🏆'},
+};
+
 // Persistent achievement-definities + dagelijkse challenges (uit main.js verhuisd).
 // `check` callbacks lezen runtime-state (_raceCount, _unlockedCars,
 // _totalCoinsEarned, _podiumCount, _comboCount, isDark, difficulty)

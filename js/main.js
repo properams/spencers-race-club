@@ -308,57 +308,7 @@ let WORLD_PRICES={};    // gevuld door loadGameData
 //  initRenderer → js/core/renderer.js;
 //  disposeScene/makeSkyTex/buildScene → js/core/scene.js.)
 
-// (Track, jump/spin/boost pads, collectibles, world-specific track elements
-//  → js/track/* en js/worlds/*; alleen SimpleParticles is hier nog inline.)
-// ══ PARTICLE SYSTEMS ════════════════════════
-class SimpleParticles{
-  constructor(maxP,scene){
-    this.max=maxP;this.alive=[];
-    const geo=new THREE.BufferGeometry();
-    const pos=new Float32Array(maxP*3);
-    const col=new Float32Array(maxP*3);
-    const sz=new Float32Array(maxP);
-    geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-    geo.setAttribute('color',new THREE.BufferAttribute(col,3));
-    geo.setAttribute('size',new THREE.BufferAttribute(sz,1));
-    this.mat=new THREE.PointsMaterial({size:.6,vertexColors:true,transparent:true,opacity:.85,sizeAttenuation:true});
-    this.pts=new THREE.Points(geo,this.mat);
-    scene.add(this.pts);this.geo=geo;
-  }
-  emit(x,y,z,vx,vy,vz,n,r,g,b,life=.6){
-    for(let i=0;i<n&&this.alive.length<this.max;i++){
-      this.alive.push({x,y,z,vx:vx+(Math.random()-.5)*.15,vy:vy+Math.random()*.1,vz:vz+(Math.random()-.5)*.15,r,g,b,life,maxL:life});
-    }
-  }
-  update(dt){
-    const pos=this.geo.attributes.position.array;
-    const col=this.geo.attributes.color.array;
-    const sz=this.geo.attributes.size.array;
-    // In-place removal: swap dead particles to end, no new array allocation
-    let n=this.alive.length;
-    for(let i=n-1;i>=0;i--){
-      const p=this.alive[i];
-      p.life-=dt/p.maxL;
-      if(p.life<=0){
-        // Swap with last alive entry (O(1) removal, no array allocation)
-        const swapIdx=--n;
-        this.alive[i]=this.alive[swapIdx];this.alive.length=n;
-        // Zero GPU slot i (dead) and slot swapIdx (now orphaned)
-        pos[i*3]=pos[i*3+1]=pos[i*3+2]=0;sz[i]=0;col[i*3]=col[i*3+1]=col[i*3+2]=0;
-        pos[swapIdx*3]=pos[swapIdx*3+1]=pos[swapIdx*3+2]=0;sz[swapIdx]=0;col[swapIdx*3]=col[swapIdx*3+1]=col[swapIdx*3+2]=0;
-      }else{
-        p.x+=p.vx;p.y+=p.vy;p.z+=p.vz;p.vy-=.008;
-        pos[i*3]=p.x;pos[i*3+1]=p.y;pos[i*3+2]=p.z;
-        sz[i]=p.life*.7;
-        col[i*3]=p.r;col[i*3+1]=p.g;col[i*3+2]=p.b;
-      }
-    }
-    if(n===0&&this.alive.length===0)return; // nothing to upload
-    this.geo.attributes.position.needsUpdate=true;
-    this.geo.attributes.color.needsUpdate=true;
-    this.geo.attributes.size.needsUpdate=true;
-  }
-}
+// (SimpleParticles class → js/effects/particles.js)
 // (Environment, world builders en gameplay-checks zijn verhuisd naar
 //  js/track/environment.js, js/worlds/*, js/effects/*, js/gameplay/*.)
 let _wormholeCooldown=0; // wormhole cooldown — gelezen door worlds/space.js
@@ -369,34 +319,10 @@ let bannerTimer=null;
 const fmtTime=s=>s<60?s.toFixed(2)+'s':Math.floor(s/60)+'m'+(s%60).toFixed(2)+'s';
 let _lastPPos=0;
 // (Countdown, finish, title, select → gameplay/* en ui/*.)
-// ══ CAR PREVIEWS (3D render per card) ═══════
-let carPreviews={};
-let _prevRen=null,_prevScene=null,_prevCam=null,_prevCarMesh=null,_prevDefId=-1;
-const _unlockHints=[
-  '','','','',
-  '🏆 Finish P1',       // 4 Red Bull
-  '💜 Fastest Lap',    // 5 Mustang
-  '🔢 5 Races',        // 6 Tesla
-  '🥉 3 Podiums',      // 7 Audi
-  '💰 800 coins',    // 8
-  '💰 1200 coins',   // 9
-  '💰 1500 coins',   // 10
-  '💰 2000 coins',   // 11
-];
+// Car preview state + _unlockHints → js/ui/select.js
 // (Speed overlay, confetti, boost ring, slipstream, weather-transition,
 //  safety car → js/effects/* en js/gameplay/safetycar.js.)
-// ══ ACHIEVEMENTS (in-race) ═══════════════════
-const _RACE_ACHIEVEMENTS={
-  SPEED_DEMON: {label:'SPEED DEMON',desc:'Exceed 95% top speed',icon:'⚡'},
-  DRIFT_KING:  {label:'DRIFT KING', desc:'Drift 3+ seconds',icon:'🔥'},
-  CLEAN_LAP:   {label:'CLEAN LAP',  desc:'Lap without recovery',icon:'✨'},
-  OVERTAKER:   {label:'OVERTAKER',  desc:'Pass 5 cars',icon:'🚀'},
-  NITRO_JUNKIE:{label:'NITRO JUNKIE',desc:'Use nitro 10x',icon:'💜'},
-  FLYING:      {label:'AIRBORNE',   desc:'Airborne 2+ seconds',icon:'🛸'},
-  FIRST_BLOOD: {label:'FIRST BLOOD',desc:'Reach P1',icon:'🏅'},
-  CHAMPION:    {label:'CHAMPION',   desc:'Finish in 1st place',icon:'🏆'},
-};
-
+// _RACE_ACHIEVEMENTS → js/gameplay/achievements.js
 let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true,_driftAccum=0;
 
 let _achieveToastEl=null;
@@ -405,12 +331,7 @@ let _speedLinesFadeT=0,_speedLinesRedrawT=0;
 // (Drift/nitro/boost-trail/ghost/pitstop/AI-mistakes/rev-limiter/gap/
 //  collision-flash/quick-restart/weather-forecast/rear-mirror visuals
 //  → js/effects/visuals.js, gameplay/*, ui/hud.js.)
-// ══ RPM BAR ════════════════════════════════
-const _RPM_GRAD_REDLINE='linear-gradient(180deg,#ff0000,#ff4400)';
-const _RPM_GRAD_NORMAL='linear-gradient(180deg,#00cc88,#00ff99)';
-const _RPM_GEAR_RANGES=[0,.18,.36,.54,.72,.9];
-let _lastRedline=null;
-// (Damage smoke, set-cam-view, ambient-wind-speed → effects/* en gameplay/camera.js.)
+// _RPM_* + _lastRedline → js/effects/visuals.js
 // ══ MAIN LOOP ════════════════════════════════
 clock=new THREE.Clock();
 // loop() + FPS/quality state → js/core/loop.js
@@ -423,10 +344,7 @@ async function _acquireWakeLock(){
 }
 // Reacquire wake lock when page becomes visible again (iOS drops it on blur)
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&(gameState==='RACE'||gameState==='COUNTDOWN'))_acquireWakeLock();});
-// Haptic feedback patterns per control (ms) — short buzz for precise, slightly longer for boost/drift
-const _HAPTIC_MS={ArrowLeft:8,ArrowRight:8,ArrowUp:0,ArrowDown:12,KeyN:18,Space:15};
-// Buttons that should also trigger gas (ArrowUp) — makes nitro/drift usable with one hand
-const _ALSO_GAS={KeyN:true,Space:true};
+// _HAPTIC_MS + _ALSO_GAS → js/ui/touch.js
 // (_resetRaceState → js/gameplay/race.js)
 // ══ BOOT ════════════════════════════════════
 async function boot(){

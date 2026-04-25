@@ -4,6 +4,11 @@
 
 // direct (scene, carObjs, etc.) zonder window-prefix.
 
+// RPM-bar constants + state (uit main.js verhuisd) — gebruikt door updateRpmBar.
+const _RPM_GRAD_REDLINE='linear-gradient(180deg,#ff0000,#ff4400)';
+const _RPM_GRAD_NORMAL='linear-gradient(180deg,#00cc88,#00ff99)';
+const _RPM_GEAR_RANGES=[0,.18,.36,.54,.72,.9];
+let _lastRedline=null;
 
 function updateSpeedOverlay(){
   const car=carObjs[playerIdx];

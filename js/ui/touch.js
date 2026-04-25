@@ -1,5 +1,10 @@
 // js/ui/touch.js — Fase 2.3/2.4 extraction. Non-module script.
 
+// Touch input config (uit main.js verhuisd).
+// Haptic feedback patterns per control (ms) — short buzz for precise, slightly longer for boost/drift.
+const _HAPTIC_MS={ArrowLeft:8,ArrowRight:8,ArrowUp:0,ArrowDown:12,KeyN:18,Space:15};
+// Buttons that should also trigger gas (ArrowUp) — makes nitro/drift usable with one hand.
+const _ALSO_GAS={KeyN:true,Space:true};
 
 function _releaseWakeLock(){
   if(_wakeLock){try{_wakeLock.release();}catch(_){}_wakeLock=null;}
