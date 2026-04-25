@@ -74,53 +74,10 @@ async function loadGameData(){
   WORLD_PRICES=prices.worlds;
 }
 // ── World state ───────────────────────────────
-let activeWorld='grandprix';  // 'grandprix' | 'space' | 'deepsea' | 'candy'
-let _spaceAsteroids=[];
-let _spaceDustGeo=null,_spaceDustParticles=null;
-// Space gameplay objects
-let _spaceGravityWells=[];
-let _spaceRailguns=[];
-let _spaceWormholes=[];
-let _spaceUFOs=[];
-let _spaceMeteors=[];
-let _spaceMeteorTimer=18;
-let _spaceBeamMesh=null,_spaceBeamTimer=0;
-let _spaceUnderglow=[];
-// Deep Sea world objects
-let _kelpList=[];
-// Volcano world objects
-let _volcanoLavaRivers=[],_volcanoGeisers=[],_volcanoEmberGeo=null;
-let _volcanoEruption=null,_volcanoEruptionTimer=3;
-let _volcanoEmbers=null,_volcanoGlowLight=null;
-// Arctic world objects
-let _arcticIcePatches=[],_arcticAurora=[],_arcticBlizzardGeo=null;
-// Thrill Park world objects
-let _tpFerris=null,_tpCarousel=null,_tpCarouselHorses=[],_tpCoasters=[],_tpBalloons=[];
-let _tpFireworks=[],_tpBunting=[],_tpParkLights=[],_tpFireworkTimer=0;
-let _jellyfishList=[];
-let _dsaBubbleGeo=null,_dsaBubblePos=null;
-let _dsaLightRays=[];
-let _dsaBioEdges=[];
-let _dsaCreatures={manta:null,whale:null,fishSchools:[]};
-let _dsaTreasures=[];
-let _dsaCurrentDir=0; // flowing current angle for physics
-// Candy world objects
-let _sprinkleParticles=null,_sprinkleGeo=null;
-let _neonBuildings=[],_neonEmissives=[],_neonBuildingLights=[];
-let _holoBillboards=[];
-let _neonSteamGeo=null,_neonSteamPts=null,_neonSteamPos=null;
-let _neonDustGeo=null,_neonDustPts=null;
-const _neonSteamVents=[];
-let _neonWater=null;
-let _neonEmpZones=[],_neonHoloWalls=[];
-const _gummyBears=[];
-const _gumZones=[];
-const _candyCannons=[];
-let _chocoHighlight=null;
-let _candyCaneList=[];
-let _candyLollipops=[];
-let _candyNightEmissives=[]; // meshes that glow at night
-let _candyCandles=[];        // candle flame lights on cake
+let activeWorld='grandprix';  // 'grandprix' | 'space' | 'deepsea' | 'candy' | 'neoncity' | 'volcano' | 'arctic' | 'themepark'
+// Per-world arrays (_space*, _dsa*, _kelp*, _jellyfish*, _volcano*, _arctic*,
+// _tp*, _sprinkle*, _gummy*, _candy*, _neon*, _holo*) verhuisd naar
+// js/worlds/<world>.js — zie de "Per-world state" blokken bovenaan elk wereld-bestand.
 
 // ══ GLOBALS ══════════════════════════════════
 var renderer,scene,camera,clock; // var = attached to window so debug badge can read them
@@ -151,11 +108,7 @@ let audioCtx=null,engineOsc=null,engineGain=null,_rollGain=null,_rollSrc=null,_r
 
 // Special track objects
 const jumpRamps=[],spinPads=[],boostPads=[],collectibles=[];
-// Per-world unique track elements
-const _wpWaterPuddles=[],_wpDrsZones=[];           // GP
-const _wpGravityZones=[],_wpOrbitAsteroids=[],_wpWarpTunnels=[];  // Space
-const _wpCurrentStreams=[],_wpAbyssCracks=[],_wpTreasureTrail=[];  // DeepSea
-let _drsTimer=0,_drsBoostUsed=false; // _drsActive already declared later
+// Per-world track elements (_wp*, _drs*) verhuisd naar js/worlds/<world>.js.
 // Per-car vertical velocity stored on car.vy
 // Performance globals
 let _nowSec=0;
@@ -289,8 +242,8 @@ let _overallFastestLap=Infinity;
 const _nearMissCooldown=[];
 // Pit stop state
 let _pitStopActive=false,_pitStopTimer=0,_pitStopUsed=false;
-// DRS indicator state
-let _drsEl=null,_drsActive=false;
+// DRS indicator state — _drsActive verhuisd naar worlds/grandprix.js
+let _drsEl=null;
 // AI personalities (assigned in makeAllCars)
 const _aiPersonality=[
   {aggr:0.6,consist:0.8,name:'Aggressive'}, // Bugatti

@@ -6,6 +6,10 @@
 
 // direct (scene, CAR_DEFS, _isMobile, _mobCount, etc.).
 
+// Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
+let _volcanoLavaRivers=[],_volcanoGeisers=[],_volcanoEmberGeo=null;
+let _volcanoEruption=null,_volcanoEruptionTimer=3;
+let _volcanoEmbers=null,_volcanoGlowLight=null;
 
 function buildVolcanoEnvironment(){
   // Ground

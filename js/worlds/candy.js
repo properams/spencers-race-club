@@ -6,6 +6,16 @@
 
 // direct (scene, CAR_DEFS, _isMobile, _mobCount, etc.).
 
+// Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
+let _sprinkleParticles=null,_sprinkleGeo=null;
+const _gummyBears=[];
+const _gumZones=[];
+const _candyCannons=[];
+let _chocoHighlight=null;
+let _candyCaneList=[];
+let _candyLollipops=[];
+let _candyNightEmissives=[]; // meshes that glow at night
+let _candyCandles=[];        // candle flame lights on cake
 
 function buildCandyEnvironment(){
   buildCandyGround();

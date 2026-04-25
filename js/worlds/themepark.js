@@ -6,6 +6,9 @@
 
 // direct (scene, CAR_DEFS, _isMobile, _mobCount, etc.).
 
+// Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
+let _tpFerris=null,_tpCarousel=null,_tpCarouselHorses=[],_tpCoasters=[],_tpBalloons=[];
+let _tpFireworks=[],_tpBunting=[],_tpParkLights=[],_tpFireworkTimer=0;
 
 function buildThemeparkEnvironment(){
   // Dark pavement ground

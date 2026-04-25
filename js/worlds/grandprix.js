@@ -6,6 +6,9 @@
 
 // direct (scene, CAR_DEFS, _isMobile, _mobCount, etc.).
 
+// Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
+const _wpWaterPuddles=[],_wpDrsZones=[];
+let _drsTimer=0,_drsBoostUsed=false,_drsActive=false;
 
 function buildWaterPuddles(){
   const defs=[{t:.28},{t:.56},{t:.81}];

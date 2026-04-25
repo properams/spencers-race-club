@@ -6,6 +6,14 @@
 
 // direct (scene, CAR_DEFS, _isMobile, _mobCount, etc.).
 
+// Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
+let _neonBuildings=[],_neonEmissives=[],_neonBuildingLights=[];
+let _holoBillboards=[];
+let _neonSteamGeo=null,_neonSteamPts=null,_neonSteamPos=null;
+let _neonDustGeo=null,_neonDustPts=null;
+const _neonSteamVents=[];
+let _neonWater=null;
+let _neonEmpZones=[],_neonHoloWalls=[];
 
 function buildNeonCityEnvironment(){
   buildNeonGround();

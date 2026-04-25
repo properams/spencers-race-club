@@ -6,6 +6,18 @@
 
 // direct (scene, CAR_DEFS, _isMobile, _mobCount, etc.).
 
+// Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
+let _spaceAsteroids=[];
+let _spaceDustGeo=null,_spaceDustParticles=null;
+let _spaceGravityWells=[];
+let _spaceRailguns=[];
+let _spaceWormholes=[];
+let _spaceUFOs=[];
+let _spaceMeteors=[];
+let _spaceMeteorTimer=18;
+let _spaceBeamMesh=null,_spaceBeamTimer=0;
+let _spaceUnderglow=[];
+const _wpGravityZones=[],_wpOrbitAsteroids=[],_wpWarpTunnels=[];
 
 function buildGravityZones(){
   const defs=[{t:.15},{t:.47},{t:.73}];

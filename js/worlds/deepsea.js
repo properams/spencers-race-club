@@ -6,6 +6,16 @@
 
 // direct (scene, CAR_DEFS, _isMobile, _mobCount, etc.).
 
+// Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
+let _kelpList=[];
+let _jellyfishList=[];
+let _dsaBubbleGeo=null,_dsaBubblePos=null;
+let _dsaLightRays=[];
+let _dsaBioEdges=[];
+let _dsaCreatures={manta:null,whale:null,fishSchools:[]};
+let _dsaTreasures=[];
+let _dsaCurrentDir=0; // flowing current angle for physics
+const _wpCurrentStreams=[],_wpAbyssCracks=[],_wpTreasureTrail=[];
 
 function buildCurrentStreams(){
   const defs=[{t:.20,side:1},{t:.45,side:-1},{t:.70,side:1}];
