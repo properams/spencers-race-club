@@ -10,7 +10,7 @@
 //  disposeScene → js/core/scene.js.)
 
 // ══ DATA — gevuld door loadGameData() (zie boot) ══════════════════════════
-let CAR_DEFS=[];        // fetch data/cars.json
+var CAR_DEFS=[];        // var: ES-modules lezen window.CAR_DEFS
 let TRACK_WP=[];        // active world waypoints (muteerbaar in buildScene)
 let _GP_WP=[];          // snapshot grand prix waypoints
 let _TRACKS={};         // alle werelden keyed by name
@@ -32,7 +32,7 @@ async function loadGameData(){
   WORLD_PRICES=prices.worlds;
 }
 // ── World state ───────────────────────────────
-let activeWorld='grandprix';  // 'grandprix' | 'space' | 'deepsea' | 'candy' | 'neoncity' | 'volcano' | 'arctic' | 'themepark'
+var activeWorld='grandprix';  // var: ES-modules schrijven window.activeWorld
 // Per-world arrays (_space*, _dsa*, _kelp*, _jellyfish*, _volcano*, _arctic*,
 // _tp*, _sprinkle*, _gummy*, _candy*, _neon*, _holo*) verhuisd naar
 // js/worlds/<world>.js — zie de "Per-world state" blokken bovenaan elk wereld-bestand.
@@ -52,9 +52,10 @@ let plHeadL,plHeadR,plTail;
 let recoverActive=false,recoverTimer=0;
 let nitroLevel=100,nitroActive=false;
 let driftScore=0,driftTimer=0;
-let lapStartTime=0,lastLapTime=0,bestLapTime=Infinity;
+let lapStartTime=0,lastLapTime=0;
+var bestLapTime=Infinity; // var: ES-modules lezen window.bestLapTime
 const skidMarks=[];
-let titleMusic=null,musicSched=null,selectMusic=null;
+var titleMusic=null,musicSched=null,selectMusic=null; // var: music ES-module schrijft window.*
 
 // ── MUSIC SUBSYSTEM — verplaatst naar js/audio/music.js ──
 // MusicLib, TitleMusic, SelectMusic, RaceMusic, startTitleMusic,
@@ -62,7 +63,8 @@ let titleMusic=null,musicSched=null,selectMusic=null;
 // _fadeOutMusic, _applyMusicGain, _safeStartMusic, noteFreq/NF, _musicDebug
 // zijn beschikbaar via window.xxx (module laadt deferred).
 
-let audioCtx=null,engineOsc=null,engineGain=null,_rollGain=null,_rollSrc=null,_rollFilt=null;
+var audioCtx=null; // var: music ES-module leest window.audioCtx
+let engineOsc=null,engineGain=null,_rollGain=null,_rollSrc=null,_rollFilt=null;
 
 // Special track objects
 const jumpRamps=[],spinPads=[],boostPads=[],collectibles=[];
@@ -103,9 +105,9 @@ let _wrongWayTimer=0;
 // Mini-turbo (drift release boost)
 let _miniTurboReady=false;
 // Score system — _elScore/_elLapDelta → ui/hud.js
-let totalScore=0;
+var totalScore=0; // var: ES-modules schrijven window.totalScore
 // Difficulty (0=easy 1=normal 2=hard) — DIFF_MULT in js/config.js
-let difficulty=1;
+var difficulty=1; // var: ES-modules lezen window.difficulty
 // Boost glow light
 let _boostLight=null;
 // Ambient wind
@@ -242,11 +244,12 @@ let _selectedLaps=3;
 // keydown/keyup handlers → js/ui/input.js
 
 // ══ AUDIO ════════════════════════════════════
-let _master=null;
+var _master=null; // var: music ES-module leest window._master
 let _lastGear=1; // multi-oscillator engine state
 // ══ PERSISTENCE ══════════════════════════════
 var _coins=0,_totalCoinsEarned=0; // var: persistence cross-script
-let _lastRaceCoins=0,_comboMult=1.0,_comboTimer=0,_comboCount=0;
+var _lastRaceCoins=0,_comboMult=1.0; // var: ES-modules schrijven beide
+let _comboTimer=0,_comboCount=0;
 let _bestS1=Infinity,_bestS2=Infinity,_bestS3=Infinity;
 // ACHIEVEMENTS + DAILY_CHALLENGES → js/gameplay/achievements.js (top of file).
 let _totalNitroUses=0,_winStreak=0;
@@ -259,8 +262,8 @@ var _trackRecords={}; // var: persistence cross-script
 // checkUnlocks, showUnlockToast, showUnlocks, updateTitleHighScore
 // zijn beschikbaar via window.xxx (module laadt deze op DOMContentLoaded).
 
-let CAR_PRICES={};      // gevuld door loadGameData
-let WORLD_PRICES={};    // gevuld door loadGameData
+var CAR_PRICES={};      // var: ES-module persistence/progression leest window.CAR_PRICES
+var WORLD_PRICES={};    // var: idem
 // (Music subsysteem → js/audio/music.js;
 //  initRenderer → js/core/renderer.js;
 //  disposeScene/makeSkyTex/buildScene → js/core/scene.js.)
