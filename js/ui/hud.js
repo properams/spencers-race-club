@@ -1,5 +1,9 @@
 // js/ui/hud.js — Fase 2.3/2.4 extraction. Non-module script.
 
+// Position cache (uit main.js verhuisd) — leaderboard berekent posities
+// niet elk frame; cache wordt elke ~10 ticks ververst in updateHUD.
+let _posCache=[],_posTick=0;
+
 // HUD DOM-refs (uit main.js verhuisd) — gevuld door cacheHUDRefs() bij boot.
 // Cross-script zichtbaar voor cars/physics.js, gameplay/race.js,
 // gameplay/spacefx.js, gameplay/tracklimits.js, effects/visuals.js.

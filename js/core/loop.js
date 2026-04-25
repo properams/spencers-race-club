@@ -32,6 +32,10 @@
 
 'use strict';
 
+// Performance counter (uit main.js verhuisd) — geset elke frame in loop(),
+// gelezen door alle modules die "huidige tijd in seconden" nodig hebben.
+let _nowSec=0;
+
 let _aiFrameCounter=0,_fpsShow=false,_fpsFrames=0,_fpsLast=performance.now(),_fpsVal=60;
 let _perfBadFrames=0,_perfChecked=false,_lowQuality=!!window._isMobile;
 // Auto-quality detection thresholds: during frames [START..END], count frames slower than BAD_MS.

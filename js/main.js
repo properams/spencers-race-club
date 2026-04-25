@@ -68,10 +68,8 @@ let audioCtx=null,engineOsc=null,engineGain=null,_rollGain=null,_rollSrc=null,_r
 const jumpRamps=[],spinPads=[],boostPads=[],collectibles=[];
 // Per-world track elements (_wp*, _drs*) verhuisd naar js/worlds/<world>.js.
 // Per-car vertical velocity stored on car.vy
-// Performance globals
-let _nowSec=0;
-let _posCache=[],_posTick=0;
-// _ai* scratch vectors → cars/ai.js
+// (_nowSec → core/loop.js; _posCache + _posTick → ui/hud.js;
+//  _ai* scratch vectors → cars/ai.js)
 
 // Rain
 let rainCanvas,rainCtx,rainDrops=[];
