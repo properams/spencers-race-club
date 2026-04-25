@@ -4,6 +4,9 @@
 
 // direct (scene, carObjs, etc.) zonder window-prefix.
 
+// Pre-allocated scratch vectors (uit main.js verhuisd) — cross-script
+// zichtbaar voor effects/night.js + visuals.js die _camV1/_camV2 lezen.
+const _camV1=new THREE.Vector3(),_camV2=new THREE.Vector3();
 
 function updateCamera(dt){
   const car=carObjs[playerIdx];if(!car)return;

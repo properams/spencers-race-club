@@ -113,10 +113,7 @@ const jumpRamps=[],spinPads=[],boostPads=[],collectibles=[];
 // Performance globals
 let _nowSec=0;
 let _posCache=[],_posTick=0;
-const _aiFwd=new THREE.Vector3(),_aiToT=new THREE.Vector3(),_aiCross=new THREE.Vector3();
-const _aiTg=new THREE.Vector3(),_aiNr=new THREE.Vector3();
-const _aiCurA=new THREE.Vector3(),_aiCurB=new THREE.Vector3();
-const _aiBase=new THREE.Vector3();
+// _ai* scratch vectors → cars/ai.js
 
 // Rain
 let rainCanvas,rainCtx,rainDrops=[];
@@ -142,10 +139,9 @@ let _posStableValue=0,_posStableT=0;
 // Pause / mute state
 let gamePaused=false,audioMuted=false,_muteGain=null;
 // Pre-allocated camera vectors (avoid per-frame heap allocations)
-const _camV1=new THREE.Vector3(),_camV2=new THREE.Vector3(),_jFwdV=new THREE.Vector3(),_aiFwdRV=new THREE.Vector3();
+// _camV1/_camV2 → gameplay/camera.js, _jFwdV → track/ramps.js, _aiFwdRV → cars/ai.js
 // Pre-allocated player/car vectors — reused every frame to avoid GC pressure
-const _plFwd=new THREE.Vector3(),_plBk=new THREE.Vector3(),_plRt=new THREE.Vector3();
-const _slipFwd=new THREE.Vector3(),_slipDir=new THREE.Vector3();
+// _pl* + _slip* scratch vectors → cars/physics.js
 // Wrong-way detector — _elWrongWay → ui/hud.js
 let _wrongWayTimer=0;
 // Mini-turbo (drift release boost)

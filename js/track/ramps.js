@@ -4,6 +4,8 @@
 
 // direct (scene, carObjs, etc.) zonder window-prefix.
 
+// Pre-allocated scratch vector (uit main.js verhuisd).
+const _jFwdV=new THREE.Vector3();
 
 function buildJumpRamps(){
   const rampDefs=[

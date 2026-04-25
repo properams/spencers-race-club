@@ -4,6 +4,13 @@
 
 // direct (scene, carObjs, etc.) zonder window-prefix.
 
+// Pre-allocated scratch vectors (uit main.js verhuisd) — vermijden GC-druk
+// in de hot loop. Cross-script zichtbaar voor effects/night.js + visuals.js.
+const _aiFwd=new THREE.Vector3(),_aiToT=new THREE.Vector3(),_aiCross=new THREE.Vector3();
+const _aiTg=new THREE.Vector3(),_aiNr=new THREE.Vector3();
+const _aiCurA=new THREE.Vector3(),_aiCurB=new THREE.Vector3();
+const _aiBase=new THREE.Vector3();
+const _aiFwdRV=new THREE.Vector3();
 
 function updateAI(car,dt){
   if(car.finished)return;

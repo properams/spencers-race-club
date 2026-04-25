@@ -4,6 +4,10 @@
 
 // direct (scene, carObjs, etc.) zonder window-prefix.
 
+// Pre-allocated scratch vectors (uit main.js verhuisd) — cross-script
+// zichtbaar voor effects/night.js + visuals.js die _plFwd/_plRt lezen.
+const _plFwd=new THREE.Vector3(),_plBk=new THREE.Vector3(),_plRt=new THREE.Vector3();
+const _slipFwd=new THREE.Vector3(),_slipDir=new THREE.Vector3();
 
 function updatePlayer(dt){
   if(recoverActive)return;
