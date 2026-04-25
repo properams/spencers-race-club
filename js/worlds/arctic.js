@@ -13,17 +13,25 @@ function buildArcticEnvironment(){
   sunLight.color.setHex(0xaaccff);sunLight.intensity=.8;
   ambientLight.color.setHex(0x445566);ambientLight.intensity=.45;
   hemiLight.color.setHex(0x6688aa);hemiLight.groundColor.setHex(0x223344);hemiLight.intensity=.30;
-  // Ice barriers
-  var N=_mobCount(220),im=new THREE.MeshLambertMaterial({color:0x88bbcc,transparent:true,opacity:.85});
+  // Ice barriers — InstancedMesh (fase 5 stap 3): 440 identieke boxen, alleen pos/rotation verschilt.
+  var N=_mobCount(220);
+  var im=new THREE.MeshLambertMaterial({color:0x88bbcc,transparent:true,opacity:.85});
+  var segGeo=new THREE.BoxGeometry(.9,1.2,1.0);
+  var iceInst=new THREE.InstancedMesh(segGeo,im,N*2);
+  var _icMat=new THREE.Matrix4();
+  var _icIdx=0;
   [-1,1].forEach(function(side){
     for(var i=0;i<N;i++){
       var t=i/N,p=trackCurve.getPoint(t),tg=trackCurve.getTangent(t).normalize();
       var nr=new THREE.Vector3(-tg.z,0,tg.x);
       var pos=p.clone().addScaledVector(nr,side*BARRIER_OFF);
-      var seg=new THREE.Mesh(new THREE.BoxGeometry(.9,1.2,1.0),im);
-      seg.position.copy(pos);seg.position.y=.6;seg.rotation.y=Math.atan2(tg.x,tg.z);scene.add(seg);
+      _icMat.makeRotationY(Math.atan2(tg.x,tg.z));
+      _icMat.setPosition(pos.x,.6,pos.z);
+      iceInst.setMatrixAt(_icIdx++,_icMat);
     }
   });
+  iceInst.instanceMatrix.needsUpdate=true;
+  scene.add(iceInst);
   // Ice mountains
   var icm=new THREE.MeshLambertMaterial({color:0xaaddee,transparent:true,opacity:.9});
   var snm=new THREE.MeshLambertMaterial({color:0xeeeeff});
