@@ -141,7 +141,7 @@ const _sectorBests=[Infinity,Infinity,Infinity];
 let _sectorStart=0,_currentSector=0; // _elSector → ui/hud.js
 let _secPopTimer=null;
 // LocalStorage persistence cache
-let _savedHS=0,_savedBL=Infinity;
+var _savedHS=0,_savedBL=Infinity; // var: ES-module persistence schrijft window._*
 // Victory orbit flag
 let _victoryOrbit=false;
 // Multiple camera views: 0=Chase 1=Helicopter 2=Hood 3=Bumper
@@ -183,7 +183,7 @@ let _driftBarFill=null,_driftBarEl=null,_driftLabelEl=null;
 // Float text counter (for cleanup)
 let _floatPool=[];
 // Overall fastest lap (all-time, cross-race)
-let _overallFastestLap=Infinity;
+var _overallFastestLap=Infinity; // var: persistence cross-script
 // Near-miss bonus cooldowns per car index
 const _nearMissCooldown=[];
 // Pit stop state
@@ -216,10 +216,11 @@ let _gapsToLeader=[];
 // Tire temperature system (0=cold,0.5=optimal,1=overheated) per corner
 let _tireTemp={fl:.15,fr:.15,rl:.15,rr:.15};
 // Speed trap — record max speed at the S/F straight
-let _speedTrapMax=0,_speedTrapFired=false,_speedTrapAllTime=0;
+let _speedTrapMax=0,_speedTrapFired=false;
+var _speedTrapAllTime=0; // var: persistence cross-script
 // Car unlock system
-let _unlockedCars=new Set([0,1,2,3,4,5,6,7]); // all unlocked in free play
-let _raceCount=0,_podiumCount=0; // career stats
+var _unlockedCars=new Set([0,1,2,3,4,5,6,7]); // var: persistence cross-script (default unlocks)
+var _raceCount=0,_podiumCount=0; // var: persistence cross-script (career stats)
 let _newUnlocks=[]; // cars unlocked this race, for finish screen toast
 // AI overtaking behavior (per car): tries to go around player
 // _aiPassSide: -1=left, 1=right, 0=none
@@ -244,14 +245,14 @@ let _selectedLaps=3;
 let _master=null;
 let _lastGear=1; // multi-oscillator engine state
 // ══ PERSISTENCE ══════════════════════════════
-let _coins=0,_totalCoinsEarned=0;
+var _coins=0,_totalCoinsEarned=0; // var: persistence cross-script
 let _lastRaceCoins=0,_comboMult=1.0,_comboTimer=0,_comboCount=0;
 let _bestS1=Infinity,_bestS2=Infinity,_bestS3=Infinity;
 // ACHIEVEMENTS + DAILY_CHALLENGES → js/gameplay/achievements.js (top of file).
 let _totalNitroUses=0,_winStreak=0;
 var _todayChallenge=null,_challengeCompleted=false,_todayRaces=0;
-let _worldsUnlocked=new Set(['grandprix']);
-let _trackRecords={};
+var _worldsUnlocked=new Set(['grandprix']); // var: persistence cross-script
+var _trackRecords={}; // var: persistence cross-script
 
 // ── PERSISTENCE FUNCTIONS — verplaatst naar js/persistence/save.js + progression.js ──
 // loadPersistent, savePersistent, awardCoins, buyCar, buyWorld,
