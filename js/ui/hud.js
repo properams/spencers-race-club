@@ -1,5 +1,16 @@
 // js/ui/hud.js — Fase 2.3/2.4 extraction. Non-module script.
 
+// HUD DOM-refs (uit main.js verhuisd) — gevuld door cacheHUDRefs() bij boot.
+// Cross-script zichtbaar voor cars/physics.js, gameplay/race.js,
+// gameplay/spacefx.js, gameplay/tracklimits.js, effects/visuals.js.
+let _elSlip,_elWarn,_mapCvs,_mapCtx,_elGear,_elLeader;
+let _elWrongWay=null;
+let _elScore=null,_elLapDelta=null;
+let _elTire=null;
+let _elSector=null;
+let _elGapAhead=null,_elGapBehind=null;
+let _elRpm=null;
+let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;
 
 function cacheHUDRefs(){
   // On mobile: hide performance-heavy HUD elements

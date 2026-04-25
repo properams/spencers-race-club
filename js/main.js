@@ -127,8 +127,7 @@ let sparkSystem,exhaustSystem;
 // Slipstream
 let slipTimer=0;
 
-// Cached DOM refs (beyond HUD — set in cacheHUDRefs)
-let _elSlip,_elWarn,_mapCvs,_mapCtx,_elGear,_elLeader;
+// HUD DOM-refs → js/ui/hud.js (top of file)
 // Cached minimap bounds (computed once after track builds)
 let _mmBounds=null;
 let _mmFrameCtr=0;
@@ -147,13 +146,12 @@ const _camV1=new THREE.Vector3(),_camV2=new THREE.Vector3(),_jFwdV=new THREE.Vec
 // Pre-allocated player/car vectors — reused every frame to avoid GC pressure
 const _plFwd=new THREE.Vector3(),_plBk=new THREE.Vector3(),_plRt=new THREE.Vector3();
 const _slipFwd=new THREE.Vector3(),_slipDir=new THREE.Vector3();
-// Wrong-way detector
-let _wrongWayTimer=0,_elWrongWay=null;
+// Wrong-way detector — _elWrongWay → ui/hud.js
+let _wrongWayTimer=0;
 // Mini-turbo (drift release boost)
 let _miniTurboReady=false;
-// Score system
+// Score system — _elScore/_elLapDelta → ui/hud.js
 let totalScore=0;
-let _elScore=null,_elLapDelta=null;
 // Difficulty (0=easy 1=normal 2=hard) — DIFF_MULT in js/config.js
 let difficulty=1;
 // Boost glow light
@@ -174,8 +172,7 @@ let _rainIntensity=0,_rainTarget=0;
 let _safetyCar=null;
 // Tire wear warning cooldown
 let _tireWarnCooldown=0;
-// Cached tire HUD ref
-let _elTire=null;
+// _elTire → ui/hud.js
 let _lastTireKey=-1;
 // Dynamic sky transition (day↔night smooth)
 let _skyT=0,_skyTarget=0;
@@ -189,7 +186,7 @@ let _weatherMode='clear',_stormFlashTimer=0,_snowParticles=null,_snowGeo=null;
 let _crowdSrc=null,_crowdGain=null;
 // Sector timing (3 splits)
 const _sectorBests=[Infinity,Infinity,Infinity];
-let _sectorStart=0,_currentSector=0,_elSector=null;
+let _sectorStart=0,_currentSector=0; // _elSector → ui/hud.js
 let _secPopTimer=null;
 // LocalStorage persistence cache
 let _savedHS=0,_savedBL=Infinity;
@@ -213,8 +210,7 @@ let _titleCamT=0;
 const _aiHeadPool=[];
 // Rev limiter timer
 let _revLimiterTimer=0;
-// Gap display HUD refs
-let _elGapAhead=null,_elGapBehind=null;
+// Gap display HUD refs → ui/hud.js
 // Quick restart hold timer
 let _rstHold=0;
 // Per-race lap time history
@@ -224,8 +220,7 @@ let _weatherForecastTimer=0,_weatherForecastFired=false;
 // Collision flash
 let _colFlashT=0;
 let _contactPopupCD=0; // collision popup cooldown — max once per 3s
-// RPM HUD ref
-let _elRpm=null;
+// _elRpm → ui/hud.js
 // Speed lines canvas
 let _speedLinesCvs=null,_speedLinesCtx=null;
 // Ghost car
@@ -430,8 +425,7 @@ let _wormholeCooldown=0;
 // Skid marks
 // ══ CAMERA ══════════════════════════════════
 // ══ HUD ════════════════════════════════════
-// Cached DOM refs (avoid getElementById every frame)
-let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;
+// Cached DOM refs → ui/hud.js (top of file)
 let popupTimeouts=[];
 let bannerTimer=null;
 const fmtTime=s=>s<60?s.toFixed(2)+'s':Math.floor(s/60)+'m'+(s%60).toFixed(2)+'s';
