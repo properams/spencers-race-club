@@ -95,7 +95,14 @@ let _leaderPendingKey='',_leaderStableT=0;
 // Position notification stability: only fire overtake after position is stable for 0.4s
 let _posStableValue=0,_posStableT=0;
 // Pause / mute state
-let gamePaused=false,audioMuted=false,_muteGain=null;
+let gamePaused=false,audioMuted=false;
+var _muteGain=null; // var: music ES-module leest window._muteGain
+// Music subsysteem state (was per ongeluk weggevallen bij fase 2.2a extraction;
+// music.js's header noemt ze "gedeclareerd in main.js" maar dat klopte niet).
+// _musicVolume default uit git history (was let _musicVolume=0.5).
+var _musicVolume=0.5;       // user-instelbaar (0..1)
+var _musicMuted=false;      // toggle via M-keybind / pause
+var _musicDuck=1.0;         // pit-stop ducking factor (1.0 = no duck)
 // Pre-allocated camera vectors (avoid per-frame heap allocations)
 // _camV1/_camV2 → gameplay/camera.js, _jFwdV → track/ramps.js, _aiFwdRV → cars/ai.js
 // Pre-allocated player/car vectors — reused every frame to avoid GC pressure
