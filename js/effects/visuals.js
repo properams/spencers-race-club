@@ -1,8 +1,5 @@
 // js/effects/visuals.js — auto-extracted in Fase 4
-
-// Non-module script: functies blijven globals. Consumeert state
-
-// direct (scene, carObjs, etc.) zonder window-prefix.
+// Non-module script.
 
 // RPM-bar constants + state (uit main.js verhuisd) — gebruikt door updateRpmBar.
 const _RPM_GRAD_REDLINE='linear-gradient(180deg,#ff0000,#ff4400)';

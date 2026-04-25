@@ -1,10 +1,5 @@
 // js/worlds/deepsea.js — deepsea world builders + update + collision checks
-
-// Verhuisd uit main.js tijdens Fase 3. Geen ES module: loadt als
-
-// gewoon <script>. Alle functies blijven globals, consumeren state
-
-// direct (scene, CAR_DEFS, _isMobile, _mobCount, etc.).
+// Non-module script.
 
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _kelpList=[];

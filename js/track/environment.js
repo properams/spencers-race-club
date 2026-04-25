@@ -1,8 +1,5 @@
 // js/track/environment.js — auto-extracted in Fase 4
-
-// Non-module script: functies blijven globals. Consumeert state
-
-// direct (scene, carObjs, etc.) zonder window-prefix.
+// Non-module script.
 
 
 function buildGround(){

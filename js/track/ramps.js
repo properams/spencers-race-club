@@ -1,8 +1,5 @@
 // js/track/ramps.js — auto-extracted in Fase 4
-
-// Non-module script: functies blijven globals. Consumeert state
-
-// direct (scene, carObjs, etc.) zonder window-prefix.
+// Non-module script.
 
 // Pre-allocated scratch vector (uit main.js verhuisd).
 const _jFwdV=new THREE.Vector3();
