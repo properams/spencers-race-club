@@ -14,3 +14,9 @@ function _redetectDevice(){
 }
 
 function _mobCount(n){return window._isMobile?Math.ceil(n*.45):n;}
+
+// Initial device detection — runs at script load time, vóór renderer/scene init.
+// iPad in Safari "Request Desktop Website" mode reports UA as Macintosh maar houdt
+// maxTouchPoints>1 — detecteer dat expliciet zodat iPad als tablet behandeld wordt.
+window._isIPadLike=(/iPad/.test(navigator.userAgent))||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+_redetectDevice();
