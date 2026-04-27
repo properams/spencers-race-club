@@ -13,6 +13,20 @@ let _posCache=[],_posTick=0;
 let _lastLeaderOrder='';
 let _leaderPendingKey='',_leaderStableT=0;
 let _posStableValue=0,_posStableT=0;
+// _lastPPos: vorige speler-positie (voor overtake-detectie in updateHUD).
+let _lastPPos=0;
+
+// Banner/popup helpers (uit main.js verhuisd).
+//   popupTimeouts — array van setTimeout-handles voor showPopup-fade
+//   bannerTimer   — setTimeout-handle voor showBannerTop auto-hide
+let popupTimeouts=[];
+let bannerTimer=null;
+
+// fmtTime: lap-time formatter, gebruikt door HUD + finish-screen + progression.
+// const → script-scope binding; expliciet ook op window voor ES-module
+// persistence/progression.js die window.fmtTime aanroept.
+const fmtTime=s=>s<60?s.toFixed(2)+'s':Math.floor(s/60)+'m'+(s%60).toFixed(2)+'s';
+window.fmtTime=fmtTime;
 
 // HUD DOM-refs (uit main.js verhuisd) — gevuld door cacheHUDRefs() bij boot.
 // Cross-script zichtbaar voor cars/physics.js, gameplay/race.js,

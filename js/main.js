@@ -235,10 +235,9 @@ var WORLD_PRICES={};    // var: idem
 let _wormholeCooldown=0; // wormhole cooldown — gelezen door worlds/space.js
 // (Night/rain/cars/physics/AI/special-checks/track-limits/camera/HUD-refs
 //  → respective js/* modules.)
-let popupTimeouts=[];
-let bannerTimer=null;
-const fmtTime=s=>s<60?s.toFixed(2)+'s':Math.floor(s/60)+'m'+(s%60).toFixed(2)+'s';
-let _lastPPos=0;
+// popupTimeouts / bannerTimer / fmtTime / _lastPPos → js/ui/hud.js
+// (fmtTime krijgt daar window.fmtTime alias zodat ES-module progression
+// de eerder latent-broken window.fmtTime call kan resolven.)
 // (Countdown, finish, title, select → gameplay/* en ui/*.)
 // Car preview state + _unlockHints → js/ui/select.js
 // (Speed overlay, confetti, boost ring, slipstream, weather-transition,
