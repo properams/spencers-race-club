@@ -137,12 +137,14 @@ function updateCarLights(){
     if(car.speed<-0.05){mat.emissiveIntensity=2.5;mat.opacity=1;}
     else{mat.emissiveIntensity=0;}
   });
-  // Visible headlight beam-cones op player car (alleen bij night).
-  // Targeted intensity: 0.18 base bij night, 0.30 bij high-speed kick.
+  // Visible headlight beam-cones op player car (alleen bij night, alleen
+  // chase-cam want in hood/bumper-cam zit de camera binnen de cone-tip
+  // en zou de binnenkant een onaangename screen-wash geven).
   const pCar=carObjs[playerIdx];
   if(pCar&&pCar.mesh){
     const ratio=Math.abs(pCar.speed)/Math.max(.01,pCar.def.topSpd);
-    const beamOp=isDark?(0.16+ratio*0.18):0;
+    const chaseCam=(typeof _camView==='undefined'||_camView===0);
+    const beamOp=(isDark&&chaseCam)?(0.16+ratio*0.18):0;
     pCar.mesh.children.forEach(ch=>{
       if(ch.userData&&ch.userData.isHeadBeam&&ch.material){
         ch.material.opacity+=(beamOp-ch.material.opacity)*0.15; // smooth fade

@@ -43,6 +43,12 @@ function _buildTrackSurfaceTex(){
 }
 
 function buildTrack(){
+  // Reset per-frame visual state arrays — sommige builders worden niet voor
+  // alle worlds aangeroepen, dus zonder deze reset houden de arrays stale
+  // (disposed) material-refs vast bij world-switch. Updates op disposed
+  // mats zijn no-op maar verspillen CPU per frame.
+  _pulseBarriers.length=0;
+  if(typeof _crowdMaterials!=='undefined')_crowdMaterials.length=0;
   const pts3=TRACK_WP.map(([x,z])=>new THREE.Vector3(x,0,z));
   trackCurve=new THREE.CatmullRomCurve3(pts3,true,'catmullrom',.5);
   curvePts=trackCurve.getPoints(600);

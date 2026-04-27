@@ -193,7 +193,9 @@ function updateBoostTrail(){
           const vx=_plRt.x*s*0.04+(Math.random()-.5)*0.03;
           const vy=0.018+Math.random()*0.022;
           const vz=_plRt.z*s*0.04+(Math.random()-.5)*0.03;
-          exhaustSystem.emit(tx,ty,tz,vx,vy,vz,tireCfg.life,tireCfg.r,tireCfg.g,tireCfg.b,tireCfg.size);
+          // emit signature: (x,y,z,vx,vy,vz,n,r,g,b,life). n=1 per wheel per call;
+      // size wordt door particle-system zelf afgeleid uit life-remaining.
+      exhaustSystem.emit(tx,ty,tz,vx,vy,vz,1,tireCfg.r,tireCfg.g,tireCfg.b,tireCfg.life);
         });
       }
     }
@@ -224,7 +226,8 @@ function updateBoostTrail(){
       const r=hot?Math.min(1,tint[0]+0.25):tint[0]*0.85;
       const g=hot?Math.min(1,tint[1]+0.10):tint[1]*0.85;
       const b=hot?Math.min(1,tint[2]+0.05):tint[2]*0.85;
-      sparkSystem.emit(tx,ty,tz,vx,vy,vz,life,r,g,b,1.0);
+      // emit signature: (x,y,z,vx,vy,vz,n,r,g,b,life). 1 particle per wheel per frame.
+      sparkSystem.emit(tx,ty,tz,vx,vy,vz,1,r,g,b,life);
     });
   }
   // Center streamer alleen tijdens echte boost (nitro / boost-pad)
@@ -234,7 +237,7 @@ function updateBoostTrail(){
       car.mesh.position.y+0.32,
       car.mesh.position.z+fwd.z*1.95,
       fwd.x*0.10+(Math.random()-.5)*0.02,0.025+Math.random()*0.020,fwd.z*0.10+(Math.random()-.5)*0.02,
-      0.85,1.0,0.88,0.45,1.0
+      1,1.0,0.88,0.45,0.65
     );
   }
 }
