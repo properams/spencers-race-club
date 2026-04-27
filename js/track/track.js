@@ -1,6 +1,46 @@
 // js/track/track.js — auto-extracted in Fase 4
 // Non-module script.
 
+// Procedurele asfalt-noise texture — werkt multiplicatief over material.color
+// zodat per-world tint (color) behouden blijft. Tileable 256×256 canvas met
+// grain + lichte streep-wear in racing direction. Niet gecached: disposeScene()
+// callt map.dispose() bij elke world-switch, dus we bouwen 'm telkens opnieuw
+// (256² noise gen kost <1ms).
+function _buildTrackSurfaceTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  // Base mid-grey (multiplied with vertex/material color → keeps world tint)
+  g.fillStyle='#9a9a9a';g.fillRect(0,0,S,S);
+  // Per-pixel noise via ImageData — values 130..200 (subtle variance)
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=130+(Math.random()*70)|0;
+    d[i]=n;d[i+1]=n;d[i+2]=n;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Two faint vertical wear-streaks (driving lines) — slightly lighter
+  g.globalAlpha=.18;
+  for(const xc of [S*.30, S*.70]){
+    const grd=g.createLinearGradient(xc-18,0,xc+18,0);
+    grd.addColorStop(0,'rgba(255,255,255,0)');
+    grd.addColorStop(.5,'rgba(255,255,255,1)');
+    grd.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=grd;g.fillRect(xc-18,0,36,S);
+  }
+  g.globalAlpha=1;
+  // A few darker oil/wear blobs scattered
+  for(let i=0;i<22;i++){
+    const x=Math.random()*S,y=Math.random()*S,r=4+Math.random()*9;
+    const grd=g.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0,'rgba(40,40,40,0.55)');
+    grd.addColorStop(1,'rgba(40,40,40,0)');
+    g.fillStyle=grd;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.anisotropy=4;t.needsUpdate=true;
+  return t;
+}
 
 function buildTrack(){
   const pts3=TRACK_WP.map(([x,z])=>new THREE.Vector3(x,0,z));
@@ -10,7 +50,7 @@ function buildTrack(){
   // Main track mat: polygonOffset pushes asphalt *away* from camera in depth so curbs,
   // edge lines and startline overlays win the depth test on low-precision depth buffers (iPad).
   const _baseTrackColor=activeWorld==='space'?0x141420:activeWorld==='deepsea'?0x1a2830:activeWorld==='candy'?0xee3388:activeWorld==='neoncity'?0x0a0a14:activeWorld==='volcano'?0x2a0808:activeWorld==='arctic'?0x667788:activeWorld==='themepark'?0x221030:0x262626;
-  const _trackMat=new THREE.MeshLambertMaterial({color:_baseTrackColor});
+  const _trackMat=new THREE.MeshLambertMaterial({color:_baseTrackColor,map:_buildTrackSurfaceTex()});
   _trackMat.polygonOffset=true;_trackMat.polygonOffsetFactor=1;_trackMat.polygonOffsetUnits=1;
   _trackMat.userData.baseColor=_baseTrackColor; // stashed for rain/day-night tinting
   const rm=ribbon(N,t=>{

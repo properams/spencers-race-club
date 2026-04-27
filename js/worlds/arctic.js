@@ -130,6 +130,10 @@ function buildArcticEnvironment(){
 
 function updateArcticWorld(dt){
   var t=_nowSec;
+  // Subtle aurora-band drift in sky background
+  if(scene&&scene.background&&scene.background.isTexture){
+    scene.background.offset.x=(scene.background.offset.x+dt*.003)%1;
+  }
   _arcticAurora.forEach(function(a,i){
     a.phase+=dt*a.speed;
     a.mesh.material.opacity=.35+Math.sin(a.phase)*.25;

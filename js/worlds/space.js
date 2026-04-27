@@ -632,6 +632,10 @@ function buildSpaceTractorBeam(){
 }
 
 function updateSpaceWorld(dt){
+  // ── Slow starfield parallax — sky drifts horizontally, ~1 cycle / 20min ──
+  if(scene&&scene.background&&scene.background.isTexture){
+    scene.background.offset.x=(scene.background.offset.x+dt*.0008)%1;
+  }
   // ── Rotate asteroids + void debris ──────────────────────────────
   _spaceAsteroids.forEach(a=>{
     if(!a._rspd)return;

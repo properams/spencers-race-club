@@ -225,6 +225,10 @@ function buildThemeparkEnvironment(){
 
 function updateThemeparkWorld(dt){
   const t=_nowSec;
+  // Sunset clouds drift very slowly
+  if(scene&&scene.background&&scene.background.isTexture){
+    scene.background.offset.x=(scene.background.offset.x+dt*.0015)%1;
+  }
   if(_tpFerris&&_tpFerris.group){
     _tpFerris.group.rotation.z+=dt*.22;
     for(let i=0;i<_tpFerris.cabins.length;i++){

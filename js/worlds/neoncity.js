@@ -481,17 +481,28 @@ function buildNeonHoloWalls(){
 function updateNeonCityWorld(dt){
   if(!scene)return;
   const t=_nowSec;
-  // Building neon stripes pulse — slow organic breathing
+  // Building neon stripes pulse — slow organic breathing + occasional staccato
+  // failing-tube flicker (~0.3% chance/frame per item ⇒ ~1 dropout per 5s).
   _neonEmissives.forEach((item,i)=>{
     if(!item.mesh||!item.mesh.material)return;
     const pulse=item.baseInt*.6+item.baseInt*.7*Math.sin(t*1.6+item.phase);
-    item.mesh.material.emissiveIntensity=Math.max(0,pulse);
+    if(item.flickerEnd===undefined)item.flickerEnd=0;
+    if(t>item.flickerEnd&&Math.random()<.003){
+      item.flickerEnd=t+0.05+Math.random()*0.12;
+    }
+    item.mesh.material.emissiveIntensity=(t<item.flickerEnd)?0:Math.max(0,pulse);
   });
-  // Holo billboards: float + opacity flicker
+  // Holo billboards: float + opacity flicker + occasional glitch blackout
   _holoBillboards.forEach((bb,i)=>{
     bb.mesh.position.y=bb.baseY+Math.sin(t*.65+bb.phase)*.5;
-    bb.mesh.material.opacity=.65+Math.sin(t*1.0+bb.phase*.9)*.24;
-    if(bb.light)bb.light.intensity=.8+Math.sin(t*1.8+bb.phase)*.5;
+    let op=.65+Math.sin(t*1.0+bb.phase*.9)*.24;
+    if(bb.glitchEnd===undefined)bb.glitchEnd=0;
+    if(t>bb.glitchEnd&&Math.random()<.002){
+      bb.glitchEnd=t+0.04+Math.random()*0.08;
+    }
+    if(t<bb.glitchEnd)op=0.04;
+    bb.mesh.material.opacity=op;
+    if(bb.light)bb.light.intensity=(t<bb.glitchEnd)?0:(.8+Math.sin(t*1.8+bb.phase)*.5);
   });
   // Steam vents — particles rise and drift
   if(_neonSteamGeo&&_neonSteamPos&&_neonSteamVents.length>0){

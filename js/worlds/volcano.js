@@ -79,7 +79,9 @@ function buildVolcanoEnvironment(){
   }
   egeo.setAttribute('position',new THREE.Float32BufferAttribute(epos,3));
   egeo.setAttribute('color',new THREE.Float32BufferAttribute(ecol,3));
-  _volcanoEmbers=new THREE.Points(egeo,new THREE.PointsMaterial({vertexColors:true,size:.3,transparent:true,opacity:.85,sizeAttenuation:true}));
+  // AdditiveBlending lets embers stack into hot-spots and pushes them well
+  // above bloom threshold — much more dramatic glow now that postfx is on.
+  _volcanoEmbers=new THREE.Points(egeo,new THREE.PointsMaterial({vertexColors:true,size:.42,transparent:true,opacity:1.0,sizeAttenuation:true,blending:THREE.AdditiveBlending,depthWrite:false}));
   scene.add(_volcanoEmbers);_volcanoEmberGeo=egeo;
   // Geysers
   [.22,.52,.78].forEach(function(t,gi){
@@ -113,6 +115,10 @@ function buildVolcanoEnvironment(){
 
 function updateVolcanoWorld(dt){
   var t=_nowSec;
+  // Smoke clouds drift slowly across the volcanic sky
+  if(scene&&scene.background&&scene.background.isTexture){
+    scene.background.offset.x=(scene.background.offset.x+dt*.005)%1;
+  }
   _volcanoLavaRivers.forEach(function(r,i){
     if(r.mesh&&r.mesh.material)r.mesh.material.emissiveIntensity=r.baseInt*.7+r.baseInt*.5*Math.sin(t*1.4+i*.9);
   });

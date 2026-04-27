@@ -49,7 +49,11 @@ function _newSkyCanvas(top,bot){
   return {c,g};
 }
 function _skyTexFromCanvas(c){
-  const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
+  const t=new THREE.CanvasTexture(c);
+  // RepeatWrapping on S so updateXxxWorld() can drift the sky horizontally via
+  // texture.offset.x. T stays clamped (no vertical wrap of horizon).
+  t.wrapS=THREE.RepeatWrapping;
+  t.needsUpdate=true;return t;
 }
 
 // Space — starfield + soft nebula clouds + distant galaxy band
