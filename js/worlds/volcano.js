@@ -94,6 +94,8 @@ function buildVolcanoEnvironment(){
     var pl=new THREE.PointLight(0xff4400,2.0,22);pl.position.copy(p);pl.position.y=2;scene.add(pl);
     _volcanoGeisers.push({pos:p.clone(),geyser:gey,light:pl,active:false,timer:5+gi*3,activeDur:2.5});
   });
+  // Bridge over lava (signature moment — collapsing in lap 3).
+  if(typeof buildVolcanoBridge==='function')buildVolcanoBridge();
   // Barriers
   buildBarriers();buildStartLine();
   // Lights setup (headlights/taillights)
@@ -115,6 +117,10 @@ function buildVolcanoEnvironment(){
 
 function updateVolcanoWorld(dt){
   var t=_nowSec;
+  if(typeof updateVolcanoBridge==='function'){
+    var pl=carObjs[playerIdx];
+    updateVolcanoBridge(dt, pl?pl.lap:1);
+  }
   _volcanoLavaRivers.forEach(function(r,i){
     if(r.mesh&&r.mesh.material)r.mesh.material.emissiveIntensity=r.baseInt*.7+r.baseInt*.5*Math.sin(t*1.4+i*.9);
   });

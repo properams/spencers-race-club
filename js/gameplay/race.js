@@ -67,6 +67,7 @@ function _resetRaceState(){
   if(_safetyCar){scene.remove(_safetyCar.mesh);_safetyCar=null;}
   // Volcano/Arctic cleanup
   _volcanoLavaRivers.length=0;_volcanoGeisers.length=0;_volcanoEruption=null;_volcanoEruptionTimer=3;_volcanoEmbers=null;_volcanoEmberGeo=null;_volcanoGlowLight=null;
+  if(typeof disposeVolcanoBridge==='function')disposeVolcanoBridge();
   _arcticIcePatches.length=0;_arcticAurora.length=0;_arcticBlizzardGeo=null;
   _lastGear=1;_currentGear=1;_lastPPos=0;_lastLeaderOrder='';
   _leaderPendingKey='';_leaderStableT=0;_posStableValue=0;_posStableT=0;
