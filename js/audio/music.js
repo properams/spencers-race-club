@@ -875,9 +875,20 @@ function startSelectMusic(){
   if(window.selectMusic&&window.selectMusic.running)return;
   if(window.selectMusic){try{window.selectMusic.stop();}catch(_){}window.selectMusic=null;}
   window.selectMusic=_safeStartMusic(()=>new SelectMusic(window.audioCtx));
+  // Preload muziek-stems voor de huidige wereld (idempotent). Als user een
+  // andere wereld kiest triggert select.js rebuildWorld een nieuwe preload.
+  if(window.activeWorld&&typeof window._preloadWorld==='function'){
+    window._preloadWorld(window.activeWorld);
+  }
 }
 
 function _createRaceMusicForWorld(){
+  // Dispatcher: als samples.js stems heeft geladen voor de actieve wereld,
+  // gebruik StemRaceMusic; anders fallback naar procedurele RaceMusic.
+  if(typeof window._createStemRaceMusicIfReady === 'function'){
+    const stem = window._createStemRaceMusicIfReady();
+    if(stem) return stem;
+  }
   return new RaceMusic(window.audioCtx);
 }
 

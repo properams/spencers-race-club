@@ -134,6 +134,10 @@ function rebuildWorld(newWorld){
   if(newWorld===activeWorld)return;
   activeWorld=newWorld;
   localStorage.setItem('src_world',newWorld);
+  // Preload muziek-stems voor deze wereld (fire-and-forget). Als de assets
+  // er zijn en op tijd klaar voor race-start, gebruikt music.js de stems;
+  // anders fallback naar procedural synth.
+  if(window.Audio&&window.Audio.preloadWorld)window.Audio.preloadWorld(newWorld);
   const _wasDark=isDark;
   buildScene(); // resets isDark=false then calls toggleNight() → sets isDark=true
   if(!_wasDark)toggleNight(); // if was day, flip back to day

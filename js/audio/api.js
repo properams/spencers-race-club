@@ -38,6 +38,13 @@ const Audio = {
   startSelectMusic()  { return window.startSelectMusic && window.startSelectMusic(); },
   // Race music: dispatcher. Aanroeper geeft activeWorld impliciet (via window.activeWorld).
   createRaceMusic()   { return window._createRaceMusicForWorld && window._createRaceMusicForWorld(); },
+  // Preload muziek-stems voor een wereld. Fire-and-forget vanaf track-select;
+  // als preload klaar is voor race-start gebruikt _createRaceMusicForWorld
+  // automatisch de samples, anders fallback naar procedurele synth.
+  preloadWorld(worldId){
+    if(typeof window._preloadWorld !== 'function') return Promise.resolve({kind:'procedural'});
+    return window._preloadWorld(worldId);
+  },
   fadeOut(sched, dur) { return window._fadeOutMusic && window._fadeOutMusic(sched, dur); },
   safeStart(factory)  { return window._safeStartMusic && window._safeStartMusic(factory); },
   applyMusicGain(ramp){ return window._applyMusicGain && window._applyMusicGain(ramp); },
