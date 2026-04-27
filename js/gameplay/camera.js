@@ -1,9 +1,30 @@
-// js/gameplay/camera.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/camera.js — non-module script.
+
+'use strict';
 
 // Pre-allocated scratch vectors (uit main.js verhuisd) — cross-script
 // zichtbaar voor effects/night.js + visuals.js die _camV1/_camV2 lezen.
 const _camV1=new THREE.Vector3(),_camV2=new THREE.Vector3();
+
+// Mirror state (uit main.js verhuisd). mirrorCamera wordt gevuld in
+// core/scene.js buildScene(); _mirrorEnabled toggleable via input.js (M-key).
+// updateMirror() onder in dit bestand gebruikt beide.
+let mirrorCamera=null;
+let _mirrorEnabled=true;
+
+// Camera animation/state (uit main.js verhuisd):
+//   camShake        — collision shake amplitude (decays in updateCamera)
+//   _camView        — 0=Chase 1=Helicopter 2=Hood 3=Bumper (input.js: V-key)
+//   _camLateralT    — corner pan accumulator
+//   _victoryOrbit   — cinematic orbit na finish (set in finish.js)
+//   _introPanTimer  — race-intro pan duration (set in race.js startCountdown)
+//   _titleCamT      — title-screen rotation phase
+let camShake=0;
+let _camView=0;
+let _camLateralT=0;
+let _victoryOrbit=false;
+let _introPanTimer=0;
+let _titleCamT=0;
 
 function updateCamera(dt){
   const car=carObjs[playerIdx];if(!car)return;

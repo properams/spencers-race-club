@@ -47,7 +47,11 @@ function _safeStartMusic(factoryFn){
     const m=factoryFn();
     if(m&&m.start)m.start();
     return m;
-  }catch(e){console.warn('[music] start failed:',e.message);return null;}
+  }catch(e){
+    if(window.dbg)dbg.warn('music','start failed: '+e.message);
+    else console.warn('[music] start failed:',e.message);
+    return null;
+  }
 }
 
 

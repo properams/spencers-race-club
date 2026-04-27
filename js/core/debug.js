@@ -1,14 +1,236 @@
-// js/core/debug.js — opt-in debug overlay (?debug in URL).
-// Non-module script. Toont real-time camera/renderer/viewport-state
-// als floating badge.
+// js/core/debug.js — debug-harness + opt-in visual badge.
+// Non-module script. Geladen vóór alle subsystemen behalve config/device.
+//
+// Drie laagjes:
+//   1. window.dbg — gestructureerde logger + error-ringbuffer (altijd beschikbaar).
+//      Logger is no-op tenzij dbg.enabled (URL ?debug of localStorage src_debug=1).
+//      Errors worden ALTIJD gecaptured (ook in productie) zodat je later
+//      via dbg.errors() de laatste 50 fouten kunt ophalen.
+//   2. ?debug-only badge — bestaande floating overlay met camera/renderer state.
+//   3. Error-viewer overlay — Ctrl+Shift+E (of dbg.showErrors() in console)
+//      toont alle errors uit de ringbuffer in een full-screen panel met
+//      Copy/Clear knoppen. Werkt ook zonder dbg-enabled — handig voor
+//      productie-incident-rapportage.
+//
+// Activeren in productie zonder URL-wijziging:
+//   localStorage.setItem('src_debug','1'); location.reload();
+// Of channels filteren:
+//   localStorage.setItem('src_debug_channels','pause,camera,renderer');
+// Errors bekijken:
+//   Ctrl+Shift+E      (overal in de game)
+//   dbg.showErrors()  (vanuit devtools-console)
 
 'use strict';
 
+(function(){
+  const URL_FLAG = new URLSearchParams(location.search).has('debug');
+  let LS_FLAG = false, CHANNEL_FILTER = null;
+  try {
+    LS_FLAG = localStorage.getItem('src_debug') === '1';
+    const ch = localStorage.getItem('src_debug_channels');
+    if (ch) CHANNEL_FILTER = new Set(ch.split(',').map(s => s.trim()).filter(Boolean));
+  } catch (_) { /* localStorage kan blocked zijn */ }
+  const ENABLED = URL_FLAG || LS_FLAG;
+
+  const T0 = performance.now();
+  const ts = () => ((performance.now() - T0) / 1000).toFixed(3);
+
+  const ERR_RING_MAX = 50;
+  const errRing = [];
+  function pushErr(kind, msg, extra) {
+    const entry = { t: ts(), kind, msg: String(msg || ''), extra: extra || null };
+    errRing.push(entry);
+    if (errRing.length > ERR_RING_MAX) errRing.shift();
+    return entry;
+  }
+
+  function shouldLog(channel) {
+    if (!ENABLED) return false;
+    if (!CHANNEL_FILTER) return true;
+    return CHANNEL_FILTER.has(channel);
+  }
+
+  const dbg = {
+    enabled: ENABLED,
+    urlFlag: URL_FLAG,
+    lsFlag: LS_FLAG,
+    channelFilter: CHANNEL_FILTER ? [...CHANNEL_FILTER] : null,
+
+    log(channel, ...args) {
+      if (!shouldLog(channel)) return;
+      console.log('[' + ts() + '][' + channel + ']', ...args);
+    },
+
+    warn(channel, ...args) {
+      if (!shouldLog(channel)) return;
+      console.warn('[' + ts() + '][' + channel + ']', ...args);
+    },
+
+    error(channel, err, extra) {
+      const entry = pushErr(channel, err && err.message ? err.message : err, extra);
+      console.error('[' + ts() + '][' + channel + ']', err, extra || '');
+      return entry;
+    },
+
+    snapshot(channel, label, obj) {
+      if (!shouldLog(channel)) return;
+      try {
+        const flat = {};
+        for (const k of Object.keys(obj || {})) {
+          const v = obj[k];
+          flat[k] = (v && typeof v === 'object' && 'x' in v && 'y' in v && 'z' in v)
+            ? '(' + v.x.toFixed(2) + ',' + v.y.toFixed(2) + ',' + v.z.toFixed(2) + ')'
+            : v;
+        }
+        console.log('[' + ts() + '][' + channel + ']', label, flat);
+      } catch (e) {
+        console.log('[' + ts() + '][' + channel + ']', label, '(snapshot failed)', e);
+      }
+    },
+
+    group(channel, label, fn) {
+      if (!shouldLog(channel)) { try { fn(); } catch (e) { dbg.error(channel, e); } return; }
+      console.group('[' + ts() + '][' + channel + '] ' + label);
+      try { fn(); } catch (e) { dbg.error(channel, e); } finally { console.groupEnd(); }
+    },
+
+    errors() { return errRing.slice(); },
+    clearErrors() { errRing.length = 0; if (window._dbgViewer) window._dbgViewer.refresh(); },
+
+    showErrors() { _ensureViewer(); _viewerEl.style.display = 'flex'; _viewerRefresh(); },
+    hideErrors() { if (_viewerEl) _viewerEl.style.display = 'none'; },
+  };
+
+  // ── Error-viewer overlay (lazy-built op eerste open) ─────────────────
+  let _viewerEl = null, _viewerList = null, _viewerToast = null;
+  function _ensureViewer() {
+    if (_viewerEl) return;
+    _viewerEl = document.createElement('div');
+    _viewerEl.id = 'dbgErrorViewer';
+    _viewerEl.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:99999;display:none;flex-direction:column;font-family:monospace;font-size:12px;color:#eee;padding:20px;overflow:hidden';
+    const head = document.createElement('div');
+    head.style.cssText = 'display:flex;gap:10px;align-items:center;margin-bottom:12px;border-bottom:1px solid #333;padding-bottom:10px';
+    const title = document.createElement('div');
+    title.style.cssText = 'flex:1;font-weight:bold;color:#ff6644;letter-spacing:2px';
+    title.textContent = '⚠ DEBUG ERRORS';
+    const btnCopy = _mkBtn('📋 COPY', () => {
+      const txt = errRing.map(e => `[${e.t}s][${e.kind}] ${e.msg}` +
+        (e.extra ? ' ' + JSON.stringify(e.extra) : '')).join('\n');
+      // navigator.clipboard.writeText is async; sync try/catch vangt geen Promise-rejection.
+      // Daarnaast: niet beschikbaar op insecure contexts of in oudere browsers.
+      const fail = () => { btnCopy.textContent = '⚠ FAILED'; setTimeout(()=>btnCopy.textContent='📋 COPY',1500); };
+      const ok = () => { btnCopy.textContent = '✓ COPIED'; setTimeout(()=>btnCopy.textContent='📋 COPY',1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(ok, fail);
+      } else {
+        // Fallback: textarea + execCommand (deprecated maar werkt op insecure contexts)
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          const success = document.execCommand && document.execCommand('copy');
+          ta.remove();
+          success ? ok() : fail();
+        } catch (_) { fail(); }
+      }
+    });
+    const btnClear = _mkBtn('🗑 CLEAR', () => { dbg.clearErrors(); _viewerRefresh(); });
+    const btnClose = _mkBtn('✕ CLOSE', () => { _viewerEl.style.display = 'none'; });
+    head.appendChild(title); head.appendChild(btnCopy); head.appendChild(btnClear); head.appendChild(btnClose);
+    _viewerList = document.createElement('div');
+    _viewerList.style.cssText = 'flex:1;overflow-y:auto;background:#0a0a0a;padding:12px;border-radius:4px;line-height:1.6';
+    _viewerEl.appendChild(head); _viewerEl.appendChild(_viewerList);
+    document.body.appendChild(_viewerEl);
+  }
+  function _mkBtn(label, onClick) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.style.cssText = 'background:#222;border:1px solid #444;color:#ccc;padding:6px 12px;border-radius:4px;cursor:pointer;font-family:monospace;font-size:11px;letter-spacing:1px';
+    b.addEventListener('click', onClick);
+    b.addEventListener('mouseenter', () => b.style.background = '#333');
+    b.addEventListener('mouseleave', () => b.style.background = '#222');
+    return b;
+  }
+  function _viewerRefresh() {
+    if (!_viewerList) return;
+    if (errRing.length === 0) {
+      _viewerList.innerHTML = '<div style="color:#666;font-style:italic;padding:20px;text-align:center">Geen errors gecaptured deze sessie. ✓</div>';
+      return;
+    }
+    _viewerList.innerHTML = errRing.slice().reverse().map(e => {
+      const extra = e.extra ? '<div style="color:#888;margin-left:20px;margin-top:2px;font-size:11px">' + _esc(JSON.stringify(e.extra)) + '</div>' : '';
+      return '<div style="border-left:3px solid #ff6644;padding:6px 10px;margin-bottom:6px;background:rgba(255,80,40,.06)">' +
+             '<div style="color:#ff9966">[' + e.t + 's] [' + _esc(e.kind) + ']</div>' +
+             '<div style="color:#fff;margin-top:2px">' + _esc(e.msg) + '</div>' +
+             extra + '</div>';
+    }).join('');
+  }
+  function _esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  // Maakt refresh extern aanroepbaar zodat clearErrors() de viewer kan vernieuwen.
+  window._dbgViewer = { refresh: _viewerRefresh };
+
+  // ── Auto-toast bij nieuwe error (alleen als dbg enabled) ─────────────
+  function _showToast(entry) {
+    if (!ENABLED) return; // productie: silent in ringbuffer
+    if (!_viewerToast) {
+      _viewerToast = document.createElement('div');
+      _viewerToast.style.cssText = 'position:fixed;bottom:20px;right:20px;background:rgba(180,40,20,.92);color:#fff;font-family:monospace;font-size:11px;padding:10px 14px;border-radius:6px;z-index:99998;max-width:340px;box-shadow:0 4px 16px rgba(0,0,0,.5);cursor:pointer;line-height:1.4;border-left:3px solid #ff8866';
+      _viewerToast.title = 'Klik voor details (Ctrl+Shift+E)';
+      _viewerToast.addEventListener('click', () => dbg.showErrors());
+      document.body.appendChild(_viewerToast);
+    }
+    _viewerToast.innerHTML = '⚠ <b>[' + _esc(entry.kind) + ']</b><br>' + _esc(entry.msg.slice(0, 140));
+    _viewerToast.style.display = 'block';
+    _viewerToast.style.opacity = '1';
+    clearTimeout(_viewerToast._t);
+    _viewerToast._t = setTimeout(() => {
+      _viewerToast.style.transition = 'opacity .4s';
+      _viewerToast.style.opacity = '0';
+      setTimeout(() => { _viewerToast.style.display = 'none'; _viewerToast.style.transition = ''; }, 400);
+    }, 4500);
+  }
+
+  // Wrap pushErr om toast te triggeren
+  const _origPushErr = pushErr;
+  pushErr = function(kind, msg, extra) {
+    const entry = _origPushErr(kind, msg, extra);
+    if (_viewerEl && _viewerEl.style.display !== 'none') _viewerRefresh();
+    _showToast(entry);
+    return entry;
+  };
+
+  // Globale fout-handlers — vangen scripts die anders stilletjes falen.
+  window.addEventListener('error', (e) => {
+    pushErr('window.error', e.message, { src: e.filename, line: e.lineno, col: e.colno });
+  });
+  window.addEventListener('unhandledrejection', (e) => {
+    const r = e.reason;
+    pushErr('unhandledrejection', r && r.message ? r.message : String(r), null);
+  });
+
+  // ── Keyboard shortcut: Ctrl+Shift+E toggle ───────────────────────────
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && (e.code === 'KeyE' || e.key === 'E' || e.key === 'e')) {
+      e.preventDefault();
+      if (_viewerEl && _viewerEl.style.display !== 'none') dbg.hideErrors();
+      else dbg.showErrors();
+    }
+  });
+
+  window.dbg = dbg;
+  if (ENABLED) {
+    console.log('[dbg] enabled (url=' + URL_FLAG + ' ls=' + LS_FLAG + ')' +
+      (CHANNEL_FILTER ? ' channels=[' + [...CHANNEL_FILTER].join(',') + ']' : ' all channels') +
+      ' — Ctrl+Shift+E voor error-viewer');
+  }
+})();
+
+// ── Bestaande visual badge (alleen ?debug in URL) ────────────────────────
 if(new URLSearchParams(location.search).has('debug')){
-  const dbg=document.createElement('div');
-  dbg.id='debugBadge';
-  dbg.style.cssText='position:fixed;top:8px;right:8px;font-family:monospace;font-size:11px;color:#fff;background:rgba(0,0,0,.78);padding:6px 10px;border-radius:6px;z-index:var(--z-critical);pointer-events:none;max-width:260px;line-height:1.4;white-space:pre';
-  document.body.appendChild(dbg);
+  const dbgEl=document.createElement('div');
+  dbgEl.id='debugBadge';
+  dbgEl.style.cssText='position:fixed;top:8px;right:8px;font-family:monospace;font-size:11px;color:#fff;background:rgba(0,0,0,.78);padding:6px 10px;border-radius:6px;z-index:var(--z-critical);pointer-events:none;max-width:260px;line-height:1.4;white-space:pre';
+  document.body.appendChild(dbgEl);
   window._updateDebugBadge=function(){
     try{
       const vv=window.visualViewport,cam=window.camera,rnd=window.renderer,cars=window.carObjs,pIdx=window.playerIdx;
@@ -26,7 +248,7 @@ if(new URLSearchParams(location.search).has('debug')){
         const sz=new THREE.Vector2();rnd.getSize(sz);
         rendLine='rend '+sz.x+'×'+sz.y+' pr '+rnd.getPixelRatio().toFixed(2);
       }
-      dbg.textContent='win '+innerWidth+'×'+innerHeight+
+      dbgEl.textContent='win '+innerWidth+'×'+innerHeight+
         (vv?' vv '+Math.round(vv.width)+'×'+Math.round(vv.height):'')+
         ' dpr '+(devicePixelRatio||1).toFixed(2)+' asp '+(innerWidth/innerHeight).toFixed(2)+
         '\nmob '+(!!window._isMobile)+' tab '+(!!window._isTablet)+' iPad '+(!!window._isIPadLike)+

@@ -7,6 +7,29 @@
 
 'use strict';
 
+// Lap timing (uit main.js verhuisd). Cross-script gemuteerd door
+// ui/navigation.js (countdown→start zet lapStartTime), gameplay/tracklimits.js
+// (S/F-line crossing herstart lapStartTime + zet lastLapTime).
+let lapStartTime=0,lastLapTime=0;
+
+// Per-race statistieken (uit main.js verhuisd).
+//   _raceMaxSpeed     — top speed bereikt deze race (achievements.js)
+//   _raceOvertakes    — aantal posities gewonnen (achievements.js + finish.js)
+//   _lastPlayerPos    — positie vorige tick (overtake-detector)
+//   _raceStartGrace   — grace-counter na go (cars/physics.js + ai.js)
+//   _lapTimes         — array van per-lap tijden
+//   _newUnlocks       — cars vrijgespeeld deze race (finish-screen toast)
+//   _nitroUseCount    — nitro-activaties deze race (achievements NITRO_JUNKIE)
+//   _airborneAccum    — luchttijd-accumulator (achievement FLYING)
+//   _cleanLapFlag     — geen recovery in deze ronde (achievement CLEAN_LAP)
+//
+// Dead-code (nergens gelezen of geschreven, waarschijnlijk uit ouder
+// design — zou later ge-her-introduceerd kunnen worden via achievements):
+//   _newUnlocks, _totalNitroUses, _winStreak  → verwijderd.
+let _raceMaxSpeed=0,_raceOvertakes=0,_lastPlayerPos=9,_raceStartGrace=0;
+const _lapTimes=[];
+let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true;
+
 function _resetRaceState(){
   if(musicSched){musicSched.stop();musicSched=null;}
   setTimeout(()=>{if(musicSched){musicSched.stop();musicSched=null;}},100);

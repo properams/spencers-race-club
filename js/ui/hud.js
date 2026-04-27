@@ -1,8 +1,43 @@
-// js/ui/hud.js — Fase 2.3/2.4 extraction. Non-module script.
+// js/ui/hud.js — non-module script.
+
+'use strict';
 
 // Position cache (uit main.js verhuisd) — leaderboard berekent posities
 // niet elk frame; cache wordt elke ~10 ticks ververst in updateHUD.
 let _posCache=[],_posTick=0;
+
+// Leaderboard stability (uit main.js verhuisd). Posities flikkeren tijdens
+// tie-races; we committen alleen na 0.4-0.5s stabiliteit.
+//   _lastLeaderOrder  — laatst gecommitte volgorde-string
+//   _leaderPendingKey — kandidaat-volgorde
+//   _leaderStableT    — accumulator (commit bij >=0.5s)
+//   _posStableValue / _posStableT — zelfde voor speler-positie (>=0.4s)
+let _lastLeaderOrder='';
+let _leaderPendingKey='',_leaderStableT=0;
+let _posStableValue=0,_posStableT=0;
+// _lastPPos: vorige speler-positie (voor overtake-detectie in updateHUD).
+let _lastPPos=0;
+
+// HUD-extra state (uit main.js verhuisd).
+//   _currentGear  — display gear (audio/engine.js zet 'm in updateEngine).
+//   _mmBounds     — cached minimap-bounds {mnX,mxX,mnZ,mxZ} per wereld.
+//                   Geset in core/scene.js buildScene().
+//   _mmFrameCtr   — minimap-redraw throttle (1 frame per 2 ticks).
+let _currentGear=1;
+let _mmBounds=null;
+let _mmFrameCtr=0;
+
+// Banner/popup helpers (uit main.js verhuisd).
+//   popupTimeouts — array van setTimeout-handles voor showPopup-fade
+//   bannerTimer   — setTimeout-handle voor showBannerTop auto-hide
+let popupTimeouts=[];
+let bannerTimer=null;
+
+// fmtTime: lap-time formatter, gebruikt door HUD + finish-screen + progression.
+// const → script-scope binding; expliciet ook op window voor ES-module
+// persistence/progression.js die window.fmtTime aanroept.
+const fmtTime=s=>s<60?s.toFixed(2)+'s':Math.floor(s/60)+'m'+(s%60).toFixed(2)+'s';
+window.fmtTime=fmtTime;
 
 // HUD DOM-refs (uit main.js verhuisd) — gevuld door cacheHUDRefs() bij boot.
 // Cross-script zichtbaar voor cars/physics.js, gameplay/race.js,
@@ -11,10 +46,12 @@ let _elSlip,_elWarn,_mapCvs,_mapCtx,_elGear,_elLeader;
 let _elWrongWay=null;
 let _elScore=null,_elLapDelta=null;
 let _elTire=null;
-let _elSector=null;
+// _elSector was dead code (nergens gevuld of gelezen) — verwijderd.
 let _elGapAhead=null,_elGapBehind=null;
 let _elRpm=null;
 let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;
+// Verhuisd uit main.js — gevuld in cacheHUDRefs hieronder.
+let _drsEl=null,_sectorPanelEl=null,_speedTrapEl=null;
 
 function cacheHUDRefs(){
   // On mobile: hide performance-heavy HUD elements

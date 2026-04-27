@@ -1,6 +1,6 @@
-// js/gameplay/collisions.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/collisions.js — non-module script.
 
+'use strict';
 
 function checkCollisions(dt){
   const player=carObjs[playerIdx];if(!player)return;
