@@ -64,7 +64,7 @@ var titleMusic=null,musicSched=null,selectMusic=null; // var: music ES-module sc
 // zijn beschikbaar via window.xxx (module laadt deferred).
 
 var audioCtx=null; // var: music ES-module leest window.audioCtx
-let engineOsc=null,engineGain=null,_rollGain=null,_rollSrc=null,_rollFilt=null;
+// Engine audio state (engineOsc, engineGain, _rollGain, _rollSrc, _rollFilt) → js/audio/engine.js
 
 // Special track objects
 const jumpRamps=[],spinPads=[],boostPads=[],collectibles=[];
@@ -224,7 +224,7 @@ let _selectedLaps=3;
 
 // ══ AUDIO ════════════════════════════════════
 var _master=null; // var: music ES-module leest window._master
-let _lastGear=1; // multi-oscillator engine state
+// _lastGear → js/audio/engine.js
 // ══ PERSISTENCE ══════════════════════════════
 var _coins=0,_totalCoinsEarned=0; // var: persistence cross-script
 var _lastRaceCoins=0,_comboMult=1.0; // var: ES-modules schrijven beide

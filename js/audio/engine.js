@@ -1,5 +1,14 @@
 // js/audio/engine.js — Fase 2.3/2.4 extraction. Non-module script.
 
+// Engine audio state (uit main.js verhuisd).
+//   engineOsc / engineGain — multi-oscillator engine (initEngine() wijst toe).
+//   _rollGain / _rollSrc / _rollFilt — rolling-noise layer (tire/road).
+//   _lastGear — vorige gear voor up/down-shift trigger in updateEngine.
+// Cross-script: gameplay/finish.js fade engineGain naar 0; gameplay/race.js
+// reset _lastGear=1.
+let engineOsc=null,engineGain=null;
+let _rollGain=null,_rollSrc=null,_rollFilt=null;
+let _lastGear=1;
 
 function initAudio(){
   if(audioCtx)return;
