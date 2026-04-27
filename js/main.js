@@ -221,9 +221,7 @@ let _fastestLapFlashT=0;
 let _gapsToLeader=[];
 // Tire temperature system (0=cold,0.5=optimal,1=overheated) per corner
 let _tireTemp={fl:.15,fr:.15,rl:.15,rr:.15};
-// Speed trap — record max speed at the S/F straight
-let _speedTrapMax=0,_speedTrapFired=false;
-var _speedTrapAllTime=0; // var: persistence cross-script
+// Speed trap state → js/gameplay/speedtrap.js
 // Car unlock system
 var _unlockedCars=new Set([0,1,2,3,4,5,6,7]); // var: persistence cross-script (default unlocks)
 var _raceCount=0,_podiumCount=0; // var: persistence cross-script (career stats)
