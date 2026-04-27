@@ -156,14 +156,13 @@ var _overallFastestLap=Infinity; // var: persistence cross-script
 let _closeBattleTimer=0;
 // Fastest lap flash timer
 let _fastestLapFlashT=0;
-// Track gap to leader in seconds for leaderboard
-let _gapsToLeader=[];
+// _gapsToLeader was dead code (nergens gelezen) — verwijderd.
 // _tireTemp → js/gameplay/tires.js
 // Speed trap state → js/gameplay/speedtrap.js
 // Car unlock system
 var _unlockedCars=new Set([0,1,2,3,4,5,6,7]); // var: persistence cross-script (default unlocks)
 var _raceCount=0,_podiumCount=0; // var: persistence cross-script (career stats)
-// _newUnlocks → js/gameplay/race.js
+// _newUnlocks was dead code — verwijderd in race.js extractie.
 // AI overtaking behavior (per car): tries to go around player
 // _aiPassSide: -1=left, 1=right, 0=none
 // _wasBraking → js/cars/physics.js
@@ -188,7 +187,7 @@ var _lastRaceCoins=0,_comboMult=1.0; // var: ES-modules schrijven beide
 // _comboTimer / _comboCount → js/gameplay/combo.js (_comboMult blijft hier als var)
 // _bestS1/_bestS2/_bestS3 → js/gameplay/sectors.js
 // ACHIEVEMENTS + DAILY_CHALLENGES → js/gameplay/achievements.js (top of file).
-// _totalNitroUses / _winStreak → js/gameplay/race.js
+// _totalNitroUses / _winStreak waren dead code — verwijderd in race.js extractie.
 var _todayChallenge=null,_challengeCompleted=false,_todayRaces=0;
 var _worldsUnlocked=new Set(['grandprix']); // var: persistence cross-script
 var _trackRecords={}; // var: persistence cross-script

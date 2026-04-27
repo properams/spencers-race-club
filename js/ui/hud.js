@@ -44,7 +44,7 @@ let _elSlip,_elWarn,_mapCvs,_mapCtx,_elGear,_elLeader;
 let _elWrongWay=null;
 let _elScore=null,_elLapDelta=null;
 let _elTire=null;
-let _elSector=null;
+// _elSector was dead code (nergens gevuld of gelezen) — verwijderd.
 let _elGapAhead=null,_elGapBehind=null;
 let _elRpm=null;
 let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;

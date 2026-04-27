@@ -113,8 +113,7 @@ function buildCandyCanes(){
       const s=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.55,7),mat);
       s.position.set(cx,seg*.55+.275,cz);scene.add(s);
     }
-    // Crook: torus quarter-arc on top
-    const crookMat=seg=>seg%2===0?redMat:whiteMat;
+    // Crook: torus quarter-arc on top (crookMat helper was dead — never invoked)
     const crook=new THREE.Mesh(new THREE.TorusGeometry(.5,.28,7,12,Math.PI/1.8),redMat);
     crook.position.set(cx,6.55+.5,cz);
     crook.rotation.z=Math.PI;

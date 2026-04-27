@@ -19,15 +19,15 @@ let lapStartTime=0,lastLapTime=0;
 //   _raceStartGrace   — grace-counter na go (cars/physics.js + ai.js)
 //   _lapTimes         — array van per-lap tijden
 //   _newUnlocks       — cars vrijgespeeld deze race (finish-screen toast)
-//   _winStreak        — opeenvolgende P1-finishes
-//   _totalNitroUses   — cumulatieve nitro-activaties (alle sessies)
 //   _nitroUseCount    — nitro-activaties deze race (achievements NITRO_JUNKIE)
 //   _airborneAccum    — luchttijd-accumulator (achievement FLYING)
 //   _cleanLapFlag     — geen recovery in deze ronde (achievement CLEAN_LAP)
+//
+// Dead-code (nergens gelezen of geschreven, waarschijnlijk uit ouder
+// design — zou later ge-her-introduceerd kunnen worden via achievements):
+//   _newUnlocks, _totalNitroUses, _winStreak  → verwijderd.
 let _raceMaxSpeed=0,_raceOvertakes=0,_lastPlayerPos=9,_raceStartGrace=0;
 const _lapTimes=[];
-let _newUnlocks=[];
-let _totalNitroUses=0,_winStreak=0;
 let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true;
 
 function _resetRaceState(){

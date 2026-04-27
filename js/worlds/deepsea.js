@@ -264,7 +264,7 @@ function buildShipwreck(){
   // Tilted old ship in infield
   const woodMat=new THREE.MeshLambertMaterial({color:0x4a3020});
   const darkMat=new THREE.MeshLambertMaterial({color:0x2a1a10});
-  const metalMat=new THREE.MeshLambertMaterial({color:0x556655,roughness:1});
+  // metalMat was dead — never bound to a mesh
   const hull=new THREE.Mesh(new THREE.BoxGeometry(24,6,9),woodMat);
   hull.position.set(-55,-2,-30);hull.rotation.set(.18,-.62,.22);scene.add(hull);
   // Hull bottom
