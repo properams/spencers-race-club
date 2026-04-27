@@ -163,8 +163,7 @@ let _raceMaxSpeed=0,_raceOvertakes=0,_lastPlayerPos=9,_raceStartGrace=0;
 const _achieveUnlocked=new Set();
 const _achieveQueue=[];
 let _achieveTimer=0;
-// Rear view mirror camera
-let mirrorCamera=null,_mirrorEnabled=true;
+// Rear view mirror state → js/gameplay/camera.js
 // Title screen animated camera
 let _titleCamT=0;
 // AI headlight point-light pool (4 lights shared across AI cars)

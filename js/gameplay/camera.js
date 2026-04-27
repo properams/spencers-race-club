@@ -5,6 +5,12 @@
 // zichtbaar voor effects/night.js + visuals.js die _camV1/_camV2 lezen.
 const _camV1=new THREE.Vector3(),_camV2=new THREE.Vector3();
 
+// Mirror state (uit main.js verhuisd). mirrorCamera wordt gevuld in
+// core/scene.js buildScene(); _mirrorEnabled toggleable via input.js (M-key).
+// updateMirror() onder in dit bestand gebruikt beide.
+let mirrorCamera=null;
+let _mirrorEnabled=true;
+
 function updateCamera(dt){
   const car=carObjs[playerIdx];if(!car)return;
   // Victory orbit: cinematic rotation around player car after finishing
