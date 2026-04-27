@@ -51,7 +51,7 @@ let trackLightList=[],trackPoles=[],stars=null;
 let plHeadL,plHeadR,plTail;
 let recoverActive=false,recoverTimer=0;
 let nitroLevel=100,nitroActive=false;
-let driftScore=0,driftTimer=0;
+// driftScore / driftTimer → js/gameplay/combo.js
 let lapStartTime=0,lastLapTime=0;
 var bestLapTime=Infinity; // var: ES-modules lezen window.bestLapTime
 const skidMarks=[];
@@ -109,8 +109,7 @@ var _musicDuck=1.0;         // pit-stop ducking factor (1.0 = no duck)
 // _pl* + _slip* scratch vectors → cars/physics.js
 // Wrong-way detector — _elWrongWay → ui/hud.js
 let _wrongWayTimer=0;
-// Mini-turbo (drift release boost)
-let _miniTurboReady=false;
+// _miniTurboReady → js/gameplay/combo.js
 // Score system — _elScore/_elLapDelta → ui/hud.js
 var totalScore=0; // var: ES-modules schrijven window.totalScore
 // Difficulty (0=easy 1=normal 2=hard) — DIFF_MULT in js/config.js
@@ -167,8 +166,7 @@ let _contactPopupCD=0; // collision popup cooldown — max once per 3s
 // _elRpm → ui/hud.js
 // Speed-lines canvas state → js/effects/visuals.js
 // Ghost car state → js/gameplay/ghost.js
-// Drift visual refs
-let _driftBarFill=null,_driftBarEl=null,_driftLabelEl=null;
+// _driftBarFill / _driftBarEl / _driftLabelEl → js/gameplay/combo.js
 // Float text counter (for cleanup)
 let _floatPool=[];
 // Overall fastest lap (all-time, cross-race)
@@ -228,7 +226,7 @@ var _master=null; // var: music ES-module leest window._master
 // ══ PERSISTENCE ══════════════════════════════
 var _coins=0,_totalCoinsEarned=0; // var: persistence cross-script
 var _lastRaceCoins=0,_comboMult=1.0; // var: ES-modules schrijven beide
-let _comboTimer=0,_comboCount=0;
+// _comboTimer / _comboCount → js/gameplay/combo.js (_comboMult blijft hier als var)
 // _bestS1/_bestS2/_bestS3 → js/gameplay/sectors.js
 // ACHIEVEMENTS + DAILY_CHALLENGES → js/gameplay/achievements.js (top of file).
 let _totalNitroUses=0,_winStreak=0;
@@ -262,7 +260,7 @@ let _lastPPos=0;
 // (Speed overlay, confetti, boost ring, slipstream, weather-transition,
 //  safety car → js/effects/* en js/gameplay/safetycar.js.)
 // _RACE_ACHIEVEMENTS → js/gameplay/achievements.js
-let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true,_driftAccum=0;
+let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true; // _driftAccum → gameplay/combo.js
 
 // _achieveToastEl → js/gameplay/achievements.js
 let _floatSlot=0,_floatSlotTimer=0; // float-text stagger

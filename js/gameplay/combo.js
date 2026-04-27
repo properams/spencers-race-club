@@ -1,5 +1,19 @@
 // js/gameplay/combo.js — Fase 2.3/2.4 extraction. Non-module script.
 
+// Combo state (uit main.js verhuisd). _comboMult blijft in main.js als var,
+// want persistence/progression.js leest het via window._comboMult.
+let _comboTimer=0,_comboCount=0;
+
+// Drift state (uit main.js verhuisd) — drift triggert combo, dus zelfde home.
+//   driftScore / driftTimer  — geupdatet in cars/physics.js, gereset per race
+//   _miniTurboReady          — drift→boost release flag
+//   _driftAccum              — accumulator voor DRIFT_KING achievement (3.0s)
+//   _driftBarFill / _driftBarEl / _driftLabelEl — DOM-refs gevuld door
+//                              effects/visuals.js initSpeedLines()
+let driftScore=0,driftTimer=0;
+let _miniTurboReady=false;
+let _driftAccum=0;
+let _driftBarFill=null,_driftBarEl=null,_driftLabelEl=null;
 
 function getSector(progress){if(progress<0.33)return 0;if(progress<0.67)return 1;return 2;}
 
