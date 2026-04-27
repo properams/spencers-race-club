@@ -156,10 +156,7 @@ let _camView=0;
 let _introPanTimer=0;
 // Post-race stats
 let _raceMaxSpeed=0,_raceOvertakes=0,_lastPlayerPos=9,_raceStartGrace=0;
-// Achievements (unlocked set + queue for toast display)
-const _achieveUnlocked=new Set();
-const _achieveQueue=[];
-let _achieveTimer=0;
+// Achievement state → js/gameplay/achievements.js
 // Rear view mirror state → js/gameplay/camera.js
 // Title screen animated camera
 let _titleCamT=0;
@@ -281,7 +278,7 @@ let _lastPPos=0;
 // _RACE_ACHIEVEMENTS → js/gameplay/achievements.js
 let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true,_driftAccum=0;
 
-let _achieveToastEl=null;
+// _achieveToastEl → js/gameplay/achievements.js
 let _floatSlot=0,_floatSlotTimer=0; // float-text stagger
 let _speedLinesFadeT=0,_speedLinesRedrawT=0;
 // (Drift/nitro/boost-trail/ghost/pitstop/AI-mistakes/rev-limiter/gap/

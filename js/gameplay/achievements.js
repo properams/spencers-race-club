@@ -1,6 +1,16 @@
 // js/gameplay/achievements.js — auto-extracted in Fase 4
 // Non-module script.
 
+// Runtime achievement-state (uit main.js verhuisd).
+// _achieveUnlocked: ids die deze sessie zijn vrijgespeeld (Set, geen rebind).
+// _achieveQueue:    queue van te tonen toasts (FIFO; gameloop draint hem).
+// _achieveTimer:    delay-counter voor toast-zichtbaarheid.
+// _achieveToastEl:  DOM-ref naar de toast-popup (gevuld door cacheHUDRefs).
+const _achieveUnlocked=new Set();
+const _achieveQueue=[];
+let _achieveTimer=0;
+let _achieveToastEl=null;
+
 // In-race achievement lookup table (uit main.js verhuisd).
 // Gebruikt door unlockAchievement() hieronder.
 const _RACE_ACHIEVEMENTS={
