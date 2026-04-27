@@ -6,25 +6,31 @@
 // die breekt als samples ontbreken.
 
 
-// One-shot sample player. slots = string of array; bij array random pick
-// (variatie voor bv. drift/screech). Returnt false als geen sample geladen.
-function _playSampleOneShot(slots, vol=0.6, delay=0){
-  if(!audioCtx||!window._hasSFXSample||!window._getSFXBuffer)return false;
+// Generic one-shot sample player. hasFn/getFn parametriseren de categorie
+// (SFX, Ambient, ...) zodat dezelfde implementatie hergebruikt wordt.
+// slots = string of array; bij array random pick (variatie voor drift etc).
+function _playBufferOneShot(hasFn, getFn, slots, vol=0.6, delay=0){
+  if(!audioCtx||!hasFn||!getFn)return false;
   if(window._forceProceduralAudio)return false;
-  const list = Array.isArray(slots) ? slots : [slots];
-  const available = list.filter(s => window._hasSFXSample(s));
-  if(available.length === 0) return false;
-  const slot = available[Math.floor(Math.random() * available.length)];
-  const buf = window._getSFXBuffer(slot);
-  if(!buf) return false;
-  const t = audioCtx.currentTime + delay;
-  const src = audioCtx.createBufferSource();
-  src.buffer = buf;
-  const g = audioCtx.createGain();
-  g.gain.value = vol;
-  src.connect(g); g.connect(_dst());
+  const list=Array.isArray(slots)?slots:[slots];
+  const available=list.filter(s=>hasFn(s));
+  if(!available.length)return false;
+  const slot=available[Math.floor(Math.random()*available.length)];
+  const buf=getFn(slot);
+  if(!buf)return false;
+  const t=audioCtx.currentTime+delay;
+  const src=audioCtx.createBufferSource();
+  src.buffer=buf;
+  const g=audioCtx.createGain();
+  g.gain.value=vol;
+  src.connect(g);g.connect(_dst());
   src.start(t);
   return true;
+}
+
+// SFX shorthand — gebruikt door playTireScreech / playLandSound / etc.
+function _playSampleOneShot(slots, vol=0.6, delay=0){
+  return _playBufferOneShot(window._hasSFXSample,window._getSFXBuffer,slots,vol,delay);
 }
 
 

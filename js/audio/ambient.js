@@ -5,23 +5,9 @@
 // samples.js). Zo ja → sample. Zo nee → procedurele fallback.
 
 
+// Ambient shorthand — gebruikt _playBufferOneShot uit sfx.js (zelfde script-scope).
 function _playAmbientOneShot(slots, vol=0.6, delay=0){
-  if(!audioCtx||!window._hasAmbientSample||!window._getAmbientBuffer)return false;
-  if(window._forceProceduralAudio)return false;
-  const list=Array.isArray(slots)?slots:[slots];
-  const available=list.filter(s=>window._hasAmbientSample(s));
-  if(available.length===0)return false;
-  const slot=available[Math.floor(Math.random()*available.length)];
-  const buf=window._getAmbientBuffer(slot);
-  if(!buf)return false;
-  const t=audioCtx.currentTime+delay;
-  const src=audioCtx.createBufferSource();
-  src.buffer=buf;
-  const g=audioCtx.createGain();
-  g.gain.value=vol;
-  src.connect(g);g.connect(_dst());
-  src.start(t);
-  return true;
+  return _playBufferOneShot(window._hasAmbientSample,window._getAmbientBuffer,slots,vol,delay);
 }
 
 

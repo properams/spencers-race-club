@@ -146,32 +146,54 @@ async function _loadSlot(ctx, url){
   }
 }
 
-// ── Music API ───────────────────────────────────────────────────────────────
-
-function preloadWorld(worldId){
-  if(!window.audioCtx){
-    return Promise.resolve({ kind:'procedural', buffers:{} });
-  }
-  if(_musicCache.has(worldId)) return _musicCache.get(worldId);
-
-  const manifest = MUSIC_MANIFEST[worldId] || {};
-  const slots = Object.keys(manifest);
+// Bundle-preload: één key (worldId / carType) heeft N slots die samen
+// horen. Resolved buffers worden als één object onder die key opgeslagen.
+function _preloadBundle(manifest, cacheMap, readyMap, key){
+  if(!window.audioCtx) return Promise.resolve({});
+  if(cacheMap.has(key)) return cacheMap.get(key);
   const ctx = window.audioCtx;
-
+  const slots = Object.keys(manifest);
   const p = Promise.all(
     slots.map(slot => _loadSlot(ctx, manifest[slot]).then(buf => [slot, buf]))
   ).then(pairs => {
     const buffers = {};
     for(const [slot, buf] of pairs) if(buf) buffers[slot] = buf;
-    const kind = buffers.base ? 'samples' : 'procedural';
-    _musicReady.set(worldId, buffers);
-    _touch(worldId);
-    _evictIfNeeded(worldId);
-    return { kind, buffers };
-  }).catch(_ => ({ kind:'procedural', buffers:{} }));
-
-  _musicCache.set(worldId, p);
+    readyMap.set(key, buffers);
+    return buffers;
+  }).catch(_ => ({}));
+  cacheMap.set(key, p);
   return p;
+}
+
+// Flat-preload: elk slot is z'n eigen cache-entry. Voor globale categorieën
+// (SFX, ambient) waar er geen 'bundle key' is.
+function _preloadFlat(manifest, cacheMap, readyMap){
+  if(!window.audioCtx) return Promise.resolve();
+  const ctx = window.audioCtx;
+  const promises = Object.keys(manifest).map(slot => {
+    if(cacheMap.has(slot)) return cacheMap.get(slot);
+    const p = _loadSlot(ctx, manifest[slot]).then(buf => {
+      if(buf) readyMap.set(slot, buf);
+      return buf;
+    });
+    cacheMap.set(slot, p);
+    return p;
+  });
+  return Promise.all(promises);
+}
+
+// ── Music API ───────────────────────────────────────────────────────────────
+// Music draait op _preloadBundle + LRU-tracking + 'kind' classificatie zodat
+// callers kunnen zien of stem-routing of procedural fallback wordt gekozen.
+
+function preloadWorld(worldId){
+  if(!window.audioCtx) return Promise.resolve({ kind:'procedural', buffers:{} });
+  return _preloadBundle(MUSIC_MANIFEST[worldId] || {}, _musicCache, _musicReady, worldId)
+    .then(buffers => {
+      _touch(worldId);
+      _evictIfNeeded(worldId);
+      return { kind: buffers.base ? 'samples' : 'procedural', buffers };
+    });
 }
 
 function hasMusicStems(worldId){
@@ -183,49 +205,19 @@ function getReadyBuffers(worldId){ return _musicReady.get(worldId) || {}; }
 // ── Engine API ──────────────────────────────────────────────────────────────
 
 function preloadEngine(carType){
-  if(!window.audioCtx) return Promise.resolve({});
-  if(_engineCache.has(carType)) return _engineCache.get(carType);
-
-  const manifest = ENGINE_MANIFEST[carType] || {};
-  const slots = Object.keys(manifest);
-  const ctx = window.audioCtx;
-
-  const p = Promise.all(
-    slots.map(slot => _loadSlot(ctx, manifest[slot]).then(buf => [slot, buf]))
-  ).then(pairs => {
-    const buffers = {};
-    for(const [slot, buf] of pairs) if(buf) buffers[slot] = buf;
-    _engineReady.set(carType, buffers);
-    return buffers;
-  }).catch(_ => ({}));
-
-  _engineCache.set(carType, p);
-  return p;
+  return _preloadBundle(ENGINE_MANIFEST[carType] || {}, _engineCache, _engineReady, carType);
 }
 
 function hasEngineSamples(carType){
   const r = _engineReady.get(carType);
-  if(!r) return false;
-  return Object.keys(r).length >= 2;
+  return !!(r && Object.keys(r).length >= 2);
 }
 function getEngineBuffers(carType){ return _engineReady.get(carType) || {}; }
 
 // ── SFX API ─────────────────────────────────────────────────────────────────
 
 function preloadSFX(){
-  if(!window.audioCtx) return Promise.resolve();
-  const ctx = window.audioCtx;
-  const slots = Object.keys(SFX_MANIFEST);
-  const promises = slots.map(slot => {
-    if(_sfxCache.has(slot)) return _sfxCache.get(slot);
-    const p = _loadSlot(ctx, SFX_MANIFEST[slot]).then(buf => {
-      if(buf) _sfxReady.set(slot, buf);
-      return buf;
-    });
-    _sfxCache.set(slot, p);
-    return p;
-  });
-  return Promise.all(promises);
+  return _preloadFlat(SFX_MANIFEST, _sfxCache, _sfxReady);
 }
 
 function hasSFXSample(slot){ return _sfxReady.has(slot); }
@@ -260,19 +252,7 @@ function getSurfaceBuffer(surface){ return _surfaceReady.get(surface) || null; }
 // ── Ambient API ─────────────────────────────────────────────────────────────
 
 function preloadAmbient(){
-  if(!window.audioCtx) return Promise.resolve();
-  const ctx = window.audioCtx;
-  const slots = Object.keys(AMBIENT_MANIFEST);
-  const promises = slots.map(slot => {
-    if(_ambientCache.has(slot)) return _ambientCache.get(slot);
-    const p = _loadSlot(ctx, AMBIENT_MANIFEST[slot]).then(buf => {
-      if(buf) _ambientReady.set(slot, buf);
-      return buf;
-    });
-    _ambientCache.set(slot, p);
-    return p;
-  });
-  return Promise.all(promises);
+  return _preloadFlat(AMBIENT_MANIFEST, _ambientCache, _ambientReady);
 }
 
 function hasAmbientSample(slot){ return _ambientReady.has(slot); }

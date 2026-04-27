@@ -85,18 +85,18 @@ const Audio = {
   // aan elke tick met (positie, speedRatio 0..1, comboActief). De facade
   // berekent een continue 0..1 intensity en stuurt die door naar de actieve
   // scheduler. Wordt genegeerd na setFinalLap (intensity locked op 1).
+  // Delta-gate voorkomt dat StemRaceMusic.setIntensity per-frame opnieuw
+  // AudioParam-ramps schedule't terwijl de waarde nauwelijks verandert.
   updateMusicIntensity(pos, speedRatio, comboActive){
     const s = window.musicSched;
     if (!s || !s.setIntensity) return;
-    if (s.finalLap) return;  // final-lap heeft prioriteit
-    // Positie-energie: 1e plek voelt zwaar / triomfantelijk, achterhoede
-    // ingehouden. Schaal: 1=0.55, 2=0.40, 3=0.30, 4+=0.20.
+    if (s.finalLap) return;
     const posEnergy = pos===1 ? 0.55 : pos===2 ? 0.40 : pos===3 ? 0.30 : 0.20;
-    // Combo geeft duidelijke pad-swell.
     const comboBoost = comboActive ? 0.30 : 0;
-    // Hoge snelheid voegt subtiele lift toe.
     const speedBoost = Math.max(0, Math.min(1, +speedRatio || 0)) * 0.15;
     const intensity = Math.max(0, Math.min(1, posEnergy + comboBoost + speedBoost));
+    if (this._lastIntensity !== undefined && Math.abs(intensity - this._lastIntensity) < 0.02) return;
+    this._lastIntensity = intensity;
     s.setIntensity(intensity);
   },
 
