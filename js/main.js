@@ -177,8 +177,7 @@ let _floatPool=[];
 var _overallFastestLap=Infinity; // var: persistence cross-script
 // Near-miss bonus cooldowns per car index
 const _nearMissCooldown=[];
-// Pit stop state
-let _pitStopActive=false,_pitStopTimer=0,_pitStopUsed=false;
+// Pit-stop state → js/gameplay/pitstop.js
 // DRS indicator state — _drsActive verhuisd naar worlds/grandprix.js,
 // _drsEl DOM-ref verhuisd naar js/ui/hud.js (groep met andere _el*).
 // AI personalities (assigned in makeAllCars)

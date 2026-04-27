@@ -1,6 +1,12 @@
 // js/gameplay/pitstop.js — auto-extracted in Fase 4
 // Non-module script.
 
+// Pit-stop state (uit main.js verhuisd). _pitStopUsed is per-race-eenmalig:
+// na het rondsturen wordt 'm true en blijft tot resetRaceState in race.js.
+// Cross-script gelezen door cars/physics.js (speed=0 tijdens stop),
+// ui/input.js + ui/hud.js (knop alleen bij car.lap>1 en !active && !used),
+// gameplay/finish.js (penalty-note bij _pitStopUsed).
+let _pitStopActive=false,_pitStopTimer=0,_pitStopUsed=false;
 
 function triggerPitStop(){
   if(_pitStopActive||_pitStopUsed)return;
