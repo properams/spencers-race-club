@@ -9,6 +9,33 @@ const _aiCurA=new THREE.Vector3(),_aiCurB=new THREE.Vector3();
 const _aiBase=new THREE.Vector3();
 const _aiFwdRV=new THREE.Vector3();
 
+// AI runtime data (uit main.js verhuisd).
+//   _aiPersonality    — per car-id: aggr (0..1), consist (0..1), name.
+//                       Gebruikt in cars/build.js makeAllCars().
+//   _aiHeadPool       — pool van 4 PointLights gedeeld door AI cars
+//                       (effects/night.js update). Gevuld in core/scene.js.
+//   _reverseLights    — per car-index reverse-light mesh refs (visibility
+//                       in effects/night.js bij brake). Gevuld in cars/build.js.
+//   _nearMissCooldown — 3s-cooldown counter voor NEAR MISS bonus per car-index
+//                       (cars/physics.js triggert bij dist 2.5..4.5m).
+const _aiPersonality=[
+  {aggr:0.6,consist:0.8,name:'Aggressive'}, // Bugatti
+  {aggr:0.9,consist:0.6,name:'Wild'},       // Lamborghini
+  {aggr:0.4,consist:0.9,name:'Consistent'}, // Maserati
+  {aggr:0.7,consist:0.7,name:'Balanced'},   // Ferrari
+  {aggr:1.0,consist:0.5,name:'Champion'},   // RB F1
+  {aggr:0.8,consist:0.5,name:'Muscle'},     // Mustang
+  {aggr:0.3,consist:0.95,name:'Precise'},   // Tesla
+  {aggr:0.5,consist:0.85,name:'Steady'},    // Audi
+  {aggr:0.7,consist:0.85,name:'Precise'},   // 8 Porsche
+  {aggr:0.85,consist:0.7,name:'Explosive'}, // 9 McLaren
+  {aggr:0.95,consist:0.6,name:'Dominant'},  // 10 Mercedes F1
+  {aggr:0.8,consist:0.75,name:'Hyperfast'}, // 11 Koenigsegg
+];
+const _aiHeadPool=[];
+const _reverseLights=[];
+const _nearMissCooldown=[];
+
 function updateAI(car,dt){
   if(car.finished)return;
   const player=carObjs[playerIdx];

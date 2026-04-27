@@ -135,8 +135,7 @@ var _savedHS=0,_savedBL=Infinity; // var: ES-module persistence schrijft window.
 // Achievement state → js/gameplay/achievements.js
 // Rear view mirror state → js/gameplay/camera.js
 // _titleCamT → js/gameplay/camera.js
-// AI headlight point-light pool (4 lights shared across AI cars)
-const _aiHeadPool=[];
+// _aiHeadPool → js/cars/ai.js
 // _revLimiterTimer → js/effects/visuals.js
 // Gap display HUD refs → ui/hud.js
 // Quick restart hold timer
@@ -153,28 +152,11 @@ let _contactPopupCD=0; // collision popup cooldown — max once per 3s
 // _floatPool was dead code (nergens gelezen) — verwijderd.
 // Overall fastest lap (all-time, cross-race)
 var _overallFastestLap=Infinity; // var: persistence cross-script
-// Near-miss bonus cooldowns per car index
-const _nearMissCooldown=[];
+// _nearMissCooldown → js/cars/ai.js
 // Pit-stop state → js/gameplay/pitstop.js
 // DRS indicator state — _drsActive verhuisd naar worlds/grandprix.js,
 // _drsEl DOM-ref verhuisd naar js/ui/hud.js (groep met andere _el*).
-// AI personalities (assigned in makeAllCars)
-const _aiPersonality=[
-  {aggr:0.6,consist:0.8,name:'Aggressive'}, // Bugatti
-  {aggr:0.9,consist:0.6,name:'Wild'},       // Lamborghini
-  {aggr:0.4,consist:0.9,name:'Consistent'}, // Maserati
-  {aggr:0.7,consist:0.7,name:'Balanced'},   // Ferrari
-  {aggr:1.0,consist:0.5,name:'Champion'},   // RB F1
-  {aggr:0.8,consist:0.5,name:'Muscle'},     // Mustang
-  {aggr:0.3,consist:0.95,name:'Precise'},   // Tesla
-  {aggr:0.5,consist:0.85,name:'Steady'},    // Audi
-  {aggr:0.7,consist:0.85,name:'Precise'},   // 8 Porsche
-  {aggr:0.85,consist:0.7,name:'Explosive'}, // 9 McLaren
-  {aggr:0.95,consist:0.6,name:'Dominant'},  // 10 Mercedes F1
-  {aggr:0.8,consist:0.75,name:'Hyperfast'}, // 11 Koenigsegg
-];
-// Reverse light mesh refs per car index
-const _reverseLights=[];
+// _aiPersonality / _reverseLights → js/cars/ai.js
 // Close battle indicator
 let _closeBattleTimer=0;
 // Fastest lap flash timer
