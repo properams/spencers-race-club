@@ -166,8 +166,7 @@ let _weatherForecastTimer=0,_weatherForecastFired=false;
 let _colFlashT=0;
 let _contactPopupCD=0; // collision popup cooldown — max once per 3s
 // _elRpm → ui/hud.js
-// Speed lines canvas
-let _speedLinesCvs=null,_speedLinesCtx=null;
+// Speed-lines canvas state → js/effects/visuals.js
 // Ghost car state → js/gameplay/ghost.js
 // Drift visual refs
 let _driftBarFill=null,_driftBarEl=null,_driftLabelEl=null;
@@ -269,7 +268,7 @@ let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true,_driftAccum=0;
 
 // _achieveToastEl → js/gameplay/achievements.js
 let _floatSlot=0,_floatSlotTimer=0; // float-text stagger
-let _speedLinesFadeT=0,_speedLinesRedrawT=0;
+// _speedLinesFadeT / _speedLinesRedrawT → js/effects/visuals.js
 // (Drift/nitro/boost-trail/ghost/pitstop/AI-mistakes/rev-limiter/gap/
 //  collision-flash/quick-restart/weather-forecast/rear-mirror visuals
 //  → js/effects/visuals.js, gameplay/*, ui/hud.js.)

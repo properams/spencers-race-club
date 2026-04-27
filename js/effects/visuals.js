@@ -7,6 +7,11 @@ const _RPM_GRAD_NORMAL='linear-gradient(180deg,#00cc88,#00ff99)';
 const _RPM_GEAR_RANGES=[0,.18,.36,.54,.72,.9];
 let _lastRedline=null;
 
+// Speed-lines canvas state (uit main.js verhuisd). Lazy-init in initSpeedLines,
+// fade/redraw timers gemanaged in updateSpeedLines hieronder. Reset in race.js.
+let _speedLinesCvs=null,_speedLinesCtx=null;
+let _speedLinesFadeT=0,_speedLinesRedrawT=0;
+
 function updateSpeedOverlay(){
   const car=carObjs[playerIdx];
   const ov=document.getElementById('speedOverlay');if(!ov||!car)return;
