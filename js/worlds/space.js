@@ -448,7 +448,8 @@ function buildSpaceDust(){
   _spaceDustGeo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
   _spaceDustGeo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
   _spaceDustParticles=new THREE.Points(_spaceDustGeo,new THREE.PointsMaterial({
-    vertexColors:true,size:.38,sizeAttenuation:false,transparent:true,opacity:.52
+    vertexColors:true,size:.42,sizeAttenuation:false,transparent:true,opacity:.7,
+    blending:THREE.AdditiveBlending,depthWrite:false
   }));
   scene.add(_spaceDustParticles);
 }

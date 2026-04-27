@@ -512,7 +512,7 @@ function buildDeepSeaBubbles(){
     pos[i*3+2]=cz+(Math.random()-.5)*500;
   }
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  const mat=new THREE.PointsMaterial({color:0xaaddff,size:.35,transparent:true,opacity:.55,sizeAttenuation:true});
+  const mat=new THREE.PointsMaterial({color:0xaaddff,size:.4,transparent:true,opacity:.7,sizeAttenuation:true,blending:THREE.AdditiveBlending,depthWrite:false});
   const pts=new THREE.Points(geo,mat);scene.add(pts);
   _dsaBubbleGeo=geo;_dsaBubblePos=pos;
 }

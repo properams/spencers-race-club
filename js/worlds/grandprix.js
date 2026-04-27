@@ -55,21 +55,40 @@ function buildDRSZone(){
   const signTex=new THREE.CanvasTexture(signCvs);
   const signMesh=new THREE.Sprite(new THREE.SpriteMaterial({map:signTex,transparent:true}));
   signMesh.position.copy(pDet);signMesh.position.y=5.2;signMesh.scale.set(14,2.2,1);scene.add(signMesh);
-  // Painted activation zone strip
+  // Painted activation zone strip — emissive boost + per-strip handle for pulse
+  const _drsStrips=[];
   for(let i=0;i<12;i++){
     const t=tStart+(tEnd-tStart+1)%1*(i/12);
     const pp=trackCurve.getPoint(t%1);
     const strip=new THREE.Mesh(new THREE.PlaneGeometry(TW*1.9,.8),
-      new THREE.MeshLambertMaterial({color:0x00cc44,emissive:0x005522,transparent:true,opacity:.45}));
+      new THREE.MeshLambertMaterial({color:0x00ff55,emissive:0x00cc44,emissiveIntensity:1.6,transparent:true,opacity:.7}));
     strip.rotation.x=-Math.PI/2;strip.position.copy(pp);strip.position.y=.018;scene.add(strip);
+    _drsStrips.push({mesh:strip,phase:i*.5});
   }
-  _wpDrsZones.push({detPos:pDet.clone(),detRadius:TW+3,startT:tStart,endT:tEnd,cooldown:0});
+  // Detection board itself: bump emissive so it bloom-glows
+  board.material.emissiveIntensity=1.8;
+  poleMat.emissiveIntensity=1.5;
+  _wpDrsZones.push({detPos:pDet.clone(),detRadius:TW+3,startT:tStart,endT:tEnd,cooldown:0,strips:_drsStrips,board:board});
 }
 
 function checkDRSZone(dt){
   if(!_wpDrsZones.length)return;
   const drs=_wpDrsZones[0];const car=carObjs[playerIdx];
   drs.cooldown=Math.max(0,drs.cooldown-dt);
+  // Visual pulse on activation strips — chase pattern when DRS is open, slow
+  // breathing when armed and ready, dim when on cooldown.
+  if(drs.strips){
+    const t=_nowSec;
+    const armed=drs.cooldown<=0;
+    const speedHz=_drsActive?5.5:armed?1.4:0.6;
+    const baseInt=_drsActive?2.4:armed?1.6:0.5;
+    drs.strips.forEach(s=>{
+      const v=Math.sin(t*speedHz+s.phase);
+      s.mesh.material.emissiveIntensity=baseInt*0.5+baseInt*0.5*v;
+      s.mesh.material.opacity=_drsActive?.85:armed?.7:.3;
+    });
+    if(drs.board)drs.board.material.emissiveIntensity=armed?1.8:0.4;
+  }
   const d=car.mesh.position.distanceTo(drs.detPos);
   if(d<drs.detRadius&&drs.cooldown<=0){
     _drsActive=true;_drsTimer=6;_drsBoostUsed=false;
