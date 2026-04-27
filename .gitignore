@@ -1,5 +1,6 @@
 backups/
-.claude/
+.claude/*
+!.claude/agents/
 
 # Werk-documentatie / planning — lokaal houden, niet publiceren
 CLAUDE.md
