@@ -1,9 +1,37 @@
 // js/audio/ambient.js — Fase 2.3/2.4 extraction. Non-module script.
+//
+// Dispatch-laag: thunder/crowd-cheer/crowd-loop/wind-loop checken eerst
+// of een sample-buffer geladen is via window._hasAmbientSample (uit
+// samples.js). Zo ja → sample. Zo nee → procedurele fallback.
+
+
+function _playAmbientOneShot(slots, vol=0.6, delay=0){
+  if(!audioCtx||!window._hasAmbientSample||!window._getAmbientBuffer)return false;
+  if(window._forceProceduralAudio)return false;
+  const list=Array.isArray(slots)?slots:[slots];
+  const available=list.filter(s=>window._hasAmbientSample(s));
+  if(available.length===0)return false;
+  const slot=available[Math.floor(Math.random()*available.length)];
+  const buf=window._getAmbientBuffer(slot);
+  if(!buf)return false;
+  const t=audioCtx.currentTime+delay;
+  const src=audioCtx.createBufferSource();
+  src.buffer=buf;
+  const g=audioCtx.createGain();
+  g.gain.value=vol;
+  src.connect(g);g.connect(_dst());
+  src.start(t);
+  return true;
+}
 
 
 function playThunder(){
   if(!audioCtx)return;
-  const delay=.4+Math.random()*1.8,t=audioCtx.currentTime+delay;
+  // Sample-pad: random pick uit thunder1/2/3 met willekeurige delay zodat
+  // de procedurele variatie behouden blijft.
+  const delay=.4+Math.random()*1.8;
+  if(_playAmbientOneShot(['thunder1','thunder2','thunder3'],0.5,delay))return;
+  const t=audioCtx.currentTime+delay;
   const sz=Math.ceil(audioCtx.sampleRate*2.8);
   const buf=audioCtx.createBuffer(1,sz,audioCtx.sampleRate);
   const d=buf.getChannelData(0);for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;
@@ -24,6 +52,18 @@ function updateThunder(dt){
 
 function initCrowdNoise(){
   if(!audioCtx||_crowdGain)return;
+  // Sample-pad: gebruik crowdLoop buffer als geladen (en niet force-procedural).
+  if(!window._forceProceduralAudio&&window._hasAmbientSample&&window._hasAmbientSample('crowdLoop')){
+    const buf=window._getAmbientBuffer('crowdLoop');
+    if(buf){
+      const src=audioCtx.createBufferSource();src.buffer=buf;src.loop=true;
+      _crowdGain=audioCtx.createGain();_crowdGain.gain.value=0;
+      src.connect(_crowdGain);_crowdGain.connect(_dst());
+      src.start();_crowdSrc=src;
+      return;
+    }
+  }
+  // Procedurele fallback: dual-bandpass noise loop.
   const sz=Math.ceil(audioCtx.sampleRate*3.2);
   const buf=audioCtx.createBuffer(1,sz,audioCtx.sampleRate);
   const d=buf.getChannelData(0);for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;
@@ -50,6 +90,19 @@ function updateCrowdNoise(pPos){
 
 function startAmbientWind(){
   if(!audioCtx||_ambientWind)return;
+  // Sample-pad: gebruik windLoop buffer als geladen.
+  if(!window._forceProceduralAudio&&window._hasAmbientSample&&window._hasAmbientSample('windLoop')){
+    const buf=window._getAmbientBuffer('windLoop');
+    if(buf){
+      const src=audioCtx.createBufferSource();src.buffer=buf;src.loop=true;
+      const g=audioCtx.createGain();g.gain.value=0;
+      src.connect(g);g.connect(_dst());src.start();
+      const t=audioCtx.currentTime;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.038,t+2.5);
+      _ambientWind=src;_ambientWindGain=g;
+      return;
+    }
+  }
+  // Procedurele fallback: bandpass + highpass filter chain
   const sz=audioCtx.sampleRate*2;
   const buf=audioCtx.createBuffer(1,sz,audioCtx.sampleRate);
   const d=buf.getChannelData(0);for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;
@@ -59,7 +112,6 @@ function startAmbientWind(){
   const g=audioCtx.createGain();g.gain.value=0;
   src.connect(f1);f1.connect(f2);f2.connect(g);g.connect(_dst());
   src.start();
-  // Gentle fade-in
   const t=audioCtx.currentTime;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.038,t+2.5);
   _ambientWind=src;_ambientWindGain=g;
 }
@@ -77,6 +129,7 @@ function stopAmbientWind(){
 
 function playCrowdCheer(){
   if(!audioCtx)return;
+  if(_playAmbientOneShot('crowdCheer',0.65))return;
   const sz=Math.ceil(audioCtx.sampleRate*.55);
   const buf=audioCtx.createBuffer(1,sz,audioCtx.sampleRate);
   const d=buf.getChannelData(0);for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;

@@ -878,10 +878,16 @@ function startSelectMusic(){
   if(window.selectMusic&&window.selectMusic.running)return;
   if(window.selectMusic){try{window.selectMusic.stop();}catch(_){}window.selectMusic=null;}
   window.selectMusic=_safeStartMusic(()=>new SelectMusic(window.audioCtx));
-  // Preload muziek-stems voor de huidige wereld (idempotent). Als user een
-  // andere wereld kiest triggert select.js rebuildWorld een nieuwe preload.
+  // Preload muziek-stems + globale SFX + surface voor de huidige wereld
+  // (idempotent). Als user een andere wereld kiest triggert select.js
+  // rebuildWorld een nieuwe preload-cyclus.
   if(window.activeWorld&&typeof window._preloadWorld==='function'){
     window._preloadWorld(window.activeWorld);
+  }
+  if(typeof window._preloadSFX==='function')window._preloadSFX();
+  if(typeof window._preloadAmbient==='function')window._preloadAmbient();
+  if(typeof window._preloadSurfacesForWorld==='function'&&window.activeWorld){
+    window._preloadSurfacesForWorld(window.activeWorld);
   }
 }
 

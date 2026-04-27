@@ -46,6 +46,22 @@ const Audio = {
     if(typeof window._preloadWorld !== 'function') return Promise.resolve({kind:'procedural'});
     return window._preloadWorld(worldId);
   },
+  // Preload alle dispatch-categorieën voor de huidige race-config:
+  // SFX (globaal), surface voor de actieve wereld, engine voor het geselecteerde
+  // car-type. Idempotent — caches dedupliceren herhaalde aanroepen. Wordt
+  // aangeroepen vanaf select-flow zodat samples klaar zijn voor race-start.
+  preloadAll(carType){
+    const out = [];
+    if(window._preloadSFX) out.push(window._preloadSFX());
+    if(window._preloadAmbient) out.push(window._preloadAmbient());
+    if(window._preloadSurfacesForWorld && window.activeWorld){
+      out.push(window._preloadSurfacesForWorld(window.activeWorld));
+    }
+    if(window._preloadEngine && carType){
+      out.push(window._preloadEngine(carType));
+    }
+    return Promise.all(out);
+  },
   fadeOut(sched, dur) { return window._fadeOutMusic && window._fadeOutMusic(sched, dur); },
   safeStart(factory)  { return window._safeStartMusic && window._safeStartMusic(factory); },
   applyMusicGain(ramp){ return window._applyMusicGain && window._applyMusicGain(ramp); },

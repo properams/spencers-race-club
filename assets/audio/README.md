@@ -10,6 +10,7 @@ draait gewoon door op procedurele synth voor wat ontbreekt.
 | Engine | `engine/<carType>/` | `_preloadEngine(carType)` | `ENGINE_MANIFEST` |
 | SFX | `sfx/` | `_preloadSFX()` | `SFX_MANIFEST` |
 | Surface | `surface/` | `_preloadSurface(surface)` | `SURFACE_MANIFEST` |
+| Ambient | `ambient/` | `_preloadAmbient()` | `AMBIENT_MANIFEST` |
 
 ## Muziek
 
@@ -105,6 +106,30 @@ Filenames: `assets/audio/surface/<slot>.ogg`.
 
 **Encoding**: ogg vorbis q4, mono, 44.1 kHz, 2-3 sec loopable.
 
+## Ambient
+
+Omgevingsgeluiden. Procedurele fallback in `ambient.js`.
+
+| Slot | Duur | Functie |
+|---|---|---|
+| `thunder1.ogg` | 2-3s | Donder variatie 1 (geactiveerd tijdens regen) |
+| `thunder2.ogg` | 2-3s | Donder variatie 2 (random pick) |
+| `thunder3.ogg` | 2-3s | Donder variatie 3 (random pick) |
+| `crowd-cheer.ogg` | 0.5-1s | Korte cheer-burst (overtake / podium) |
+| `crowd-loop.ogg` | 3-5s loopable | Doorlopend publieks-rumoer (vervangt procedural) |
+| `wind-loop.ogg` | 3-5s loopable | Environmental wind achtergrond (niet de car-wind) |
+
+Filenames: `assets/audio/ambient/<slot>.ogg`.
+
+**Bronnen** (allen freesound.org / Pixabay, filter op CC0):
+- `"thunder rumble"`, `"thunderstorm"`, `"distant thunder"` → thunder1-3
+- `"crowd cheer"`, `"stadium cheer"`, `"applause"` → crowd-cheer
+- `"crowd ambience"`, `"stadium crowd loop"` → crowd-loop (zorg loopable)
+- `"ambient wind loop"`, `"wind atmosphere"` → wind-loop
+
+**Encoding**: ogg vorbis q4, stereo voor crowd/wind (ruimtelijk effect),
+mono mag voor thunder, 44.1 kHz.
+
 ## A/B debug toggle
 
 Tijdens het spelen druk **Shift+P** om procedural ↔ samples te flippen.
@@ -126,6 +151,7 @@ _samplesDebug()                    // alles in één tabel
 _hasMusicStems('neoncity')         // synchrone music-check
 _hasEngineSamples('f1')            // engine-check per car-type
 _hasSFXSample('brake')             // sfx-check per slot
+_hasAmbientSample('thunder1')      // ambient-check per slot
 _getCurrentSurface()               // welke surface is actief
 _musicDebug()                      // muziek-scheduler state
 ```

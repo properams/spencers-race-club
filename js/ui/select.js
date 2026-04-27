@@ -100,6 +100,9 @@ function _selectPreviewCar(defId){
   selCarId=defId;
   setPreviewCar(defId);
   const def=CAR_DEFS.find(d=>d.id===defId);if(!def)return;
+  // Preload engine-samples voor dit car-type (idempotent). Als ENGINE_MANIFEST
+  // voor dit type lege URLs heeft is dit gratis een no-op.
+  if(window.Audio&&window.Audio.preloadAll)window.Audio.preloadAll(def.type);
   const n=document.getElementById('prevName');
   if(n){n.style.cssText+='transition:none;opacity:0;transform:translateY(8px)';setTimeout(()=>{n.textContent=def.name;n.style.cssText+='transition:all .25s ease;opacity:1;transform:translateY(0)';},80);}
   const b=document.getElementById('prevBrand');if(b)b.textContent=def.brand;
@@ -134,10 +137,11 @@ function rebuildWorld(newWorld){
   if(newWorld===activeWorld)return;
   activeWorld=newWorld;
   localStorage.setItem('src_world',newWorld);
-  // Preload muziek-stems voor deze wereld (fire-and-forget). Als de assets
-  // er zijn en op tijd klaar voor race-start, gebruikt music.js de stems;
-  // anders fallback naar procedural synth.
+  // Preload muziek-stems + surface voor deze wereld (fire-and-forget). Als
+  // de assets er zijn en op tijd klaar voor race-start gebruikt music.js
+  // de stems en engine.js de surface-loop; anders fallback naar procedural.
   if(window.Audio&&window.Audio.preloadWorld)window.Audio.preloadWorld(newWorld);
+  if(window._preloadSurfacesForWorld)window._preloadSurfacesForWorld(newWorld);
   const _wasDark=isDark;
   buildScene(); // resets isDark=false then calls toggleNight() → sets isDark=true
   if(!_wasDark)toggleNight(); // if was day, flip back to day

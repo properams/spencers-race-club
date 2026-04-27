@@ -67,6 +67,9 @@ var audioCtx=null; // var: music ES-module leest window.audioCtx
 let engineOsc=null,engineGain=null,_rollGain=null,_rollSrc=null,_rollFilt=null;
 // Car-wind: highpass-filtered noise loop, fade-in boven ~65% topspeed.
 let _carWindGain=null,_carWindSrc=null,_carWindFilt=null;
+// Sample-pad: als windHigh-buffer geladen is, gebruikt engine.js deze ipv
+// de procedurele noise-bron. Lazy-init bij eerste detectie.
+let _carWindSampleGain=null,_carWindSampleSrc=null;
 
 // Special track objects
 const jumpRamps=[],spinPads=[],boostPads=[],collectibles=[];

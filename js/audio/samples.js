@@ -68,6 +68,18 @@ const SURFACE_MANIFEST = {
   dirt:    '',
 };
 
+// Ambient: omgevingsgeluiden. Thunder krijgt 3 variaties voor random pick,
+// crowd-cheer one-shot, crowd + wind als loops. Filename pattern:
+// assets/audio/ambient/<slot>.ogg.
+const AMBIENT_MANIFEST = {
+  thunder1:   '',
+  thunder2:   '',
+  thunder3:   '',
+  crowdCheer: '',
+  crowdLoop:  '',  // looped achtergrond crowd-noise
+  windLoop:   '',  // looped environmental wind (niet de car-wind)
+};
+
 // Per-wereld default tire-surface. Override via getCurrentSurface() als
 // later per-zone surfaces gewenst zijn (bv. ice patch op grandprix).
 const WORLD_DEFAULT_SURFACE = {
@@ -96,6 +108,9 @@ const _sfxReady = new Map();      // slot → AudioBuffer
 
 const _surfaceCache = new Map();  // surface → Promise
 const _surfaceReady = new Map();  // surface → AudioBuffer
+
+const _ambientCache = new Map();  // slot → Promise
+const _ambientReady = new Map();  // slot → AudioBuffer
 
 function _evictIfNeeded(currentWorld){
   while(_musicLru.length > LRU_MAX){
@@ -242,6 +257,27 @@ function getCurrentSurface(){
 function hasSurfaceSample(surface){ return _surfaceReady.has(surface); }
 function getSurfaceBuffer(surface){ return _surfaceReady.get(surface) || null; }
 
+// ── Ambient API ─────────────────────────────────────────────────────────────
+
+function preloadAmbient(){
+  if(!window.audioCtx) return Promise.resolve();
+  const ctx = window.audioCtx;
+  const slots = Object.keys(AMBIENT_MANIFEST);
+  const promises = slots.map(slot => {
+    if(_ambientCache.has(slot)) return _ambientCache.get(slot);
+    const p = _loadSlot(ctx, AMBIENT_MANIFEST[slot]).then(buf => {
+      if(buf) _ambientReady.set(slot, buf);
+      return buf;
+    });
+    _ambientCache.set(slot, p);
+    return p;
+  });
+  return Promise.all(promises);
+}
+
+function hasAmbientSample(slot){ return _ambientReady.has(slot); }
+function getAmbientBuffer(slot){ return _ambientReady.get(slot) || null; }
+
 // ── Debug ──────────────────────────────────────────────────────────────────
 
 function _samplesDebug(){
@@ -252,6 +288,7 @@ function _samplesDebug(){
     engine_ready: [..._engineReady.keys()].map(t => `${t}:${Object.keys(_engineReady.get(t)).length}`),
     sfx_ready: [..._sfxReady.keys()],
     surface_ready: [..._surfaceReady.keys()],
+    ambient_ready: [..._ambientReady.keys()],
     force_procedural: !!window._forceProceduralAudio,
   };
   console.table(info);
@@ -263,6 +300,7 @@ window.MUSIC_MANIFEST = MUSIC_MANIFEST;
 window.ENGINE_MANIFEST = ENGINE_MANIFEST;
 window.SFX_MANIFEST = SFX_MANIFEST;
 window.SURFACE_MANIFEST = SURFACE_MANIFEST;
+window.AMBIENT_MANIFEST = AMBIENT_MANIFEST;
 window.WORLD_DEFAULT_SURFACE = WORLD_DEFAULT_SURFACE;
 
 window._preloadWorld = preloadWorld;
@@ -283,6 +321,10 @@ window._getCurrentSurface = getCurrentSurface;
 window._hasSurfaceSample = hasSurfaceSample;
 window._getSurfaceBuffer = getSurfaceBuffer;
 
+window._preloadAmbient = preloadAmbient;
+window._hasAmbientSample = hasAmbientSample;
+window._getAmbientBuffer = getAmbientBuffer;
+
 window._samplesDebug = _samplesDebug;
 
 export {
@@ -291,4 +333,5 @@ export {
   preloadSFX, hasSFXSample, getSFXBuffer, SFX_MANIFEST,
   preloadSurface, preloadSurfacesForWorld, getCurrentSurface,
   hasSurfaceSample, getSurfaceBuffer, SURFACE_MANIFEST,
+  preloadAmbient, hasAmbientSample, getAmbientBuffer, AMBIENT_MANIFEST,
 };

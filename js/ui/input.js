@@ -64,11 +64,25 @@ window.addEventListener('keydown',e=>{
 
 // A/B audio-debug toggle: Shift+P forceert procedurele path, ook als
 // samples geladen zijn. Handig voor side-by-side vergelijken bij tuning.
-// State wordt door samples.js / engine.js / sfx.js gerespecteerd.
+// State wordt door samples.js / engine.js / sfx.js gerespecteerd. Tijdens
+// een actieve race wordt de muziek ook direct vervangen (fade + restart
+// via dispatcher) zodat je het verschil onmiddellijk hoort.
 window.addEventListener('keydown',e=>{
   if(e.code!=='KeyP'||!e.shiftKey)return;
   window._forceProceduralAudio=!window._forceProceduralAudio;
   const msg=window._forceProceduralAudio?'🎛 PROCEDURAL FORCED':'🎛 SAMPLES ENABLED';
   if(typeof showPopup==='function')showPopup(msg,'#ffaa44',1400);
   console.log('[audio]',msg);
+  // Mid-race music switch: fade huidige scheduler en start nieuwe via
+  // dispatcher. Dispatcher (createStemRaceMusicIfReady) respecteert de
+  // toggle, dus de juiste pad wordt automatisch gekozen.
+  if(typeof gameState!=='undefined'&&gameState==='RACE'&&window.musicSched&&window.audioCtx){
+    if(window._fadeOutMusic)window._fadeOutMusic(window.musicSched,0.35);
+    window.musicSched=null;
+    setTimeout(()=>{
+      if(gameState==='RACE'&&!window.musicSched&&window.audioCtx&&window._safeStartMusic){
+        window.musicSched=window._safeStartMusic(()=>window._createRaceMusicForWorld());
+      }
+    },420);
+  }
 });

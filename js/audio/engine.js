@@ -160,13 +160,37 @@ function updateEngine(spd){
   }
 
   // ── CAR-WIND (boven ~65% topspeed) — beide engine-paden ────────────────
+  // Ratio-gain: 0 onder 0.65, lineair naar 0.18 op ratio 1.0. Sample-pad
+  // (windHigh in SFX_MANIFEST) krijgt voorrang als beschikbaar; anders
+  // fallback naar de procedurele highpass-noise loop uit initEngine.
   if(_carWindGain){
-    // Ratio-gain: 0 onder 0.65, lineair naar 0.18 op ratio 1.0.
     const windGain=ratio<0.65?0:(ratio-0.65)*(0.18/0.35);
-    _carWindGain.gain.setTargetAtTime(windGain,t,.25);
-    if(_carWindFilt){
-      // Filter-cutoff schuift omhoog met snelheid voor "swooshy" feel.
-      _carWindFilt.frequency.setTargetAtTime(600+ratio*1800,t,.25);
+    const useWindSample=!window._forceProceduralAudio
+      && window._hasSFXSample
+      && window._hasSFXSample('windHigh');
+    if(useWindSample){
+      // Lazy init sample-loop bij eerste keer dat sample beschikbaar is.
+      if(!_carWindSampleGain){
+        const buf=window._getSFXBuffer('windHigh');
+        if(buf){
+          const src=audioCtx.createBufferSource();
+          src.buffer=buf;src.loop=true;
+          const g=audioCtx.createGain();g.gain.value=0;
+          src.connect(g);g.connect(_dst());
+          src.start(audioCtx.currentTime);
+          _carWindSampleGain=g;_carWindSampleSrc=src;
+        }
+      }
+      // Mute procedural, ramp sample
+      _carWindGain.gain.setTargetAtTime(0,t,.25);
+      if(_carWindSampleGain)_carWindSampleGain.gain.setTargetAtTime(windGain,t,.25);
+    }else{
+      // Mute sample (indien actief), ramp procedural
+      if(_carWindSampleGain)_carWindSampleGain.gain.setTargetAtTime(0,t,.25);
+      _carWindGain.gain.setTargetAtTime(windGain,t,.25);
+      if(_carWindFilt){
+        _carWindFilt.frequency.setTargetAtTime(600+ratio*1800,t,.25);
+      }
     }
   }
 
