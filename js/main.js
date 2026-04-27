@@ -279,14 +279,10 @@ clock=new THREE.Clock();
 // loop() + FPS/quality state → js/core/loop.js
 
 // ══ TOUCH CONTROLS ══════════════════════════
-let _touchControlsReady=false,_wakeLock=null,_hwKeyboardDetected=false;
-// HW-keyboard detection listener → js/ui/input.js
-async function _acquireWakeLock(){
-  try{if('wakeLock' in navigator&&!_wakeLock)_wakeLock=await navigator.wakeLock.request('screen');}catch(_){}
-}
-// Reacquire wake lock when page becomes visible again (iOS drops it on blur)
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&(gameState==='RACE'||gameState==='COUNTDOWN'))_acquireWakeLock();});
+// _touchControlsReady, _wakeLock, _hwKeyboardDetected,
+// _acquireWakeLock + visibilitychange-listener,
 // _HAPTIC_MS + _ALSO_GAS → js/ui/touch.js
+// HW-keyboard detection listener → js/ui/input.js
 // (_resetRaceState → js/gameplay/race.js)
 // ══ BOOT ════════════════════════════════════
 // boot() + helpers → js/core/boot.js. Aanroep blijft hier zodat alle
