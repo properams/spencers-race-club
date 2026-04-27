@@ -15,7 +15,8 @@ let _miniTurboReady=false;
 let _driftAccum=0;
 let _driftBarFill=null,_driftBarEl=null,_driftLabelEl=null;
 
-function getSector(progress){if(progress<0.33)return 0;if(progress<0.67)return 1;return 2;}
+// getSector(progress) was dead — vervangen door inline ternary in
+// gameplay/tracklimits.js (regel 121).
 
 function triggerCombo(reason){
   _comboCount++;_comboTimer=8.0;

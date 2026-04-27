@@ -1,7 +1,7 @@
 // js/ui/select.js — non-module script.
 
-// Car-preview state (uit main.js verhuisd) — gebruikt in initCarPreview/updateCarPreview.
-let carPreviews={};
+// Car-preview state — gebruikt in initCarPreview/updateCarPreview.
+// (carPreviews dict verwijderd samen met buildCarPreviews — was de enige populator.)
 let _prevRen=null,_prevScene=null,_prevCam=null,_prevCarMesh=null,_prevDefId=-1;
 const _unlockHints=[
   '','','','',
@@ -61,32 +61,10 @@ function updateCarPreview(dt){
   _prevRen.render(_prevScene,_prevCam);
 }
 
-function buildCarPreviews(){
-  const W=200,H=118;
-  const pr=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
-  pr.setSize(W,H);pr.setPixelRatio(Math.min(devicePixelRatio,2));
-  pr.toneMapping=THREE.ACESFilmicToneMapping;pr.toneMappingExposure=1.3;
-  ThreeCompat.applyRendererColorSpace(pr);pr.setClearColor(0x000000,0);
-  const ps=new THREE.Scene();
-  const pc=new THREE.PerspectiveCamera(36,W/H,.1,100);
-  pc.position.set(4.0,2.0,5.2);pc.lookAt(0,.45,0);
-  const sun=new THREE.DirectionalLight(0xfff8f0,2.1);sun.position.set(4,8,5);ps.add(sun);
-  const fill=new THREE.DirectionalLight(0xaabbff,.5);fill.position.set(-3,2,3);ps.add(fill);
-  ps.add(new THREE.AmbientLight(0x8899cc,.65));
-  ps.add(new THREE.HemisphereLight(0x9bbfdd,0x4a6a3d,.45));
-  CAR_DEFS.forEach(def=>{
-    const mesh=makeCar(def);
-    ps.add(mesh);
-    pr.render(ps,pc);
-    carPreviews[def.id]=pr.domElement.toDataURL('image/png');
-    ps.remove(mesh);
-    mesh.traverse(o=>{
-      if(o.geometry)o.geometry.dispose();
-      if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}
-    });
-  });
-  pr.dispose();
-}
+// buildCarPreviews was dead — render-to-texture pre-render van 12 cars naar
+// PNG (bedoeld voor select-screen thumbnails). Vervangen door live 3D
+// preview (initCarPreview/setPreviewCar/updateCarPreview hierboven).
+// Verwijderd in dead-code cleanup.
 
 
 function _updateSelectSummary(){

@@ -430,6 +430,10 @@ function buildNeonNightObjects(){
 }
 
 
+// TODO niet ge-wired: deze EMP-zones (3 stuks) en buildNeonHoloWalls
+// hieronder worden niet aangeroepen door buildNeonCityEnvironment(). De
+// _neonEmpZones / _neonHoloWalls arrays in updateNeonCityWorld() zijn dus
+// no-ops. Activeer in buildNeonCityEnvironment() na _neonBuildings setup.
 function buildNeonEMPZones(){
   const defs=[{t:.22},{t:.52},{t:.78}];
   defs.forEach((def,di)=>{
