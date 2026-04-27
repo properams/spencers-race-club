@@ -1,5 +1,12 @@
 // js/audio/ambient.js — Fase 2.3/2.4 extraction. Non-module script.
 
+// Ambient audio refs (uit main.js verhuisd). Gevuld door initCrowdNoise()
+// en startAmbientWind() hieronder; lazy-init op race-start, gestopt bij
+// race-end in gameplay/finish.js. Cross-script: ui/hud.js + tracklimits.js
+// + finish.js doen _crowdGain.gain.setTargetAtTime(...) bij overtake/finish.
+// effects/night.js update _ambientWindGain volume per dag↔nacht-fase.
+let _ambientWind=null,_ambientWindGain=null;
+let _crowdSrc=null,_crowdGain=null;
 
 function playThunder(){
   if(!audioCtx)return;

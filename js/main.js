@@ -111,8 +111,7 @@ var totalScore=0; // var: ES-modules schrijven window.totalScore
 var difficulty=1; // var: ES-modules lezen window.difficulty
 // Boost glow light
 let _boostLight=null;
-// Ambient wind
-let _ambientWind=null,_ambientWindGain=null;
+// Ambient wind/crowd refs → js/audio/ambient.js
 // Track flags for wave animation
 const _trackFlags=[];
 // Track mesh ref (rain shimmer)
@@ -127,8 +126,7 @@ let _safetyCar=null;
 // _elTire → ui/hud.js
 // Day↔night smooth-transition state (_skyT, _skyTarget, _fogColorDay, _fogColorNight) → js/effects/night.js
 // _thunderTimer / _weatherMode / _stormFlashTimer / _snowParticles / _snowGeo → js/effects/weather.js
-// Crowd noise
-let _crowdSrc=null,_crowdGain=null;
+// _crowdSrc / _crowdGain → js/audio/ambient.js
 // Sector timing state → js/gameplay/sectors.js
 // LocalStorage persistence cache
 var _savedHS=0,_savedBL=Infinity; // var: ES-module persistence schrijft window._*
