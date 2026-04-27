@@ -123,12 +123,18 @@ function initPostFX(){
     depthTest: false
   });
 
-  // Composite: scene + bloom * strength
+  // Composite: scene + bloom * strength + per-world color grading + vignette.
+  // Color grading = subtle tint via mix(color, color*tint*1.2, gradeAmount).
+  // Vignette = radial darkening op edges (centrum onaangetast, randen tot
+  // -25% helderheid). Beide subtiel zodat de scene-look bewaard blijft.
   _postfx.matComposite = new THREE.ShaderMaterial({
     uniforms: {
       tScene: {value: null},
       tBloom: {value: null},
-      strength: {value: _postfx.strength}
+      strength: {value: _postfx.strength},
+      tint: {value: new THREE.Vector3(1,1,1)},
+      gradeAmount: {value: 0.0},
+      vignette: {value: 0.55}
     },
     vertexShader: [
       'varying vec2 vUv;',
@@ -138,11 +144,23 @@ function initPostFX(){
       'uniform sampler2D tScene;',
       'uniform sampler2D tBloom;',
       'uniform float strength;',
+      'uniform vec3 tint;',
+      'uniform float gradeAmount;',
+      'uniform float vignette;',
       'varying vec2 vUv;',
       'void main(){',
       '  vec3 sc=texture2D(tScene,vUv).rgb;',
       '  vec3 bl=texture2D(tBloom,vUv).rgb;',
-      '  gl_FragColor=vec4(sc+bl*strength,1.0);',
+      '  vec3 col=sc+bl*strength;',
+      '  // Color grade: subtle tint pull',
+      '  vec3 graded=col*tint;',
+      '  col=mix(col,graded,gradeAmount);',
+      '  // Vignette: radial darkening',
+      '  vec2 d=vUv-0.5;',
+      '  float r=dot(d,d);', // squared radius (0..0.5)
+      '  float vig=1.0-vignette*smoothstep(0.18,0.85,r*4.0);',
+      '  col*=vig;',
+      '  gl_FragColor=vec4(col,1.0);',
       '}'
     ].join('\n'),
     depthWrite: false,
@@ -175,6 +193,27 @@ function setBloomDayNight(dark){
   }
   _postfx.matExtract.uniforms.threshold.value = _postfx.threshold;
   _postfx.matComposite.uniforms.strength.value = _postfx.strength;
+}
+
+// Per-world color grading + vignette. Tints zijn subtle (gradeAmount 0.10-
+// 0.18) zodat de wereldkleuren blijven "kloppen" maar er een herkenbare
+// cinematic-feel ontstaat. Vignette uniform tussen 0.45-0.65 per wereld.
+function setWorldGrading(world){
+  if(!_postfx.ready) return;
+  // [tint_r, tint_g, tint_b, gradeAmount, vignette]
+  const cfg = {
+    space:     [0.85, 0.92, 1.15, 0.16, 0.55],
+    deepsea:   [0.80, 1.05, 1.10, 0.18, 0.65],
+    candy:     [1.15, 0.95, 1.05, 0.10, 0.45],
+    neoncity:  [1.05, 0.85, 1.15, 0.18, 0.60],
+    volcano:   [1.20, 0.92, 0.78, 0.16, 0.55],
+    arctic:    [0.92, 1.00, 1.18, 0.14, 0.50],
+    themepark: [1.18, 0.92, 1.05, 0.14, 0.55],
+    grandprix: [1.05, 1.00, 0.95, 0.08, 0.45]
+  }[world] || [1,1,1, 0.0, 0.45];
+  _postfx.matComposite.uniforms.tint.value.set(cfg[0], cfg[1], cfg[2]);
+  _postfx.matComposite.uniforms.gradeAmount.value = cfg[3];
+  _postfx.matComposite.uniforms.vignette.value = cfg[4];
 }
 
 function resizePostFX(){

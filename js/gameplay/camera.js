@@ -92,8 +92,12 @@ function updateCamera(dt){
   const TARGET_HFOV_DEG=window._isMobile?96:92;
   const _asp=camera.aspect||(innerWidth/innerHeight);
   const baseFov=2*Math.atan(Math.tan(TARGET_HFOV_DEG*Math.PI/360)/_asp)*180/Math.PI;
-  const tFov=baseFov+Math.abs(car.speed)/car.def.topSpd*20+(nitroActive?14:0)+(car.boostTimer>0?6:0);
-  camera.fov+=(tFov-camera.fov)*Math.min(1,dt*3.5);
+  // Sterker FOV-kick bij boost/nitro voor "speed punch" gevoel — bloom maakt
+  // emissive props feller, dus de wider-FOV-pulse landt visueel zichtbaarder.
+  const tFov=baseFov+Math.abs(car.speed)/car.def.topSpd*22+(nitroActive?20:0)+(car.boostTimer>0?10:0);
+  // FOV reageert sneller wanneer boost net start (high-pass via dt*5 ipv 3.5)
+  const fovRate=(nitroActive||car.boostTimer>0)?5.0:3.0;
+  camera.fov+=(tFov-camera.fov)*Math.min(1,dt*fovRate);
   camera.updateProjectionMatrix();
 }
 

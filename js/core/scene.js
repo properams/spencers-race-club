@@ -357,6 +357,8 @@ function buildScene(){
     scene.fog=new THREE.FogExp2(0x8ac0e0,.00125);
     _fogColorDay.setHex(0x8ac0e0);_fogColorNight.setHex(0x030610);
   }
+  // Per-world color grading + vignette in postfx composite.
+  if(typeof setWorldGrading==='function')setWorldGrading(activeWorld);
   camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.2,900);
   camera.position.set(0,12,330);camera.lookAt(0,0,280);
   camPos.copy(camera.position);
