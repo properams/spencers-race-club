@@ -125,8 +125,7 @@ let _trackMesh=null;
 // Sun lens flare sprite
 let _sunBillboard=null;
 // _camLateralT → js/gameplay/camera.js
-// Rain smooth visual transition
-let _rainIntensity=0,_rainTarget=0;
+// _rainIntensity / _rainTarget → js/effects/weather.js
 // Safety car (spawns during recovery)
 let _safetyCar=null;
 // Tire state (_tireTemp, _tireWarnCooldown, _lastTireKey) → js/gameplay/tires.js
@@ -135,10 +134,7 @@ let _safetyCar=null;
 let _skyT=0,_skyTarget=0;
 const _fogColorDay=new THREE.Color(0x8ac0e0);
 const _fogColorNight=new THREE.Color(0x030610);
-// Thunder timer
-let _thunderTimer=14+Math.random()*10;
-// Weather mode
-let _weatherMode='clear',_stormFlashTimer=0,_snowParticles=null,_snowGeo=null;
+// _thunderTimer / _weatherMode / _stormFlashTimer / _snowParticles / _snowGeo → js/effects/weather.js
 // Crowd noise
 let _crowdSrc=null,_crowdGain=null;
 // Sector timing state → js/gameplay/sectors.js
@@ -158,8 +154,7 @@ const _aiHeadPool=[];
 let _rstHold=0;
 // Per-race lap time history
 const _lapTimes=[];
-// Weather forecast mid-race
-let _weatherForecastTimer=0,_weatherForecastFired=false;
+// _weatherForecastTimer / _weatherForecastFired → js/effects/weather.js
 // Collision flash
 let _colFlashT=0;
 let _contactPopupCD=0; // collision popup cooldown — max once per 3s
