@@ -37,6 +37,12 @@ const _BRIDGE_PANEL_H=0.5;
 const _BRIDGE_TILT_RAD=35*Math.PI/180;
 const _BRIDGE_CRACK_DURATION=1.0; // seconds for crack-progress 0→1
 const _BRIDGE_TILT_DURATION=1.5;  // seconds for tilt-progress 0→1
+// Camera-shake on lap-3 tilt: fired once per race when tilt crosses
+// _BRIDGE_SHAKE_THRESHOLD AND the player is within _BRIDGE_SHAKE_RADIUS
+// of the bridge center. Magnitude well below the geiser collision shake (1.2).
+const _BRIDGE_SHAKE_THRESHOLD=0.3;
+const _BRIDGE_SHAKE_RADIUS_SQ=60*60;
+const _BRIDGE_SHAKE_AMOUNT=0.8;
 // Asphalt color lerp endpoints (cool deck → smoldering red).
 const _BRIDGE_DECK_R0=0x2a/255, _BRIDGE_DECK_G0=0x1a/255, _BRIDGE_DECK_B0=0x14/255;
 const _BRIDGE_DECK_R1=0x5a/255, _BRIDGE_DECK_G1=0x28/255, _BRIDGE_DECK_B1=0x18/255;
@@ -103,7 +109,10 @@ function buildVolcanoBridge(){
   }
   // The prototype was only used to seed clones; dispose to avoid a leaked material.
   deckMatProto.dispose();
-  _volcanoBridgeState={crackStartT:-1,tiltStartT:-1};
+  // Bridge center for distance-based effects (camera-shake trigger).
+  const tMid=(_BRIDGE_T_START+_BRIDGE_T_END)*.5;
+  const pMid=trackCurve.getPoint(tMid);
+  _volcanoBridgeState={crackStartT:-1,tiltStartT:-1,tiltShakeFired:false,centerX:pMid.x,centerZ:pMid.z};
 }
 
 function updateVolcanoBridge(dt,currentLap){
@@ -115,15 +124,32 @@ function updateVolcanoBridge(dt,currentLap){
   if(currentLap>=2&&st.crackStartT<0)st.crackStartT=t;
   else if(currentLap<2)st.crackStartT=-1;
   if(currentLap>=3&&st.tiltStartT<0)st.tiltStartT=t;
-  else if(currentLap<3)st.tiltStartT=-1;
+  else if(currentLap<3){st.tiltStartT=-1;st.tiltShakeFired=false;}
   // Time-based ramp (predictable: full at exactly _BRIDGE_*_DURATION seconds).
   const crackProgress=(st.crackStartT>=0)?Math.min(1,(t-st.crackStartT)/_BRIDGE_CRACK_DURATION):0;
   const tiltProgress=(st.tiltStartT>=0)?Math.min(1,(t-st.tiltStartT)/_BRIDGE_TILT_DURATION):0;
   const tiltEased=tiltProgress*tiltProgress; // ease-in-quad, "structural fail" feel
-  // Lava-pool emissive ramps up per lap.
+  // One-shot camera-shake at tilt-start when the player is on/near the bridge.
+  // Reads camShake (declared in js/gameplay/camera.js) and sets it without
+  // overriding a stronger active shake (e.g. from a fresh geiser hit).
+  if(st.tiltStartT>=0&&!st.tiltShakeFired&&tiltProgress>_BRIDGE_SHAKE_THRESHOLD){
+    if(typeof carObjs!=='undefined'&&typeof playerIdx!=='undefined'){
+      const pl=carObjs[playerIdx];
+      if(pl&&pl.mesh){
+        const dx=pl.mesh.position.x-st.centerX,dz=pl.mesh.position.z-st.centerZ;
+        if(dx*dx+dz*dz<_BRIDGE_SHAKE_RADIUS_SQ&&typeof camShake!=='undefined'){
+          if(camShake<_BRIDGE_SHAKE_AMOUNT)camShake=_BRIDGE_SHAKE_AMOUNT;
+        }
+      }
+    }
+    st.tiltShakeFired=true;
+  }
+  // Lava-pool emissive ramps up per lap, plus a brief flash during the
+  // first second of tilt (peak at tilt-start, decays linearly).
   if(_volcanoBridgeLava&&_volcanoBridgeLava.material){
     const lapBoost=(currentLap>=2?0.3:0)+(currentLap>=3?0.5:0);
-    _volcanoBridgeLava.material.emissiveIntensity=1.1+Math.sin(t*1.6)*.35+lapBoost;
+    const tiltFlash=(st.tiltStartT>=0&&tiltProgress<0.5)?(1-tiltProgress*2)*1.2:0;
+    _volcanoBridgeLava.material.emissiveIntensity=1.1+Math.sin(t*1.6)*.35+lapBoost+tiltFlash;
   }
   // Pre-compute per-frame color lerp constants (same for all segments).
   const colR=_BRIDGE_DECK_R0+(_BRIDGE_DECK_R1-_BRIDGE_DECK_R0)*crackProgress;
