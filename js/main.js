@@ -145,10 +145,7 @@ let _thunderTimer=14+Math.random()*10;
 let _weatherMode='clear',_stormFlashTimer=0,_snowParticles=null,_snowGeo=null;
 // Crowd noise
 let _crowdSrc=null,_crowdGain=null;
-// Sector timing (3 splits)
-const _sectorBests=[Infinity,Infinity,Infinity];
-let _sectorStart=0,_currentSector=0; // _elSector → ui/hud.js
-let _secPopTimer=null;
+// Sector timing state → js/gameplay/sectors.js
 // LocalStorage persistence cache
 var _savedHS=0,_savedBL=Infinity; // var: ES-module persistence schrijft window._*
 // Victory orbit flag
@@ -249,7 +246,7 @@ let _lastGear=1; // multi-oscillator engine state
 var _coins=0,_totalCoinsEarned=0; // var: persistence cross-script
 var _lastRaceCoins=0,_comboMult=1.0; // var: ES-modules schrijven beide
 let _comboTimer=0,_comboCount=0;
-let _bestS1=Infinity,_bestS2=Infinity,_bestS3=Infinity;
+// _bestS1/_bestS2/_bestS3 → js/gameplay/sectors.js
 // ACHIEVEMENTS + DAILY_CHALLENGES → js/gameplay/achievements.js (top of file).
 let _totalNitroUses=0,_winStreak=0;
 var _todayChallenge=null,_challengeCompleted=false,_todayRaces=0;
