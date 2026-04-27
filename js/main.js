@@ -88,12 +88,7 @@ let _mmBounds=null;
 let _mmFrameCtr=0;
 // Current gear (set in updateEngine, read in updateHUD)
 let _currentGear=1;
-// Last leaderboard order key (avoid unnecessary innerHTML writes)
-let _lastLeaderOrder='';
-// Leaderboard stability: only commit new order after it's been stable for 0.5s
-let _leaderPendingKey='',_leaderStableT=0;
-// Position notification stability: only fire overtake after position is stable for 0.4s
-let _posStableValue=0,_posStableT=0;
+// Leaderboard stability + position-notification timers → js/ui/hud.js
 // Pause / mute state
 let gamePaused=false,audioMuted=false;
 var _muteGain=null; // var: music ES-module leest window._muteGain

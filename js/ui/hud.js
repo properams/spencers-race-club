@@ -4,6 +4,16 @@
 // niet elk frame; cache wordt elke ~10 ticks ververst in updateHUD.
 let _posCache=[],_posTick=0;
 
+// Leaderboard stability (uit main.js verhuisd). Posities flikkeren tijdens
+// tie-races; we committen alleen na 0.4-0.5s stabiliteit.
+//   _lastLeaderOrder  — laatst gecommitte volgorde-string
+//   _leaderPendingKey — kandidaat-volgorde
+//   _leaderStableT    — accumulator (commit bij >=0.5s)
+//   _posStableValue / _posStableT — zelfde voor speler-positie (>=0.4s)
+let _lastLeaderOrder='';
+let _leaderPendingKey='',_leaderStableT=0;
+let _posStableValue=0,_posStableT=0;
+
 // HUD DOM-refs (uit main.js verhuisd) — gevuld door cacheHUDRefs() bij boot.
 // Cross-script zichtbaar voor cars/physics.js, gameplay/race.js,
 // gameplay/spacefx.js, gameplay/tracklimits.js, effects/visuals.js.
