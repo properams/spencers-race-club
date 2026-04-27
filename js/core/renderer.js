@@ -42,7 +42,8 @@ function initRenderer(){
   renderer.setSize(innerWidth,innerHeight);
   renderer.shadowMap.enabled=!_mob;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
-  renderer.outputEncoding=THREE.sRGBEncoding;
+  // outputEncoding (r134) / outputColorSpace (r150+) via compat-laag.
+  ThreeCompat.applyRendererColorSpace(renderer);
   window.dbg&&dbg.log('renderer','init done — '+innerWidth+'×'+innerHeight+' dpr '+renderer.getPixelRatio().toFixed(2)+' shadow='+renderer.shadowMap.enabled+' THREE '+(THREE.REVISION||'?'));
   // Single resize pipeline: one rAF-debounced handler bound to resize, orientationchange and
   // visualViewport.resize. Re-evaluates device flags so portrait↔landscape (and split-view)
