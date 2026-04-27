@@ -6,6 +6,9 @@
 const _plFwd=new THREE.Vector3(),_plBk=new THREE.Vector3(),_plRt=new THREE.Vector3();
 const _slipFwd=new THREE.Vector3(),_slipDir=new THREE.Vector3();
 
+// Brake-release detector — set elke frame in updatePlayer, gereset in race.js.
+let _wasBraking=false;
+
 function updatePlayer(dt){
   if(recoverActive)return;
   const car=carObjs[playerIdx];if(!car||car.finished)return;

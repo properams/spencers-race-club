@@ -12,6 +12,9 @@ let _lastRedline=null;
 let _speedLinesCvs=null,_speedLinesCtx=null;
 let _speedLinesFadeT=0,_speedLinesRedrawT=0;
 
+// Rev-limiter audio-trigger throttle (gebruikt in updateRpmBar / playRevLimiter).
+let _revLimiterTimer=0;
+
 function updateSpeedOverlay(){
   const car=carObjs[playerIdx];
   const ov=document.getElementById('speedOverlay');if(!ov||!car)return;

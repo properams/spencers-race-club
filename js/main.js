@@ -153,8 +153,7 @@ let _raceMaxSpeed=0,_raceOvertakes=0,_lastPlayerPos=9,_raceStartGrace=0;
 // _titleCamT → js/gameplay/camera.js
 // AI headlight point-light pool (4 lights shared across AI cars)
 const _aiHeadPool=[];
-// Rev limiter timer
-let _revLimiterTimer=0;
+// _revLimiterTimer → js/effects/visuals.js
 // Gap display HUD refs → ui/hud.js
 // Quick restart hold timer
 let _rstHold=0;
@@ -210,11 +209,10 @@ var _raceCount=0,_podiumCount=0; // var: persistence cross-script (career stats)
 let _newUnlocks=[]; // cars unlocked this race, for finish screen toast
 // AI overtaking behavior (per car): tries to go around player
 // _aiPassSide: -1=left, 1=right, 0=none
-// Turbo spool state
-let _wasBraking=false,_spoolTimer=0;
+// _wasBraking → js/cars/physics.js
+// _spoolTimer was dead code (nergens gelezen) — verwijderd.
 // Sector timing panel + Speed trap DOM-refs verhuisd naar js/ui/hud.js.
-// Brake heat glow
-let _brakeHeatTimer=0;
+// _brakeHeatTimer was dead code (nergens gelezen) — verwijderd.
 // GRIP_BONUS_ZONES → js/config.js
 // Car color customization — overrides per car ID (null = use default)
 const _carColorOverride={};
