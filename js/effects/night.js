@@ -137,6 +137,18 @@ function updateCarLights(){
     if(car.speed<-0.05){mat.emissiveIntensity=2.5;mat.opacity=1;}
     else{mat.emissiveIntensity=0;}
   });
+  // Visible headlight beam-cones op player car (alleen bij night).
+  // Targeted intensity: 0.18 base bij night, 0.30 bij high-speed kick.
+  const pCar=carObjs[playerIdx];
+  if(pCar&&pCar.mesh){
+    const ratio=Math.abs(pCar.speed)/Math.max(.01,pCar.def.topSpd);
+    const beamOp=isDark?(0.16+ratio*0.18):0;
+    pCar.mesh.children.forEach(ch=>{
+      if(ch.userData&&ch.userData.isHeadBeam&&ch.material){
+        ch.material.opacity+=(beamOp-ch.material.opacity)*0.15; // smooth fade
+      }
+    });
+  }
   if(!isDark||!plHeadL)return;
   const car=carObjs[playerIdx];if(!car)return;
   _plFwd.set(0,0,-1).applyQuaternion(car.mesh.quaternion);

@@ -350,6 +350,7 @@ function updateFlags(){
   // Crowd dual-frame animation hangs op dezelfde update-tick.
   if(typeof updateCrowd==='function')updateCrowd();
   if(typeof updateGantryTicker==='function')updateGantryTicker();
+  if(typeof updateBarrierPulse==='function')updateBarrierPulse();
 }
 
 

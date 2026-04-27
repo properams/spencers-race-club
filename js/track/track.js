@@ -126,6 +126,7 @@ function buildStartLine(){
 
 function buildBarriers(){
   const isSpace=activeWorld==='space',isDS=activeWorld==='deepsea';
+  _pulseBarriers.length=0; // reset bij wereld-switch — oude mats zijn al disposed
   [-1,1].forEach(side=>{
     const N=200,pos=[],nrm=[],idx=[];
     for(let i=0;i<=N;i++){
@@ -145,10 +146,12 @@ function buildBarriers(){
     let mat;
     if(isSpace){
       // Energy shield: translucent electric-blue glow
-      mat=new THREE.MeshLambertMaterial({color:0x2255dd,emissive:0x0a1a88,transparent:true,opacity:.38,side:THREE.DoubleSide});
+      mat=new THREE.MeshLambertMaterial({color:0x2255dd,emissive:0x0a1a88,emissiveIntensity:1.0,transparent:true,opacity:.38,side:THREE.DoubleSide});
+      _pulseBarriers.push({mat,phase:side*1.7,kind:'shield',baseOp:.38,baseInt:1.0});
     } else if(isDS){
       // Coral wall: warm teal-green with soft bio-glow
-      mat=new THREE.MeshLambertMaterial({color:0x1e7766,emissive:0x083322,side:THREE.DoubleSide});
+      mat=new THREE.MeshLambertMaterial({color:0x1e7766,emissive:0x083322,emissiveIntensity:1.0,side:THREE.DoubleSide});
+      _pulseBarriers.push({mat,phase:side*0.9,kind:'coral',baseOp:1,baseInt:1.0});
     } else {
       mat=new THREE.MeshLambertMaterial({color:0xbbbbbb,side:THREE.DoubleSide});
     }
@@ -168,9 +171,35 @@ function buildBarriers(){
       const geo=new THREE.BufferGeometry();
       geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
       geo.setIndex(idx);
-      scene.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:0x66aaff,emissive:0x4488ee,side:THREE.DoubleSide})));
+      const beamMat=new THREE.MeshLambertMaterial({color:0x66aaff,emissive:0x4488ee,emissiveIntensity:1.4,side:THREE.DoubleSide});
+      _pulseBarriers.push({mat:beamMat,phase:side*2.4,kind:'beam',baseOp:1,baseInt:1.4});
+      scene.add(new THREE.Mesh(geo,beamMat));
     });
   }
+}
+
+// Per-frame barrier pulse — gevuld door buildBarriers, geleegd door
+// disposeScene. updateBarrierPulse() wordt vanuit updateFlags aangeroepen.
+let _pulseBarriers=[];
+function updateBarrierPulse(){
+  if(!_pulseBarriers.length)return;
+  const t=_nowSec;
+  _pulseBarriers.forEach(b=>{
+    if(b.kind==='shield'){
+      // Energy-shield: opacity flicker + emissive pulse
+      const v=Math.sin(t*1.4+b.phase);
+      b.mat.opacity=b.baseOp+v*0.08;
+      b.mat.emissiveIntensity=b.baseInt+v*0.4;
+    } else if(b.kind==='coral'){
+      // Coral: subtle slow bio-glow breathing
+      const v=Math.sin(t*0.55+b.phase);
+      b.mat.emissiveIntensity=b.baseInt*0.7+v*0.5;
+    } else if(b.kind==='beam'){
+      // Energy-beam: faster pulse — "humming" power line
+      const v=Math.sin(t*2.2+b.phase);
+      b.mat.emissiveIntensity=b.baseInt*0.6+v*0.55;
+    }
+  });
 }
 
 let _gantryLabel=null;
