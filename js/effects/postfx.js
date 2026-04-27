@@ -177,6 +177,7 @@ function initPostFX(){
   _postfx.w = w; _postfx.h = h;
   _postfx.enabled = true;
   _postfx.ready = true;
+  _applyFxPreference();
 }
 
 // Day/night bloom tuning — at night we use a lower threshold and slightly
@@ -193,6 +194,32 @@ function setBloomDayNight(dark){
   }
   _postfx.matExtract.uniforms.threshold.value = _postfx.threshold;
   _postfx.matComposite.uniforms.strength.value = _postfx.strength;
+}
+
+// User-toggleable quality: when localStorage('src_fx')==='0', skip alle
+// postfx passes en val terug op directe renderer.render(). Persistent
+// over reloads. Aangeroepen vanuit pauseOverlay button.
+function toggleQuality(){
+  if(!_postfx.ready){
+    // Mobile heeft postfx nooit ge-init — toggle is dan no-op maar update label
+    const b=document.getElementById('btnFxToggle');
+    if(b)b.textContent='✨ FX N/A';
+    return;
+  }
+  _postfx.enabled = !_postfx.enabled;
+  try{localStorage.setItem('src_fx', _postfx.enabled?'1':'0');}catch(e){}
+  const b=document.getElementById('btnFxToggle');
+  if(b)b.textContent=_postfx.enabled?'✨ FX ON':'✨ FX OFF';
+}
+// Apply persisted preference at startup. Called vanuit initPostFX zodra
+// _postfx.ready is.
+function _applyFxPreference(){
+  try{
+    const v=localStorage.getItem('src_fx');
+    if(v==='0')_postfx.enabled=false;
+  }catch(e){}
+  const b=document.getElementById('btnFxToggle');
+  if(b)b.textContent=_postfx.enabled?'✨ FX ON':'✨ FX OFF';
 }
 
 // Per-world color grading + vignette. Tints zijn subtle (gradeAmount 0.10-
