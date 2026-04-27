@@ -157,6 +157,7 @@ class StemRaceMusic {
 // Factory: gebruikt door api.js' dispatcher om te beslissen tussen
 // stems en procedural RaceMusic.
 function createStemRaceMusicIfReady(){
+  if(window._forceProceduralAudio) return null;
   const w = window.activeWorld;
   if(!window._hasMusicStems || !window._hasMusicStems(w)) return null;
   if(!window.audioCtx) return null;

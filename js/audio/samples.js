@@ -51,7 +51,7 @@ const SFX_MANIFEST = {
   drift2:      '',
   drift3:      '',
   suspension:  '',
-  windHigh:    '',  // looped, geactiveerd >80% topspeed
+  windHigh:    '',  // looped, geactiveerd >70% topspeed in engine.js
   impactLight: '',
   impactHard:  '',
   glassScatter:'',
@@ -133,8 +133,6 @@ async function _loadSlot(ctx, url){
 
 // ── Music API ───────────────────────────────────────────────────────────────
 
-// Preload alle slots voor een wereld. Idempotent: tweede aanroep returnt
-// dezelfde Promise. Resolved met { kind: 'samples'|'procedural', buffers }.
 function preloadWorld(worldId){
   if(!window.audioCtx){
     return Promise.resolve({ kind:'procedural', buffers:{} });
@@ -190,7 +188,6 @@ function preloadEngine(carType){
   return p;
 }
 
-// Engine moet minstens 2 RPM-banden hebben om te crossfaden.
 function hasEngineSamples(carType){
   const r = _engineReady.get(carType);
   if(!r) return false;
@@ -255,6 +252,7 @@ function _samplesDebug(){
     engine_ready: [..._engineReady.keys()].map(t => `${t}:${Object.keys(_engineReady.get(t)).length}`),
     sfx_ready: [..._sfxReady.keys()],
     surface_ready: [..._surfaceReady.keys()],
+    force_procedural: !!window._forceProceduralAudio,
   };
   console.table(info);
   return info;

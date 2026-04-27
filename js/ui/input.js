@@ -61,3 +61,14 @@ window.addEventListener('keydown',e=>{
   _touchControlsReady=false;
   const tc=document.getElementById('touchControls');if(tc)tc.style.display='none';
 });
+
+// A/B audio-debug toggle: Shift+P forceert procedurele path, ook als
+// samples geladen zijn. Handig voor side-by-side vergelijken bij tuning.
+// State wordt door samples.js / engine.js / sfx.js gerespecteerd.
+window.addEventListener('keydown',e=>{
+  if(e.code!=='KeyP'||!e.shiftKey)return;
+  window._forceProceduralAudio=!window._forceProceduralAudio;
+  const msg=window._forceProceduralAudio?'🎛 PROCEDURAL FORCED':'🎛 SAMPLES ENABLED';
+  if(typeof showPopup==='function')showPopup(msg,'#ffaa44',1400);
+  console.log('[audio]',msg);
+});

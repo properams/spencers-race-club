@@ -291,6 +291,9 @@ function updatePlayer(dt){
 
   // ── Turbo spool effect (lift then reapply at speed) ─────────────
   const nowBraking=brk&&spd>.5;
+  // Brake squeal one-shot: trigger op brake-onset bij hoge snelheid.
+  // Vermijdt spam tijdens sustained braking.
+  if(nowBraking&&!_wasBraking&&spd>.7)Audio.playBrake();
   if(_wasBraking&&acc&&!brk&&spd>.5){
     // Transition: was braking, now accelerating
     if(audioCtx&&Math.random()>.5){

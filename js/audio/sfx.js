@@ -10,6 +10,7 @@
 // (variatie voor bv. drift/screech). Returnt false als geen sample geladen.
 function _playSampleOneShot(slots, vol=0.6, delay=0){
   if(!audioCtx||!window._hasSFXSample||!window._getSFXBuffer)return false;
+  if(window._forceProceduralAudio)return false;
   const list = Array.isArray(slots) ? slots : [slots];
   const available = list.filter(s => window._hasSFXSample(s));
   if(available.length === 0) return false;
@@ -96,8 +97,8 @@ function playCollisionSound(){
   _noise(.18,4200,3.5,.35,.06);        // glass scatter
 }
 
-// Brake squeal — nieuw, sample-prefer met procedurele fallback. Triggert
-// vanuit gameplay-laag wanneer er hard wordt geremd op snelheid.
+// Brake squeal — sample-prefer met procedurele fallback. Triggert vanuit
+// gameplay (physics.js) wanneer er hard wordt geremd op snelheid.
 function playBrakeSound(){
   if(_playSampleOneShot('brake', 0.45))return;
   // Korte gefilterde noise-burst — high-Q bandpass = squeal-feel.

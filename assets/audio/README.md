@@ -60,7 +60,7 @@ fallback in `sfx.js`.
 | `drift2.ogg` | 0.4-0.8s | Tire screech variatie 2 (random pick) |
 | `drift3.ogg` | 0.4-0.8s | Tire screech variatie 3 (random pick) |
 | `suspension.ogg` | 0.3-0.5s | Auto landt na sprong (bump thunk) |
-| `windHigh.ogg` | 2-3s loopable | Wind boven 80% topspeed (loop) |
+| `windHigh.ogg` | 2-3s loopable | Wind boven 65% topspeed (loop) |
 | `impactLight.ogg` | 0.4s | Lichte botsing (plastic / glance) |
 | `impactHard.ogg` | 0.6-1s | Harde botsing (metal crunch) |
 | `glassScatter.ogg` | 0.3s | Glass shatter overlay bij hard impact |
@@ -104,6 +104,12 @@ Filenames: `assets/audio/surface/<slot>.ogg`.
 - `"ice scrape"`, `"skating loop"` → ice
 
 **Encoding**: ogg vorbis q4, mono, 44.1 kHz, 2-3 sec loopable.
+
+## A/B debug toggle
+
+Tijdens het spelen druk **Shift+P** om procedural ↔ samples te flippen.
+Even handig om te vergelijken hoe een sample presteert tegenover de
+synth-fallback. State zit in `window._forceProceduralAudio`.
 
 ## Workflow
 
