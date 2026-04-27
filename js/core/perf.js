@@ -16,18 +16,29 @@
 (function(){
   let _perfEl = null, _perfTimer = null;
   const _frameTimes = []; // ringbuffer laatste 60 frames
-  let _lastFrame = performance.now();
+  let _lastFrame = 0;
+  let _rafId = null;
 
-  // Hook in op rAF om frame-times te tracken zodra de game start.
+  // Frame-time tracking draait ALLEEN wanneer de overlay zichtbaar is —
+  // anders zou perf.js zelf 60× per seconde wakker zijn voor niets.
   function _trackFrame(){
     const now = performance.now();
-    const dt = now - _lastFrame;
+    if (_lastFrame > 0) {
+      const dt = now - _lastFrame;
+      _frameTimes.push(dt);
+      if (_frameTimes.length > 60) _frameTimes.shift();
+    }
     _lastFrame = now;
-    _frameTimes.push(dt);
-    if (_frameTimes.length > 60) _frameTimes.shift();
-    requestAnimationFrame(_trackFrame);
+    _rafId = requestAnimationFrame(_trackFrame);
   }
-  requestAnimationFrame(_trackFrame);
+  function _startTracking(){
+    if (_rafId !== null) return;
+    _frameTimes.length = 0; _lastFrame = 0;
+    _rafId = requestAnimationFrame(_trackFrame);
+  }
+  function _stopTracking(){
+    if (_rafId !== null) { cancelAnimationFrame(_rafId); _rafId = null; }
+  }
 
   function _avgFps(){
     if (!_frameTimes.length) return 0;
@@ -100,6 +111,7 @@
   function showPerf(){
     if (!_perfEl) _build();
     _perfEl.style.display = 'block';
+    _startTracking();
     _refresh();
     if (_perfTimer) clearInterval(_perfTimer);
     _perfTimer = setInterval(_refresh, 500);
@@ -107,6 +119,7 @@
   function hidePerf(){
     if (_perfEl) _perfEl.style.display = 'none';
     if (_perfTimer) { clearInterval(_perfTimer); _perfTimer = null; }
+    _stopTracking();
   }
   function togglePerf(){
     if (_perfEl && _perfEl.style.display === 'block') hidePerf();

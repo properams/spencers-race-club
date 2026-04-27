@@ -116,8 +116,23 @@
     const btnCopy = _mkBtn('📋 COPY', () => {
       const txt = errRing.map(e => `[${e.t}s][${e.kind}] ${e.msg}` +
         (e.extra ? ' ' + JSON.stringify(e.extra) : '')).join('\n');
-      try { navigator.clipboard.writeText(txt); btnCopy.textContent = '✓ COPIED'; setTimeout(()=>btnCopy.textContent='📋 COPY',1500); }
-      catch (_) { btnCopy.textContent = '⚠ FAILED'; setTimeout(()=>btnCopy.textContent='📋 COPY',1500); }
+      // navigator.clipboard.writeText is async; sync try/catch vangt geen Promise-rejection.
+      // Daarnaast: niet beschikbaar op insecure contexts of in oudere browsers.
+      const fail = () => { btnCopy.textContent = '⚠ FAILED'; setTimeout(()=>btnCopy.textContent='📋 COPY',1500); };
+      const ok = () => { btnCopy.textContent = '✓ COPIED'; setTimeout(()=>btnCopy.textContent='📋 COPY',1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(ok, fail);
+      } else {
+        // Fallback: textarea + execCommand (deprecated maar werkt op insecure contexts)
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select();
+          const success = document.execCommand && document.execCommand('copy');
+          ta.remove();
+          success ? ok() : fail();
+        } catch (_) { fail(); }
+      }
     });
     const btnClear = _mkBtn('🗑 CLEAR', () => { dbg.clearErrors(); _viewerRefresh(); });
     const btnClose = _mkBtn('✕ CLOSE', () => { _viewerEl.style.display = 'none'; });
