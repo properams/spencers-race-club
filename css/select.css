@@ -12,8 +12,7 @@
 .statBars{width:100%;max-width:320px;padding:6px 0}
 .statBar{flex:1;height:6px;background:rgba(180,80,255,.08);border-radius:3px;overflow:hidden;border:1px solid rgba(180,80,255,.12)}
 .colorRow{display:flex;gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap;justify-content:center}
-.carGridWrap{padding:8px 0}
-.carGridLabel{font-family:'Orbitron',sans-serif;font-size:9px;color:#442255;letter-spacing:3px;margin-bottom:6px}
+/* .carGridWrap/.carGridLabel waren dead — verwijderd */
 .carGrid{display:flex;flex-direction:column;gap:0;width:100%}
 .carCard{background:transparent;border:none;border-bottom:1px solid rgba(180,80,255,.06);border-left:3px solid transparent;padding:12px 12px;cursor:pointer;transition:all .2s;overflow:hidden;position:relative;display:flex;align-items:center;gap:12px}
 .carCard:hover{background:rgba(180,80,255,.08);border-left-color:rgba(180,80,255,.3)}
