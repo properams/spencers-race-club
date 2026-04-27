@@ -45,7 +45,7 @@ var carObjs=[],playerIdx=0,selCarId=3,gameState='TITLE'; // var so window.carObj
 let isDark=true,isRain=false;
 const keys={};
 const camPos=new THREE.Vector3(),camTgt=new THREE.Vector3();
-let camShake=0;
+// camShake → js/gameplay/camera.js
 let sunLight,ambientLight,hemiLight;
 let trackLightList=[],trackPoles=[],stars=null;
 let plHeadL,plHeadR,plTail;
@@ -125,8 +125,7 @@ const _trackFlags=[];
 let _trackMesh=null;
 // Sun lens flare sprite
 let _sunBillboard=null;
-// Camera lateral offset accumulator (corner pan)
-let _camLateralT=0;
+// _camLateralT → js/gameplay/camera.js
 // Rain smooth visual transition
 let _rainIntensity=0,_rainTarget=0;
 // Safety car (spawns during recovery)
@@ -148,18 +147,12 @@ let _crowdSrc=null,_crowdGain=null;
 // Sector timing state → js/gameplay/sectors.js
 // LocalStorage persistence cache
 var _savedHS=0,_savedBL=Infinity; // var: ES-module persistence schrijft window._*
-// Victory orbit flag
-let _victoryOrbit=false;
-// Multiple camera views: 0=Chase 1=Helicopter 2=Hood 3=Bumper
-let _camView=0;
-// Race intro cinematic pan (first 3s of race)
-let _introPanTimer=0;
+// _victoryOrbit / _camView / _introPanTimer → js/gameplay/camera.js
 // Post-race stats
 let _raceMaxSpeed=0,_raceOvertakes=0,_lastPlayerPos=9,_raceStartGrace=0;
 // Achievement state → js/gameplay/achievements.js
 // Rear view mirror state → js/gameplay/camera.js
-// Title screen animated camera
-let _titleCamT=0;
+// _titleCamT → js/gameplay/camera.js
 // AI headlight point-light pool (4 lights shared across AI cars)
 const _aiHeadPool=[];
 // Rev limiter timer

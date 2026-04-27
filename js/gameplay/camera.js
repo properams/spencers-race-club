@@ -11,6 +11,20 @@ const _camV1=new THREE.Vector3(),_camV2=new THREE.Vector3();
 let mirrorCamera=null;
 let _mirrorEnabled=true;
 
+// Camera animation/state (uit main.js verhuisd):
+//   camShake        — collision shake amplitude (decays in updateCamera)
+//   _camView        — 0=Chase 1=Helicopter 2=Hood 3=Bumper (input.js: V-key)
+//   _camLateralT    — corner pan accumulator
+//   _victoryOrbit   — cinematic orbit na finish (set in finish.js)
+//   _introPanTimer  — race-intro pan duration (set in race.js startCountdown)
+//   _titleCamT      — title-screen rotation phase
+let camShake=0;
+let _camView=0;
+let _camLateralT=0;
+let _victoryOrbit=false;
+let _introPanTimer=0;
+let _titleCamT=0;
+
 function updateCamera(dt){
   const car=carObjs[playerIdx];if(!car)return;
   // Victory orbit: cinematic rotation around player car after finishing
