@@ -347,7 +347,8 @@ async function boot(){
         const ls=_loadEl.querySelector('#loadStep');
         if(ls)ls.textContent='COMPILING SHADERS...';
       }
-      renderer.render(scene,camera);
+      if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
+      else renderer.render(scene,camera);
       // Give GPU time to finish, then hide loading screen
       requestAnimationFrame(()=>{requestAnimationFrame(()=>{
         if(_loadEl)_loadEl.style.display='none';

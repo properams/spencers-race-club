@@ -12,7 +12,7 @@ function buildVolcanoEnvironment(){
     new THREE.MeshLambertMaterial({color:0x1a0800}));
   g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;scene.add(g);
   // Sky
-  scene.background=makeSkyTex('#ff3300','#1a0400');
+  scene.background=makeVolcanoSkyTex();
   scene.fog=new THREE.FogExp2(0x331100,.002);
   sunLight.color.setHex(0xff4422);sunLight.intensity=.7;
   ambientLight.color.setHex(0x441100);ambientLight.intensity=.35;

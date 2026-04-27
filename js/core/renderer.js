@@ -41,6 +41,8 @@ function initRenderer(){
   renderer.shadowMap.enabled=!_mob;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
   renderer.outputEncoding=THREE.sRGBEncoding;
+  // Bloom post-processing — auto-disabled on mobile (see js/effects/postfx.js).
+  if(typeof initPostFX==='function')initPostFX();
   // Single resize pipeline: one rAF-debounced handler bound to resize, orientationchange and
   // visualViewport.resize. Re-evaluates device flags so portrait↔landscape (and split-view)
   // switches the iPad cleanly between mobile/tablet branches without a page reload.
@@ -55,6 +57,7 @@ function initRenderer(){
       renderer.setSize(innerWidth,innerHeight);
       camera.aspect=innerWidth/innerHeight;
       camera.updateProjectionMatrix();
+      if(typeof resizePostFX==='function')resizePostFX();
     });
   }
   window.addEventListener('resize',_handleResize);
