@@ -141,8 +141,7 @@ let _crowdSrc=null,_crowdGain=null;
 // LocalStorage persistence cache
 var _savedHS=0,_savedBL=Infinity; // var: ES-module persistence schrijft window._*
 // _victoryOrbit / _camView / _introPanTimer → js/gameplay/camera.js
-// Post-race stats
-let _raceMaxSpeed=0,_raceOvertakes=0,_lastPlayerPos=9,_raceStartGrace=0;
+// Race-stats (_raceMaxSpeed, _raceOvertakes, _lastPlayerPos, _raceStartGrace) → js/gameplay/race.js
 // Achievement state → js/gameplay/achievements.js
 // Rear view mirror state → js/gameplay/camera.js
 // _titleCamT → js/gameplay/camera.js
@@ -152,8 +151,7 @@ const _aiHeadPool=[];
 // Gap display HUD refs → ui/hud.js
 // Quick restart hold timer
 let _rstHold=0;
-// Per-race lap time history
-const _lapTimes=[];
+// _lapTimes → js/gameplay/race.js
 // _weatherForecastTimer / _weatherForecastFired → js/effects/weather.js
 // Collision flash
 let _colFlashT=0;
@@ -199,7 +197,7 @@ let _gapsToLeader=[];
 // Car unlock system
 var _unlockedCars=new Set([0,1,2,3,4,5,6,7]); // var: persistence cross-script (default unlocks)
 var _raceCount=0,_podiumCount=0; // var: persistence cross-script (career stats)
-let _newUnlocks=[]; // cars unlocked this race, for finish screen toast
+// _newUnlocks → js/gameplay/race.js
 // AI overtaking behavior (per car): tries to go around player
 // _aiPassSide: -1=left, 1=right, 0=none
 // _wasBraking → js/cars/physics.js
@@ -224,7 +222,7 @@ var _lastRaceCoins=0,_comboMult=1.0; // var: ES-modules schrijven beide
 // _comboTimer / _comboCount → js/gameplay/combo.js (_comboMult blijft hier als var)
 // _bestS1/_bestS2/_bestS3 → js/gameplay/sectors.js
 // ACHIEVEMENTS + DAILY_CHALLENGES → js/gameplay/achievements.js (top of file).
-let _totalNitroUses=0,_winStreak=0;
+// _totalNitroUses / _winStreak → js/gameplay/race.js
 var _todayChallenge=null,_challengeCompleted=false,_todayRaces=0;
 var _worldsUnlocked=new Set(['grandprix']); // var: persistence cross-script
 var _trackRecords={}; // var: persistence cross-script
@@ -255,7 +253,7 @@ let _lastPPos=0;
 // (Speed overlay, confetti, boost ring, slipstream, weather-transition,
 //  safety car → js/effects/* en js/gameplay/safetycar.js.)
 // _RACE_ACHIEVEMENTS → js/gameplay/achievements.js
-let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true; // _driftAccum → gameplay/combo.js
+// _nitroUseCount / _airborneAccum / _cleanLapFlag → js/gameplay/race.js (_driftAccum → combo.js)
 
 // _achieveToastEl → js/gameplay/achievements.js
 let _floatSlot=0,_floatSlotTimer=0; // float-text stagger
