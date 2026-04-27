@@ -161,6 +161,22 @@ function initPostFX(){
   _postfx.ready = true;
 }
 
+// Day/night bloom tuning — at night we use a lower threshold and slightly
+// higher strength so neon/emissive props bloom more dramatically; by day we
+// keep bloom subtle so highlights don't blow out the sky.
+function setBloomDayNight(dark){
+  if(!_postfx.ready) return;
+  if(dark){
+    _postfx.threshold = 0.50;
+    _postfx.strength = 1.10;
+  } else {
+    _postfx.threshold = 0.66;
+    _postfx.strength = 0.80;
+  }
+  _postfx.matExtract.uniforms.threshold.value = _postfx.threshold;
+  _postfx.matComposite.uniforms.strength.value = _postfx.strength;
+}
+
 function resizePostFX(){
   if(!_postfx.ready) return;
   const w = innerWidth, h = innerHeight;

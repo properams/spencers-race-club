@@ -120,6 +120,9 @@ function toggleNight(){
     scene.fog.color.lerpColors(_fogColorDay,_fogColorNight,_skyT);
   }
   if(_sunBillboard)_sunBillboard.visible=!isDark&&!isRain&&activeWorld!=='space'&&activeWorld!=='deepsea';
+  // Bloom intensifies bij night (lower threshold, higher strength) — neon
+  // emissives gloeien dan dramatischer. Day = subtieler.
+  if(typeof setBloomDayNight==='function')setBloomDayNight(isDark);
   const lbl=isDark?'☀ DAY':'🌙 NIGHT';
   const _tnb=document.getElementById('titleNightBtn');if(_tnb)_tnb.textContent=lbl;
   const _hnb=document.getElementById('hudNightBtn');if(_hnb)_hnb.textContent=lbl;

@@ -347,6 +347,8 @@ function updateFlags(){
     f.mesh.rotation.x=wave;
     f.mesh.rotation.z=wave2;
   });
+  // Crowd dual-frame animation hangs op dezelfde update-tick.
+  if(typeof updateCrowd==='function')updateCrowd();
 }
 
 
@@ -424,6 +426,92 @@ function buildSunBillboard(){
   }));
   haloSprite.scale.set(520,520,1);
   _sunBillboard.add(haloSprite);
+  buildLensFlareGhosts();
+}
+
+// Lens flare ghosts — kleinere additive sprites op de lijn zon→scherm-center.
+// Worden geplaatst in scene.world-space en elke frame ge-update via
+// updateLensFlare(). Visibility hangt af of de zon zichtbaar is in NDC.
+let _lensGhosts=[];
+function _ghostTex(rgb){
+  const c=document.createElement('canvas');c.width=64;c.height=64;
+  const g=c.getContext('2d');
+  const grd=g.createRadialGradient(32,32,0,32,32,32);
+  grd.addColorStop(0,`rgba(${rgb},1)`);
+  grd.addColorStop(.4,`rgba(${rgb},0.45)`);
+  grd.addColorStop(1,`rgba(${rgb},0)`);
+  g.fillStyle=grd;g.fillRect(0,0,64,64);
+  const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
+}
+function buildLensFlareGhosts(){
+  // Dispose stale ghost materials/textures from a previous world build —
+  // disposeScene() skips Sprites so we manually clean up.
+  _lensGhosts.forEach(g=>{
+    if(g.material){
+      if(g.material.map)g.material.map.dispose();
+      g.material.dispose();
+    }
+  });
+  _lensGhosts.length=0;
+  // [factor, rgb, scale, baseOpacity]
+  // factor: 0=at sun, 1=at center, 2=opposite of sun
+  const defs=[
+    [0.30,'255,210,150',  6,0.55],
+    [0.55,'180,220,255',  4,0.50],
+    [0.85,'255,180,200',  3,0.45],
+    [1.15,'200,180,255',  5,0.55],
+    [1.45,'255,240,180',  3,0.40],
+    [1.85,'255,200,160',  7,0.50]
+  ];
+  defs.forEach(d=>{
+    const [factor,rgb,scale,baseOp]=d;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({
+      map:_ghostTex(rgb),
+      blending:THREE.AdditiveBlending,
+      transparent:true,
+      depthWrite:false,
+      depthTest:false,
+      opacity:0
+    }));
+    sp.scale.set(scale,scale,1);
+    sp.visible=false;
+    sp.userData.factor=factor;
+    sp.userData.baseOpacity=baseOp;
+    sp.renderOrder=999; // draw last
+    scene.add(sp);
+    _lensGhosts.push(sp);
+  });
+}
+const _lfNDC=new THREE.Vector3();
+const _lfFwd=new THREE.Vector3(),_lfUp=new THREE.Vector3(),_lfRight=new THREE.Vector3();
+function updateLensFlare(){
+  if(!_sunBillboard||!camera||!_lensGhosts.length)return;
+  if(!_sunBillboard.visible){
+    _lensGhosts.forEach(g=>{g.visible=false;});return;
+  }
+  _lfNDC.copy(_sunBillboard.position).project(camera);
+  // Achter camera or far off-screen → hide
+  if(_lfNDC.z>1||Math.abs(_lfNDC.x)>1.4||Math.abs(_lfNDC.y)>1.4){
+    _lensGhosts.forEach(g=>{g.visible=false;});return;
+  }
+  camera.getWorldDirection(_lfFwd);
+  _lfRight.set(1,0,0).applyQuaternion(camera.quaternion);
+  _lfUp.set(0,1,0).applyQuaternion(camera.quaternion);
+  const dist=80;
+  const fH=2*dist*Math.tan(camera.fov*Math.PI/360);
+  const fW=fH*camera.aspect;
+  const dEdge=Math.max(Math.abs(_lfNDC.x),Math.abs(_lfNDC.y));
+  const fadeBase=Math.max(0,1-dEdge*0.65);
+  _lensGhosts.forEach(g=>{
+    const f=g.userData.factor;
+    const px=_lfNDC.x*(1-f), py=_lfNDC.y*(1-f);
+    g.position.copy(camera.position)
+      .addScaledVector(_lfFwd,dist)
+      .addScaledVector(_lfRight,px*fW*0.5)
+      .addScaledVector(_lfUp,py*fH*0.5);
+    g.visible=true;
+    g.material.opacity=fadeBase*g.userData.baseOpacity*_sunBillboard.material.opacity;
+  });
 }
 
 
@@ -519,6 +607,7 @@ function updateSky(dt){
     const twinkle=0.82+Math.sin(_nowSec*1.7)*0.10+Math.sin(_nowSec*3.1)*0.05;
     stars.material.opacity=twinkle;
   }
+  updateLensFlare();
 }
 
 

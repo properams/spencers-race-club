@@ -96,9 +96,16 @@ function buildCurbs(N){
     geo.setIndex(idx);
     const cMat=new THREE.MeshLambertMaterial({vertexColors:true});
     cMat.polygonOffset=true;cMat.polygonOffsetFactor=-1;cMat.polygonOffsetUnits=-1;
-    if(activeWorld==='space')cMat.emissive=new THREE.Color(0x220055);
-    else if(activeWorld==='deepsea')cMat.emissive=new THREE.Color(0x003333);
-    else if(activeWorld==='candy'){cMat.emissive=new THREE.Color(0x441122);cMat.emissiveIntensity=.35;}
+    // Per-world emissive accents — vertexColors zijn al gezet per world, maar
+    // emissive geeft daarbovenop een gloed die door bloom oppikt wordt.
+    if(activeWorld==='space'){cMat.emissive=new THREE.Color(0x4422aa);cMat.emissiveIntensity=.7;}
+    else if(activeWorld==='deepsea'){cMat.emissive=new THREE.Color(0x0a4a4a);cMat.emissiveIntensity=.85;}
+    else if(activeWorld==='candy'){cMat.emissive=new THREE.Color(0x661133);cMat.emissiveIntensity=.55;}
+    else if(activeWorld==='neoncity'){cMat.emissive=new THREE.Color(0x00ffaa);cMat.emissiveIntensity=.75;}
+    else if(activeWorld==='volcano'){cMat.emissive=new THREE.Color(0xff3300);cMat.emissiveIntensity=.55;}
+    else if(activeWorld==='arctic'){cMat.emissive=new THREE.Color(0x4488dd);cMat.emissiveIntensity=.45;}
+    else if(activeWorld==='themepark'){cMat.emissive=new THREE.Color(0xff44aa);cMat.emissiveIntensity=.6;}
+    else {cMat.emissive=new THREE.Color(0x661111);cMat.emissiveIntensity=.30;} // GP — subtle red curb glow
     scene.add(new THREE.Mesh(geo,cMat));
   });
 }

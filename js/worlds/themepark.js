@@ -18,8 +18,9 @@ function buildThemeparkEnvironment(){
     const crowdTex=_buildCrowdTex();
     for(let i=0;i<6;i++){
       const tex=crowdTex.clone();tex.needsUpdate=true;
-      tex.repeat.set(2,1);tex.offset.x=Math.random();
+      tex.repeat.set(2,0.5);tex.offset.x=Math.random();tex.offset.y=0;
       const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false});
+      _crowdMaterials.push(mat);
       const cluster=new THREE.Sprite(mat);
       const ang=i/6*Math.PI*2+Math.random()*.4;
       const r=BARRIER_OFF+24+Math.random()*60;
