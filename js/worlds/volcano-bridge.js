@@ -6,13 +6,21 @@
 //   buildVolcanoBridge()                — called from buildVolcanoEnvironment()
 //   updateVolcanoBridge(dt, currentLap) — called from updateVolcanoWorld(dt)
 //   disposeVolcanoBridge()              — called from _resetRaceState()
-//   onVolcanoLapComplete(newLap)        — called from gameplay/achievements.js
 //
-// Pivot architecture: each segment is a Group whose origin sits on the
-// outer edge of the deck. The deck mesh is offset along the group's
-// local +X by -side*PANEL_W/2 so it ends up centered on the track. V2
-// will tilt segments by rotating the group around its local Z (track
-// tangent direction), which makes the deck swing down from its pivot edge.
+// Pivot architecture: each segment is a nested Group pair.
+//   outerGrp  — positioned at the pivot edge of the deck, rotation.y = track yaw
+//   innerGrp  — child of outerGrp, holds the tilt around its local Z (= track
+//               tangent direction, because outerGrp is already yaw-rotated).
+// The deck mesh is offset inside innerGrp by -side*PANEL_W/2 along local X
+// so the deck appears centered on the track when innerGrp has zero rotation.
+// Tilting innerGrp around local Z swings the deck down from its outer edge.
+//
+// Lap-progressive states (driven from currentLap argument, not callbacks —
+// idempotent so a mid-race pause/resume can't desync the visuals):
+//   lap 1 → cool deck, gentle lava-pool pulse
+//   lap 2 → cracks glow on the deck, lava-pool runs hotter
+//   lap 3 → alternating segments tilt 35° away (ease-in-quad over ~1.5s),
+//           lava-pool peaks
 //
 // Track range: t ∈ [_BRIDGE_T_START, _BRIDGE_T_END]. Move these to relocate.
 
@@ -24,68 +32,97 @@ const _BRIDGE_SEGMENTS=8;
 const _BRIDGE_PANEL_W=18;
 const _BRIDGE_PANEL_L=6;
 const _BRIDGE_PANEL_H=0.5;
+const _BRIDGE_TILT_RAD=35*Math.PI/180;
 
-let _volcanoBridgeSegs=[];   // [{grp, mesh, side, index}]
-let _volcanoBridgeLava=null; // pool plane under the bridge
+let _volcanoBridgeSegs=[];   // [{outer, inner, mesh, side, index}]
+let _volcanoBridgeLava=null;
 let _volcanoBridgeState=null;
 
 function buildVolcanoBridge(){
   if(typeof scene==='undefined'||!scene||typeof trackCurve==='undefined'||!trackCurve)return;
   // ── Lava pool under the bridge ──
-  // One plane keeps it cheap (1 draw-call). Sized to span the bridge area
-  // with margin so the visual gap reads even when camera angle is low.
   {
     const tMid=(_BRIDGE_T_START+_BRIDGE_T_END)*.5;
     const pMid=trackCurve.getPoint(tMid);
     const tg=trackCurve.getTangent(tMid).normalize();
     const yawMid=Math.atan2(tg.x,tg.z);
     const pA=trackCurve.getPoint(_BRIDGE_T_START),pB=trackCurve.getPoint(_BRIDGE_T_END);
-    const arc=Math.hypot(pB.x-pA.x,pB.z-pA.z)*1.2; // straight-line + 20% slack
+    const arc=Math.hypot(pB.x-pA.x,pB.z-pA.z)*1.2;
     const lavaMat=new THREE.MeshLambertMaterial({color:0xff4400,emissive:0xff2200,emissiveIntensity:1.4,transparent:true,opacity:.95});
     const lava=new THREE.Mesh(new THREE.PlaneGeometry(arc+24,40),lavaMat);
     lava.rotation.x=-Math.PI/2;
     lava.rotation.z=yawMid;
-    lava.position.set(pMid.x,-0.9,pMid.z); // below ground (-.15) so it reads as a pit
+    lava.position.set(pMid.x,-0.9,pMid.z);
     scene.add(lava);
     _volcanoBridgeLava=lava;
   }
   // ── Bridge deck segments ──
-  // Shared geometry + material across all 8 panels (1 geometry, 1 material
-  // → 8 draw-calls, well under the signature-moment budget).
+  // Shared geometry (1 GPU buffer), per-segment cloned materials so V2's
+  // crack-glow can pulse independently per panel.
   const deckGeo=new THREE.BoxGeometry(_BRIDGE_PANEL_W,_BRIDGE_PANEL_H,_BRIDGE_PANEL_L);
-  const deckMat=new THREE.MeshLambertMaterial({color:0x2a1a14,emissive:0x110800,emissiveIntensity:.15});
+  const deckMatProto=new THREE.MeshLambertMaterial({color:0x2a1a14,emissive:0x110800,emissiveIntensity:.15});
   for(let i=0;i<_BRIDGE_SEGMENTS;i++){
     const t=_BRIDGE_T_START+(i+.5)*((_BRIDGE_T_END-_BRIDGE_T_START)/_BRIDGE_SEGMENTS);
     const p=trackCurve.getPoint(t);
     const tg=trackCurve.getTangent(t).normalize();
     const yaw=Math.atan2(tg.x,tg.z);
-    // Alternate which edge is the pivot so V2 can tilt panels away in two
-    // directions (every-other segment swings out left vs right).
     const side=(i%2===0)?1:-1;
-    // Group's local +X (after rotation.y=yaw) in world = (cos(yaw), 0, -sin(yaw)).
-    // Place the group at the pivot edge so the offset deck mesh sits on the track.
+    // outerGrp local +X (after rotation.y=yaw) in world = (cos(yaw), 0, -sin(yaw)).
     const lxX=Math.cos(yaw),lxZ=-Math.sin(yaw);
-    const grp=new THREE.Group();
-    grp.position.set(p.x+side*(_BRIDGE_PANEL_W*.5)*lxX, 0.05, p.z+side*(_BRIDGE_PANEL_W*.5)*lxZ);
-    grp.rotation.y=yaw;
+    const outer=new THREE.Group();
+    outer.position.set(p.x+side*(_BRIDGE_PANEL_W*.5)*lxX, 0.05, p.z+side*(_BRIDGE_PANEL_W*.5)*lxZ);
+    outer.rotation.y=yaw;
+    const inner=new THREE.Group();
+    outer.add(inner);
+    const deckMat=deckMatProto.clone();
     const deck=new THREE.Mesh(deckGeo,deckMat);
-    deck.position.x=-side*(_BRIDGE_PANEL_W*.5); // recenters mesh on track centerline
+    deck.position.x=-side*(_BRIDGE_PANEL_W*.5);
     deck.receiveShadow=true;
-    grp.add(deck);
-    scene.add(grp);
-    _volcanoBridgeSegs.push({grp:grp,mesh:deck,side:side,index:i});
+    inner.add(deck);
+    scene.add(outer);
+    _volcanoBridgeSegs.push({outer:outer,inner:inner,mesh:deck,side:side,index:i});
   }
-  _volcanoBridgeState={lap:1,tiltProgress:0};
+  // The prototype was only used to seed clones; dispose it to avoid a leaked material.
+  deckMatProto.dispose();
+  _volcanoBridgeState={crackProgress:0,tiltProgress:0};
 }
 
 function updateVolcanoBridge(dt,currentLap){
   if(!_volcanoBridgeState)return;
-  // Lava-pool emissive pulse — cheap shimmer keeps the pit alive visually.
+  const st=_volcanoBridgeState;
+  const t=(typeof _nowSec==='number')?_nowSec:0;
+  // Lava-pool emissive ramps up per lap.
   if(_volcanoBridgeLava&&_volcanoBridgeLava.material){
-    const t=(typeof _nowSec==='number')?_nowSec:0;
-    _volcanoBridgeLava.material.emissiveIntensity=1.1+Math.sin(t*1.6)*.35;
+    const lapBoost=(currentLap>=2?0.3:0)+(currentLap>=3?0.5:0);
+    _volcanoBridgeLava.material.emissiveIntensity=1.1+Math.sin(t*1.6)*.35+lapBoost;
   }
-  // V2 lap-progressive damage states will land here next phase. V1 = static.
+  // Smooth-easing of damage states. Time-constant chosen so the transition
+  // feels deliberate (~1s to mostly visible) without sluggishness.
+  const crackTarget=currentLap>=2?1:0;
+  st.crackProgress+=(crackTarget-st.crackProgress)*Math.min(1,dt*1.5);
+  const tiltTarget=currentLap>=3?1:0;
+  st.tiltProgress+=(tiltTarget-st.tiltProgress)*Math.min(1,dt*0.9);
+  // Per-segment apply.
+  const eased=st.tiltProgress*st.tiltProgress; // ease-in-quad, "structural fail" feel
+  for(let i=0;i<_volcanoBridgeSegs.length;i++){
+    const seg=_volcanoBridgeSegs[i];
+    if(seg.mesh&&seg.mesh.material){
+      const m=seg.mesh.material;
+      // Cracks: emissive boost (per-segment phase via i so the bridge breathes).
+      m.emissiveIntensity=0.15+st.crackProgress*(0.55+0.2*Math.sin(t*3+i));
+      // Subtle heat-tint on the asphalt color: lerp toward smoldering red.
+      // Channel-by-channel lerp from 0x2a1a14 → 0x5a2818 in proportion to crackProgress.
+      const r=(0x2a+(0x5a-0x2a)*st.crackProgress)/255;
+      const g=(0x1a+(0x28-0x1a)*st.crackProgress)/255;
+      const b=(0x14+(0x18-0x14)*st.crackProgress)/255;
+      m.color.setRGB(r,g,b);
+    }
+    // Tilt: only even-indexed segments swing away. The remaining 4 panels
+    // form a discontinuous path the player must thread through on lap 3.
+    if(seg.inner&&i%2===0){
+      seg.inner.rotation.z=-seg.side*_BRIDGE_TILT_RAD*eased;
+    }
+  }
 }
 
 function disposeVolcanoBridge(){
@@ -95,9 +132,4 @@ function disposeVolcanoBridge(){
   _volcanoBridgeSegs.length=0;
   _volcanoBridgeLava=null;
   _volcanoBridgeState=null;
-}
-
-function onVolcanoLapComplete(newLap){
-  if(_volcanoBridgeState)_volcanoBridgeState.lap=newLap;
-  // V2 hook-point: trigger crack-decals (lap 2) or kantel-rotatie (lap 3).
 }
