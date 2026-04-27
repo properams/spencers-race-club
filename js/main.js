@@ -125,10 +125,7 @@ let _sunBillboard=null;
 let _safetyCar=null;
 // Tire state (_tireTemp, _tireWarnCooldown, _lastTireKey) → js/gameplay/tires.js
 // _elTire → ui/hud.js
-// Dynamic sky transition (day↔night smooth)
-let _skyT=0,_skyTarget=0;
-const _fogColorDay=new THREE.Color(0x8ac0e0);
-const _fogColorNight=new THREE.Color(0x030610);
+// Day↔night smooth-transition state (_skyT, _skyTarget, _fogColorDay, _fogColorNight) → js/effects/night.js
 // _thunderTimer / _weatherMode / _stormFlashTimer / _snowParticles / _snowGeo → js/effects/weather.js
 // Crowd noise
 let _crowdSrc=null,_crowdGain=null;

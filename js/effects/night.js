@@ -1,6 +1,15 @@
 // js/effects/night.js — auto-extracted in Fase 4
 // Non-module script.
 
+// Day↔night smooth-transition state (uit main.js verhuisd).
+//   _skyT       — current blend factor 0=day, 1=night (lerps richting _skyTarget)
+//   _skyTarget  — gewenste eindwaarde, geset door toggleNight() hieronder
+//   _fogColorDay / _fogColorNight — lerped via lerpColors() voor scene.fog.color.
+// Per wereld worden deze fog-kleuren herset in core/scene.js buildScene().
+// _skyT decay-stap zit in track/environment.js update().
+let _skyT=0,_skyTarget=0;
+const _fogColorDay=new THREE.Color(0x8ac0e0);
+const _fogColorNight=new THREE.Color(0x030610);
 
 function toggleNight(){
   isDark=!isDark;
