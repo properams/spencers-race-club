@@ -197,8 +197,8 @@ var _overallFastestLap=Infinity; // var: persistence cross-script
 const _nearMissCooldown=[];
 // Pit stop state
 let _pitStopActive=false,_pitStopTimer=0,_pitStopUsed=false;
-// DRS indicator state — _drsActive verhuisd naar worlds/grandprix.js
-let _drsEl=null;
+// DRS indicator state — _drsActive verhuisd naar worlds/grandprix.js,
+// _drsEl DOM-ref verhuisd naar js/ui/hud.js (groep met andere _el*).
 // AI personalities (assigned in makeAllCars)
 const _aiPersonality=[
   {aggr:0.6,consist:0.8,name:'Aggressive'}, // Bugatti
@@ -235,10 +235,7 @@ let _newUnlocks=[]; // cars unlocked this race, for finish screen toast
 // _aiPassSide: -1=left, 1=right, 0=none
 // Turbo spool state
 let _wasBraking=false,_spoolTimer=0;
-// Sector timing panel
-let _sectorPanelEl=null;
-// Speed trap DOM ref
-let _speedTrapEl=null;
+// Sector timing panel + Speed trap DOM-refs verhuisd naar js/ui/hud.js.
 // Brake heat glow
 let _brakeHeatTimer=0;
 // GRIP_BONUS_ZONES → js/config.js

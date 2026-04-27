@@ -15,6 +15,8 @@ let _elSector=null;
 let _elGapAhead=null,_elGapBehind=null;
 let _elRpm=null;
 let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;
+// Verhuisd uit main.js — gevuld in cacheHUDRefs hieronder.
+let _drsEl=null,_sectorPanelEl=null,_speedTrapEl=null;
 
 function cacheHUDRefs(){
   // On mobile: hide performance-heavy HUD elements
