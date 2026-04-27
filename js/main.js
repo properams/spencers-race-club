@@ -130,10 +130,8 @@ let _sunBillboard=null;
 let _rainIntensity=0,_rainTarget=0;
 // Safety car (spawns during recovery)
 let _safetyCar=null;
-// Tire wear warning cooldown
-let _tireWarnCooldown=0;
+// Tire state (_tireTemp, _tireWarnCooldown, _lastTireKey) → js/gameplay/tires.js
 // _elTire → ui/hud.js
-let _lastTireKey=-1;
 // Dynamic sky transition (day↔night smooth)
 let _skyT=0,_skyTarget=0;
 const _fogColorDay=new THREE.Color(0x8ac0e0);
@@ -206,8 +204,7 @@ let _closeBattleTimer=0;
 let _fastestLapFlashT=0;
 // Track gap to leader in seconds for leaderboard
 let _gapsToLeader=[];
-// Tire temperature system (0=cold,0.5=optimal,1=overheated) per corner
-let _tireTemp={fl:.15,fr:.15,rl:.15,rr:.15};
+// _tireTemp → js/gameplay/tires.js
 // Speed trap state → js/gameplay/speedtrap.js
 // Car unlock system
 var _unlockedCars=new Set([0,1,2,3,4,5,6,7]); // var: persistence cross-script (default unlocks)
