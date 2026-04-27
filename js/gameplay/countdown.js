@@ -40,17 +40,18 @@ function runCountdown(onGo){
               if(cdOv)cdOv.style.display='flex';
               if(num){num.textContent='GO!';num.style.color='#00ff55';num.style.textShadow='0 0 60px #00ff88,0 0 120px #00cc55';num.style.opacity='1';num.style.transform='scale(1.5)';}
               if(f1El)f1El.style.display='none';
-            }catch(e){console.error('Countdown GO error:',e);}
+            }catch(e){window.dbg?dbg.error('countdown',e,'GO error'):console.error('Countdown GO error:',e);}
             // ALWAYS fire onGo — even if visuals fail
             onGo();
             if(num)fadePop(num,550,function(){if(cdOv)cdOv.style.display='none';});
           },150+Math.random()*130);
         }
-      }catch(e){console.error('Countdown lightOn error:',e);onGo();}
+      }catch(e){window.dbg?dbg.error('countdown',e,'lightOn error'):console.error('Countdown lightOn error:',e);onGo();}
     };
     setTimeout(lightOn,600);
   }catch(e){
-    console.error('Countdown crashed:',e);
+    if(window.dbg)dbg.error('countdown',e,'runCountdown crashed');
+    else console.error('Countdown crashed:',e);
     onGo();
   }
 }

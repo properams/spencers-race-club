@@ -112,8 +112,9 @@ async function boot(){
   // Load game data (cars/tracks/prices) before scene init.
   try{await loadGameData();}
   catch(e){
-    window.dbg&&dbg.error('boot',e,'loadGameData failed');
-    console.error('loadGameData failed:',e);
+    // dbg.error logt al naar console én pusht naar de errors-ringbuffer.
+    if(window.dbg)dbg.error('boot',e,'loadGameData failed');
+    else console.error('loadGameData failed:',e);
     if(_loadEl){_loadEl.innerHTML='<div style="padding:40px;color:#ff6600;font-family:Orbitron,sans-serif">⚠ DATA LOAD FAILED<br><span style="font-size:12px;color:#888">'+e.message+'</span></div>';}
     return;
   }
@@ -123,8 +124,8 @@ async function boot(){
   setTimeout(()=>{
     try{initRenderer();}
     catch(e){
-      window.dbg&&dbg.error('boot',e,'initRenderer failed');
-      console.error('initRenderer failed:',e);
+      if(window.dbg)dbg.error('boot',e,'initRenderer failed');
+      else console.error('initRenderer failed:',e);
       if(_loadEl){
         _loadEl.style.display='flex';
         _loadEl.innerHTML='<div style="text-align:center;padding:40px;font-family:Orbitron,sans-serif"><div style="font-size:24px;margin-bottom:12px">⚠</div><div style="font-size:16px;color:#ff6600;margin-bottom:10px">WebGL niet beschikbaar</div><div style="font-size:11px;color:#666;line-height:1.9;max-width:380px">Probeer:<br>1. Sluit andere browser tabs<br>2. Herlaad (F5)<br>3. Chrome → Instellingen → Systeem → Hardware acceleratie AAN</div><button onclick="location.reload()" style="margin-top:16px;background:#ff6600;color:#fff;border:none;padding:10px 24px;border-radius:8px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:11px;letter-spacing:2px">🔄 OPNIEUW</button></div>';
@@ -132,7 +133,10 @@ async function boot(){
       return;
     }
     try{buildScene();}
-    catch(e){window.dbg&&dbg.error('boot',e,'buildScene crashed');console.error('buildScene crashed:',e);}
+    catch(e){
+      if(window.dbg)dbg.error('boot',e,'buildScene crashed');
+      else console.error('buildScene crashed:',e);
+    }
     // Warm-up render: forceer GPU shader-compilatie voor titel verschijnt.
     if(renderer&&scene&&camera){
       if(_loadEl){
