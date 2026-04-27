@@ -19,20 +19,27 @@
 // idempotent so a mid-race pause/resume can't desync the visuals):
 //   lap 1 → cool deck, gentle lava-pool pulse
 //   lap 2 → cracks glow on the deck, lava-pool runs hotter
-//   lap 3 → alternating segments tilt 35° away (ease-in-quad over ~1.5s),
-//           lava-pool peaks
+//   lap 3 → alternating segments tilt 35° away (time-based ramp + ease-in-quad
+//           over ~1.5s), lava-pool peaks
 //
-// Track range: t ∈ [_BRIDGE_T_START, _BRIDGE_T_END]. Move these to relocate.
+// Track range: t ∈ [_BRIDGE_T_START, _BRIDGE_T_END]. Geysers sit at
+// t = 0.22 / 0.52 / 0.78 in volcano.js, so the bridge sits between the
+// 0.52 and 0.78 geysers to avoid spatial overlap.
 
 'use strict';
 
-const _BRIDGE_T_START=0.42;
-const _BRIDGE_T_END=0.54;
+const _BRIDGE_T_START=0.55;
+const _BRIDGE_T_END=0.67;
 const _BRIDGE_SEGMENTS=8;
 const _BRIDGE_PANEL_W=18;
 const _BRIDGE_PANEL_L=6;
 const _BRIDGE_PANEL_H=0.5;
 const _BRIDGE_TILT_RAD=35*Math.PI/180;
+const _BRIDGE_CRACK_DURATION=1.0; // seconds for crack-progress 0→1
+const _BRIDGE_TILT_DURATION=1.5;  // seconds for tilt-progress 0→1
+// Asphalt color lerp endpoints (cool deck → smoldering red).
+const _BRIDGE_DECK_R0=0x2a/255, _BRIDGE_DECK_G0=0x1a/255, _BRIDGE_DECK_B0=0x14/255;
+const _BRIDGE_DECK_R1=0x5a/255, _BRIDGE_DECK_G1=0x28/255, _BRIDGE_DECK_B1=0x18/255;
 
 let _volcanoBridgeSegs=[];   // [{outer, inner, mesh, side, index}]
 let _volcanoBridgeLava=null;
@@ -40,6 +47,10 @@ let _volcanoBridgeState=null;
 
 function buildVolcanoBridge(){
   if(typeof scene==='undefined'||!scene||typeof trackCurve==='undefined'||!trackCurve)return;
+  // Idempotency guard: if buildScene is invoked without _resetRaceState
+  // beforehand (a dev-path edge case), the prior race's segment refs would
+  // still be in our arrays. Clear them first so we never push on top of stale.
+  disposeVolcanoBridge();
   // ── Lava pool under the bridge ──
   {
     const tMid=(_BRIDGE_T_START+_BRIDGE_T_END)*.5;
@@ -48,7 +59,10 @@ function buildVolcanoBridge(){
     const yawMid=Math.atan2(tg.x,tg.z);
     const pA=trackCurve.getPoint(_BRIDGE_T_START),pB=trackCurve.getPoint(_BRIDGE_T_END);
     const arc=Math.hypot(pB.x-pA.x,pB.z-pA.z)*1.2;
-    const lavaMat=new THREE.MeshLambertMaterial({color:0xff4400,emissive:0xff2200,emissiveIntensity:1.4,transparent:true,opacity:.95});
+    // depthWrite:false matches the eruption particle pattern in volcano.js
+    // and prevents the near-opaque pool from incorrectly occluding tilted
+    // deck panels that will dip below it on lap 3.
+    const lavaMat=new THREE.MeshLambertMaterial({color:0xff4400,emissive:0xff2200,emissiveIntensity:1.4,transparent:true,opacity:.95,depthWrite:false});
     const lava=new THREE.Mesh(new THREE.PlaneGeometry(arc+24,40),lavaMat);
     lava.rotation.x=-Math.PI/2;
     lava.rotation.z=yawMid;
@@ -66,7 +80,12 @@ function buildVolcanoBridge(){
     const p=trackCurve.getPoint(t);
     const tg=trackCurve.getTangent(t).normalize();
     const yaw=Math.atan2(tg.x,tg.z);
-    const side=(i%2===0)?1:-1;
+    // side determines which edge is the pivot (and therefore which way the
+    // panel falls). Tilt-eligible (even-indexed) segments alternate side every
+    // two indices — pattern (i%4 < 2) gives sides [+1,+1,-1,-1,+1,+1,-1,-1],
+    // so even-indexed tilters [0,2,4,6] alternate [+1,-1,+1,-1] → panels fall
+    // checkerboard rather than all-same-direction.
+    const side=(i%4<2)?1:-1;
     // outerGrp local +X (after rotation.y=yaw) in world = (cos(yaw), 0, -sin(yaw)).
     const lxX=Math.cos(yaw),lxZ=-Math.sin(yaw);
     const outer=new THREE.Group();
@@ -82,45 +101,47 @@ function buildVolcanoBridge(){
     scene.add(outer);
     _volcanoBridgeSegs.push({outer:outer,inner:inner,mesh:deck,side:side,index:i});
   }
-  // The prototype was only used to seed clones; dispose it to avoid a leaked material.
+  // The prototype was only used to seed clones; dispose to avoid a leaked material.
   deckMatProto.dispose();
-  _volcanoBridgeState={crackProgress:0,tiltProgress:0};
+  _volcanoBridgeState={crackStartT:-1,tiltStartT:-1};
 }
 
 function updateVolcanoBridge(dt,currentLap){
   if(!_volcanoBridgeState)return;
   const st=_volcanoBridgeState;
   const t=(typeof _nowSec==='number')?_nowSec:0;
+  // Lap-edge detection: latch a start-time the first frame the lap-threshold
+  // is crossed, clear it if the lap drops back (race-restart edge case).
+  if(currentLap>=2&&st.crackStartT<0)st.crackStartT=t;
+  else if(currentLap<2)st.crackStartT=-1;
+  if(currentLap>=3&&st.tiltStartT<0)st.tiltStartT=t;
+  else if(currentLap<3)st.tiltStartT=-1;
+  // Time-based ramp (predictable: full at exactly _BRIDGE_*_DURATION seconds).
+  const crackProgress=(st.crackStartT>=0)?Math.min(1,(t-st.crackStartT)/_BRIDGE_CRACK_DURATION):0;
+  const tiltProgress=(st.tiltStartT>=0)?Math.min(1,(t-st.tiltStartT)/_BRIDGE_TILT_DURATION):0;
+  const tiltEased=tiltProgress*tiltProgress; // ease-in-quad, "structural fail" feel
   // Lava-pool emissive ramps up per lap.
   if(_volcanoBridgeLava&&_volcanoBridgeLava.material){
     const lapBoost=(currentLap>=2?0.3:0)+(currentLap>=3?0.5:0);
     _volcanoBridgeLava.material.emissiveIntensity=1.1+Math.sin(t*1.6)*.35+lapBoost;
   }
-  // Smooth-easing of damage states. Time-constant chosen so the transition
-  // feels deliberate (~1s to mostly visible) without sluggishness.
-  const crackTarget=currentLap>=2?1:0;
-  st.crackProgress+=(crackTarget-st.crackProgress)*Math.min(1,dt*1.5);
-  const tiltTarget=currentLap>=3?1:0;
-  st.tiltProgress+=(tiltTarget-st.tiltProgress)*Math.min(1,dt*0.9);
+  // Pre-compute per-frame color lerp constants (same for all segments).
+  const colR=_BRIDGE_DECK_R0+(_BRIDGE_DECK_R1-_BRIDGE_DECK_R0)*crackProgress;
+  const colG=_BRIDGE_DECK_G0+(_BRIDGE_DECK_G1-_BRIDGE_DECK_G0)*crackProgress;
+  const colB=_BRIDGE_DECK_B0+(_BRIDGE_DECK_B1-_BRIDGE_DECK_B0)*crackProgress;
   // Per-segment apply.
-  const eased=st.tiltProgress*st.tiltProgress; // ease-in-quad, "structural fail" feel
   for(let i=0;i<_volcanoBridgeSegs.length;i++){
     const seg=_volcanoBridgeSegs[i];
     if(seg.mesh&&seg.mesh.material){
       const m=seg.mesh.material;
       // Cracks: emissive boost (per-segment phase via i so the bridge breathes).
-      m.emissiveIntensity=0.15+st.crackProgress*(0.55+0.2*Math.sin(t*3+i));
-      // Subtle heat-tint on the asphalt color: lerp toward smoldering red.
-      // Channel-by-channel lerp from 0x2a1a14 → 0x5a2818 in proportion to crackProgress.
-      const r=(0x2a+(0x5a-0x2a)*st.crackProgress)/255;
-      const g=(0x1a+(0x28-0x1a)*st.crackProgress)/255;
-      const b=(0x14+(0x18-0x14)*st.crackProgress)/255;
-      m.color.setRGB(r,g,b);
+      m.emissiveIntensity=0.15+crackProgress*(0.55+0.2*Math.sin(t*3+i));
+      m.color.setRGB(colR,colG,colB);
     }
     // Tilt: only even-indexed segments swing away. The remaining 4 panels
     // form a discontinuous path the player must thread through on lap 3.
     if(seg.inner&&i%2===0){
-      seg.inner.rotation.z=-seg.side*_BRIDGE_TILT_RAD*eased;
+      seg.inner.rotation.z=-seg.side*_BRIDGE_TILT_RAD*tiltEased;
     }
   }
 }
