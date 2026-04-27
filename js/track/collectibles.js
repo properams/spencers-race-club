@@ -1,6 +1,4 @@
-// js/track/collectibles.js — auto-extracted in Fase 4
-// Non-module script.
-
+// js/track/collectibles.js — non-module script.
 
 function buildCollectibles(){
   // Per-world palette — coin, emissive, rim highlight, halo glow, light colour

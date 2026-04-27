@@ -1,5 +1,4 @@
-// js/gameplay/pitstop.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/pitstop.js — non-module script.
 
 // Pit-stop state (uit main.js verhuisd). _pitStopUsed is per-race-eenmalig:
 // na het rondsturen wordt 'm true en blijft tot resetRaceState in race.js.

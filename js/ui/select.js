@@ -1,4 +1,4 @@
-// js/ui/select.js — Fase 2.3/2.4 extraction. Non-module script.
+// js/ui/select.js — non-module script.
 
 // Car-preview state (uit main.js verhuisd) — gebruikt in initCarPreview/updateCarPreview.
 let carPreviews={};

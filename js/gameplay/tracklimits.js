@@ -1,5 +1,4 @@
-// js/gameplay/tracklimits.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/tracklimits.js — non-module script.
 
 // Wrong-way detector accumulator (uit main.js verhuisd). Builds up zolang
 // speler tegenovergestelde richting rijdt; reset in gameplay/race.js +

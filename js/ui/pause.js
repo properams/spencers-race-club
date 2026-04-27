@@ -1,5 +1,4 @@
-// js/ui/pause.js — Fase 2.3/2.4 extraction. Non-module script.
-
+// js/ui/pause.js — non-module script.
 
 function togglePause(){
   if(gameState!=='RACE'){window.dbg&&dbg.log('pause','skip — gameState='+gameState);return;}

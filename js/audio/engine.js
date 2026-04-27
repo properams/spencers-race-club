@@ -1,4 +1,4 @@
-// js/audio/engine.js — Fase 2.3/2.4 extraction. Non-module script.
+// js/audio/engine.js — non-module script.
 
 // Engine audio state (uit main.js verhuisd).
 //   engineOsc / engineGain — multi-oscillator engine (initEngine() wijst toe).

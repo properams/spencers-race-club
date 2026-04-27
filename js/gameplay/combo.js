@@ -1,4 +1,4 @@
-// js/gameplay/combo.js — Fase 2.3/2.4 extraction. Non-module script.
+// js/gameplay/combo.js — non-module script.
 
 // Combo state (uit main.js verhuisd). _comboMult blijft in main.js als var,
 // want persistence/progression.js leest het via window._comboMult.

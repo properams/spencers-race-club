@@ -1,5 +1,4 @@
-// js/effects/night.js — auto-extracted in Fase 4
-// Non-module script.
+// js/effects/night.js — non-module script.
 
 // Day↔night smooth-transition state (uit main.js verhuisd).
 //   _skyT       — current blend factor 0=day, 1=night (lerps richting _skyTarget)

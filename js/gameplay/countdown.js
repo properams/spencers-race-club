@@ -1,6 +1,4 @@
-// js/gameplay/countdown.js — auto-extracted in Fase 4
-// Non-module script.
-
+// js/gameplay/countdown.js — non-module script.
 
 function runCountdown(onGo){
   try{

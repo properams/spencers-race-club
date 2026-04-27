@@ -1,6 +1,4 @@
-// js/gameplay/safetycar.js — auto-extracted in Fase 4
-// Non-module script.
-
+// js/gameplay/safetycar.js — non-module script.
 
 function spawnSafetyCar(progress){
   if(_safetyCar){scene.remove(_safetyCar.mesh);_safetyCar=null;}

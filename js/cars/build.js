@@ -1,6 +1,4 @@
-// js/cars/build.js — auto-extracted in Fase 4
-// Non-module script.
-
+// js/cars/build.js — non-module script.
 
 function makeWheel(radius,width,chromeMat,redMat){
   const g=new THREE.Group();

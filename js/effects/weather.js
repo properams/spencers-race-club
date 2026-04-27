@@ -1,5 +1,4 @@
-// js/effects/weather.js — auto-extracted in Fase 4
-// Non-module script.
+// js/effects/weather.js — non-module script.
 
 // Weather state (uit main.js verhuisd).
 //   _weatherMode             — 'clear' | 'rain' | 'storm' | 'snow'

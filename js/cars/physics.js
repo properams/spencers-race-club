@@ -1,5 +1,4 @@
-// js/cars/physics.js — auto-extracted in Fase 4
-// Non-module script.
+// js/cars/physics.js — non-module script.
 
 // Pre-allocated scratch vectors (uit main.js verhuisd) — cross-script
 // zichtbaar voor effects/night.js + visuals.js die _plFwd/_plRt lezen.

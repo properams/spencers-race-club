@@ -1,5 +1,4 @@
-// js/cars/ai.js — auto-extracted in Fase 4
-// Non-module script.
+// js/cars/ai.js — non-module script.
 
 // Pre-allocated scratch vectors (uit main.js verhuisd) — vermijden GC-druk
 // in de hot loop. Cross-script zichtbaar voor effects/night.js + visuals.js.

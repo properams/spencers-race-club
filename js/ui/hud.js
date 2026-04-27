@@ -1,4 +1,4 @@
-// js/ui/hud.js — Fase 2.3/2.4 extraction. Non-module script.
+// js/ui/hud.js — non-module script.
 
 // Position cache (uit main.js verhuisd) — leaderboard berekent posities
 // niet elk frame; cache wordt elke ~10 ticks ververst in updateHUD.

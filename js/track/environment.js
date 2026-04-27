@@ -1,6 +1,4 @@
-// js/track/environment.js — auto-extracted in Fase 4
-// Non-module script.
-
+// js/track/environment.js — non-module script.
 
 function buildGround(){
   const isSpace=activeWorld==='space',isDS=activeWorld==='deepsea';

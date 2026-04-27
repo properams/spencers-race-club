@@ -1,5 +1,4 @@
-// js/gameplay/achievements.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/achievements.js — non-module script.
 
 // Runtime achievement-state (uit main.js verhuisd).
 // _achieveUnlocked: ids die deze sessie zijn vrijgespeeld (Set, geen rebind).

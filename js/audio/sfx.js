@@ -1,5 +1,4 @@
-// js/audio/sfx.js — Fase 2.3/2.4 extraction. Non-module script.
-
+// js/audio/sfx.js — non-module script.
 
 function beep(f,d,v=.25,delay=0,type='sine'){
   if(!audioCtx)return;

@@ -1,4 +1,4 @@
-// js/audio/ambient.js — Fase 2.3/2.4 extraction. Non-module script.
+// js/audio/ambient.js — non-module script.
 
 // Ambient audio refs (uit main.js verhuisd). Gevuld door initCrowdNoise()
 // en startAmbientWind() hieronder; lazy-init op race-start, gestopt bij

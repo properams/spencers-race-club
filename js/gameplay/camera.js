@@ -1,5 +1,4 @@
-// js/gameplay/camera.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/camera.js — non-module script.
 
 // Pre-allocated scratch vectors (uit main.js verhuisd) — cross-script
 // zichtbaar voor effects/night.js + visuals.js die _camV1/_camV2 lezen.

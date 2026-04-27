@@ -1,4 +1,4 @@
-// js/ui/touch.js — Fase 2.3/2.4 extraction. Non-module script.
+// js/ui/touch.js — non-module script.
 
 // Touch input config (uit main.js verhuisd).
 // Haptic feedback patterns per control (ms) — short buzz for precise, slightly longer for boost/drift.

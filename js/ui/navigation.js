@@ -1,5 +1,4 @@
-// js/ui/navigation.js — Fase 2.3/2.4 extraction. Non-module script.
-
+// js/ui/navigation.js — non-module script.
 
 function goToSelect(){
   if(gameState!=='TITLE')return;gameState='SELECT';initAudio();startSelectMusic();

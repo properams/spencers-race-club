@@ -1,5 +1,4 @@
-// js/core/device.js — Fase 2.3/2.4 extraction. Non-module script.
-
+// js/core/device.js — non-module script.
 
 function _redetectDevice(){
   window._isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0||window._isIPadLike;
