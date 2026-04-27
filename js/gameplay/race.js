@@ -7,6 +7,11 @@
 
 'use strict';
 
+// Lap timing (uit main.js verhuisd). Cross-script gemuteerd door
+// ui/navigation.js (countdown→start zet lapStartTime), gameplay/tracklimits.js
+// (S/F-line crossing herstart lapStartTime + zet lastLapTime).
+let lapStartTime=0,lastLapTime=0;
+
 // Per-race statistieken (uit main.js verhuisd).
 //   _raceMaxSpeed     — top speed bereikt deze race (achievements.js)
 //   _raceOvertakes    — aantal posities gewonnen (achievements.js + finish.js)

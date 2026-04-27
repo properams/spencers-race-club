@@ -52,7 +52,7 @@ let plHeadL,plHeadR,plTail;
 let recoverActive=false,recoverTimer=0;
 let nitroLevel=100,nitroActive=false;
 // driftScore / driftTimer → js/gameplay/combo.js
-let lapStartTime=0,lastLapTime=0;
+// lapStartTime / lastLapTime → js/gameplay/race.js
 var bestLapTime=Infinity; // var: ES-modules lezen window.bestLapTime
 const skidMarks=[];
 var titleMusic=null,musicSched=null,selectMusic=null; // var: music ES-module schrijft window.*
