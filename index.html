@@ -322,6 +322,18 @@
   <div style="font-size:11px;color:#888">Als dit langer duurt, wordt de pagina opnieuw geladen.</div>
 </div>
 <canvas id="glCanvas"></canvas>
+<!-- ── Three.js r134 staat inline ge-embed in het volgende <script>-blok. ─────────
+     Voor de r160-upgrade-test (zie js/core/three-compat.js header):
+       1. Download three.min.js r160 naar assets/vendor/three-r160.min.js
+          bv. via:   curl -L -o assets/vendor/three-r160.min.js \
+                       https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.min.js
+       2. Comment het inline-blok hieronder uit (één regel onder dit comment).
+       3. Vervang door:  <script src="assets/vendor/three-r160.min.js"></script>
+       4. Activeer dbg-harness: localStorage.setItem('src_debug','1');
+       5. Herlaad — verifieer in console: "[renderer] init done — THREE 160".
+       6. ThreeCompat past automatisch outputColorSpace + useLegacyLights toe.
+     De compat-laag werkt op beide versies; rollback = stappen 2-3 omdraaien.
+─────────────────────────────────────────────────────────────────────────────── -->
 <script>
 /**
  * @license
