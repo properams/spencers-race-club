@@ -455,15 +455,39 @@ function buildNeonEMPZones(){
 }
 
 
+// Procedurele scanline-texture: dunne horizontale lijnen op zwart. Tileable
+// in T-richting zodat UV-scroll continue naar boven beweegt (zie update).
+function _buildHoloScanlineTex(){
+  const c=document.createElement('canvas');c.width=64;c.height=128;
+  const g=c.getContext('2d');
+  g.fillStyle='#000000';g.fillRect(0,0,64,128);
+  // Bright scanlines every 4 pixels
+  g.fillStyle='#aaffee';
+  for(let y=0;y<128;y+=4){g.fillRect(0,y,64,1);}
+  // A few brighter "data ticks" at random positions
+  g.fillStyle='#ffffff';
+  for(let i=0;i<6;i++){g.fillRect(Math.floor(Math.random()*60),Math.floor(Math.random()*128),4,2);}
+  // Subtle vertical column gradient (gradient brightness left-right)
+  g.globalAlpha=.18;g.fillStyle='#000000';
+  for(let x=0;x<64;x++){g.globalAlpha=.18*(.5-Math.cos(x/32*Math.PI*2)*.5);g.fillRect(x,0,1,128);}
+  g.globalAlpha=1;
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(2,1);
+  t.needsUpdate=true;return t;
+}
+
 function buildNeonHoloWalls(){
   const defs=[{t:.42},{t:.70}];
   defs.forEach((def,wi)=>{
     const p=trackCurve.getPoint(def.t),tg=trackCurve.getTangent(def.t).normalize();
     const nr=new THREE.Vector3(-tg.z,0,tg.x);
     const angle=Math.atan2(tg.x,tg.z);
+    const scanTex=_buildHoloScanlineTex();
     const mat=new THREE.MeshLambertMaterial({
-      color:0x00ffee,emissive:0x00ffee,emissiveIntensity:1.0,transparent:true,opacity:.38,
-      side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false
+      color:0x00ffee,emissive:0x00ffee,emissiveIntensity:1.0,transparent:true,opacity:.55,
+      side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,
+      map:scanTex,emissiveMap:scanTex
 });
     const wall=new THREE.Mesh(new THREE.BoxGeometry(TW*.7,3.8,.15),mat);
     wall.position.copy(p);wall.position.y=1.9;wall.rotation.y=angle;scene.add(wall);
@@ -540,12 +564,16 @@ function updateNeonCityWorld(dt){
     const l=_neonBuildingLights[Math.floor(Math.random()*_neonBuildingLights.length)];
     if(l){const orig=l.intensity;l.intensity=.2+Math.random()*.4;setTimeout(()=>{l.intensity=orig;},60+Math.random()*100);}
   }
-  // Holo walls oscillate left-right
+  // Holo walls: oscillate left-right + scanline UV scroll (scrollt omhoog
+  // doordat we offset.y omlaag schuiven) + opacity flicker.
   _neonHoloWalls.forEach((wall,i)=>{
     const offset=Math.sin(t*.5+i*3)*TW*.32;
     wall.mesh.position.x=wall.basePos.x+wall.normal.x*offset;
     wall.mesh.position.z=wall.basePos.z+wall.normal.z*offset;
-    wall.mesh.material.opacity=.28+Math.sin(t*3.5+i*2)*.18;
+    wall.mesh.material.opacity=.45+Math.sin(t*3.5+i*2)*.20;
+    if(wall.mesh.material.map){
+      wall.mesh.material.map.offset.y=(wall.mesh.material.map.offset.y-dt*0.6+1)%1;
+    }
   });
   // EMP zones pulse
   _neonEmpZones.forEach((emp,i)=>{

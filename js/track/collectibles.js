@@ -173,7 +173,73 @@ function checkCollectibles(){
 }
 
 
+// Procedurele crowd-silhouet textuur. 512×96 canvas met ~36 kleurrijke
+// figuren in 2 rijen (verschoven). Tileable in S, geen wrap in T (geen
+// vertikale herhaling). Used as billboard sprite materials; bloom op
+// emissive accenten geeft een levendig stadion-gevoel.
+function _buildCrowdTex(){
+  const W=512,H=96,c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  g.clearRect(0,0,W,H);
+  // Distant darker back-row first (parallax depth)
+  const drawRow=(rowY,scale,alpha)=>{
+    const figW=10*scale,gap=4*scale;
+    for(let x=2;x<W;x+=figW+gap+(Math.random()*4-2)){
+      // Body color (caps/jacket)
+      const hue=Math.floor(Math.random()*360);
+      g.fillStyle=`hsla(${hue},65%,${30+Math.random()*25}%,${alpha})`;
+      // Torso: rounded rect
+      const bw=figW*.85,bh=18*scale,by=rowY-bh;
+      g.fillRect(x,by,bw,bh);
+      // Head circle (skin tone)
+      const hr=4*scale;
+      g.fillStyle=`hsla(${20+Math.random()*15},45%,${55+Math.random()*15}%,${alpha})`;
+      g.beginPath();g.arc(x+bw/2,by-hr*.6,hr,0,Math.PI*2);g.fill();
+      // Occasional raised arm (waving)
+      if(Math.random()<.18){
+        g.fillStyle=`hsla(${20+Math.random()*15},45%,${55+Math.random()*15}%,${alpha})`;
+        g.fillRect(x+bw-1.5,by-bh*.4,2,-bh*.5);
+      }
+    }
+  };
+  drawRow(H-2,.95,.85);   // front row, full size
+  drawRow(H-22,.85,.7);   // mid row, slightly smaller
+  drawRow(H-42,.75,.55);  // back row, smaller still
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.ClampToEdgeWrapping;
+  t.needsUpdate=true;return t;
+}
+
 function buildSpectators(){
-  // Spectators removed — replaced by trackside banners & flags elsewhere
+  // Skip on space/deepsea — niet thematisch passend
+  if(activeWorld==='space'||activeWorld==='deepsea')return;
+  const crowdTex=_buildCrowdTex();
+  // Two grandstand sections aan weerszijden van het start/finish-stuk.
+  // Plane van 80×4 m, met UV-repeat zodat de crowd herhaalt.
+  const t0=0;
+  const p=trackCurve.getPoint(t0),tg=trackCurve.getTangent(t0).normalize();
+  const nr=new THREE.Vector3(-tg.z,0,tg.x);
+  const offset=BARRIER_OFF+5;
+  [-1,1].forEach(side=>{
+    const tex=crowdTex.clone();tex.needsUpdate=true;
+    tex.repeat.set(8,1);
+    const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.05,side:THREE.DoubleSide});
+    const stand=new THREE.Mesh(new THREE.PlaneGeometry(80,4),mat);
+    // Position parallel to track direction at start/finish
+    stand.position.copy(p).addScaledVector(nr,side*offset);
+    stand.position.y=2;
+    stand.rotation.y=Math.atan2(tg.x,tg.z);
+    // Face inward (rotate 180° if on right side)
+    if(side>0)stand.rotation.y+=Math.PI;
+    scene.add(stand);
+    // Simple grandstand structure behind (dark trapezoid plane)
+    const baseMat=new THREE.MeshLambertMaterial({color:0x222233});
+    const base=new THREE.Mesh(new THREE.BoxGeometry(80,4.2,3),baseMat);
+    base.position.copy(stand.position);
+    base.position.y=2.1;
+    base.position.addScaledVector(nr,side*1.6);
+    base.rotation.y=Math.atan2(tg.x,tg.z);
+    scene.add(base);
+  });
 }
 

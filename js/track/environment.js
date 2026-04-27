@@ -1,17 +1,140 @@
 // js/track/environment.js — auto-extracted in Fase 4
 // Non-module script.
 
+// ── Ground texture generators ──────────────────────────────────────────────
+// Tileable 256×256 grayscale canvases. Multiplicatief over material.color.
+// Niet gecached: disposeScene() ruimt 'm op bij elke world-switch.
+function _grassGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#9aaa9a';g.fillRect(0,0,S,S);
+  // Pixel noise (yellow-green speckle)
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=120+(Math.random()*80)|0;
+    d[i]=n+8;d[i+1]=n+15;d[i+2]=n;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Darker patches (dirt/wear)
+  for(let i=0;i<14;i++){
+    const x=Math.random()*S,y=Math.random()*S,r=8+Math.random()*16;
+    const grd=g.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0,'rgba(60,70,50,0.45)');grd.addColorStop(1,'rgba(60,70,50,0)');
+    g.fillStyle=grd;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(8,8);t.anisotropy=4;t.needsUpdate=true;return t;
+}
+function _iceGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#ddeef5';g.fillRect(0,0,S,S);
+  // Subtle blue-ish noise
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=200+(Math.random()*55)|0;
+    d[i]=n-5;d[i+1]=n;d[i+2]=n+8;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Crack lines (jagged white-blue)
+  g.strokeStyle='rgba(180,210,230,0.55)';g.lineWidth=1;
+  for(let i=0;i<10;i++){
+    g.beginPath();
+    let x=Math.random()*S,y=Math.random()*S;g.moveTo(x,y);
+    for(let j=0;j<5;j++){
+      x+=(Math.random()-.5)*40;y+=(Math.random()-.5)*40;g.lineTo(x,y);
+    }
+    g.stroke();
+  }
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(6,6);t.anisotropy=4;t.needsUpdate=true;return t;
+}
+function _rockGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#3a2a25';g.fillRect(0,0,S,S);
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=70+(Math.random()*70)|0;
+    d[i]=n+10;d[i+1]=n;d[i+2]=n-8;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Glowing lava fissures (orange specks scattered)
+  for(let i=0;i<45;i++){
+    const x=Math.random()*S,y=Math.random()*S,r=2+Math.random()*5;
+    const grd=g.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0,'rgba(255,140,40,0.8)');grd.addColorStop(1,'rgba(255,80,20,0)');
+    g.fillStyle=grd;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  // Crack lines (dark)
+  g.strokeStyle='rgba(20,10,5,0.7)';g.lineWidth=2;
+  for(let i=0;i<6;i++){
+    g.beginPath();
+    let x=Math.random()*S,y=Math.random()*S;g.moveTo(x,y);
+    for(let j=0;j<6;j++){
+      x+=(Math.random()-.5)*50;y+=(Math.random()-.5)*50;g.lineTo(x,y);
+    }
+    g.stroke();
+  }
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(7,7);t.anisotropy=4;t.needsUpdate=true;return t;
+}
+function _sandGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#c0b08a';g.fillRect(0,0,S,S);
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=170+(Math.random()*55)|0;
+    d[i]=n+5;d[i+1]=n;d[i+2]=n-25;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Horizontal sand ripples (sine bands)
+  for(let y=0;y<S;y+=6){
+    const wob=Math.sin(y*.15)*4;
+    g.fillStyle='rgba(160,140,110,0.30)';
+    g.fillRect(0,y+wob,S,2);
+  }
+  // Scattered shells/pebbles (small darker dots)
+  for(let i=0;i<30;i++){
+    g.fillStyle='rgba(80,60,40,0.45)';
+    g.fillRect(Math.random()*S,Math.random()*S,2,2);
+  }
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(6,6);t.anisotropy=4;t.needsUpdate=true;return t;
+}
+function _pavementGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#888888';g.fillRect(0,0,S,S);
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=110+(Math.random()*80)|0;
+    d[i]=d[i+1]=d[i+2]=n;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Tile-grout cross pattern
+  g.strokeStyle='rgba(40,40,40,0.45)';g.lineWidth=1;
+  for(let x=0;x<S;x+=64){g.beginPath();g.moveTo(x,0);g.lineTo(x,S);g.stroke();}
+  for(let y=0;y<S;y+=64){g.beginPath();g.moveTo(0,y);g.lineTo(S,y);g.stroke();}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(10,10);t.anisotropy=4;t.needsUpdate=true;return t;
+}
 
 function buildGround(){
   const isSpace=activeWorld==='space',isDS=activeWorld==='deepsea';
   const groundCol=isSpace?0x070710:isDS?0x081820:0x3c7040;
   const infieldCol=isSpace?0x0a0a18:isDS?0x0b2030:0x4a8848;
-  const g=new THREE.Mesh(new THREE.PlaneGeometry(2200,2200,1,1),
-    new THREE.MeshLambertMaterial({color:groundCol}));
+  // Grand Prix gets grass texture; space/deepsea use buildGround as a backdrop
+  // and don't need detail there (their environments overdraw with own ground).
+  const groundMat=new THREE.MeshLambertMaterial({color:groundCol});
+  if(!isSpace&&!isDS)groundMat.map=_grassGroundTex();
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(2200,2200,1,1),groundMat);
   g.rotation.x=-Math.PI/2;g.position.y=-.12;g.receiveShadow=true;scene.add(g);
   if(!isDS){ // Deep sea has its own seafloor built by buildDeepSeaEnvironment
-    const inf=new THREE.Mesh(new THREE.PlaneGeometry(440,350,1,1),
-      new THREE.MeshLambertMaterial({color:infieldCol}));
+    const infMat=new THREE.MeshLambertMaterial({color:infieldCol});
+    if(!isSpace)infMat.map=_grassGroundTex();
+    const inf=new THREE.Mesh(new THREE.PlaneGeometry(440,350,1,1),infMat);
     inf.rotation.x=-Math.PI/2;inf.position.set(-10,-.11,-40);scene.add(inf);
   }
 }
@@ -245,6 +368,62 @@ function buildSunBillboard(){
   _sunBillboard.scale.set(240,240,1);
   _sunBillboard.visible=!isDark&&!isRain;
   scene.add(_sunBillboard);
+  // Layered sun glow for "lens flare" feel — extra additive sprites stacked
+  // around the sun. With bloom on this gives a pleasing radial bloom plus a
+  // visible cross-rays burst. Sprites are children so they share visibility.
+  // Hot core: tiny intense white/yellow center
+  const coreCv=document.createElement('canvas');coreCv.width=64;coreCv.height=64;
+  const cCtx=coreCv.getContext('2d');
+  const cGr=cCtx.createRadialGradient(32,32,0,32,32,32);
+  cGr.addColorStop(0,'rgba(255,255,255,1)');
+  cGr.addColorStop(.5,'rgba(255,250,200,0.7)');
+  cGr.addColorStop(1,'rgba(255,240,180,0)');
+  cCtx.fillStyle=cGr;cCtx.fillRect(0,0,64,64);
+  const coreSprite=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:new THREE.CanvasTexture(coreCv),blending:THREE.AdditiveBlending,
+    transparent:true,opacity:.95,depthWrite:false
+  }));
+  coreSprite.scale.set(80,80,1);
+  _sunBillboard.add(coreSprite);
+  // Cross rays: 4-point star burst (vertical + horizontal + diagonals)
+  const raysCv=document.createElement('canvas');raysCv.width=256;raysCv.height=256;
+  const rCtx=raysCv.getContext('2d');
+  rCtx.fillStyle='rgba(0,0,0,0)';rCtx.fillRect(0,0,256,256);
+  // Each ray: gradient line from center outward
+  const drawRay=(angle,len,width,alpha)=>{
+    rCtx.save();rCtx.translate(128,128);rCtx.rotate(angle);
+    const g=rCtx.createLinearGradient(0,0,len,0);
+    g.addColorStop(0,`rgba(255,240,200,${alpha})`);
+    g.addColorStop(.5,`rgba(255,220,150,${alpha*.5})`);
+    g.addColorStop(1,'rgba(255,200,120,0)');
+    rCtx.fillStyle=g;rCtx.fillRect(0,-width/2,len,width);
+    rCtx.fillRect(-len,-width/2,len,width);
+    rCtx.restore();
+  };
+  drawRay(0,120,3,.85);              // horizontal
+  drawRay(Math.PI/2,120,3,.85);      // vertical
+  drawRay(Math.PI/4,90,2,.55);       // diagonal /
+  drawRay(-Math.PI/4,90,2,.55);      // diagonal \
+  const raysSprite=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:new THREE.CanvasTexture(raysCv),blending:THREE.AdditiveBlending,
+    transparent:true,opacity:.7,depthWrite:false
+  }));
+  raysSprite.scale.set(360,360,1);
+  _sunBillboard.add(raysSprite);
+  // Outer halo: very soft wide glow (extends bloom further)
+  const haloCv=document.createElement('canvas');haloCv.width=128;haloCv.height=128;
+  const hCtx=haloCv.getContext('2d');
+  const hGr=hCtx.createRadialGradient(64,64,16,64,64,64);
+  hGr.addColorStop(0,'rgba(255,200,140,0.4)');
+  hGr.addColorStop(.6,'rgba(255,180,100,0.12)');
+  hGr.addColorStop(1,'rgba(255,160,80,0)');
+  hCtx.fillStyle=hGr;hCtx.fillRect(0,0,128,128);
+  const haloSprite=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:new THREE.CanvasTexture(haloCv),blending:THREE.AdditiveBlending,
+    transparent:true,opacity:.6,depthWrite:false
+  }));
+  haloSprite.scale.set(520,520,1);
+  _sunBillboard.add(haloSprite);
 }
 
 

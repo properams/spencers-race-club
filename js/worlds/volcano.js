@@ -9,7 +9,7 @@ let _volcanoEmbers=null,_volcanoGlowLight=null;
 function buildVolcanoEnvironment(){
   // Ground
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
-    new THREE.MeshLambertMaterial({color:0x1a0800}));
+    new THREE.MeshLambertMaterial({color:0x4a2515,map:_rockGroundTex()}));
   g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;scene.add(g);
   // Sky
   scene.background=makeVolcanoSkyTex();

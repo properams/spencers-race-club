@@ -8,8 +8,40 @@ let _tpFireworks=[],_tpBunting=[],_tpParkLights=[],_tpFireworkTimer=0;
 function buildThemeparkEnvironment(){
   // Dark pavement ground
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
-    new THREE.MeshLambertMaterial({color:0x1a0a22}));
+    new THREE.MeshLambertMaterial({color:0x4a3855,map:_pavementGroundTex()}));
   g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;scene.add(g);
+  // Tribune-style crowds at start/finish — same procedural crowd texture as GP
+  buildSpectators();
+  // Park-visitor clusters: 6 small sprite-billboards spread around the infield
+  // (off-track) so racers see groups of people as they pass landmarks.
+  {
+    const crowdTex=_buildCrowdTex();
+    for(let i=0;i<6;i++){
+      const tex=crowdTex.clone();tex.needsUpdate=true;
+      tex.repeat.set(2,1);tex.offset.x=Math.random();
+      const mat=new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false});
+      const cluster=new THREE.Sprite(mat);
+      const ang=i/6*Math.PI*2+Math.random()*.4;
+      const r=BARRIER_OFF+24+Math.random()*60;
+      cluster.position.set(Math.cos(ang)*r,1.2,Math.sin(ang)*r);
+      cluster.scale.set(8,2,1);
+      scene.add(cluster);
+    }
+  }
+  // Sunset sun (lensflare-style billboard) — sits low on horizon facing long
+  // straight, bloom turns this into a warm orange glow.
+  buildSunBillboard();
+  if(_sunBillboard){
+    const sunDir=new THREE.Vector3(0.55,0.18,-0.95).normalize();
+    _sunBillboard.position.copy(sunDir).multiplyScalar(620);
+    _sunBillboard.scale.set(300,300,1);
+    _sunBillboard.material.color=new THREE.Color(0xffa860);
+    _sunBillboard.material.opacity=.9;
+    // Recolor halo/core children for a warmer sunset tint
+    _sunBillboard.children.forEach(ch=>{
+      if(ch.material)ch.material.color=new THREE.Color(0xffaa66);
+    });
+  }
   // Grassy patches
   const gm=new THREE.MeshLambertMaterial({color:0x2a5a2a});
   for(let i=0;i<_mobCount(10);i++){
