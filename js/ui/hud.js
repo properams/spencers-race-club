@@ -16,6 +16,15 @@ let _posStableValue=0,_posStableT=0;
 // _lastPPos: vorige speler-positie (voor overtake-detectie in updateHUD).
 let _lastPPos=0;
 
+// HUD-extra state (uit main.js verhuisd).
+//   _currentGear  — display gear (audio/engine.js zet 'm in updateEngine).
+//   _mmBounds     — cached minimap-bounds {mnX,mxX,mnZ,mxZ} per wereld.
+//                   Geset in core/scene.js buildScene().
+//   _mmFrameCtr   — minimap-redraw throttle (1 frame per 2 ticks).
+let _currentGear=1;
+let _mmBounds=null;
+let _mmFrameCtr=0;
+
 // Banner/popup helpers (uit main.js verhuisd).
 //   popupTimeouts — array van setTimeout-handles voor showPopup-fade
 //   bannerTimer   — setTimeout-handle voor showBannerTop auto-hide

@@ -83,11 +83,7 @@ let sparkSystem,exhaustSystem;
 let slipTimer=0;
 
 // HUD DOM-refs → js/ui/hud.js (top of file)
-// Cached minimap bounds (computed once after track builds)
-let _mmBounds=null;
-let _mmFrameCtr=0;
-// Current gear (set in updateEngine, read in updateHUD)
-let _currentGear=1;
+// _mmBounds / _mmFrameCtr / _currentGear → js/ui/hud.js
 // Leaderboard stability + position-notification timers → js/ui/hud.js
 // Pause / mute state
 let gamePaused=false,audioMuted=false;
@@ -102,8 +98,7 @@ var _musicDuck=1.0;         // pit-stop ducking factor (1.0 = no duck)
 // _camV1/_camV2 → gameplay/camera.js, _jFwdV → track/ramps.js, _aiFwdRV → cars/ai.js
 // Pre-allocated player/car vectors — reused every frame to avoid GC pressure
 // _pl* + _slip* scratch vectors → cars/physics.js
-// Wrong-way detector — _elWrongWay → ui/hud.js
-let _wrongWayTimer=0;
+// _wrongWayTimer → gameplay/tracklimits.js, _elWrongWay → ui/hud.js
 // _miniTurboReady → js/gameplay/combo.js
 // Score system — _elScore/_elLapDelta → ui/hud.js
 var totalScore=0; // var: ES-modules schrijven window.totalScore
