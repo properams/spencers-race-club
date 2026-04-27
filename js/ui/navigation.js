@@ -1,5 +1,7 @@
 // js/ui/navigation.js — non-module script.
 
+'use strict';
+
 function goToSelect(){
   if(gameState!=='TITLE')return;gameState='SELECT';initAudio();startSelectMusic();
   setTouchControlsVisible(false);

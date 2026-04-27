@@ -1,5 +1,7 @@
 // js/ui/select.js — non-module script.
 
+'use strict';
+
 // Car-preview state — gebruikt in initCarPreview/updateCarPreview.
 // (carPreviews dict verwijderd samen met buildCarPreviews — was de enige populator.)
 let _prevRen=null,_prevScene=null,_prevCam=null,_prevCarMesh=null,_prevDefId=-1;

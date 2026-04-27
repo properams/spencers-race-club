@@ -1,5 +1,7 @@
 // js/audio/engine.js — non-module script.
 
+'use strict';
+
 // Engine audio state (uit main.js verhuisd).
 //   engineOsc / engineGain — multi-oscillator engine (initEngine() wijst toe).
 //   _rollGain / _rollSrc / _rollFilt — rolling-noise layer (tire/road).

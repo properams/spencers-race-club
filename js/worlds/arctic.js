@@ -1,6 +1,8 @@
 // js/worlds/arctic.js — arctic world builders + update + collision checks
 // Non-module script.
 
+'use strict';
+
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _arcticIcePatches=[],_arcticAurora=[],_arcticBlizzardGeo=null;
 

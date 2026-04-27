@@ -1,5 +1,7 @@
 // js/cars/ai.js — non-module script.
 
+'use strict';
+
 // Pre-allocated scratch vectors (uit main.js verhuisd) — vermijden GC-druk
 // in de hot loop. Cross-script zichtbaar voor effects/night.js + visuals.js.
 const _aiFwd=new THREE.Vector3(),_aiToT=new THREE.Vector3(),_aiCross=new THREE.Vector3();

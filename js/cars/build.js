@@ -1,5 +1,7 @@
 // js/cars/build.js — non-module script.
 
+'use strict';
+
 // makeWheel was dead code — niet aangeroepen door makeCar (die bouwt
 // wheels inline). Verwijderd in dead-code cleanup.
 

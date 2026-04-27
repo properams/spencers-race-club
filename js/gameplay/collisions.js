@@ -1,5 +1,7 @@
 // js/gameplay/collisions.js — non-module script.
 
+'use strict';
+
 function checkCollisions(dt){
   const player=carObjs[playerIdx];if(!player)return;
   if(_raceStartGrace>0){_raceStartGrace-=dt;return;} // Grace period at race start

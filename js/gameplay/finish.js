@@ -1,5 +1,7 @@
 // js/gameplay/finish.js — non-module script.
 
+'use strict';
+
 function showFinish(){
   gameState='FINISH';document.getElementById('hud').style.display='none';setTouchControlsVisible(false);
   const sov=document.getElementById('speedOverlay');if(sov)sov.style.opacity='0';

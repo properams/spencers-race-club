@@ -1,5 +1,7 @@
 // js/gameplay/tracklimits.js — non-module script.
 
+'use strict';
+
 // Wrong-way detector accumulator (uit main.js verhuisd). Builds up zolang
 // speler tegenovergestelde richting rijdt; reset in gameplay/race.js +
 // gameplay/spacefx.js + in deze module bij sector-cross. Cross-script reads

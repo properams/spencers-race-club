@@ -1,5 +1,7 @@
 // js/gameplay/countdown.js — non-module script.
 
+'use strict';
+
 function runCountdown(onGo){
   try{
     const lights=['fl1','fl2','fl3','fl4','fl5'];

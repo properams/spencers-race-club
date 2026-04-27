@@ -1,5 +1,7 @@
 // js/track/track.js — non-module script.
 
+'use strict';
+
 function buildTrack(){
   const pts3=TRACK_WP.map(([x,z])=>new THREE.Vector3(x,0,z));
   trackCurve=new THREE.CatmullRomCurve3(pts3,true,'catmullrom',.5);

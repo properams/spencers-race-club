@@ -1,5 +1,7 @@
 // js/gameplay/achievements.js — non-module script.
 
+'use strict';
+
 // Runtime achievement-state (uit main.js verhuisd).
 // _achieveUnlocked: ids die deze sessie zijn vrijgespeeld (Set, geen rebind).
 // _achieveQueue:    queue van te tonen toasts (FIFO; gameloop draint hem).

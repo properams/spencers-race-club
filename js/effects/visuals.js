@@ -1,5 +1,7 @@
 // js/effects/visuals.js — non-module script.
 
+'use strict';
+
 // RPM-bar constants + state (uit main.js verhuisd) — gebruikt door updateRpmBar.
 const _RPM_GRAD_REDLINE='linear-gradient(180deg,#ff0000,#ff4400)';
 const _RPM_GRAD_NORMAL='linear-gradient(180deg,#00cc88,#00ff99)';

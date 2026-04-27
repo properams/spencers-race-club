@@ -1,5 +1,7 @@
 // js/gameplay/safetycar.js — non-module script.
 
+'use strict';
+
 function spawnSafetyCar(progress){
   if(_safetyCar){scene.remove(_safetyCar.mesh);_safetyCar=null;}
   const g=new THREE.Group();

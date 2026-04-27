@@ -1,5 +1,7 @@
 // js/effects/weather.js — non-module script.
 
+'use strict';
+
 // Weather state (uit main.js verhuisd).
 //   _weatherMode             — 'clear' | 'rain' | 'storm' | 'snow'
 //   _stormFlashTimer         — countdown tussen lightning flashes

@@ -1,6 +1,8 @@
 // js/worlds/neoncity.js — neoncity world builders + update + collision checks
 // Non-module script.
 
+'use strict';
+
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _neonBuildings=[],_neonEmissives=[],_neonBuildingLights=[];
 let _holoBillboards=[];

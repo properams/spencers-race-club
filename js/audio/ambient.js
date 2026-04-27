@@ -1,5 +1,7 @@
 // js/audio/ambient.js — non-module script.
 
+'use strict';
+
 // Ambient audio refs (uit main.js verhuisd). Gevuld door initCrowdNoise()
 // en startAmbientWind() hieronder; lazy-init op race-start, gestopt bij
 // race-end in gameplay/finish.js. Cross-script: ui/hud.js + tracklimits.js

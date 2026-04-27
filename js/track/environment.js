@@ -1,5 +1,7 @@
 // js/track/environment.js — non-module script.
 
+'use strict';
+
 function buildGround(){
   const isSpace=activeWorld==='space',isDS=activeWorld==='deepsea';
   const groundCol=isSpace?0x070710:isDS?0x081820:0x3c7040;

@@ -1,5 +1,7 @@
 // js/audio/sfx.js — non-module script.
 
+'use strict';
+
 function beep(f,d,v=.25,delay=0,type='sine'){
   if(!audioCtx)return;
   const o=audioCtx.createOscillator(),g=audioCtx.createGain(),t=audioCtx.currentTime+delay;

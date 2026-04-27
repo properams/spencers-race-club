@@ -1,5 +1,7 @@
 // js/ui/pause.js — non-module script.
 
+'use strict';
+
 function togglePause(){
   if(gameState!=='RACE'){window.dbg&&dbg.log('pause','skip — gameState='+gameState);return;}
   gamePaused=!gamePaused;

@@ -1,5 +1,7 @@
 // js/effects/night.js — non-module script.
 
+'use strict';
+
 // Day↔night smooth-transition state (uit main.js verhuisd).
 //   _skyT       — current blend factor 0=day, 1=night (lerps richting _skyTarget)
 //   _skyTarget  — gewenste eindwaarde, geset door toggleNight() hieronder

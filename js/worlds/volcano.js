@@ -1,6 +1,8 @@
 // js/worlds/volcano.js — volcano world builders + update + collision checks
 // Non-module script.
 
+'use strict';
+
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _volcanoLavaRivers=[],_volcanoGeisers=[],_volcanoEmberGeo=null;
 let _volcanoEruption=null,_volcanoEruptionTimer=3;

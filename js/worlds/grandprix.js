@@ -1,6 +1,8 @@
 // js/worlds/grandprix.js — grandprix world builders + update + collision checks
 // Non-module script.
 
+'use strict';
+
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 const _wpWaterPuddles=[],_wpDrsZones=[];
 let _drsTimer=0,_drsBoostUsed=false,_drsActive=false;

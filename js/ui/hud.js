@@ -1,5 +1,7 @@
 // js/ui/hud.js — non-module script.
 
+'use strict';
+
 // Position cache (uit main.js verhuisd) — leaderboard berekent posities
 // niet elk frame; cache wordt elke ~10 ticks ververst in updateHUD.
 let _posCache=[],_posTick=0;

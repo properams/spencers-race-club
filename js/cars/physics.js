@@ -1,5 +1,7 @@
 // js/cars/physics.js — non-module script.
 
+'use strict';
+
 // Pre-allocated scratch vectors (uit main.js verhuisd) — cross-script
 // zichtbaar voor effects/night.js + visuals.js die _plFwd/_plRt lezen.
 const _plFwd=new THREE.Vector3(),_plBk=new THREE.Vector3(),_plRt=new THREE.Vector3();

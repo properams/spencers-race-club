@@ -1,5 +1,7 @@
 // js/ui/touch.js — non-module script.
 
+'use strict';
+
 // Touch input config (uit main.js verhuisd).
 // Haptic feedback patterns per control (ms) — short buzz for precise, slightly longer for boost/drift.
 const _HAPTIC_MS={ArrowLeft:8,ArrowRight:8,ArrowUp:0,ArrowDown:12,KeyN:18,Space:15};

@@ -1,5 +1,7 @@
 // js/track/collectibles.js — non-module script.
 
+'use strict';
+
 function buildCollectibles(){
   // Per-world palette — coin, emissive, rim highlight, halo glow, light colour
   const PAL={

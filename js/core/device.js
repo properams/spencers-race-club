@@ -1,5 +1,7 @@
 // js/core/device.js — non-module script.
 
+'use strict';
+
 function _redetectDevice(){
   window._isTouch=('ontouchstart' in window)||navigator.maxTouchPoints>0||window._isIPadLike;
   // Tablet = iPad-like device OR a touch device with mid-range viewport (also covers Android tablets)

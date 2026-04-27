@@ -1,5 +1,7 @@
 // js/gameplay/pitstop.js — non-module script.
 
+'use strict';
+
 // Pit-stop state (uit main.js verhuisd). _pitStopUsed is per-race-eenmalig:
 // na het rondsturen wordt 'm true en blijft tot resetRaceState in race.js.
 // Cross-script gelezen door cars/physics.js (speed=0 tijdens stop),

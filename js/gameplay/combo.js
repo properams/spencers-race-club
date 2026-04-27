@@ -1,5 +1,7 @@
 // js/gameplay/combo.js — non-module script.
 
+'use strict';
+
 // Combo state (uit main.js verhuisd). _comboMult blijft in main.js als var,
 // want persistence/progression.js leest het via window._comboMult.
 let _comboTimer=0,_comboCount=0;
