@@ -36,6 +36,37 @@ function buildNeonGround(){
     new THREE.MeshLambertMaterial({color:0x0e0e20,transparent:true,opacity:.38}));
   wet.rotation.x=-Math.PI/2;wet.position.y=-.12;scene.add(wet);
   _neonWater=wet;
+  // Sheen-banden overlay: tileable canvas met horizontale lichte gradients
+  // die magenta+cyan reflectie suggereren. AdditiveBlending + UV-scroll
+  // (zie updateNeonCityWorld) → "dancing reflection" effect onder de bloom.
+  const sheenCv=document.createElement('canvas');sheenCv.width=512;sheenCv.height=512;
+  const sCtx=sheenCv.getContext('2d');
+  sCtx.fillStyle='rgba(0,0,0,0)';sCtx.fillRect(0,0,512,512);
+  // Magenta band
+  let mg=sCtx.createLinearGradient(0,80,0,160);
+  mg.addColorStop(0,'rgba(255,40,180,0)');
+  mg.addColorStop(.5,'rgba(255,40,180,0.42)');
+  mg.addColorStop(1,'rgba(255,40,180,0)');
+  sCtx.fillStyle=mg;sCtx.fillRect(0,80,512,80);
+  // Cyan band
+  let cg=sCtx.createLinearGradient(0,260,0,360);
+  cg.addColorStop(0,'rgba(40,255,220,0)');
+  cg.addColorStop(.5,'rgba(40,255,220,0.40)');
+  cg.addColorStop(1,'rgba(40,255,220,0)');
+  sCtx.fillStyle=cg;sCtx.fillRect(0,260,512,100);
+  // Yellow accent band
+  let yg=sCtx.createLinearGradient(0,420,0,470);
+  yg.addColorStop(0,'rgba(255,240,80,0)');
+  yg.addColorStop(.5,'rgba(255,240,80,0.30)');
+  yg.addColorStop(1,'rgba(255,240,80,0)');
+  sCtx.fillStyle=yg;sCtx.fillRect(0,420,512,50);
+  const sheenTex=new THREE.CanvasTexture(sheenCv);
+  sheenTex.wrapS=sheenTex.wrapT=THREE.RepeatWrapping;
+  sheenTex.repeat.set(2,2);sheenTex.needsUpdate=true;
+  const sheen=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
+    new THREE.MeshBasicMaterial({map:sheenTex,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));
+  sheen.rotation.x=-Math.PI/2;sheen.position.y=-.10;scene.add(sheen);
+  _neonWater.userData.sheen=sheen;
   // Neon puddles — coloured reflective pools scattered off-track
   const puddleColors=[0x00ffee,0xff00aa,0x4488ff,0xeeff00,0x00ffee,0xff2288];
   for(let i=0;i<_mobCount(22);i++){
@@ -46,7 +77,10 @@ function buildNeonGround(){
     const puddle=new THREE.Mesh(
       new THREE.PlaneGeometry(2+Math.random()*6,1+Math.random()*4),
       new THREE.MeshLambertMaterial({
-        color:puddleColors[i%puddleColors.length],transparent:true,opacity:.14+Math.random()*.10,
+        color:puddleColors[i%puddleColors.length],
+        emissive:puddleColors[i%puddleColors.length],
+        emissiveIntensity:.7,
+        transparent:true,opacity:.45+Math.random()*.15,
         blending:THREE.AdditiveBlending,depthWrite:false
 })
     );
@@ -605,10 +639,14 @@ function updateNeonCityWorld(dt){
       showPopup('🔷 HOLO-WALL!','#00ffee',900);wall.cooldown=3;
     }
   });
-  // Water shimmer
+  // Water shimmer — sheen-banden schuiven horizontaal voor "dancing reflections".
   if(_neonWater){
-    _neonWater.material.roughness=.04+Math.sin(t*.38)*.025;
-    _neonWater.material.needsUpdate=true;
+    const sheen=_neonWater.userData.sheen;
+    if(sheen&&sheen.material&&sheen.material.map){
+      sheen.material.map.offset.x=(sheen.material.map.offset.x+dt*.05)%1;
+      sheen.material.map.offset.y=(sheen.material.map.offset.y+dt*.02)%1;
+      sheen.material.opacity=.45+Math.sin(t*.7)*.15;
+    }
   }
 }
 

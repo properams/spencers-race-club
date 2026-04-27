@@ -349,6 +349,7 @@ function updateFlags(){
   });
   // Crowd dual-frame animation hangs op dezelfde update-tick.
   if(typeof updateCrowd==='function')updateCrowd();
+  if(typeof updateGantryTicker==='function')updateGantryTicker();
 }
 
 
@@ -427,6 +428,60 @@ function buildSunBillboard(){
   haloSprite.scale.set(520,520,1);
   _sunBillboard.add(haloSprite);
   buildLensFlareGhosts();
+  buildGodRays();
+}
+
+// Fake volumetric god-rays — additive vertikale "beam" sprites geplaatst
+// rond de zon. Ze suggereren stof in de lucht waar zonlicht doorheen valt.
+// Sprites blijven auto-billboard (altijd gericht naar camera) → in elke
+// camerahoek levendig effect zonder shader-werk.
+let _godRays=[];
+function _godRayTex(){
+  const W=64,H=512,c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  g.clearRect(0,0,W,H);
+  // Vertikale gradient: bright top, fade naar transparent onder
+  const grd=g.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,'rgba(255,240,180,0.85)');
+  grd.addColorStop(.25,'rgba(255,220,140,0.35)');
+  grd.addColorStop(.7,'rgba(255,200,120,0.10)');
+  grd.addColorStop(1,'rgba(255,180,90,0)');
+  g.fillStyle=grd;g.fillRect(0,0,W,H);
+  // Soft edges horizontaal (vignette → beam-shape)
+  for(let x=0;x<W;x++){
+    const fade=Math.sin(x/(W-1)*Math.PI); // 0..1..0
+    g.globalCompositeOperation='destination-in';
+    g.fillStyle=`rgba(255,255,255,${fade.toFixed(3)})`;
+    g.fillRect(x,0,1,H);
+  }
+  g.globalCompositeOperation='source-over';
+  const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
+}
+function buildGodRays(){
+  // Cleanup oude rays (sprite materials niet door disposeScene opgeruimd)
+  _godRays.forEach(r=>{
+    if(r.material){if(r.material.map)r.material.map.dispose();r.material.dispose();}
+  });
+  _godRays.length=0;
+  if(!_sunBillboard)return;
+  const tex=_godRayTex();
+  // 4 beams op licht verschillende offsets rond de zon-positie
+  const offsets=[[0,0],[40,12],[-30,-8],[10,-22]];
+  offsets.forEach(([dx,dz])=>{
+    const mat=new THREE.SpriteMaterial({
+      map:tex.clone(),blending:THREE.AdditiveBlending,
+      transparent:true,opacity:.55,depthWrite:false
+    });
+    mat.map.needsUpdate=true;
+    const beam=new THREE.Sprite(mat);
+    beam.position.copy(_sunBillboard.position);
+    beam.position.x+=dx;beam.position.z+=dz;
+    beam.position.y-=120; // beam center hangt onder zon → lijkt naar beneden te schijnen
+    beam.scale.set(80,360,1);
+    beam.renderOrder=998; // vóór ghosts (999) maar na rest
+    scene.add(beam);
+    _godRays.push(beam);
+  });
 }
 
 // Lens flare ghosts — kleinere additive sprites op de lijn zon→scherm-center.
@@ -608,6 +663,15 @@ function updateSky(dt){
     stars.material.opacity=twinkle;
   }
   updateLensFlare();
+  // God-rays volgen sun visibility + opacity
+  if(_godRays.length&&_sunBillboard){
+    const sunOp=_sunBillboard.visible?_sunBillboard.material.opacity:0;
+    _godRays.forEach((r,i)=>{
+      r.visible=_sunBillboard.visible&&sunOp>.05;
+      const pulse=.45+Math.sin(_nowSec*.4+i*.7)*.15;
+      r.material.opacity=sunOp*pulse;
+    });
+  }
 }
 
 

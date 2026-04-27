@@ -152,6 +152,24 @@ function makeAllCars(){
     rl.position.set(0,.28,bL*.5+.02);
     mesh.add(rl);
     _reverseLights.push(rl);
+    // Per-world livery underglow — additive disc plane onder elke auto met
+    // een wereld-thematische kleur. Geeft een herkenbare per-circuit feel
+    // zonder de individuele car-colors te overschrijven. Met bloom = subtle
+    // pulse-glow rondom alle racers.
+    if(!isPlayer){
+      const livery={
+        space:0x4488ff,deepsea:0x00ffaa,candy:0xff66cc,
+        neoncity:0xff00cc,volcano:0xff5500,arctic:0x88ccff,
+        themepark:0xff44aa,grandprix:0xffaa44
+      }[activeWorld]||0xffaa44;
+      const ugMat=new THREE.MeshBasicMaterial({
+        color:livery,transparent:true,opacity:.42,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
+      });
+      const ug=new THREE.Mesh(new THREE.CircleGeometry(2.0,16),ugMat);
+      ug.rotation.x=-Math.PI/2;ug.position.y=-.32;
+      mesh.add(ug);
+    }
     // Small initial lateral offset so AI don't all drive on the exact center line
     // (kept near zero at start to prevent collision; grows naturally during race)
     const latOff=isPlayer?0:(col===0?-1.2:1.2)+(Math.random()-.5)*.8;

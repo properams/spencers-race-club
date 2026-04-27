@@ -154,7 +154,51 @@ function updateNitroVisual(){
 
 
 function updateBoostTrail(){
-  // Removed — boost is indicated by nitro/speed bar instead
+  // Continuous speed-trail achter de player op hoge snelheid + extra
+  // dramatische streamers tijdens nitro/boost. Met bloom geven de hot
+  // colors flink wat glow.
+  const car=carObjs[playerIdx];if(!car)return;
+  const top=Math.max(.01,car.def.topSpd);
+  const ratio=Math.abs(car.speed)/top;
+  if(ratio<0.55&&!nitroActive&&!car.boostTimer)return;
+  // Wereld-thematische trail-kleur
+  const tint={
+    space:[.5,.7,1.0],deepsea:[.3,1.0,.85],candy:[1.0,.45,.85],
+    neoncity:[.2,1.0,.95],volcano:[1.0,.45,.15],arctic:[.65,.85,1.0],
+    themepark:[1.0,.50,.85],grandprix:[1.0,.55,.20]
+  }[activeWorld]||[1.0,.65,.30];
+  const fwd=_camV1.set(0,0,-1).applyQuaternion(car.mesh.quaternion);
+  const rt=_camV2.set(1,0,0).applyQuaternion(car.mesh.quaternion);
+  // Base trail rate scales met ratio² (rate explodeert pas bij echte top-speed)
+  const baseRate=ratio*ratio*0.55+(nitroActive?.45:0)+(car.boostTimer?.6:0);
+  if(Math.random()<baseRate){
+    [-0.55,0.55].forEach(s=>{
+      const tx=car.mesh.position.x+fwd.x*1.7+rt.x*s;
+      const ty=car.mesh.position.y+0.18+Math.random()*0.15;
+      const tz=car.mesh.position.z+fwd.z*1.7+rt.z*s;
+      // Kleine velocity NAAR ACHTEREN (tegengesteld aan car-fwd) voor trail-feel
+      const vx=fwd.x*0.06+(Math.random()-.5)*0.04;
+      const vy=0.012+Math.random()*0.018;
+      const vz=fwd.z*0.06+(Math.random()-.5)*0.04;
+      const life=0.55+Math.random()*0.35;
+      // Hot colors tijdens nitro, anders subtler tint
+      const hot=nitroActive||car.boostTimer;
+      const r=hot?Math.min(1,tint[0]+0.25):tint[0]*0.85;
+      const g=hot?Math.min(1,tint[1]+0.10):tint[1]*0.85;
+      const b=hot?Math.min(1,tint[2]+0.05):tint[2]*0.85;
+      sparkSystem.emit(tx,ty,tz,vx,vy,vz,life,r,g,b,1.0);
+    });
+  }
+  // Center streamer alleen tijdens echte boost (nitro / boost-pad)
+  if((nitroActive||car.boostTimer)&&Math.random()<0.65){
+    sparkSystem.emit(
+      car.mesh.position.x+fwd.x*1.95,
+      car.mesh.position.y+0.32,
+      car.mesh.position.z+fwd.z*1.95,
+      fwd.x*0.10+(Math.random()-.5)*0.02,0.025+Math.random()*0.020,fwd.z*0.10+(Math.random()-.5)*0.02,
+      0.85,1.0,0.88,0.45,1.0
+    );
+  }
 }
 
 

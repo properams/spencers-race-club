@@ -173,6 +173,7 @@ function buildBarriers(){
   }
 }
 
+let _gantryLabel=null;
 function buildGantry(){
   const p=trackCurve.getPoint(0),tg=trackCurve.getTangent(0).normalize();
   const nr=new THREE.Vector3(-tg.z,0,tg.x),hw=TW+3;
@@ -192,19 +193,82 @@ function buildGantry(){
   const accent=new THREE.Mesh(new THREE.BoxGeometry(hw*2-.6,.07,.16),
     new THREE.MeshLambertMaterial({color:accentCol,emissive:accentEmit,emissiveIntensity:1.4}));
   accent.position.copy(p);accent.position.y=9.68;scene.add(accent);
-  // Gantry label — world-specific, subtle sprite
+  // Gantry label — world-specific LED ticker. Sprite met canvas texture die
+  // periodiek herrendered wordt met afwisselend race-info en thematische
+  // teksten (zie updateGantryTicker).
   const glCvs=document.createElement('canvas');glCvs.width=512;glCvs.height=56;
-  const glCtx=glCvs.getContext('2d');glCtx.clearRect(0,0,512,56);
-  glCtx.font='bold 28px Orbitron,Arial';glCtx.textAlign='center';
-  glCtx.fillStyle=activeWorld==='space'?'#8866ff':activeWorld==='deepsea'?'#00ddcc':'#cc66ff';
-  const gLabel=activeWorld==='space'?'COSMIC CIRCUIT':activeWorld==='deepsea'?'DEEP SEA CIRCUIT':activeWorld==='neoncity'?'NEON CITY GP':"SPENCER'S RACE CLUB";
-  glCtx.fillText(gLabel,256,38);
+  const glCtx=glCvs.getContext('2d');
   const glTex=new THREE.CanvasTexture(glCvs);
-  const glLbl=new THREE.Sprite(new THREE.SpriteMaterial({map:glTex,transparent:true,opacity:.75}));
+  const glLbl=new THREE.Sprite(new THREE.SpriteMaterial({map:glTex,transparent:true,opacity:.85}));
   glLbl.position.copy(p);glLbl.position.y=11.8;glLbl.scale.set(24,2.8,1);
   glLbl.name='f1-gantry-label-sprite';scene.add(glLbl);
-  // Also keep hidden .f1-gantry-label for rebuildWorld text update (look it up by name on rebuild)
   glLbl.userData.isGantryLabel=true;
+  glLbl.userData.canvas=glCvs;
+  glLbl.userData.ctx=glCtx;
+  glLbl.userData.tex=glTex;
+  glLbl.userData.frameIdx=0;
+  glLbl.userData.nextSwitch=0;
+  _gantryLabel=glLbl;
+  _drawGantryFrame(0);
+}
+
+// Helper: render één tekst-frame in de gantry canvas. idx wijst frame-type aan.
+function _drawGantryFrame(idx){
+  if(!_gantryLabel)return;
+  const ctx=_gantryLabel.userData.ctx;
+  const W=512,H=56;
+  ctx.clearRect(0,0,W,H);
+  // Donkere achtergrond met scanline-pattern (LED-board look)
+  ctx.fillStyle='#0a0010';ctx.fillRect(0,0,W,H);
+  for(let y=0;y<H;y+=2){
+    ctx.fillStyle='rgba(255,255,255,0.04)';ctx.fillRect(0,y,W,1);
+  }
+  const worldCol={
+    space:'#8866ff',deepsea:'#00ddcc',candy:'#ff66cc',
+    neoncity:'#00ffee',volcano:'#ff6622',arctic:'#88ccff',
+    themepark:'#ff44aa',grandprix:'#ffaa66'
+  }[activeWorld]||'#cc66ff';
+  ctx.font='bold 28px Orbitron,Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle=worldCol;
+  // Subtle text glow via offset shadow
+  ctx.shadowColor=worldCol;ctx.shadowBlur=8;
+  ctx.fillText(_gantryFrameText(idx),W/2,H/2+1);
+  ctx.shadowBlur=0;
+  _gantryLabel.userData.tex.needsUpdate=true;
+}
+function _gantryFrameText(idx){
+  const worldName={
+    space:'COSMIC CIRCUIT',deepsea:'DEEP SEA CIRCUIT',candy:'CANDY KINGDOM',
+    neoncity:'NEON CITY GP',volcano:'VOLCANO RUSH',arctic:'ARCTIC PEAKS',
+    themepark:'THEME PARK BLAST',grandprix:"SPENCER'S RACE CLUB"
+  }[activeWorld]||"SPENCER'S RACE CLUB";
+  const car=carObjs[playerIdx];
+  const lap=car?Math.max(1,Math.min(3,car.lap+1)):1;
+  // Find best lap of any car
+  let fastest=Infinity;
+  for(let i=0;i<carObjs.length;i++){
+    const bl=carObjs[i].bestLap;
+    if(bl&&bl<fastest)fastest=bl;
+  }
+  const fastestStr=isFinite(fastest)?(Math.floor(fastest/60)+':'+(fastest%60).toFixed(2).padStart(5,'0')):'--:--.--';
+  switch(idx%5){
+    case 0:return worldName;
+    case 1:return gameState==='RACE'?`LAP ${lap}/3`:'GET READY';
+    case 2:return gameState==='RACE'?`FASTEST ${fastestStr}`:'WELCOME';
+    case 3:return ['DRIVE SAFE','GO GO GO','PURE SPEED','FULL THROTTLE'][Math.floor(_nowSec/4)%4];
+    case 4:return worldName;
+  }
+  return worldName;
+}
+// Aanroepen vanuit updateFlags() — wisselt frame elke ~3s en herrendert.
+function updateGantryTicker(){
+  // parent==null betekent dat de gantry-sprite is gedispoosed door
+  // disposeScene (world-switch zonder gantry, bv. neoncity, candy).
+  if(!_gantryLabel||!_gantryLabel.parent)return;
+  if(_nowSec<_gantryLabel.userData.nextSwitch)return;
+  _gantryLabel.userData.frameIdx=(_gantryLabel.userData.frameIdx+1)%5;
+  _gantryLabel.userData.nextSwitch=_nowSec+2.8+Math.random()*0.8;
+  _drawGantryFrame(_gantryLabel.userData.frameIdx);
 }
 
 function ribbon(N,segFn,mat){
