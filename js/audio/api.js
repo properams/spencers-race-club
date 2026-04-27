@@ -27,6 +27,7 @@ const Audio = {
   playLand()          { return window.playLandSound && window.playLandSound(); },
   playSpin()          { return window.playSpinSound && window.playSpinSound(); },
   playCollision()     { return window.playCollisionSound && window.playCollisionSound(); },
+  playBrake()         { return window.playBrakeSound && window.playBrakeSound(); },
   playVictory()       { return window.playVictoryFanfare && window.playVictoryFanfare(); },
   playCount(n)        { return window.playCountBeep && window.playCountBeep(n); },
   playFanfare()       { return window.playFanfare && window.playFanfare(); },
@@ -62,6 +63,25 @@ const Audio = {
     const s = window.musicSched;
     if (s && s.setFinalLap) s.setFinalLap();
     if (s && s.setIntensity) s.setIntensity(1);
+  },
+
+  // Per-frame intensity update gebaseerd op race-state. Gameplay roept dit
+  // aan elke tick met (positie, speedRatio 0..1, comboActief). De facade
+  // berekent een continue 0..1 intensity en stuurt die door naar de actieve
+  // scheduler. Wordt genegeerd na setFinalLap (intensity locked op 1).
+  updateMusicIntensity(pos, speedRatio, comboActive){
+    const s = window.musicSched;
+    if (!s || !s.setIntensity) return;
+    if (s.finalLap) return;  // final-lap heeft prioriteit
+    // Positie-energie: 1e plek voelt zwaar / triomfantelijk, achterhoede
+    // ingehouden. Schaal: 1=0.55, 2=0.40, 3=0.30, 4+=0.20.
+    const posEnergy = pos===1 ? 0.55 : pos===2 ? 0.40 : pos===3 ? 0.30 : 0.20;
+    // Combo geeft duidelijke pad-swell.
+    const comboBoost = comboActive ? 0.30 : 0;
+    // Hoge snelheid voegt subtiele lift toe.
+    const speedBoost = Math.max(0, Math.min(1, +speedRatio || 0)) * 0.15;
+    const intensity = Math.max(0, Math.min(1, posEnergy + comboBoost + speedBoost));
+    s.setIntensity(intensity);
   },
 
   // Duck (pit-stop, etc). Mutated window._musicDuck + re-applies.

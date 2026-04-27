@@ -524,8 +524,9 @@ class RaceMusic{
     }catch(_){}
   }
 
-  // Intensity 0 = normaal, 1 = final lap urgency (dichter hat-patroon)
-  setIntensity(level){this.intensity=level|0;}
+  // Intensity 0..1 (continu): hat-velocity scaled, urgent-pattern boven 0.5.
+  // Final-lap forceert effectief 1 via finalLap-flag.
+  setIntensity(level){this.intensity=Math.max(0,Math.min(1,+level||0));}
 
   setFinalLap(){
     if(this.finalLap)return;this.finalLap=true;if(!window.audioCtx)return;
@@ -612,9 +613,11 @@ class RaceMusic{
       // A/B section — elke 8 bars wisselen we voor subtiele hat-variatie
       const section=Math.floor(this.bar/8)%2;
       const isB=section===1;
-      // Intensity of finalLap verhogen de hat-velocity
-      const urgent=this.finalLap||this.intensity>0;
-      const hv=urgent?.036:.022;
+      // Continu intensity-driven hat-velocity. Urgent-pattern (16ths op
+      // bar 2/4) boven 0.5 of op final-lap.
+      const intLevel=this.finalLap?1:this.intensity;
+      const urgent=this.finalLap||this.intensity>0.5;
+      const hv=.022+intLevel*.014;
 
       // ── GRAND PRIX: driving techno, kick every beat ──
       if(this.style==='grandprix'){

@@ -91,6 +91,11 @@ function loop(){
       updateHUD(dt);updateSpeedOverlay();
       const _pp=getPositions().findIndex(c=>c.isPlayer)+1;
       Audio.updateCrowd(_pp);
+      // Dynamische muziek-intensity: positie + speed + combo bepalen
+      // continu de mid/lead-balans op de actieve scheduler.
+      const _pcar=carObjs[playerIdx];
+      const _spdR=_pcar?Math.min(1,Math.abs(_pcar.speed)/(_pcar.def.topSpd||1.8)):0;
+      Audio.updateMusicIntensity(_pp,_spdR,(typeof _comboTimer!=='undefined'&&_comboTimer>0));
       updateAmbientWindSpeed(dt);
       updateAchievements(dt);
       updateAchievementToast(dt);

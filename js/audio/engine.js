@@ -1,4 +1,24 @@
 // js/audio/engine.js — Fase 2.3/2.4 extraction. Non-module script.
+//
+// SURFACE-AWARE TIRE: tire-rolling noise loop wordt per oppervlakte
+// gefilterd zodat asphalt/sand/ice/metal/water elk eigen karakter
+// hebben. Surface komt uit window._getCurrentSurface() (samples.js,
+// per-wereld default in WORLD_DEFAULT_SURFACE). Toekomstige sample-
+// based tire kan via window._getSurfaceBuffer() ingehaakt worden;
+// markered met "// SAMPLES DISPATCH POINT" hieronder.
+
+// Per-surface tire-rolling parameters: noise filter freq + Q + gain-mult.
+// Gekozen op gehoor — sand = laag/breed (rommelig), ice = hoog/sparse,
+// water = mid/laag-Q (vlot), metal = mid/hoog-Q (zingt mee), dirt =
+// asphalt + lager center.
+const SURFACE_PARAMS = {
+  asphalt: { freqBase: 200, freqScale: 180, Q: 2.0, gain: 0.025 },
+  sand:    { freqBase: 140, freqScale: 100, Q: 0.7, gain: 0.045 },
+  ice:     { freqBase: 320, freqScale: 240, Q: 1.2, gain: 0.018 },
+  water:   { freqBase: 180, freqScale: 140, Q: 0.9, gain: 0.038 },
+  metal:   { freqBase: 240, freqScale: 220, Q: 4.5, gain: 0.022 },
+  dirt:    { freqBase: 160, freqScale: 130, Q: 1.4, gain: 0.034 },
+};
 
 
 function initAudio(){
@@ -90,7 +110,18 @@ function updateEngine(spd){
   if(carType==='electric'&&engineOsc._o3){
     engineOsc._o3.frequency.setTargetAtTime(800+ratio*3200,t,.05);
   }
-  if(_rollGain){_rollGain.gain.setTargetAtTime(abs*.025,t,.1);if(_rollFilt)_rollFilt.frequency.setTargetAtTime(200+abs*180,t,.1);}
+  if(_rollGain){
+    // SAMPLES DISPATCH POINT: hier checken voor surface-sample buffer.
+    // Wanneer assets/audio/surface/<surface>.ogg bestaat kan je een
+    // looping AudioBufferSourceNode maken en _rollGain vervangen.
+    const surface = (window._getCurrentSurface ? window._getCurrentSurface() : 'asphalt');
+    const sp = SURFACE_PARAMS[surface] || SURFACE_PARAMS.asphalt;
+    _rollGain.gain.setTargetAtTime(abs * sp.gain, t, .1);
+    if(_rollFilt){
+      _rollFilt.frequency.setTargetAtTime(sp.freqBase + abs * sp.freqScale, t, .1);
+      _rollFilt.Q.setTargetAtTime(sp.Q, t, .15);
+    }
+  }
   if(gear!==_lastGear&&abs>.3){
     const up=gear>_lastGear,o=audioCtx.createOscillator(),g=audioCtx.createGain();
     // F1 gear shift: rapid chirp; muscle: loud pop; other: normal blip

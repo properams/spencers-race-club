@@ -110,13 +110,15 @@ class StemRaceMusic {
     if(active && this.buffers.nitroFx) this._oneShot(this.buffers.nitroFx, 0.6);
   }
 
-  // Layering: 0 = baseline (lead op 30%), 1 = full mix (alles 100%).
+  // Layering: continu 0..1. 0 = baseline mix (mid 60%, lead 20%),
+  // 1 = full mix (alles 100%). Fractioneel zodat positie/combo/speed
+  // hooks soepel kunnen schalen zonder discrete sprongen.
   setIntensity(level){
-    this.intensity = level | 0;
+    this.intensity = Math.max(0, Math.min(1, +level || 0));
     const now = this.ctx.currentTime;
     const ramp = 0.4;
-    const midTarget  = this.buffers.mid  ? (this.intensity >= 1 ? 1.0 : 0.8) : 0;
-    const leadTarget = this.buffers.lead ? (this.intensity >= 1 ? 1.0 : 0.3) : 0;
+    const midTarget  = this.buffers.mid  ? (0.6 + this.intensity * 0.4) : 0;
+    const leadTarget = this.buffers.lead ? (0.2 + this.intensity * 0.8) : 0;
     this._rampGain(this._gMid,  midTarget,  now, ramp);
     this._rampGain(this._gLead, leadTarget, now, ramp);
   }
