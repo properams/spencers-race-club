@@ -15,6 +15,11 @@ let _speedLinesFadeT=0,_speedLinesRedrawT=0;
 // Rev-limiter audio-trigger throttle (gebruikt in updateRpmBar / playRevLimiter).
 let _revLimiterTimer=0;
 
+// Float-text stagger (uit main.js verhuisd). _floatSlot rolt 0..5 zodat
+// 6 popups verticaal stacken; reset wanneer _floatSlotTimer naar 0 zakt.
+// Decay-tick gebeurt in core/loop.js (per dt -1.6s per cyclus).
+let _floatSlot=0,_floatSlotTimer=0;
+
 function updateSpeedOverlay(){
   const car=carObjs[playerIdx];
   const ov=document.getElementById('speedOverlay');if(!ov||!car)return;

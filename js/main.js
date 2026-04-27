@@ -155,8 +155,7 @@ let _contactPopupCD=0; // collision popup cooldown — max once per 3s
 // Speed-lines canvas state → js/effects/visuals.js
 // Ghost car state → js/gameplay/ghost.js
 // _driftBarFill / _driftBarEl / _driftLabelEl → js/gameplay/combo.js
-// Float text counter (for cleanup)
-let _floatPool=[];
+// _floatPool was dead code (nergens gelezen) — verwijderd.
 // Overall fastest lap (all-time, cross-race)
 var _overallFastestLap=Infinity; // var: persistence cross-script
 // Near-miss bonus cooldowns per car index
@@ -251,7 +250,7 @@ let _lastPPos=0;
 // _nitroUseCount / _airborneAccum / _cleanLapFlag → js/gameplay/race.js (_driftAccum → combo.js)
 
 // _achieveToastEl → js/gameplay/achievements.js
-let _floatSlot=0,_floatSlotTimer=0; // float-text stagger
+// _floatSlot / _floatSlotTimer → js/effects/visuals.js
 // _speedLinesFadeT / _speedLinesRedrawT → js/effects/visuals.js
 // (Drift/nitro/boost-trail/ghost/pitstop/AI-mistakes/rev-limiter/gap/
 //  collision-flash/quick-restart/weather-forecast/rear-mirror visuals
