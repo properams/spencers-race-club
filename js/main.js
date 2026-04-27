@@ -184,9 +184,7 @@ let _contactPopupCD=0; // collision popup cooldown — max once per 3s
 // _elRpm → ui/hud.js
 // Speed lines canvas
 let _speedLinesCvs=null,_speedLinesCtx=null;
-// Ghost car
-const _ghostPos=[];let _ghostBest=[];let _ghostMesh=null;
-let _ghostSampleT=0,_ghostPlayT=0;
+// Ghost car state → js/gameplay/ghost.js
 // Drift visual refs
 let _driftBarFill=null,_driftBarEl=null,_driftLabelEl=null;
 // Float text counter (for cleanup)
