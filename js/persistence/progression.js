@@ -4,6 +4,20 @@
 
 import {savePersistent,loadPersistent} from './save.js';
 
+// Per-car unlock-regels. Elke regel returnt true als de speler de car net verdiend heeft.
+// `state` is { finishPos, bestLapTime, overallFastestLap, raceCount, podiumCount, alreadyUnlocked(id) }.
+// Aanpassen voor balancing: regel toevoegen/wijzigen — checkUnlocks() consumeert de tabel.
+const CAR_UNLOCK_RULES = [
+  { id: 4, label: 'Red Bull F1 — finish P1',
+    test: s => s.finishPos === 1 },
+  { id: 5, label: 'Mustang — overall fastest lap',
+    test: s => s.overallFastestLap < Infinity && s.bestLapTime <= s.overallFastestLap + 0.01 },
+  { id: 6, label: 'Tesla — complete 5 races',
+    test: s => s.raceCount >= 5 },
+  { id: 7, label: 'Audi — 3 podium finishes',
+    test: s => s.podiumCount >= 3 },
+];
+
 function awardCoins(pos){
   const base=[200,140,100,70,50,35,20,10];
   let earned=base[pos-1]||10;
@@ -34,15 +48,18 @@ function buyWorld(w){
 }
 
 function checkUnlocks(finishPos){
+  const state={
+    finishPos,
+    bestLapTime: window.bestLapTime,
+    overallFastestLap: window._overallFastestLap,
+    raceCount: window._raceCount,
+    podiumCount: window._podiumCount
+  };
   const newOnes=[];
-  // Red Bull F1 (4): Finish P1
-  if(finishPos===1&&!window._unlockedCars.has(4)){window._unlockedCars.add(4);newOnes.push(4);}
-  // Mustang (5): Set overall fastest lap
-  if(window._overallFastestLap<Infinity&&window.bestLapTime<=window._overallFastestLap+.01&&!window._unlockedCars.has(5)){window._unlockedCars.add(5);newOnes.push(5);}
-  // Tesla (6): Complete 5 races
-  if(window._raceCount>=5&&!window._unlockedCars.has(6)){window._unlockedCars.add(6);newOnes.push(6);}
-  // Audi (7): 3 podium finishes
-  if(window._podiumCount>=3&&!window._unlockedCars.has(7)){window._unlockedCars.add(7);newOnes.push(7);}
+  for(const rule of CAR_UNLOCK_RULES){
+    if(window._unlockedCars.has(rule.id))continue;
+    if(rule.test(state)){window._unlockedCars.add(rule.id);newOnes.push(rule.id);}
+  }
   return newOnes;
 }
 
@@ -80,5 +97,6 @@ window.checkUnlocks=checkUnlocks;
 window.showUnlockToast=showUnlockToast;
 window.showUnlocks=showUnlocks;
 window.updateTitleHighScore=updateTitleHighScore;
+window.CAR_UNLOCK_RULES=CAR_UNLOCK_RULES;
 
-export {awardCoins,buyCar,buyWorld,checkUnlocks,showUnlockToast,showUnlocks,updateTitleHighScore};
+export {awardCoins,buyCar,buyWorld,checkUnlocks,showUnlockToast,showUnlocks,updateTitleHighScore,CAR_UNLOCK_RULES};

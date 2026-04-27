@@ -2,6 +2,15 @@
 // ES module. State leeft in window.* (main.js declares de let _coins etc.);
 // deze module muteert window.xxx. Exporteert via window.{loadPersistent,savePersistent}.
 
+// Progressive world-unlock thresholds.
+// Vier werelden ontgrendelen op race-count, twee op podium-count.
+// Aanpassen voor balancing: gewoon de getallen wijzigen — geen andere code raakt eraan.
+// (Car-unlocks staan in progression.js → CAR_UNLOCK_RULES.)
+const WORLD_UNLOCK_THRESHOLDS = {
+  byRaces:   { space: 2, deepsea: 4, candy: 7, neoncity: 10 },
+  byPodiums: { volcano: 3, arctic: 6 }
+};
+
 function loadPersistent(){
   try{const d=JSON.parse(localStorage.getItem('spencerRC')||'{}');
     window._savedHS=d.hs||0;window._savedBL=d.bl||Infinity;
@@ -11,13 +20,13 @@ function loadPersistent(){
     window._coins=d.coins||0;window._totalCoinsEarned=d.totalCoins||0;
     if(d.worlds)d.worlds.forEach(w=>window._worldsUnlocked.add(w));
     if(d.records)window._trackRecords=d.records;
-    // Progressive unlock
-    if(window._raceCount>=2)window._worldsUnlocked.add('space');
-    if(window._raceCount>=4)window._worldsUnlocked.add('deepsea');
-    if(window._raceCount>=7)window._worldsUnlocked.add('candy');
-    if(window._raceCount>=10)window._worldsUnlocked.add('neoncity');
-    if(window._podiumCount>=3)window._worldsUnlocked.add('volcano');
-    if(window._podiumCount>=6)window._worldsUnlocked.add('arctic');
+    // Progressive unlock — drempels in WORLD_UNLOCK_THRESHOLDS bovenaan.
+    for(const [w,n] of Object.entries(WORLD_UNLOCK_THRESHOLDS.byRaces)){
+      if(window._raceCount>=n)window._worldsUnlocked.add(w);
+    }
+    for(const [w,n] of Object.entries(WORLD_UNLOCK_THRESHOLDS.byPodiums)){
+      if(window._podiumCount>=n)window._worldsUnlocked.add(w);
+    }
   }catch(e){window._savedHS=0;window._savedBL=Infinity;}
 }
 
@@ -35,5 +44,6 @@ function savePersistent(){
 
 window.loadPersistent=loadPersistent;
 window.savePersistent=savePersistent;
+window.WORLD_UNLOCK_THRESHOLDS=WORLD_UNLOCK_THRESHOLDS;
 
-export {loadPersistent,savePersistent};
+export {loadPersistent,savePersistent,WORLD_UNLOCK_THRESHOLDS};
