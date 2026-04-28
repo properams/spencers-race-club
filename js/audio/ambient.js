@@ -10,6 +10,15 @@ function _playAmbientOneShot(slots, vol=0.6, delay=0){
   return _playBufferOneShot(window._hasAmbientSample,window._getAmbientBuffer,slots,vol,delay);
 }
 
+'use strict';
+
+// Ambient audio refs (uit main.js verhuisd). Gevuld door initCrowdNoise()
+// en startAmbientWind() hieronder; lazy-init op race-start, gestopt bij
+// race-end in gameplay/finish.js. Cross-script: ui/hud.js + tracklimits.js
+// + finish.js doen _crowdGain.gain.setTargetAtTime(...) bij overtake/finish.
+// effects/night.js update _ambientWindGain volume per dag↔nacht-fase.
+let _ambientWind=null,_ambientWindGain=null;
+let _crowdSrc=null,_crowdGain=null;
 
 function playThunder(){
   if(!audioCtx)return;

@@ -26,6 +26,23 @@ const SURFACE_PARAMS = {
   dirt:    { freqBase: 160, freqScale: 130, Q: 1.4, gain: 0.034 },
 };
 
+'use strict';
+
+// Engine audio state (uit main.js verhuisd).
+//   engineOsc / engineGain — multi-oscillator engine (initEngine() wijst toe).
+//   _rollGain / _rollSrc / _rollFilt — rolling-noise layer (tire/road).
+//   _carWindGain / _carWindSrc / _carWindFilt — highpass-filtered car-wind loop,
+//     fade-in boven ~65% topspeed (Fase 2.3 audio upgrade).
+//   _carWindSampleGain / _carWindSampleSrc — sample-pad fallback wanneer
+//     windHigh-buffer geladen is (lazy-init bij eerste detectie).
+//   _lastGear — vorige gear voor up/down-shift trigger in updateEngine.
+// Cross-script: gameplay/finish.js fade engineGain naar 0; gameplay/race.js
+// reset _lastGear=1.
+let engineOsc=null,engineGain=null;
+let _rollGain=null,_rollSrc=null,_rollFilt=null;
+let _carWindGain=null,_carWindSrc=null,_carWindFilt=null;
+let _carWindSampleGain=null,_carWindSampleSrc=null;
+let _lastGear=1;
 
 function initAudio(){
   if(audioCtx)return;

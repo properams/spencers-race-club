@@ -23,16 +23,18 @@ function initRenderer(){
   canvas.addEventListener('webglcontextlost',e=>{
     e.preventDefault();
     _ctxLost=true;
+    window.dbg&&dbg.warn('renderer','webglcontextlost — pauzeren + reload-timer '+CTX_LOSS_RELOAD_MS+'ms');
     const ov=document.getElementById('ctxLostOverlay');if(ov)ov.style.display='flex';
     if(audioCtx&&audioCtx.state==='running')audioCtx.suspend().catch(()=>{});
     _ctxLostReloadTimer=setTimeout(()=>{if(_ctxLost)location.reload();},CTX_LOSS_RELOAD_MS);
   });
   canvas.addEventListener('webglcontextrestored',()=>{
+    window.dbg&&dbg.log('renderer','webglcontextrestored — scene rebuild');
     if(_ctxLostReloadTimer){clearTimeout(_ctxLostReloadTimer);_ctxLostReloadTimer=null;}
     _ctxLost=false;
     const ov=document.getElementById('ctxLostOverlay');if(ov)ov.style.display='none';
     if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});
-    try{if(scene&&activeWorld)buildScene();}catch(err){console.error('ctx restore rebuild failed',err);location.reload();}
+    try{if(scene&&activeWorld)buildScene();}catch(err){window.dbg&&dbg.error('renderer',err,'ctx restore rebuild failed');location.reload();}
   });
   window.addEventListener('beforeunload',()=>{try{renderer.dispose();renderer.forceContextLoss();}catch(e){}});
   document.addEventListener('visibilitychange',()=>{if(audioCtx)document.hidden?audioCtx.suspend():audioCtx.resume();});
@@ -40,7 +42,9 @@ function initRenderer(){
   renderer.setSize(innerWidth,innerHeight);
   renderer.shadowMap.enabled=!_mob;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
-  renderer.outputEncoding=THREE.sRGBEncoding;
+  // outputEncoding (r134) / outputColorSpace (r150+) via compat-laag.
+  ThreeCompat.applyRendererColorSpace(renderer);
+  window.dbg&&dbg.log('renderer','init done — '+innerWidth+'×'+innerHeight+' dpr '+renderer.getPixelRatio().toFixed(2)+' shadow='+renderer.shadowMap.enabled+' THREE '+(THREE.REVISION||'?'));
   // Single resize pipeline: one rAF-debounced handler bound to resize, orientationchange and
   // visualViewport.resize. Re-evaluates device flags so portrait↔landscape (and split-view)
   // switches the iPad cleanly between mobile/tablet branches without a page reload.

@@ -1,6 +1,6 @@
-// js/gameplay/spacefx.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/spacefx.js — non-module script.
 
+'use strict';
 
 function spawnSpaceMeteor(){
   const m=_spaceMeteors.find(m=>!m.active);if(!m)return;

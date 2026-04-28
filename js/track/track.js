@@ -1,6 +1,6 @@
-// js/track/track.js — auto-extracted in Fase 4
-// Non-module script.
+// js/track/track.js — non-module script.
 
+'use strict';
 
 function buildTrack(){
   const pts3=TRACK_WP.map(([x,z])=>new THREE.Vector3(x,0,z));

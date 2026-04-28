@@ -33,6 +33,7 @@ function _playSampleOneShot(slots, vol=0.6, delay=0){
   return _playBufferOneShot(window._hasSFXSample,window._getSFXBuffer,slots,vol,delay);
 }
 
+'use strict';
 
 function beep(f,d,v=.25,delay=0,type='sine'){
   if(!audioCtx)return;

@@ -1,6 +1,8 @@
 // js/worlds/candy.js — candy world builders + update + collision checks
 // Non-module script.
 
+'use strict';
+
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _sprinkleParticles=null,_sprinkleGeo=null;
 const _gummyBears=[];
@@ -27,6 +29,8 @@ function buildCandyEnvironment(){
   buildCandyBarriers();
   buildIceCreamCones();
   buildCookieSpectators();
+  // Chocolate-fountain bridge signature moment — drips lap 2, melts lap 3.
+  if(typeof buildCandyChocoBridge==='function')buildCandyChocoBridge();
 }
 
 
@@ -113,8 +117,7 @@ function buildCandyCanes(){
       const s=new THREE.Mesh(new THREE.CylinderGeometry(.28,.28,.55,7),mat);
       s.position.set(cx,seg*.55+.275,cz);scene.add(s);
     }
-    // Crook: torus quarter-arc on top
-    const crookMat=seg=>seg%2===0?redMat:whiteMat;
+    // Crook: torus quarter-arc on top (crookMat helper was dead — never invoked)
     const crook=new THREE.Mesh(new THREE.TorusGeometry(.5,.28,7,12,Math.PI/1.8),redMat);
     crook.position.set(cx,6.55+.5,cz);
     crook.rotation.z=Math.PI;
@@ -468,6 +471,10 @@ function buildCookieSpectators(){
 
 
 function updateCandyWorld(dt){
+  if(typeof updateCandyChocoBridge==='function'){
+    const pl=carObjs[playerIdx];
+    updateCandyChocoBridge(dt, pl?pl.lap:1);
+  }
   updateSprinkles(dt);
   // Cotton candy cloud drift
   _candyLollipops.forEach((h,i)=>{

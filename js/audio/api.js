@@ -125,7 +125,8 @@ const Audio = {
 
   // ── Placeholder voor toekomst ───────────────────
   play3D(soundId, position){
-    console.warn('[Audio.play3D] niet geïmplementeerd (fallback)');
+    if(window.dbg)dbg.warn('audio','play3D niet geïmplementeerd (fallback)');
+    else console.warn('[Audio.play3D] niet geïmplementeerd (fallback)');
   }
 };
 

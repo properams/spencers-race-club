@@ -1,6 +1,8 @@
 // js/worlds/themepark.js — themepark world builders + update + collision checks
 // Non-module script.
 
+'use strict';
+
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _tpFerris=null,_tpCarousel=null,_tpCarouselHorses=[],_tpCoasters=[],_tpBalloons=[];
 let _tpFireworks=[],_tpBunting=[],_tpParkLights=[],_tpFireworkTimer=0;
@@ -220,11 +222,17 @@ function buildThemeparkEnvironment(){
     dm.scale.setScalar(.5+Math.random()*1.2);dm.updateMatrix();stars.setMatrixAt(i,dm.matrix);
   }
   stars.instanceMatrix.needsUpdate=true;scene.add(stars);
+  // Overhead coaster collapse signature moment — strobes lap 2, tilts lap 3.
+  if(typeof buildThemeparkCoaster==='function')buildThemeparkCoaster();
 }
 
 
 function updateThemeparkWorld(dt){
   const t=_nowSec;
+  if(typeof updateThemeparkCoaster==='function'){
+    const pl=carObjs[playerIdx];
+    updateThemeparkCoaster(dt, pl?pl.lap:1);
+  }
   if(_tpFerris&&_tpFerris.group){
     _tpFerris.group.rotation.z+=dt*.22;
     for(let i=0;i<_tpFerris.cabins.length;i++){

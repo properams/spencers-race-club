@@ -1,6 +1,8 @@
 // js/worlds/arctic.js — arctic world builders + update + collision checks
 // Non-module script.
 
+'use strict';
+
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _arcticIcePatches=[],_arcticAurora=[],_arcticBlizzardGeo=null;
 
@@ -125,11 +127,17 @@ function buildArcticEnvironment(){
     dm.scale.setScalar(.5+Math.random()*1.8);dm.updateMatrix();stars.setMatrixAt(i,dm.matrix);
   }
   stars.instanceMatrix.needsUpdate=true;scene.add(stars);
+  // Ice shelf signature moment — cracks lap 2, plates dip on lap 3.
+  if(typeof buildArcticIceShelf==='function')buildArcticIceShelf();
 }
 
 
 function updateArcticWorld(dt){
   var t=_nowSec;
+  if(typeof updateArcticIceShelf==='function'){
+    var pl=carObjs[playerIdx];
+    updateArcticIceShelf(dt, pl?pl.lap:1);
+  }
   _arcticAurora.forEach(function(a,i){
     a.phase+=dt*a.speed;
     a.mesh.material.opacity=.35+Math.sin(a.phase)*.25;

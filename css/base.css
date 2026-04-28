@@ -34,14 +34,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   filter:drop-shadow(0 0 22px #ff6a00aa);animation:lglow 2.2s ease-in-out infinite;position:relative;z-index:2}
 @keyframes lglow{0%,100%{filter:drop-shadow(0 0 22px #ff6a00aa)}50%{filter:drop-shadow(0 0 40px #ffa500cc)}}
-.tSub{font-family:'Rajdhani',sans-serif;font-size:clamp(12px,2vw,20px);color:#888;letter-spacing:9px;text-transform:uppercase;margin-top:10px;z-index:2}
 .tStart{font-family:'Orbitron',sans-serif;font-size:clamp(12px,1.8vw,18px);color:#ff7700;letter-spacing:5px;margin-top:48px;cursor:pointer;z-index:2;animation:blink 1.15s ease-in-out infinite}
 @keyframes starDrift{from{background-position:0 0,70px 40px,150px 90px}to{background-position:220px 180px,210px 200px,450px 340px}}
-.tTip{font-family:'Rajdhani',sans-serif;font-size:13px;color:#555;letter-spacing:2px;margin-top:10px;z-index:2}
-.tRow{display:flex;gap:10px;margin-top:16px;z-index:2;flex-wrap:wrap;justify-content:center}
-.tBtn{font-family:'Orbitron',sans-serif;font-size:12px;color:#aaa;background:rgba(255,255,255,.07);border:1px solid #444;border-radius:20px;padding:7px 18px;cursor:pointer;letter-spacing:2px;transition:all .2s}
-.tBtn:hover{background:rgba(255,255,255,.15);color:#fff}
-.weatherBtn.wSel{background:rgba(255,102,0,.22);border-color:#ff6600;color:#ff9944}
+/* .tSub/.tTip/.tRow/.tBtn/.weatherBtn/.wSel waren dead — verwijderd */
 #sTitle::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,150,30,.04) 48%,rgba(255,200,80,.10) 50%,rgba(255,150,30,.04) 52%,transparent 70%);animation:titleSweep 4.5s ease-in-out infinite;pointer-events:none;z-index:1}
 @keyframes titleSweep{0%,100%{transform:translateX(-100%)}50%{transform:translateX(100%)}}
 .previewName{font-family:'Orbitron',sans-serif;font-size:clamp(14px,2vw,22px);color:#fff;letter-spacing:3px;text-align:center;text-shadow:0 0 20px rgba(180,100,255,.5)}
@@ -166,7 +161,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
 .tireGrid{display:grid;grid-template-columns:1fr 1fr;gap:3px;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700}
 .tireDot{width:14px;height:14px;border-radius:50%;display:inline-block;margin:1px;transition:background .4s}
 .carLock{position:absolute;inset:0;background:rgba(0,0,0,.72);border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:10px;color:#666;letter-spacing:1px;gap:4px;pointer-events:none}
-.tDedicated{font-family:'Rajdhani',sans-serif;font-size:clamp(10px,1.4vw,14px);color:#ff7700;letter-spacing:4px;margin-top:6px;z-index:2;opacity:.7;text-align:center}
+/* .tDedicated was dead — verwijderd */
 @keyframes posFlash{0%{transform:scale(1);color:#ff7700}20%{transform:scale(1.45);color:#ffffff;text-shadow:0 0 24px #ffffff,0 0 48px #00ff88}60%{transform:scale(1.15);color:#00ff88}100%{transform:scale(1);color:#ff7700}}
 .posPulse{animation:posFlash .6s cubic-bezier(.34,1.56,.64,1)}
 .previewName{font-family:'Orbitron',sans-serif;font-size:clamp(14px,2vw,22px);color:#fff;letter-spacing:3px;text-align:center;text-shadow:0 0 20px rgba(180,100,255,.5)}
@@ -188,7 +183,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
 .flame{background:linear-gradient(to top,#aa00ff,#ff00aa,#00eeff)!important}
 #sTitle::before{background:linear-gradient(105deg,transparent 30%,rgba(140,60,255,.04) 48%,rgba(180,80,255,.09) 50%,rgba(100,200,255,.04) 52%,transparent 70%)!important}
 .tStart{color:#cc66ff!important;animation:blink 1.15s ease-in-out infinite}
-.tSub{color:#664488!important}
 @media(max-width:600px){
 .setLabel{margin-bottom:5px!important}
 .colorDot{width:36px!important;height:36px!important}
@@ -222,10 +216,6 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
 .pauseSubtitle{font-size:11px!important;letter-spacing:2px!important;text-align:center}
 }
 @media(max-width:600px){
-.tSub{letter-spacing:4px!important;margin-top:8px!important}
 .tStart{margin-top:28px!important;letter-spacing:3px!important}
-.tTip{padding:0 16px!important;letter-spacing:1px!important;line-height:1.5!important;max-width:340px!important;word-wrap:break-word!important}
-.tRow{padding:0 12px!important;gap:6px!important}
-.tBtn{padding:5px 12px!important;font-size:10px!important;letter-spacing:1px!important}
 }
 @keyframes loadAnim{from{width:10%}to{width:100%}}

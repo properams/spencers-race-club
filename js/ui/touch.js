@@ -1,4 +1,6 @@
-// js/ui/touch.js — Fase 2.3/2.4 extraction. Non-module script.
+// js/ui/touch.js — non-module script.
+
+'use strict';
 
 // Touch input config (uit main.js verhuisd).
 // Haptic feedback patterns per control (ms) — short buzz for precise, slightly longer for boost/drift.
@@ -6,9 +8,24 @@ const _HAPTIC_MS={ArrowLeft:8,ArrowRight:8,ArrowUp:0,ArrowDown:12,KeyN:18,Space:
 // Buttons that should also trigger gas (ArrowUp) — makes nitro/drift usable with one hand.
 const _ALSO_GAS={KeyN:true,Space:true};
 
+// Touch/wake-lock state (uit main.js verhuisd). _hwKeyboardDetected wordt
+// in ui/input.js geset op eerste arrow-key press; daarna verbergen we de
+// touch-controls via setTouchControlsVisible. _wakeLock is screen-keepalive
+// (Wake Lock API) die we tijdens RACE/COUNTDOWN aangevraagd houden.
+let _touchControlsReady=false;
+let _wakeLock=null;
+let _hwKeyboardDetected=false;
+
+async function _acquireWakeLock(){
+  try{if('wakeLock' in navigator&&!_wakeLock)_wakeLock=await navigator.wakeLock.request('screen');}catch(_){}
+}
 function _releaseWakeLock(){
   if(_wakeLock){try{_wakeLock.release();}catch(_){}_wakeLock=null;}
 }
+// Reacquire wake lock zodra de pagina weer zichtbaar wordt (iOS dropt 'm op blur).
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&(gameState==='RACE'||gameState==='COUNTDOWN'))_acquireWakeLock();
+});
 
 function setTouchControlsVisible(show){
   const tc=document.getElementById('touchControls');if(!tc)return;

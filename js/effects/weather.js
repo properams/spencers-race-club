@@ -1,6 +1,22 @@
-// js/effects/weather.js — auto-extracted in Fase 4
-// Non-module script.
+// js/effects/weather.js — non-module script.
 
+'use strict';
+
+// Weather state (uit main.js verhuisd).
+//   _weatherMode             — 'clear' | 'rain' | 'storm' | 'snow'
+//   _stormFlashTimer         — countdown tussen lightning flashes
+//   _thunderTimer            — countdown voor thunder SFX
+//   _rainIntensity, _rainTarget — smooth rain visual transition
+//   _snowParticles, _snowGeo — Three.js Points + BufferGeometry voor snow
+//   _weatherForecastTimer/Fired — mid-race forecast popup
+// Cross-script: ui/select.js leest _weatherMode pre-race; gameplay/race.js
+// reset _weatherForecast*. setWeather() onder gebruikt + muteert ze allemaal.
+let _weatherMode='clear';
+let _stormFlashTimer=0;
+let _thunderTimer=14+Math.random()*10;
+let _rainIntensity=0,_rainTarget=0;
+let _snowParticles=null,_snowGeo=null;
+let _weatherForecastTimer=0,_weatherForecastFired=false;
 
 function initRain(){
   rainCanvas=document.getElementById('rainCanvas');
