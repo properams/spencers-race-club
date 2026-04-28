@@ -60,10 +60,11 @@
   font-family:'Orbitron',sans-serif;font-size:8px;color:#6e5a9a;
   letter-spacing:3px;margin-bottom:8px
 }
-.tierTabs{display:flex;gap:0;font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1.5px}
+.tierTabs{display:flex;gap:6px;font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1.5px}
 .tierTab{
-  flex:1;padding:5px 0;text-align:center;cursor:pointer;
-  color:#6e5a9a;border-bottom:1px solid #2a1f4a;transition:color .15s,border-color .15s
+  flex:1;padding:5px 4px;text-align:center;cursor:pointer;
+  color:#6e5a9a;border-bottom:1px solid #2a1f4a;transition:color .15s,border-color .15s;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
 .tierTab:hover{color:#c9b9ff}
 .tierTabSel{color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:600}
@@ -126,7 +127,8 @@
   letter-spacing:1.5px;padding-left:2px;margin-bottom:4px
 }
 .prevCanvasWrap{
-  position:relative;flex:1;min-height:200px;max-height:280px;
+  position:relative;width:100%;
+  aspect-ratio:400/220;max-height:280px;
   border:1px solid #2a1f4a;border-radius:12px;
   background:radial-gradient(ellipse at 50% 60%,#2a1a4a,#0d0820);
   overflow:hidden
