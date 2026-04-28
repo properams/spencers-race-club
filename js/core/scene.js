@@ -29,31 +29,40 @@
 
 // Asset-cached textures (HDRI envMap, PBR ground maps, GLTF instance maps)
 // carry userData._sharedAsset=true; disposeScene must skip these or the
-// next build pulls a disposed handle from window.Assets cache. Geometries
-// inside an InstancedMesh that came from a GLTF prototype are similarly
-// shared — we skip them via mesh.userData._sharedAsset too.
-function _isSharedAsset(obj){
-  return !!(obj && obj.userData && obj.userData._sharedAsset);
+// next build pulls a disposed handle from window.Assets cache. Each layer
+// — mesh, material, map — is checked independently because a private
+// material can still wrap a shared texture (e.g. cloned headlight beam
+// material wrapping the cached alpha-mask).
+function _shared(x){ return !!(x && x.userData && x.userData._sharedAsset); }
+function _disposeMat(m){
+  if (!m) return;
+  if (m.map && !_shared(m.map)) m.map.dispose();
+  if (m.normalMap && !_shared(m.normalMap)) m.normalMap.dispose();
+  if (m.roughnessMap && !_shared(m.roughnessMap)) m.roughnessMap.dispose();
+  if (!_shared(m)) m.dispose();
 }
 function disposeScene(){
   if(!scene)return;
   scene.traverse(obj=>{
     if(obj.isMesh||obj.isPoints||obj.isLine||obj.isSprite){
-      if(obj.geometry && !_isSharedAsset(obj)) obj.geometry.dispose();
+      // For InstancedMesh, the per-instance buffers (instanceMatrix,
+      // instanceColor) are unique to this mesh even if its geometry is
+      // shared. Three r134 has no InstancedMesh.dispose(); freeing the
+      // GPU buffers happens via geometry.dispose() — so we cannot share
+      // InstancedMesh geometry. Safe-guard: trees/props clone geometry
+      // per spawn. If a future caller forgets, we still dispose private
+      // geometries; shared GLTF geometry stays alive in the asset cache.
+      if(obj.geometry && !_shared(obj.geometry)) obj.geometry.dispose();
       if(obj.material){
-        if(Array.isArray(obj.material))obj.material.forEach(m=>{if(m.map&&!_isSharedAsset({userData:{_sharedAsset:m.userData&&m.userData._sharedAsset}}))m.map.dispose();m.dispose();});
-        else{if(obj.material.map && !(obj.material.userData&&obj.material.userData._sharedAsset))obj.material.map.dispose(); if(!_isSharedAsset(obj))obj.material.dispose();}
+        if(Array.isArray(obj.material)) obj.material.forEach(_disposeMat);
+        else _disposeMat(obj.material);
       }
     }
   });
   while(scene.children.length>0)scene.remove(scene.children[0]);
-  if(scene.background&&scene.background.isTexture && !(scene.background.userData&&scene.background.userData._sharedAsset)){
-    scene.background.dispose();
-  }
+  if(scene.background&&scene.background.isTexture && !_shared(scene.background)) scene.background.dispose();
   scene.background=null;
-  if(scene.environment&&scene.environment.isTexture && !(scene.environment.userData&&scene.environment.userData._sharedAsset)){
-    scene.environment.dispose();
-  }
+  if(scene.environment&&scene.environment.isTexture && !_shared(scene.environment)) scene.environment.dispose();
   scene.environment=null;
   if(renderer)renderer.renderLists.dispose();
 }

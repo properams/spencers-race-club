@@ -96,7 +96,12 @@
     }
     const tex = await new Promise(resolve => {
       try {
-        new THREE.RGBELoader().load(path,
+        const ldr = new THREE.RGBELoader();
+        // Force Float32 so _sampleHorizon can read a plain Float32Array. The
+        // default HalfFloatType produces a Uint16Array of half-floats which
+        // would need DataUtils.fromHalfFloat per pixel.
+        if (typeof ldr.setDataType === 'function') ldr.setDataType(THREE.FloatType);
+        ldr.load(path,
           t => resolve(t),
           undefined,
           err => { _warn('rgbe load failed', path+' '+(err&&err.message||err)); resolve(null); });

@@ -1,5 +1,140 @@
 # CHANGES
 
+## Track Realism Overhaul (sessie 4) — Spencer Grand Prix als pilot
+
+> "Ik vind de ondergrond van de tracks echt heel goed. Maar ik zie nog steeds
+> hoekige bomen op de horizon, lichtgekleurde blokken en pixel-achtige licht-
+> stralen. Maak het richting realisme, dichter bij de baan, dynamischer."
+
+Sessie sluit de visuele kloof tussen het asfalt (al sterk) en de rest van
+GP via een **manifest-driven asset pipeline** met procedurele fallback,
+analoog aan de audio-overhaul. Een verse clone zonder assets draait
+identiek; assets zijn altijd een upgrade, nooit een vereiste.
+
+### Fase A — Asset loader foundation
+**`js/assets/loader.js`** (nieuw, +308 LOC) — `window.Assets` met
+`preloadWorld`, `loadHDRI`, `loadTexture`, `loadGroundSet`, `loadGLTF`,
+plus synchrone `getHDRI`/`getGLTF` getters die uit cache lezen. Lazy-laadt
+`RGBELoader`/`GLTFLoader` van CDN (jsdelivr three@0.134.0/examples/js)
+alleen wanneer de eerste betreffende asset wordt opgevraagd. Faillig laden
+geeft `null`, nooit een throw.
+**`assets/manifest.json`** (nieuw) — slot-definities per wereld; alleen
+GP gevuld, andere zes werelden hebben lege `{}` reservering.
+**`assets/README.md`** (nieuw) — per-slot Poly Haven/Quaternius/KayKit
+suggesties (CC0 only) plus activatie-instructies.
+**`js/effects/asset-bridge.js`** (nieuw) — `maybeUpgradeWorld(worldId)`
+patcht HDRI en PBR ground in een al-gebouwde scene zodra preload klaar is.
+**Pause-overlay status indicator** (`js/ui/pause.js` + `index.html`) —
+toont per actieve wereld `HDRI ✓ GROUND 3/3 PROPS 5/5 LAYERS 2/2`.
+**Preload triggers** — `js/core/boot.js` (default world bij start),
+`js/ui/select.js` (op world-switch).
+
+### Fase B — HDRI sky + environment voor Grand Prix
+`scene.background` en `scene.environment` worden vervangen door een
+PMREM-processed HDRI als die in cache zit. Fog-color wordt uit de
+horizon-rij van de HDRI gesampled (via `RGBELoader.setDataType(FloatType)`
+zodat het pixel-byte-stride vraagstuk uit de weg is). PBR materials
+krijgen `envMapIntensity=0.6` waar `envMapIntensity` op het material
+bestaat (Lambert negeert dit veld stilletjes — geen schade).
+`disposeScene` herkent shared assets via `userData._sharedAsset` zodat
+HDRI cache niet wordt vernietigd op world-rebuild.
+
+### Fase C — Instanced GLTF vegetation
+**Procedural fallback verdicht én ge-instanced.** Tree-count opgehoogd
+van 142 (55×2 + 32 infield) naar ~250 op desktop / ~150 op mobile.
+Drie InstancedMesh draw-calls i.p.v. 426 individuele meshes. Twee
+density-ringen (close + far) plus 6 organische clusters van 2-4 trees.
+**GLTF-pad** clusterd plaatsingen per (geometry, material) tuple uit de
+GLTF prototypes en bouwt een InstancedMesh per slot. Geometry wordt per
+spawn ge-cloned zodat instanceMatrix-buffers schoon worden vrijgegeven
+op rebuild; materials blijven shared.
+
+### Fase D — GLTF roadside props
+`buildGPTrackProps` in `js/worlds/grandprix.js`: tire-stack-met-rode-cap
+locaties (8 corners) krijgen nu een 2-3 prop cluster (haybale / rock_small
+/ rock_medium) als die GLTFs in cache zitten. Box-fit normalisatie zorgt
+dat verschillende GLTF-schalen passen. Zonder cache: originele tire
+stack met rode cap.
+
+### Fase E — PBR ground textures
+`buildGround` tagt zijn proc-grass mesh met `_isProcGround=true`. Bij
+preload-completion vervangt `applyGround` het `MeshLambertMaterial` door
+`MeshStandardMaterial` met `map`/`normalMap`/`roughnessMap` uit cache,
+40×40 tiling. Disposed netjes als ground assets niet aanwezig zijn — de
+proc-grass canvas blijft.
+
+### Fase F — Zachte volumetrische koplamp-cones
+12-segment angular cone → 32×8 (16×4 op mobile) cone met radial alpha-
+mask texture die V-as falloff doet (bright tip, fade naar 15% aan base).
+Geen azimuthal modulatie meer (oude code produceerde per ongeluk twee
+bright bands op de cone). Opacity flickert ~5% op 1.25 Hz met per-cone
+phase offset; L/R cones zijn organisch desync.
+
+### Fase G — Parallax background silhouettes
+`buildBackgroundLayers` plaatst twee cylinder silhouet-lagen (`radius=740`
+/ `540`, `height=110` / `78`) tussen de `buildMountains` peaks en de
+skybox. Procedureel gegenereerd via `_silhouetteTex` (3-octave seeded
+noise voor jagged ridge-line). Als `mountains_far.png` /
+`mountains_near.png` in de asset-cache zitten worden die gebruikt i.p.v.
+de canvas. Fog-doordringing zorgt dat de lagen natuurlijk in de horizon
+zakken.
+
+### Self-review pass — fixes na code-quality / efficiency / code-reuse review
+- `RGBELoader` byte-stride: forceer `FloatType` zodat `_sampleHorizon`
+  niet probeert RGBE bytes als float te lezen.
+- `MeshLambertMaterial` + `instanceColor` werkt niet in r134 — leaf cones
+  nu in 3 color-buckets, elk eigen InstancedMesh (3 leaf-buckets × 2
+  cone-niveaus + 1 trunk = 7 draw-calls totaal).
+- Headlight alpha-mask: azimuthal modulatie verwijderd (gaf dubbele
+  bright bands op de cone).
+- `disposeScene` rewrite: aparte `_shared(x)` check op mesh, material en
+  elke texture-slot. Eerdere logica disposed shared headlight texture
+  onbedoeld.
+- InstancedMesh geometry per spawn ge-cloned (was geshared, gaf
+  instanceMatrix buffer-leak op rebuild).
+- Mobile-caps op tree count (60+28 ipv 90+48) en headlight cone segments
+  (16×4 ipv 32×8) — fillrate-budget op mobile.
+
+### Activeren
+1. Drop assets in de paden uit `assets/manifest.json` (zie
+   `assets/README.md` voor Poly Haven / Quaternius URLs).
+2. Hard refresh (Ctrl+Shift+R).
+3. Pause tijdens race → "ASSETS [GRANDPRIX]" regel toont coverage.
+
+### Performance budget (procedural-only pad, geen assets)
+| Metric | Voor (main) | Na (sessie 4) | Delta | Budget |
+|---|---:|---:|---:|---:|
+| Trees in GP | 142 (×3 meshes = 426 draw calls) | ~250 (×7 instanced = 7 draw calls) | **−419 draw calls** | ≤ +60 |
+| Background layers | 0 | 2 cylinder meshes | +2 draw calls | n.v.t. |
+| Headlight cone tris/car | 36 | 512 (256 op mobile) | +476 (+220 mobile) | (player only) |
+| Heap delta on rebuild | baseline | ~+0.5 MB (canvas textures) | +0.5 MB | < 30 MB |
+
+Tree-rewrite alleen al levert een netto draw-call winst van ~419 op,
+ruim binnen budget om HDRI / silhouettes / soft-cones bij te tellen.
+
+### Niet aangepast
+- Andere werelden — manifest reserveert slots maar er worden geen
+  builders gewijzigd voor Neon / Volcano / Arctic / Space / DeepSea /
+  Candy / Themepark.
+- Auto materials — blijven Lambert. Conversion naar Standard is een
+  aparte beslissing met perf-implicaties; gedocumenteerd als follow-up.
+- Three.js r134 → r160 migratie — ThreeCompat shim ongewijzigd qua API,
+  alleen `applyTextureColorSpace` nu echt gebruikt.
+- Audio, postfx, gameplay — out of scope.
+
+### Follow-ups voor volgende sessies
+1. Roll-out naar Neon / Volcano / Arctic — manifest entries vullen,
+   per-wereld build-code aanpassen analoog aan GP.
+2. GLTF cars (`cars.json` `model` veld) — vereist car-builder dispatcher
+   net als de wereld-builder.
+3. Auto material upgrade naar `MeshStandardMaterial` met
+   `envMapIntensity=0.4-0.6` voor body, behoudt envMap reflecties van GP
+   HDRI op de auto. Perf-impact testen op mobile.
+4. Mobile 1K HDRI variant: `grandprix_dusk_1k.hdr` met device-detect in
+   loader om kleinere variant te kiezen.
+
+---
+
 ## Track far-plane pop-in fix v2 (props laden zichtbaar in de verte tijdens rijden)
 
 ### Symptoom (na vorige fog-color fix)

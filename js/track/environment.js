@@ -344,8 +344,10 @@ function buildGravelTraps(){
 function _buildTreePlacements(){
   const out=[];
   // Sample more densely along the track than the original 55 — speler
-  // beschrijft de scene als "leeg". 90 sample points × 2 sides + jitter.
-  const N=90;
+  // beschrijft de scene als "leeg". Desktop: 90 sample points × 2 sides
+  // + jitter; mobile capped to 60 to keep total tree count manageable
+  // for vertex throughput and instanceMatrix upload size.
+  const N = window._isMobile ? 60 : 90;
   for(let i=0;i<N;i++){
     const t=i/N;
     const p=trackCurve.getPoint(t);
@@ -367,7 +369,8 @@ function _buildTreePlacements(){
     });
   }
   // Infield trees (ring around the lake, inside the circuit)
-  for(let i=0;i<48;i++){
+  const infield = window._isMobile ? 28 : 48;
+  for(let i=0;i<infield;i++){
     const a=Math.random()*Math.PI*2,d=68+Math.random()*95;
     out.push({
       x: -10 + Math.cos(a)*d,
@@ -406,31 +409,31 @@ function _spawnInstancedTreesGLTF(protos, placements){
   // Group every (geometry, material) pair across every prototype into one
   // InstancedMesh. Typical Quaternius pine = 2 meshes (trunk + leaves) so
   // 2 protos × 2 meshes = 4 InstancedMeshes total — well within budget.
-  const proto=protos[0]; // Use first prototype's geometry for sizing
-  // Compute a normalization factor so wildly different GLTF scales fit our
-  // ~5m tall trees. Sample bounding box of the prototype root.
-  const box=new THREE.Box3().setFromObject(proto.scene);
+  // Reset every proto root to identity once before sampling, so the
+  // node.matrixWorld values reflect proto-local-coords on every rebuild.
+  protos.forEach(p=>{
+    p.scene.position.set(0,0,0);
+    p.scene.rotation.set(0,0,0);
+    p.scene.scale.setScalar(1);
+    p.scene.updateMatrixWorld(true);
+  });
+  // Compute normalization from the first prototype so wildly different GLTF
+  // scales all fit our ~5m tall canopy.
+  const box=new THREE.Box3().setFromObject(protos[0].scene);
   const size=new THREE.Vector3(); box.getSize(size);
   const targetH=4.8;
   const baseScale=size.y>0.01 ? targetH/size.y : 1;
 
-  // Count instances per (geometry, material) signature.
-  const slots=new Map(); // key → { geo, mat, count, offsets:[Matrix4] }
-  const tmpMat=new THREE.Matrix4();
+  const slots=new Map();
   const tmpQuat=new THREE.Quaternion();
   const tmpScl=new THREE.Vector3();
   const tmpPos=new THREE.Vector3();
 
-  // For each placement, walk every prototype's mesh tree and record a
-  // matrix that combines proto-local transform with placement-world transform.
   placements.forEach(pl=>{
     const proto=protos[(Math.random()*protos.length)|0];
     proto.scene.traverse(node=>{
       if(!node.isMesh) return;
-      // Build per-mesh local matrix (relative to proto root).
-      node.updateWorldMatrix(true,false);
       const local=node.matrixWorld.clone();
-      // Compose world placement: translate(pl.x,0,pl.z) * rotateY(pl.r) * scale(baseScale*pl.s)
       const wScale=baseScale*pl.s;
       tmpQuat.setFromAxisAngle(new THREE.Vector3(0,1,0), pl.r);
       tmpScl.set(wScale,wScale,wScale);
@@ -449,64 +452,76 @@ function _spawnInstancedTreesGLTF(protos, placements){
   });
 
   slots.forEach(slot=>{
-    const im=new THREE.InstancedMesh(slot.geo, slot.mat, slot.mats.length);
+    // Clone the geometry so the InstancedMesh owns its own GPU buffer for
+    // instanceMatrix; otherwise on the next race rebuild we'd re-attach
+    // instanceMatrix to the cached geometry, which would either collide
+    // with the previous buffer or leak it. The cloned geometry shares
+    // BufferAttribute *references* with the cached one (cheap), but its
+    // instanceMatrix lives only on this mesh.
+    const geoClone = slot.geo.clone();
+    // Material is shared with the GLTF cache (multiple draw calls can
+    // reuse it safely); flag so disposeScene leaves it alive.
+    slot.mat.userData = slot.mat.userData || {}; slot.mat.userData._sharedAsset=true;
+    const im=new THREE.InstancedMesh(geoClone, slot.mat, slot.mats.length);
     slot.mats.forEach((m,i)=>im.setMatrixAt(i,m));
     im.instanceMatrix.needsUpdate=true;
     im.castShadow=false; im.receiveShadow=false;
-    // Mark geometry/material as shared so disposeScene doesn't kill them
-    // (they live in the GLTF cache for reuse on the next race).
-    slot.geo.userData = slot.geo.userData || {}; slot.geo.userData._sharedAsset=true;
-    slot.mat.userData = slot.mat.userData || {}; slot.mat.userData._sharedAsset=true;
-    im.userData._sharedAsset=true; // disposeScene skip
     scene.add(im);
   });
   if (window.dbg) dbg.log('env','GLTF trees spawned',{instances:placements.length, drawCalls:slots.size});
 }
 
 function _spawnInstancedTreesProcedural(placements){
-  // Single-mesh-per-part procedural fallback, but rendered as InstancedMesh
-  // so the higher tree count doesn't blow up draw calls. 3 instanced meshes
-  // total: trunk + lower cone + upper cone.
+  // Procedural fallback rendered as InstancedMesh so the higher tree count
+  // doesn't blow up draw calls. Lambert in r134 doesn't honour
+  // InstancedMesh.instanceColor (no shader hook), so we bucket placements
+  // into 3 leaf-color materials. Total: 1 trunk + 3 lower-cone + 3 upper-cone
+  // = 7 InstancedMeshes (vs the original 3 placements × ~140 = 420 draw calls).
   const trunkGeo=new THREE.CylinderGeometry(.11,.17,1.5,5);
   const cGeo1=new THREE.ConeGeometry(1,4.5,7);
   const cGeo2=new THREE.ConeGeometry(.62,3.5,7);
   const trunkMat=new THREE.MeshLambertMaterial({color:0x6b4226});
-  // Slight per-tree color variation via instanceColor instead of N materials.
-  const leafMat=new THREE.MeshLambertMaterial({color:0xffffff,vertexColors:false});
+  const leafCols=[0x1d6b32, 0x2a8040, 0x145a28];
+  const leafMats=leafCols.map(c=>new THREE.MeshLambertMaterial({color:c}));
+  // Bucket placements per leaf color.
+  const buckets=leafCols.map(()=>[]);
+  placements.forEach(pl=>{ buckets[(Math.random()*buckets.length)|0].push(pl); });
+
   const N=placements.length;
   const trunk=new THREE.InstancedMesh(trunkGeo, trunkMat, N);
-  const c1=new THREE.InstancedMesh(cGeo1, leafMat, N);
-  const c2=new THREE.InstancedMesh(cGeo2, leafMat, N);
-  c1.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(N*3),3);
-  c2.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(N*3),3);
-  const leafCols=[
-    [0.114,0.418,0.196],[0.165,0.502,0.251],[0.078,0.353,0.157],
-    [0.133,0.418,0.208],[0.102,0.361,0.165],[0.176,0.478,0.227]
-  ];
   const tmpQuat=new THREE.Quaternion();
   const yAxis=new THREE.Vector3(0,1,0);
+  // All-trunk pass first (single InstancedMesh).
   placements.forEach((pl,i)=>{
     const sc=pl.s;
     tmpQuat.setFromAxisAngle(yAxis, pl.r);
-    const baseT=new THREE.Matrix4().compose(
+    const m=new THREE.Matrix4().compose(
       new THREE.Vector3(pl.x, .75*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
-    trunk.setMatrixAt(i, baseT);
-    tmpQuat.setFromAxisAngle(yAxis, pl.r); // c1 uses same rot
-    const m1=new THREE.Matrix4().compose(
-      new THREE.Vector3(pl.x, 2.5*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
-    c1.setMatrixAt(i, m1);
-    tmpQuat.setFromAxisAngle(yAxis, pl.r + 0.55);
-    const m2=new THREE.Matrix4().compose(
-      new THREE.Vector3(pl.x, 4.2*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
-    c2.setMatrixAt(i, m2);
-    const col = leafCols[(Math.random()*leafCols.length)|0];
-    c1.instanceColor.array[i*3  ]=col[0]; c1.instanceColor.array[i*3+1]=col[1]; c1.instanceColor.array[i*3+2]=col[2];
-    c2.instanceColor.array[i*3  ]=col[0]; c2.instanceColor.array[i*3+1]=col[1]; c2.instanceColor.array[i*3+2]=col[2];
+    trunk.setMatrixAt(i, m);
   });
   trunk.instanceMatrix.needsUpdate=true;
-  c1.instanceMatrix.needsUpdate=true; c1.instanceColor.needsUpdate=true;
-  c2.instanceMatrix.needsUpdate=true; c2.instanceColor.needsUpdate=true;
-  scene.add(trunk); scene.add(c1); scene.add(c2);
+  scene.add(trunk);
+
+  // Per-bucket leaf passes. Each bucket gets its own pair of InstancedMeshes.
+  buckets.forEach((bucket, bi)=>{
+    if (!bucket.length) return;
+    const c1=new THREE.InstancedMesh(cGeo1, leafMats[bi], bucket.length);
+    const c2=new THREE.InstancedMesh(cGeo2, leafMats[bi], bucket.length);
+    bucket.forEach((pl,i)=>{
+      const sc=pl.s;
+      tmpQuat.setFromAxisAngle(yAxis, pl.r);
+      const m1=new THREE.Matrix4().compose(
+        new THREE.Vector3(pl.x, 2.5*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
+      c1.setMatrixAt(i, m1);
+      tmpQuat.setFromAxisAngle(yAxis, pl.r + 0.55);
+      const m2=new THREE.Matrix4().compose(
+        new THREE.Vector3(pl.x, 4.2*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
+      c2.setMatrixAt(i, m2);
+    });
+    c1.instanceMatrix.needsUpdate=true;
+    c2.instanceMatrix.needsUpdate=true;
+    scene.add(c1); scene.add(c2);
+  });
 }
 
 function buildEnvironmentTrees(){
