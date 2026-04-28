@@ -159,3 +159,36 @@ function playCollectSound(){
   // Pentatonic chime
   [523,659,784,1047].forEach((f,i)=>beep(f,.22,.35,i*.07,'sine'));
 }
+
+// Short engine rev burst — used in the selection screen when the player
+// switches cars. Per-type tone: F1 high & sharp, super medium-high, muscle
+// low growl, electric soft whoosh. ~0.5s total.
+function playEngineRev(carType){
+  if(!audioCtx)return;
+  const t = audioCtx.currentTime;
+  const cfg = {
+    f1:       {fStart:120, fPeak:520, cutoff:1800, gain:.20, len:.42, wave:'sawtooth', noiseQ:2.5, noiseG:.06},
+    super:    {fStart:90,  fPeak:380, cutoff:1300, gain:.22, len:.50, wave:'sawtooth', noiseQ:2.0, noiseG:.05},
+    muscle:   {fStart:55,  fPeak:200, cutoff:700,  gain:.28, len:.62, wave:'sawtooth', noiseQ:1.6, noiseG:.07},
+    electric: {fStart:300, fPeak:1100,cutoff:2400, gain:.14, len:.40, wave:'sine',     noiseQ:0.8, noiseG:.02}
+  }[carType] || {fStart:90, fPeak:380, cutoff:1300, gain:.22, len:.50, wave:'sawtooth', noiseQ:2.0, noiseG:.05};
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  const lp = audioCtx.createBiquadFilter();
+  o.type = cfg.wave;
+  lp.type = 'lowpass';
+  lp.frequency.value = cfg.cutoff;
+  // Throttle blip: rapid rise to peak, then slow decel back near idle.
+  o.frequency.setValueAtTime(cfg.fStart, t);
+  o.frequency.exponentialRampToValueAtTime(cfg.fPeak, t + cfg.len * 0.30);
+  o.frequency.exponentialRampToValueAtTime(cfg.fStart * 1.25, t + cfg.len);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(cfg.gain, t + 0.04);
+  g.gain.exponentialRampToValueAtTime(0.001, t + cfg.len);
+  o.connect(lp); lp.connect(g); g.connect(_dst());
+  o.start(t); o.stop(t + cfg.len + 0.05);
+  // Combustion grit noise layer (skipped for electric).
+  if(carType !== 'electric'){
+    _noise(cfg.len * 0.7, cfg.fPeak * 1.6, cfg.noiseQ, cfg.noiseG);
+  }
+}
