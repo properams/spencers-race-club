@@ -41,6 +41,33 @@ function initCarPreview(){
   _prevScene.fog=new THREE.FogExp2(0x060010,.08);
   var floor=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.05,32),new THREE.MeshLambertMaterial({color:0x111122}));
   floor.position.y=-.05;_prevScene.add(floor);
+  // Pink turntable ring (subtle accent)
+  var ring=new THREE.Mesh(new THREE.TorusGeometry(3.4,.02,4,48),new THREE.MeshBasicMaterial({color:0xff3a8c,transparent:true,opacity:.45}));
+  ring.rotation.x=Math.PI/2;ring.position.y=.005;_prevScene.add(ring);
+  _initPreviewDrag(cvs);
+}
+
+// Drag-to-rotate: while dragging the user controls the rotation. After
+// release we keep their offset for ~2s, then resume the auto-rotate idle
+// loop. updateCarPreview reads _prevDragHoldT to skip auto-rotate.
+let _prevDragging=false,_prevDragLastX=0,_prevDragHoldT=0;
+function _initPreviewDrag(cvs){
+  if(!cvs||cvs.dataset.dragWired==='1')return;
+  cvs.dataset.dragWired='1';
+  const onDown=(x)=>{_prevDragging=true;_prevDragLastX=x;};
+  const onMove=(x)=>{
+    if(!_prevDragging||!_prevCarMesh)return;
+    const dx=x-_prevDragLastX;
+    _prevCarMesh.rotation.y+=dx*0.012;
+    _prevDragLastX=x;
+  };
+  const onUp=()=>{_prevDragging=false;_prevDragHoldT=2.0;};
+  cvs.addEventListener('mousedown',e=>onDown(e.clientX));
+  window.addEventListener('mousemove',e=>onMove(e.clientX));
+  window.addEventListener('mouseup',onUp);
+  cvs.addEventListener('touchstart',e=>{if(e.touches[0])onDown(e.touches[0].clientX);},{passive:true});
+  window.addEventListener('touchmove',e=>{if(e.touches[0])onMove(e.touches[0].clientX);},{passive:true});
+  window.addEventListener('touchend',onUp);
 }
 
 function setPreviewCar(defId){
@@ -59,7 +86,8 @@ function updateCarPreview(dt){
   if(gameState!=='SELECT')return;
   if(!_prevScene)initCarPreview();
   if(!_prevRen||!_prevScene||!_prevCam)return;
-  if(_prevCarMesh)_prevCarMesh.rotation.y+=dt*0.6;
+  if(_prevDragHoldT>0)_prevDragHoldT=Math.max(0,_prevDragHoldT-dt);
+  if(_prevCarMesh&&!_prevDragging&&_prevDragHoldT<=0)_prevCarMesh.rotation.y+=dt*0.6;
   _prevRen.render(_prevScene,_prevCam);
 }
 
