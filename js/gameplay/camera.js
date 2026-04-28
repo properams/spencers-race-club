@@ -88,8 +88,12 @@ function updateCamera(dt){
 
   // ── Chase cam (default, _camView===0) ──────────────────
   // Mobile uses the SAME camera offset as desktop so the car has the same size/position on screen.
-  // Screen-size adaptation happens via HFOV only (a small widening on phones below).
-  _camV1.set(0,5.8,13.5);
+  // Screen-size adaptation happens via HFOV/VFOV only (zie baseFov hieronder).
+  // In portrait wordt de offset iets dichterbij gezet zodat de auto niet verloren raakt
+  // in een verticale frame met smal blikveld.
+  const _portrait=(camera.aspect||(innerWidth/innerHeight))<1;
+  if(_portrait)_camV1.set(0,4.6,10.5);
+  else _camV1.set(0,5.8,13.5);
   _camV1.applyQuaternion(car.mesh.quaternion);
   _camV2.copy(car.mesh.position).add(_camV1);
   camPos.lerp(_camV2,Math.min(1,dt*7));
@@ -106,16 +110,25 @@ function updateCamera(dt){
   if(camShake>0){const s=camShake*.5;px+=(Math.random()-.5)*s;py+=(Math.random()-.5)*s*.4;pz+=(Math.random()-.5)*s;camShake=Math.max(0,camShake-dt*2.5);}
     if(_comboTimer>0){_comboTimer-=dt;if(_comboTimer<=0)resetCombo();}
   camera.position.set(px,Math.max(.5,py),pz);camera.lookAt(camTgt);
-  // Dynamic FOV — wider at high speed for sense of velocity, more extreme on nitro
-  // Derive vertical FOV from a constant target horizontal FOV so the framing feels the same on
-  // every aspect (desktop 16:9, phone 19:9, iPad Air landscape 1.71, iPad classic 4:3, etc.).
-  // Phones get a wider target HFOV for better speed sensation on small screens.
-  const TARGET_HFOV_DEG=window._isMobile?96:92;
+  // Dynamic FOV — wider at high speed for sense of velocity, more extreme on nitro.
+  // Landscape: derive vertical FOV from a constant horizontal FOV zodat de framing
+  // hetzelfde voelt op desktop 16:9, phone 19:9, iPad 1.71 en iPad 4:3.
+  // Portrait (aspect<1): die HFOV-formule blaast VFOV op tot 130°+ waardoor alles weg-zoomt.
+  // Daarom in portrait een vaste verticale FOV gebruiken — phones iets ruimer dan tablets.
   const _asp=camera.aspect||(innerWidth/innerHeight);
-  const baseFov=2*Math.atan(Math.tan(TARGET_HFOV_DEG*Math.PI/360)/_asp)*180/Math.PI;
+  let baseFov;
+  if(_asp<1){
+    baseFov=window._isMobile?72:68;
+  }else{
+    const TARGET_HFOV_DEG=window._isMobile?96:92;
+    baseFov=2*Math.atan(Math.tan(TARGET_HFOV_DEG*Math.PI/360)/_asp)*180/Math.PI;
+  }
   // Sterker FOV-kick bij boost/nitro voor "speed punch" gevoel — bloom maakt
   // emissive props feller, dus de wider-FOV-pulse landt visueel zichtbaarder.
-  const tFov=baseFov+Math.abs(car.speed)/car.def.topSpd*22+(nitroActive?20:0)+(car.boostTimer>0?10:0);
+  // In portrait worden de kickers gehalveerd zodat de totaal-FOV niet alsnog boven ~95° komt
+  // en het beeld z'n cinematic framing behoudt.
+  const _kickScale=_portrait?0.5:1;
+  const tFov=baseFov+(Math.abs(car.speed)/car.def.topSpd*22+(nitroActive?20:0)+(car.boostTimer>0?10:0))*_kickScale;
   // FOV reageert sneller wanneer boost net start (high-pass via dt*5 ipv 3.5)
   const fovRate=(nitroActive||car.boostTimer>0)?5.0:3.0;
   camera.fov+=(tFov-camera.fov)*Math.min(1,dt*fovRate);
