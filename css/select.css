@@ -6,12 +6,34 @@
   background:radial-gradient(ellipse at 30% 50%,#0d0020,#050010,#000005);
   justify-content:flex-start;padding:0;overflow:hidden
 }
+/* Dot field + ultra-faint scanlines layered together for a CRT feel. */
 #sSelect::before{
   content:'';position:absolute;inset:0;
-  background-image:radial-gradient(circle,rgba(180,100,255,.3) 1px,transparent 1px),
-                   radial-gradient(circle,rgba(100,200,255,.15) .7px,transparent .7px);
-  background-size:32px 32px,20px 20px;background-position:3px 4px,12px 14px;
-  pointer-events:none;opacity:.2;z-index:0
+  background-image:
+    repeating-linear-gradient(0deg,transparent 0,transparent 1px,rgba(255,255,255,.025) 1px,rgba(255,255,255,.025) 2px),
+    radial-gradient(circle,rgba(180,100,255,.3) 1px,transparent 1px),
+    radial-gradient(circle,rgba(100,200,255,.15) .7px,transparent .7px);
+  background-size:100% 2px,32px 32px,20px 20px;
+  background-position:0 0,3px 4px,12px 14px;
+  pointer-events:none;opacity:.65;z-index:0
+}
+/* Perspective grid floor at the bottom — Tron-style horizon. Faded to
+   transparent at the top via a mask gradient. Hidden when motion is
+   reduced or on small phones to keep the masked-transformed layer off
+   low-end paint paths. */
+#sSelect::after{
+  content:'';position:absolute;left:-20%;right:-20%;bottom:0;height:240px;
+  background-image:
+    linear-gradient(rgba(255,45,111,.35) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,45,111,.35) 1px,transparent 1px);
+  background-size:46px 46px;
+  pointer-events:none;z-index:0;opacity:.18;
+  transform:perspective(320px) rotateX(58deg);transform-origin:50% 100%;
+  mask-image:linear-gradient(transparent 0%,black 65%);
+  -webkit-mask-image:linear-gradient(transparent 0%,black 65%)
+}
+@media (prefers-reduced-motion:reduce),(max-width:600px){
+  #sSelect::after{display:none}
 }
 
 /* ── HEADER ──────────────────────────────────────────────────────────── */
@@ -24,7 +46,14 @@
 .selHeaderRight{display:flex;gap:8px;align-items:center}
 .selTitle{
   font-family:'Orbitron',sans-serif;font-size:clamp(13px,1.6vw,18px);
-  letter-spacing:5px;margin:0;color:#ff3a8c;font-weight:700
+  letter-spacing:5px;margin:0;color:#ff3a8c;font-weight:700;
+  text-shadow:0 0 10px rgba(255,58,140,.55);
+  animation:titleFlicker 8s infinite
+}
+@keyframes titleFlicker{
+  0%,4%,5.5%,7%,9%,100%{opacity:1}
+  4.5%{opacity:.78}
+  6%,8%{opacity:.92}
 }
 .selSubtitle{font-family:'Rajdhani',sans-serif;font-size:11px;color:#6e5a9a;letter-spacing:2px}
 .selBack{
@@ -42,7 +71,7 @@
 
 /* ── BODY 3-col grid ─────────────────────────────────────────────────── */
 .selBody{
-  display:grid;grid-template-columns:230px 1fr 260px;gap:0;
+  display:grid;grid-template-columns:240px 1fr 280px;gap:0;
   flex:1;overflow:hidden;width:100%;
   height:calc(100vh - 54px);height:calc(100dvh - 54px);
   position:relative;z-index:1
@@ -61,32 +90,59 @@
   letter-spacing:3px;margin-bottom:8px
 }
 .tierTabs{
-  display:flex;gap:4px;flex-wrap:wrap;
-  font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1px
+  display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;
+  font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1px;
+  scrollbar-width:none;-ms-overflow-style:none
 }
+.tierTabs::-webkit-scrollbar{display:none}
 .tierTab{
-  flex:1 1 auto;min-width:34px;padding:5px 4px;text-align:center;cursor:pointer;
-  color:#6e5a9a;border-bottom:1px solid #2a1f4a;transition:color .15s,border-color .15s;
+  flex:1 0 auto;min-width:34px;padding:5px 6px;text-align:center;cursor:pointer;
+  color:#6e5a9a;border-bottom:1px solid #2a1f4a;transition:color .15s,border-color .15s,text-shadow .15s;
   white-space:nowrap
 }
 .tierTab:hover{color:#c9b9ff}
-.tierTabSel{color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:600}
+.tierTabSel{
+  color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:600;
+  text-shadow:0 0 8px rgba(255,58,140,.5)
+}
+
+/* Garage unlock progress bar — sits under the GARAGE label, gives a
+   one-glance read of catalogue completion. */
+.garageProg{
+  height:3px;background:rgba(255,255,255,.05);border-radius:2px;
+  overflow:hidden;margin-top:8px
+}
+.garageProgFill{
+  height:100%;background:linear-gradient(90deg,#ff3a8c,#c41e6a);
+  border-radius:2px;transition:width .3s ease;
+  box-shadow:0 0 6px rgba(255,58,140,.6)
+}
 
 .carGrid{display:flex;flex-direction:column;gap:0;width:100%}
 .carCard{
+  --team:#6e5a9a;
   background:transparent;border:none;border-bottom:1px solid #1a0f3a;
-  border-left:2px solid transparent;padding:10px 12px;cursor:pointer;
-  transition:background .15s,border-color .15s;overflow:hidden;position:relative;
+  border-left:3px solid var(--team);padding:10px 12px;cursor:pointer;
+  transition:background .15s,border-left-width .15s,box-shadow .2s;
+  overflow:hidden;position:relative;
   display:flex;align-items:center;gap:10px
 }
 .carCard:hover{background:rgba(255,58,140,.06)}
 .carCard.sel{
-  background:rgba(255,58,140,.10);
-  border-left-color:#ff3a8c
+  background:linear-gradient(90deg,rgba(255,58,140,.18),rgba(255,58,140,.04));
+  border-left-width:5px;border-left-color:#ff3a8c;
+  box-shadow:inset 0 0 18px rgba(255,58,140,.12),
+             0 0 12px rgba(255,58,140,.25)
+}
+.carCard.sel::after{
+  content:'▶';position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  color:#ff3a8c;font-size:9px;letter-spacing:1px;
+  text-shadow:0 0 8px rgba(255,58,140,.8);
+  font-family:'Orbitron',sans-serif
 }
 .carSwatch{
   width:24px;height:24px;border-radius:6px;flex-shrink:0;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10)
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10),0 0 6px var(--team)
 }
 .carInfo{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
 .carBrand{
@@ -97,20 +153,24 @@
   font-family:'Rajdhani',sans-serif;font-size:11px;color:#fff;
   letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
-.carCard.locked{opacity:.45;cursor:not-allowed}
-.carCard.locked:hover{background:transparent}
+.carCard.locked{opacity:.55;cursor:not-allowed;border-left-color:#2a1f4a}
+.carCard.locked .carSwatch{filter:grayscale(.85);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.carCard.locked:hover{background:rgba(255,255,255,.02)}
+.carCardTrail{
+  display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0
+}
+.carLockMini{font-size:10px;color:#6e5a9a;line-height:1}
 .carPriceLbl{
   font-family:'Rajdhani',sans-serif;font-size:10px;color:#ffcc44;
-  letter-spacing:1px;margin-left:auto
+  letter-spacing:1px;line-height:1
 }
-.carLockIcon{
-  font-size:11px;color:#6e5a9a;margin-left:auto;flex-shrink:0
-}
+.carPriceLbl.afford{color:#7dffb0;text-shadow:0 0 6px rgba(125,255,176,.4)}
+.carLockIcon{font-size:11px;color:#6e5a9a;line-height:1}
 
 /* ── CENTER: hero preview ───────────────────────────────────────────── */
 .selCenter{
-  display:flex;flex-direction:column;padding:14px 18px 12px;
-  gap:6px;position:relative;overflow:hidden
+  display:flex;flex-direction:column;padding:14px 22px 14px;
+  gap:8px;position:relative;overflow:hidden;min-height:0
 }
 .selCenter::before{
   content:'';position:absolute;inset:0;
@@ -130,20 +190,32 @@
   letter-spacing:1.5px;padding-left:2px;margin-bottom:4px
 }
 .prevCanvasWrap{
-  position:relative;width:100%;max-width:560px;
-  aspect-ratio:400/220;margin:0 auto;
+  position:relative;width:100%;max-width:760px;
+  flex:1 1 auto;min-height:280px;margin:0 auto;
   border:1px solid #2a1f4a;border-radius:12px;
   background:radial-gradient(ellipse at 50% 60%,#2a1a4a,#0d0820);
   overflow:hidden
 }
+/* Magenta L-shaped corner brackets — anchors the preview as a viewport. */
+.prevCorner{
+  position:absolute;width:18px;height:18px;pointer-events:none;
+  border:0 solid #ff2d6f;
+  filter:drop-shadow(0 0 5px rgba(255,45,111,.7))
+}
+.prevCornerTL{top:7px;left:7px;border-top-width:2px;border-left-width:2px;border-top-left-radius:5px}
+.prevCornerTR{top:7px;right:7px;border-top-width:2px;border-right-width:2px;border-top-right-radius:5px}
+.prevCornerBL{bottom:7px;left:7px;border-bottom-width:2px;border-left-width:2px;border-bottom-left-radius:5px}
+.prevCornerBR{bottom:7px;right:7px;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:5px}
 #carPreviewCvs{
   width:100%;height:100%;display:block;cursor:grab
 }
 #carPreviewCvs:active{cursor:grabbing}
 .prevHint{
-  position:absolute;top:8px;right:10px;
-  font-family:'Orbitron',sans-serif;font-size:8px;color:#6e5a9a;
-  letter-spacing:2px;pointer-events:none;opacity:.7
+  position:absolute;top:10px;right:12px;
+  font-family:'Orbitron',sans-serif;font-size:8.5px;color:rgba(255,255,255,.6);
+  letter-spacing:2.5px;pointer-events:none;opacity:1;
+  text-shadow:0 0 6px rgba(255,45,111,.4);
+  transition:opacity .8s ease
 }
 .colorRow{
   position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
@@ -157,71 +229,122 @@
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)
 }
 .colorDot:hover{transform:scale(1.12)}
-.colorDot.cSel{border-color:#fff;transform:scale(1.10)}
+.colorDot.cSel{
+  border-color:#fff;transform:scale(1.10);
+  box-shadow:0 0 10px rgba(255,255,255,.6),0 0 18px rgba(255,45,111,.5),
+             inset 0 0 0 1px rgba(255,255,255,.2)
+}
 
-/* ── STATS BAR (4-card grid) ────────────────────────────────────────── */
+/* ── STATS BAR (vertical stack of 4 horizontal rows) ────────────────── */
 .statBars{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px
+  display:flex;flex-direction:column;gap:6px;margin-top:4px;flex-shrink:0
 }
 .statCard{
-  background:#1a0f3a;border-radius:6px;padding:7px 9px;
-  display:flex;flex-direction:column;gap:4px
+  background:#1a0f3a;border-radius:6px;padding:7px 12px;
+  display:grid;grid-template-columns:64px 1fr 56px;align-items:center;gap:12px
 }
 .statCardLbl{
-  font-family:'Orbitron',sans-serif;font-size:8px;color:#6e5a9a;
-  letter-spacing:3px
+  font-family:'Orbitron',sans-serif;font-size:9px;color:#6e5a9a;
+  letter-spacing:2.5px
 }
 .statCardBar{
-  height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden
+  position:relative;height:6px;background:rgba(255,255,255,.05);
+  border-radius:3px;overflow:hidden
 }
-.statCardFill{height:100%;border-radius:2px;transition:width .3s ease}
-.statCardVal{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:500;letter-spacing:.5px}
+.statCardGhost{
+  position:absolute;top:0;left:0;height:100%;
+  background:rgba(255,255,255,.08);border-radius:3px
+}
+.statCardFill{
+  position:relative;height:100%;border-radius:3px;
+  transition:width .22s ease-out
+}
+.statCardVal{
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:500;
+  letter-spacing:.5px;text-align:right;white-space:nowrap
+}
+.statCardValMax{font-size:9px;color:#4a3a6a;letter-spacing:.5px}
 
 /* ── RIGHT: settings + rival + start ────────────────────────────────── */
 .selRight{
-  display:flex;flex-direction:column;padding:14px 18px;gap:14px;
+  display:flex;flex-direction:column;padding:14px 18px;gap:12px;
   overflow-y:auto;background:rgba(0,0,0,.15);border-left:1px solid #2a1f4a
 }
-.setSeg{display:flex;flex-direction:column;gap:6px}
+.setSeg{
+  display:flex;flex-direction:column;gap:6px;
+  padding:9px 11px 8px;border-radius:8px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06)
+}
 .setLbl{
   font-family:'Orbitron',sans-serif;font-size:9px;color:#6e5a9a;
-  letter-spacing:3px;padding-left:4px
+  letter-spacing:3px;padding-left:2px
 }
 .setOpts{display:flex;gap:0}
 .setOpt{
   flex:1;padding:7px 0;text-align:center;cursor:pointer;
   font-family:'Rajdhani',sans-serif;font-size:13px;color:#6e5a9a;
   letter-spacing:1px;border-bottom:1px solid #2a1f4a;
-  transition:color .15s,border-color .15s;user-select:none
+  transition:color .15s,border-color .15s,text-shadow .15s;user-select:none
 }
 .setOpt:hover{color:#c9b9ff}
-.setOptSel{color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:500}
+.setOptSel{
+  color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:500;
+  text-shadow:0 0 8px rgba(255,58,140,.45)
+}
 
-.rivalSeg{display:flex;flex-direction:column;gap:3px;padding:4px 4px 0}
+.rivalSeg{
+  display:flex;flex-direction:column;gap:6px;
+  padding:9px 11px 10px;border-radius:8px;
+  background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06)
+}
+.rivalCard{
+  display:flex;align-items:center;gap:11px;padding:2px
+}
+.rivalIcon{
+  width:36px;height:36px;flex-shrink:0;display:flex;align-items:center;
+  justify-content:center;border-radius:8px;
+  background:radial-gradient(circle,rgba(255,58,140,.25),rgba(255,58,140,.04));
+  border:1px solid rgba(255,58,140,.3);font-size:18px;line-height:1
+}
+.rivalInfo{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.rivalBestLapLbl{
+  font-family:'Orbitron',sans-serif;font-size:7.5px;color:#6e5a9a;
+  letter-spacing:2.5px
+}
 .rivalCar{
-  font-family:'Rajdhani',sans-serif;font-size:13px;color:#c9b9ff;
-  letter-spacing:.5px;padding-left:0
+  font-family:'Rajdhani',sans-serif;font-size:12px;color:#c9b9ff;
+  letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
 .rivalTime{
   font-family:'Rajdhani',sans-serif;font-size:11px;color:#ffcc44;
-  letter-spacing:1px;padding-left:0
+  letter-spacing:1px
 }
 
 .startBtnWrap{margin-top:auto;display:flex;flex-direction:column;gap:6px}
 .startBtn{
   font-family:'Orbitron',sans-serif;font-size:14px;color:#fff;
-  background:linear-gradient(90deg,#ff3a8c,#c41e6a);border:none;border-radius:8px;
-  padding:14px 0;cursor:pointer;letter-spacing:2px;font-weight:600;
+  background:linear-gradient(90deg,#ff3a8c,#c41e6a);border:none;border-radius:10px;
+  padding:11px 0 9px;cursor:pointer;letter-spacing:2px;font-weight:600;
   box-shadow:0 0 20px rgba(255,58,140,.35),0 6px 20px rgba(0,0,0,.35);
   transition:transform .12s,box-shadow .15s;
-  display:flex;align-items:center;justify-content:center;gap:10px;width:100%
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;width:100%
 }
-.startBtn:hover{transform:translateY(-1px);box-shadow:0 0 28px rgba(255,58,140,.55),0 8px 28px rgba(0,0,0,.45)}
-.startBtn:active{transform:translateY(0)}
+.startBtnLine{display:flex;align-items:center;gap:10px}
+.startBtn:hover{
+  transform:translateY(-1px);
+  animation:startBtnPulse 1.6s ease-in-out infinite
+}
+.startBtn:active{transform:translateY(0);animation:none}
+@keyframes startBtnPulse{
+  0%,100%{box-shadow:0 0 24px rgba(255,58,140,.5),0 8px 24px rgba(0,0,0,.4)}
+  50%{box-shadow:0 0 40px rgba(255,58,140,.85),0 10px 30px rgba(0,0,0,.45)}
+}
 .startBtnArrow{font-size:12px;opacity:.85}
 .raceSummary{
-  font-family:'Rajdhani',sans-serif;font-size:11px;color:#6e5a9a;
-  letter-spacing:1.5px;text-align:center
+  font-family:'Rajdhani',sans-serif;font-size:10px;
+  color:rgba(255,255,255,.75);
+  letter-spacing:1.5px;text-align:center;font-weight:400
 }
 
 /* ── MOBILE REFLOW (<768px) ─────────────────────────────────────────── */
@@ -253,22 +376,29 @@
     background:rgba(255,58,140,.15);
     box-shadow:inset 0 0 0 1px #ff3a8c
   }
+  .carCard.sel::after{display:none}
   .selCenter{
     order:2;padding:10px 14px;gap:4px
   }
   .prevBrandLine{font-size:9px;letter-spacing:3px}
   .prevModelLine{font-size:18px}
   .prevSpecsLine{font-size:10px}
-  .prevCanvasWrap{min-height:200px;max-height:240px}
-  .statBars{grid-template-columns:repeat(4,1fr);gap:4px}
-  .statCard{padding:5px 7px}
+  .prevCanvasWrap{flex:0 0 auto;min-height:200px;max-height:240px;aspect-ratio:16/9}
+  .statBars{display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-direction:initial}
+  .statCard{
+    grid-template-columns:1fr;display:flex;flex-direction:column;
+    gap:4px;padding:5px 8px;align-items:stretch
+  }
   .statCardLbl{font-size:7px;letter-spacing:2px}
-  .statCardVal{font-size:10px}
+  .statCardVal{font-size:10px;text-align:left}
+  .statCardValMax{font-size:8px}
   .selRight{
     order:3;padding:10px 14px 90px;gap:10px;
     border-left:none;border-top:1px solid #2a1f4a
   }
-  .setSeg{gap:4px}
+  .setSeg{gap:4px;padding:7px 9px 6px}
+  .rivalSeg{padding:7px 9px 8px}
+  .rivalIcon{width:32px;height:32px;font-size:16px}
   .setOpt{padding:8px 0;font-size:13px;min-height:36px}
   /* Pin start button to bottom on mobile so it's always reachable */
   .startBtnWrap{

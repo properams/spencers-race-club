@@ -5,6 +5,8 @@
 // Car-preview state — gebruikt in initCarPreview/updateCarPreview.
 // (carPreviews dict verwijderd samen met buildCarPreviews — was de enige populator.)
 let _prevRen=null,_prevScene=null,_prevCam=null,_prevCarMesh=null,_prevDefId=-1;
+let _prevPodiumGrid=null,_prevPodiumGridTex=null,_prevRimRing=null,_prevHintFaded=false,_prevHasInteracted=false;
+let _prevSizeW=0,_prevSizeH=0;
 const _unlockHints=[
   '','','','',
   '🏆 Finish P1',       // 4 Red Bull
@@ -29,22 +31,91 @@ function initCarPreview(){
     if(ctx){ctx.fillStyle='#080818';ctx.fillRect(0,0,cvs.width,cvs.height);ctx.fillStyle='rgba(180,80,255,0.3)';ctx.font='bold 13px Orbitron,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('3D PREVIEW',cvs.width/2,cvs.height/2);}
     return;
   }
-  _prevRen.setPixelRatio(Math.min(devicePixelRatio,2));_prevRen.setSize(400,220,false);
+  _prevRen.setPixelRatio(Math.min(devicePixelRatio,2));
+  _resizePreviewRenderer(cvs);
   _prevRen.toneMapping=THREE.ACESFilmicToneMapping;_prevRen.toneMappingExposure=1.35;
   ThreeCompat.applyRendererColorSpace(_prevRen);_prevRen.setClearColor(0x050812,1);
   _prevScene=new THREE.Scene();
-  _prevCam=new THREE.PerspectiveCamera(36,400/220,.1,100);_prevCam.position.set(4.5,2.2,5.5);_prevCam.lookAt(0,.5,0);
-  var sun=new THREE.DirectionalLight(0xfff8f0,2.5);sun.position.set(4,8,5);_prevScene.add(sun);
-  var fill=new THREE.DirectionalLight(0xaabbff,.8);fill.position.set(-3,2,3);_prevScene.add(fill);
-  var rim=new THREE.DirectionalLight(0xcc88ff,1.2);rim.position.set(-2,3,-5);_prevScene.add(rim);
-  _prevScene.add(new THREE.AmbientLight(0x334466,.8));
-  _prevScene.fog=new THREE.FogExp2(0x060010,.08);
-  var floor=new THREE.Mesh(new THREE.CylinderGeometry(4,4,.05,32),new THREE.MeshLambertMaterial({color:0x111122}));
-  floor.position.y=-.05;_prevScene.add(floor);
-  // Pink turntable ring (subtle accent)
-  var ring=new THREE.Mesh(new THREE.TorusGeometry(3.4,.02,4,48),new THREE.MeshBasicMaterial({color:0xff3a8c,transparent:true,opacity:.45}));
-  ring.rotation.x=Math.PI/2;ring.position.y=.005;_prevScene.add(ring);
+  _prevCam=new THREE.PerspectiveCamera(34,(_prevSizeW||400)/(_prevSizeH||220),.1,100);
+  _prevCam.position.set(4.8,1.5,5.6);_prevCam.lookAt(0,.55,0);
+  // Cinematic 3-point lighting: warm key from front-left, cool fill from
+  // right, magenta rim from behind for cyberpunk silhouette.
+  var key=new THREE.DirectionalLight(0xfff0e0,2.3);key.position.set(-3,5,5);_prevScene.add(key);
+  var fill=new THREE.DirectionalLight(0x88aaff,.9);fill.position.set(4,2,3);_prevScene.add(fill);
+  var rim=new THREE.DirectionalLight(0xff44aa,2.0);rim.position.set(0,3,-6);_prevScene.add(rim);
+  _prevScene.add(new THREE.AmbientLight(0x223344,.7));
+  _prevScene.fog=new THREE.FogExp2(0x060010,.06);
+  // Hexagonal podium: top deck (slim slab) + emissive neon ring at the rim.
+  var hexGeo=new THREE.CylinderGeometry(3.4,3.6,.16,6);
+  var hexMat=new THREE.MeshStandardMaterial({color:0x0c0820,metalness:.4,roughness:.6,emissive:0x1a0033,emissiveIntensity:.3});
+  var hex=new THREE.Mesh(hexGeo,hexMat);hex.position.y=-.08;_prevScene.add(hex);
+  // Neon edge ring sitting on top of the deck — emissive magenta.
+  var ring=new THREE.Mesh(
+    new THREE.TorusGeometry(3.35,.025,8,64),
+    new THREE.MeshBasicMaterial({color:0xff2d6f})
+  );
+  ring.rotation.x=Math.PI/2;ring.position.y=.012;_prevScene.add(ring);
+  // Scrolling grid texture sitting flush on the deck — procedural canvas.
+  _prevPodiumGridTex=_makePodiumGridTexture();
+  var gridMat=new THREE.MeshBasicMaterial({map:_prevPodiumGridTex,transparent:true,opacity:.55,depthWrite:false});
+  var gridGeo=new THREE.CircleGeometry(3.25,32);
+  _prevPodiumGrid=new THREE.Mesh(gridGeo,gridMat);
+  _prevPodiumGrid.rotation.x=-Math.PI/2;_prevPodiumGrid.position.y=.011;
+  _prevScene.add(_prevPodiumGrid);
+  // Soft rim glow disc underneath — gives the podium a halo on the floor.
+  var glowTex=_makeRadialGlowTexture('#ff2d6f');
+  _prevRimRing=new THREE.Mesh(
+    new THREE.PlaneGeometry(11,11),
+    new THREE.MeshBasicMaterial({map:glowTex,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending})
+  );
+  _prevRimRing.rotation.x=-Math.PI/2;_prevRimRing.position.y=-.07;
+  _prevScene.add(_prevRimRing);
   _initPreviewDrag(cvs);
+  _initPreviewResize(cvs);
+}
+
+function _makePodiumGridTexture(){
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const g=c.getContext('2d');
+  g.fillStyle='rgba(8,4,24,0)';g.fillRect(0,0,256,256);
+  g.strokeStyle='rgba(255,45,111,.55)';g.lineWidth=1;
+  for(let i=0;i<=8;i++){
+    const p=Math.round((i/8)*256)+.5;
+    g.beginPath();g.moveTo(p,0);g.lineTo(p,256);g.stroke();
+    g.beginPath();g.moveTo(0,p);g.lineTo(256,p);g.stroke();
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);
+  return t;
+}
+
+function _makeRadialGlowTexture(hex){
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const g=c.getContext('2d');
+  const grd=g.createRadialGradient(128,128,8,128,128,128);
+  grd.addColorStop(0,hex);grd.addColorStop(.35,'rgba(255,45,111,.45)');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=grd;g.fillRect(0,0,256,256);
+  return new THREE.CanvasTexture(c);
+}
+
+function _resizePreviewRenderer(cvs){
+  if(!_prevRen||!cvs)return;
+  const w=Math.max(2,cvs.clientWidth|0),h=Math.max(2,cvs.clientHeight|0);
+  if(w===_prevSizeW&&h===_prevSizeH)return;
+  _prevSizeW=w;_prevSizeH=h;
+  _prevRen.setSize(w,h,false);
+  if(_prevCam){_prevCam.aspect=w/h;_prevCam.updateProjectionMatrix();}
+}
+
+function _initPreviewResize(cvs){
+  if(!cvs||cvs.dataset.resizeWired==='1')return;
+  cvs.dataset.resizeWired='1';
+  if(typeof ResizeObserver!=='undefined'){
+    new ResizeObserver(()=>_resizePreviewRenderer(cvs)).observe(cvs);
+  }else{
+    window.addEventListener('resize',()=>_resizePreviewRenderer(cvs));
+  }
 }
 
 // Drag-to-rotate: while dragging the user controls the rotation. After
@@ -54,7 +125,7 @@ let _prevDragging=false,_prevDragLastX=0,_prevDragHoldT=0;
 function _initPreviewDrag(cvs){
   if(!cvs||cvs.dataset.dragWired==='1')return;
   cvs.dataset.dragWired='1';
-  const onDown=(x)=>{_prevDragging=true;_prevDragLastX=x;};
+  const onDown=(x)=>{_prevDragging=true;_prevDragLastX=x;_prevHasInteracted=true;};
   const onMove=(x)=>{
     if(!_prevDragging||!_prevCarMesh)return;
     const dx=x-_prevDragLastX;
@@ -86,8 +157,26 @@ function updateCarPreview(dt){
   if(gameState!=='SELECT')return;
   if(!_prevScene)initCarPreview();
   if(!_prevRen||!_prevScene||!_prevCam)return;
+  // initCarPreview may have run while #sSelect was still display:none
+  // (clientWidth=0). Once layout is real, re-size before rendering so
+  // the first visible frame uses the correct framebuffer + aspect.
+  if(_prevSizeW<=2){
+    const cvs=_prevRen.domElement;
+    if(cvs&&cvs.clientWidth>2)_resizePreviewRenderer(cvs);
+    if(_prevSizeW<=2)return;
+  }
   if(_prevDragHoldT>0)_prevDragHoldT=Math.max(0,_prevDragHoldT-dt);
-  if(_prevCarMesh&&!_prevDragging&&_prevDragHoldT<=0)_prevCarMesh.rotation.y+=dt*0.6;
+  if(_prevCarMesh&&!_prevDragging&&_prevDragHoldT<=0)_prevCarMesh.rotation.y+=dt*0.3;
+  if(_prevPodiumGridTex){
+    _prevPodiumGridTex.offset.x=(_prevPodiumGridTex.offset.x+dt*0.04)%1;
+    _prevPodiumGridTex.offset.y=(_prevPodiumGridTex.offset.y+dt*0.02)%1;
+  }
+  // Fade the DRAG TO ROTATE hint once the user has interacted.
+  if(_prevHasInteracted&&!_prevHintFaded){
+    const h=document.getElementById('prevHint');
+    if(h){h.style.transition='opacity .8s ease';h.style.opacity='0';}
+    _prevHintFaded=true;
+  }
   _prevRen.render(_prevScene,_prevCam);
 }
 
@@ -156,7 +245,15 @@ function _selectPreviewCar(defId){
   // Brand line + model + specs
   const b=document.getElementById('prevBrand');if(b)b.textContent=def.brand;
   const n=document.getElementById('prevName');
-  if(n){n.style.cssText+='transition:none;opacity:0;transform:translateY(6px)';setTimeout(()=>{n.textContent=def.name;n.style.cssText+='transition:all .22s ease;opacity:1;transform:translateY(0)';},60);}
+  if(n){
+    if(n._fadeT){clearTimeout(n._fadeT);n._fadeT=null;}
+    n.style.cssText+='transition:none;opacity:0;transform:translateY(6px)';
+    n._fadeT=setTimeout(()=>{
+      n.textContent=def.name;
+      n.style.cssText+='transition:all .22s ease;opacity:1;transform:translateY(0)';
+      n._fadeT=null;
+    },60);
+  }
   const sp=document.getElementById('prevSpecs');
   if(sp){
     const tlabel=def.type==='f1'?'F1':def.type==='muscle'?'MUSCLE':def.type==='electric'?'ELECTRIC':'SUPER';
@@ -164,16 +261,10 @@ function _selectPreviewCar(defId){
     const tk=Math.round(def.topSpd*255);
     sp.textContent=tlabel+' · '+hp+' hp · '+tk+' km/h';
   }
-  // 4-stat card grid: SPEED / ACCEL / HANDLING / NITRO.
-  const statsEl=document.getElementById('prevStats');
-  if(statsEl){
-    const spd=Math.round((def.topSpd/1.38)*100);
-    const acc=Math.round((def.accel/.026)*100);
-    const hdl=Math.round((def.hdlg/.060)*100);
-    const ntr=Math.round(((def.nitro||5)/10)*100);
-    const card=(lbl,v,col)=>`<div class="statCard"><div class="statCardLbl">${lbl}</div><div class="statCardBar"><div class="statCardFill" style="width:${v}%;background:${col};box-shadow:0 0 6px ${col}99"></div></div><div class="statCardVal" style="color:${col}">${v}</div></div>`;
-    statsEl.innerHTML=card('SPEED',spd,'#ff7700')+card('ACCEL',acc,'#00aaff')+card('HANDLING',hdl,'#00ff88')+card('NITRO',ntr,'#ff3a8c');
-  }
+  // 4-stat card stack: SPEED / ACCEL / HANDLING / NITRO with a ghost
+  // bar at the catalog max behind the current car's bar, and a rank-
+  // coloured numeric. Animated via CSS transition on .statCardFill.
+  _renderStatCards(def);
   // Color swatches — overlay on preview canvas (no separate "COLOUR" label).
   const colorEl=document.getElementById('colorRow');
   if(colorEl){
@@ -241,6 +332,63 @@ function applyWorldHUDTint(world){
   if(hudInfo)hudInfo.style.borderColor=isDeepSea?'rgba(0,221,170,.45)':isSpace?'rgba(0,204,255,.45)':isNeonW?'rgba(0,255,238,.45)':'rgba(255,255,255,.10)';
 }
 
+// Stat ranking across the catalog — computed lazily once. Used to show
+// a ghost (max-in-catalog) bar behind the current car's stat bar, and
+// to colour the numeric value by rank (top-3 = green, top half = amber).
+let _statRanks=null;
+const _STAT_DEFS=[
+  {key:'topSpd',lbl:'SPEED',   div:1.38,col:'#ff7700'},
+  {key:'accel', lbl:'ACCEL',   div:.026,col:'#00aaff'},
+  {key:'hdlg',  lbl:'HANDLING',div:.060,col:'#00ff88'},
+  {key:'nitro', lbl:'NITRO',   div:10,  col:'#ff3a8c'}
+];
+function _computeStatRanks(){
+  if(_statRanks)return _statRanks;
+  _statRanks={};
+  _STAT_DEFS.forEach(s=>{
+    const arr=CAR_DEFS.map(c=>({id:c.id,v:Math.round(((c[s.key]||0)/s.div)*100)}));
+    arr.sort((a,b)=>b.v-a.v);
+    const byId={};arr.forEach((x,i)=>{byId[x.id]=i;});
+    _statRanks[s.key]={byId:byId,max:arr.length?arr[0].v:100};
+  });
+  return _statRanks;
+}
+
+function _renderStatCards(def){
+  const statsEl=document.getElementById('prevStats');
+  if(!statsEl)return;
+  const ranks=_computeStatRanks();
+  if(statsEl.dataset.built!=='1'){
+    statsEl.dataset.built='1';
+    statsEl.innerHTML=_STAT_DEFS.map(s=>(
+      '<div class="statCard" data-stat="'+s.key+'">'+
+        '<div class="statCardLbl">'+s.lbl+'</div>'+
+        '<div class="statCardBar">'+
+          '<div class="statCardGhost"></div>'+
+          '<div class="statCardFill" style="background:'+s.col+';box-shadow:0 0 6px '+s.col+'99"></div>'+
+        '</div>'+
+        '<div class="statCardVal"><span class="statCardValNum">0</span><span class="statCardValMax"> / 100</span></div>'+
+      '</div>'
+    )).join('');
+  }
+  const total=CAR_DEFS.length;
+  _STAT_DEFS.forEach(s=>{
+    const v=Math.round(((def[s.key]||0)/s.div)*100);
+    const card=statsEl.querySelector('.statCard[data-stat="'+s.key+'"]');
+    if(!card)return;
+    const ghost=card.querySelector('.statCardGhost');
+    const fill=card.querySelector('.statCardFill');
+    const num=card.querySelector('.statCardValNum');
+    if(ghost)ghost.style.width=Math.min(100,Math.max(0,ranks[s.key].max))+'%';
+    if(fill)fill.style.width=Math.min(100,Math.max(0,v))+'%';
+    if(num){
+      num.textContent=v;
+      const rank=ranks[s.key].byId[def.id]||0;
+      num.style.color = rank<3 ? '#7dffb0' : rank<total/2 ? '#ffcc44' : '#c9b9ff';
+    }
+  });
+}
+
 // Active tier filter for the garage list. 'all' shows everything; otherwise
 // only def.type === tier is rendered.
 let _activeTier='all';
@@ -249,18 +397,38 @@ const _carPrices={4:0,5:0,6:0,7:0,8:800,9:1200,10:1500,11:2000};
 function _renderGarageList(){
   const grid=document.getElementById('carGrid');if(!grid)return;
   grid.innerHTML='';
+  const coins=window._coins|0;
   CAR_DEFS.forEach(def=>{
     if(_activeTier!=='all'&&def.type!==_activeTier)return;
     const unlocked=_unlockedCars.has(def.id);
     const card=document.createElement('div');
     card.className='carCard'+(def.id===selCarId&&unlocked?' sel':'')+(unlocked?'':' locked');
-    const col=(_carColorOverride[def.id]||def.color).toString(16).padStart(6,'0');
+    const carCol=(_carColorOverride[def.id]||def.color);
+    const teamCol=(def.accent!=null?def.accent:def.color);
+    const carHex='#'+carCol.toString(16).padStart(6,'0');
+    const teamHex='#'+teamCol.toString(16).padStart(6,'0');
+    card.style.setProperty('--team',teamHex);
     let trail='';
     if(!unlocked){
       const price=_carPrices[def.id];
-      trail=price?`<div class="carPriceLbl">${price}c</div>`:`<div class="carLockIcon">🔒</div>`;
+      const hint=_unlockHints[def.id]||'';
+      if(price){
+        const afford=coins>=price?' afford':'';
+        trail='<div class="carCardTrail">'+
+          '<span class="carLockMini">🔒</span>'+
+          '<span class="carPriceLbl'+afford+'">'+price+'c</span>'+
+        '</div>';
+        card.title=(afford?'Unlock for ':'Need ')+price+' coins'+(hint?' · '+hint:'');
+      }else{
+        trail='<div class="carCardTrail"><span class="carLockIcon">🔒</span></div>';
+        card.title='Locked'+(hint?' — '+hint:'');
+      }
     }
-    card.innerHTML=`<div class="carSwatch" style="background:#${col}"></div><div class="carInfo"><div class="carBrand">${def.brand}</div><div class="carName">${def.name}</div></div>${trail}`;
+    card.innerHTML='<div class="carSwatch" style="background:'+carHex+'"></div>'+
+                   '<div class="carInfo">'+
+                     '<div class="carBrand">'+def.brand+'</div>'+
+                     '<div class="carName">'+def.name+'</div>'+
+                   '</div>'+trail;
     if(!unlocked){
       card.onclick=()=>showPopup('🔒 LOCKED — '+(_unlockHints[def.id]||'complete challenges'),'#ff6644',1800);
     }else{
@@ -275,10 +443,11 @@ function _renderGarageList(){
 
 function _renderHeaderSubtitle(){
   const el=document.getElementById('selSubtitle');
-  if(!el)return;
   const u=_unlockedCars.size,t=CAR_DEFS.length;
   const c=window._coins|0;
-  el.textContent=u+' of '+t+' unlocked · '+c.toLocaleString('en')+' coins';
+  if(el)el.textContent=u+' of '+t+' unlocked · '+c.toLocaleString('en')+' coins';
+  const bar=document.getElementById('garageProgFill');
+  if(bar)bar.style.width=(t>0?(u/t)*100:0)+'%';
 }
 
 function buildCarSelectUI(){

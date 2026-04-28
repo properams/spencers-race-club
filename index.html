@@ -147,6 +147,7 @@
     <div class="selLeft">
       <div class="garageHeader">
         <div class="garageHeaderLbl">GARAGE</div>
+        <div class="garageProg"><div class="garageProgFill" id="garageProgFill"></div></div>
         <div class="tierTabs">
           <span class="tierTab tierTabSel" data-tier="all">ALL</span>
           <span class="tierTab" data-tier="super">SUPER</span>
@@ -164,6 +165,10 @@
       <div class="prevSpecsLine" id="prevSpecs">SUPER · 986 hp</div>
       <div class="prevCanvasWrap">
         <canvas id="carPreviewCvs" width="400" height="220"></canvas>
+        <span class="prevCorner prevCornerTL"></span>
+        <span class="prevCorner prevCornerTR"></span>
+        <span class="prevCorner prevCornerBL"></span>
+        <span class="prevCorner prevCornerBR"></span>
         <div class="prevHint" id="prevHint">↻ DRAG TO ROTATE</div>
         <div class="colorRow" id="colorRow"></div>
       </div>
@@ -196,12 +201,20 @@
       </div>
       <div class="rivalSeg">
         <div class="setLbl">RIVAL</div>
-        <div class="rivalCar" id="rivalCar">— set the first record —</div>
-        <div class="rivalTime" id="rivalTime"></div>
+        <div class="rivalCard">
+          <div class="rivalIcon">👻</div>
+          <div class="rivalInfo">
+            <div class="rivalBestLapLbl">BEST LAP</div>
+            <div class="rivalCar" id="rivalCar">— set the first record —</div>
+            <div class="rivalTime" id="rivalTime"></div>
+          </div>
+        </div>
       </div>
       <div class="startBtnWrap">
-        <button class="startBtn" id="btnRace">START RACE <span class="startBtnArrow">▶</span></button>
-        <div class="raceSummary" id="lapSummary">3 laps · normal · dark</div>
+        <button class="startBtn" id="btnRace">
+          <span class="startBtnLine">START RACE <span class="startBtnArrow">▶</span></span>
+          <span class="raceSummary" id="lapSummary">3 laps · normal · dark</span>
+        </button>
       </div>
     </div>
   </div>
