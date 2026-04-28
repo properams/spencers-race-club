@@ -38,9 +38,9 @@ function toggleNight(){
       _dsaBioEdges.forEach(e=>e.mat.opacity=.45);
       _jellyfishList.forEach(j=>{const pl=j.children.find(c=>c.isLight);if(pl)pl.intensity=.6;});
     }
-    if(plHeadL){plHeadL.intensity=isDark?2.2:0;plHeadR.intensity=isDark?2.2:0;}
-    if(plTail)plTail.intensity=isDark?1.6:0;
-    _aiHeadPool.forEach(l=>l.intensity=isDark?1.4:0);
+    if(plHeadL){plHeadL.intensity=isDark?1.7:0;plHeadR.intensity=isDark?1.7:0;}
+    if(plTail)plTail.intensity=isDark?1.4:0;
+    _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0);
     if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='neoncity'){
     // Neon City — always night, toggle adjusts neon intensity
@@ -54,9 +54,9 @@ function toggleNight(){
       ambientLight.intensity=.22;hemiLight.intensity=.18;
     }
     if(stars)stars.visible=true;
-    if(plHeadL){plHeadL.intensity=2.8;plHeadR.intensity=2.8;}
-    if(plTail)plTail.intensity=2.0;
-    _aiHeadPool.forEach(l=>l.intensity=1.8);
+    if(plHeadL){plHeadL.intensity=1.8;plHeadR.intensity=1.8;}
+    if(plTail)plTail.intensity=1.6;
+    _aiHeadPool.forEach(l=>l.intensity=1.2);
     if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='arctic'){
     if(isDark){scene.background=makeSkyTex('#040c18','#0a1828');scene.fog.density=.0035;
@@ -65,17 +65,17 @@ function toggleNight(){
       sunLight.color.setHex(0xaaccff);sunLight.intensity=.8;ambientLight.intensity=.45;trackLightList.forEach(function(l){l.intensity=0;});
     }
     if(stars)stars.visible=isDark;
-    if(plHeadL){plHeadL.intensity=isDark?2.6:0;plHeadR.intensity=isDark?2.6:0;}
-    if(plTail)plTail.intensity=isDark?1.6:0;
-    _aiHeadPool.forEach(function(l){l.intensity=isDark?1.5:0;});
+    if(plHeadL){plHeadL.intensity=isDark?1.7:0;plHeadR.intensity=isDark?1.7:0;}
+    if(plTail)plTail.intensity=isDark?1.4:0;
+    _aiHeadPool.forEach(function(l){l.intensity=isDark?1.0:0;});
     if(_sunBillboard)_sunBillboard.visible=!isDark;
   }else if(activeWorld==='volcano'){
     sunLight.intensity=isDark?.10:.7;ambientLight.intensity=isDark?.22:.35;hemiLight.intensity=isDark?.15:.25;
     if(stars)stars.visible=true;
     trackLightList.forEach(function(l){l.intensity=isDark?1.8:0;});
-    if(plHeadL){plHeadL.intensity=isDark?2.8:0;plHeadR.intensity=isDark?2.8:0;}
-    if(plTail)plTail.intensity=isDark?2.0:0;
-    _aiHeadPool.forEach(function(l){l.intensity=isDark?1.8:0;});
+    if(plHeadL){plHeadL.intensity=isDark?1.9:0;plHeadR.intensity=isDark?1.9:0;}
+    if(plTail)plTail.intensity=isDark?1.6:0;
+    _aiHeadPool.forEach(function(l){l.intensity=isDark?1.2:0;});
     if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='themepark'){
     // Sunset park stays sunset-toned; toggle dims/lights it without swapping the skybox to GP blue.
@@ -89,9 +89,9 @@ function toggleNight(){
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
     }
     if(stars)stars.visible=isDark;
-    if(plHeadL){plHeadL.intensity=isDark?2.4:0;plHeadR.intensity=isDark?2.4:0;}
-    if(plTail)plTail.intensity=isDark?1.6:0;
-    _aiHeadPool.forEach(l=>l.intensity=isDark?1.6:0);
+    if(plHeadL){plHeadL.intensity=isDark?1.7:0;plHeadR.intensity=isDark?1.7:0;}
+    if(plTail)plTail.intensity=isDark?1.4:0;
+    _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0);
     if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='candy'){
     // Candy — Day=bright pastel paradise, Night=glow-in-the-dark wonderland
@@ -99,11 +99,11 @@ function toggleNight(){
       scene.background=makeSkyTex('#1a0028','#280038');scene.fog.density=.0010;
       sunLight.intensity=.10;ambientLight.intensity=.26;hemiLight.intensity=.18;
       trackLightList.forEach(l=>l.intensity=2.2);trackPoles.forEach(p=>p.visible=true);
-      _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=1.8;} });
-      _candyCandles.forEach(l=>l.intensity=2.2);
-      if(plHeadL){plHeadL.intensity=2.4;plHeadR.intensity=2.4;}
-      if(plTail)plTail.intensity=1.6;
-      _aiHeadPool.forEach(l=>l.intensity=1.5);
+      _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=1.4;} });
+      _candyCandles.forEach(l=>l.intensity=1.5);
+      if(plHeadL){plHeadL.intensity=1.6;plHeadR.intensity=1.6;}
+      if(plTail)plTail.intensity=1.4;
+      _aiHeadPool.forEach(l=>l.intensity=1.0);
     }else{
       scene.background=makeSkyTex('#ff88cc','#ffe4f0');scene.fog.density=.0019;
       sunLight.intensity=1.5;ambientLight.intensity=.65;hemiLight.intensity=.45;
@@ -127,16 +127,16 @@ function toggleNight(){
     if(stars)stars.visible=true; // always on in space
     trackLightList.forEach(l=>l.intensity=isDark?2.0:1.4);
     trackPoles.forEach(p=>p.visible=true);
-    if(plHeadL){plHeadL.intensity=2.6;plHeadR.intensity=2.6;}
-    if(plTail)plTail.intensity=1.8;
-    _aiHeadPool.forEach(l=>l.intensity=1.7);
+    if(plHeadL){plHeadL.intensity=1.8;plHeadR.intensity=1.8;}
+    if(plTail)plTail.intensity=1.5;
+    _aiHeadPool.forEach(l=>l.intensity=1.1);
   }else{
     if(isDark){
       scene.background=makeSkyTex('#010408','#030d1e');scene.fog.density=.0024;
       sunLight.intensity=.10;ambientLight.intensity=.20;hemiLight.intensity=.14;
-      trackLightList.forEach(l=>l.intensity=2.8);trackPoles.forEach(p=>p.visible=true);if(stars)stars.visible=true;
-      if(plHeadL){plHeadL.intensity=2.6;plHeadR.intensity=2.6;}if(plTail)plTail.intensity=1.8;
-      _aiHeadPool.forEach(l=>l.intensity=1.7);
+      trackLightList.forEach(l=>l.intensity=2.4);trackPoles.forEach(p=>p.visible=true);if(stars)stars.visible=true;
+      if(plHeadL){plHeadL.intensity=1.8;plHeadR.intensity=1.8;}if(plTail)plTail.intensity=1.5;
+      _aiHeadPool.forEach(l=>l.intensity=1.1);
     }else{
       scene.background=makeSkyTex('#1e5292','#b8d8ee');scene.fog.density=.0021;
       sunLight.intensity=1.65;ambientLight.intensity=.50;hemiLight.intensity=.36;
