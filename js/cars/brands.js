@@ -278,6 +278,247 @@ function buildMaseratiMC20(g, def, mats, lod){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// AUDI R8 — long wheelbase, understated, signature side-blade R8 inset.
+// Default black with red accents.
+// ─────────────────────────────────────────────────────────────────────────────
+function buildAudiR8(g, def, mats, lod){
+  const lo = lod === 'low';
+  // Long chassis (longest wheelbase among supers)
+  addPart(g, new THREE.BoxGeometry(1.96, .42, 4.30), mats.paint, 0, .25, 0);
+  // Squared low front
+  addPart(g, new THREE.BoxGeometry(1.80, .26, .85), mats.paint, 0, .30, -1.95);
+  addPart(g, new THREE.BoxGeometry(1.78, .06, .26), mats.matBlk, 0, .10, -2.20);
+  // Single-frame grille (Audi signature) — wide hex shape
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.20, .20, .10), mats.grille, 0, .26, -2.18);
+    addPart(g, new THREE.BoxGeometry(1.16, .04, .04), mats.accent, 0, .26, -2.24);
+  }
+  // Long hood
+  addPart(g, new THREE.BoxGeometry(1.74, .08, 1.45), mats.paint, 0, .54, -1.05);
+  // Quad LED suggestion (Audi signature) — stretched headlights
+  buildHeadlights(g, mats, {spread:.78, y:.42, z:-1.98, w:.36, h:.08, d:.06});
+  // Cabin
+  addPart(g, new THREE.BoxGeometry(1.66, .42, 1.30), mats.paint, 0, .76, .00);
+  addPart(g, new THREE.BoxGeometry(1.52, .50, .08), mats.glass, 0, .82, -.78, -.42);
+  [-.83, .83].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .30, 1.10), mats.glass, s, .82, .00));
+  addPart(g, new THREE.BoxGeometry(1.42, .32, .08), mats.glassDark, 0, .82, .80, .40);
+  addPart(g, new THREE.BoxGeometry(1.36, .04, 1.10), mats.paint, 0, 1.00, -.10);
+  // Engine cover (mid-engine, R8 has visible engine glass — simulate with darker section)
+  addPart(g, new THREE.BoxGeometry(1.62, .20, 1.05), mats.paint, 0, .68, 1.05);
+  // Side blade (R8 SIGNATURE) — large vertical inset on the door, in accent color
+  if(!lo){
+    [-1.01, 1.01].forEach(s=>{
+      addPart(g, new THREE.BoxGeometry(.04, .55, 1.10), mats.matBlk, s, .55, .15);
+      addPart(g, new THREE.BoxGeometry(.05, .45, 1.00), mats.accent, s, .55, .15);
+    });
+  }
+  buildWheelArches(g, mats.paint, {positions:[
+    [-1.00, .44, -1.50], [1.00, .44, -1.50], [-1.00, .44, 1.50], [1.00, .44, 1.50]
+  ]});
+  addPart(g, new THREE.BoxGeometry(1.86, .24, .30), mats.paint, 0, .32, 2.00);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.70, .10, .28), mats.matBlk, 0, .14, 2.06);
+  }
+  // Modest rear spoiler — integrated lip (Audi prefers subtle)
+  addPart(g, new THREE.BoxGeometry(1.62, .04, .22), mats.matBlk, 0, .82, 1.85);
+  buildTaillights(g, mats, {spread:.74, y:.55, z:2.04, w:.36, h:.08, d:.05});
+  // Dual oval exhausts (Audi signature)
+  if(!lo){
+    [-.42, .42].forEach(s=>{
+      const ex = new THREE.Mesh(new THREE.CylinderGeometry(.075, .075, .30, 10), mats.chrome);
+      ex.rotation.x = Math.PI/2; ex.scale.x = 1.4; ex.position.set(s, .26, 2.08); g.add(ex);
+    });
+  } else {
+    buildExhausts(g, mats, {spread:.42, y:.26, z:2.08, radius:.075, length:.28});
+  }
+  buildSideSkirts(g, mats, {spread:.99, y:.10, z:0, length:2.7});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PORSCHE GT3 RS — rounded fastback silhouet, BIG rear wing on tall stands
+// (GT3 RS signature), round-ish headlights, prominent splitter.
+// Default white with red accents.
+// ─────────────────────────────────────────────────────────────────────────────
+function buildPorscheGT3RS(g, def, mats, lod){
+  const lo = lod === 'low';
+  addPart(g, new THREE.BoxGeometry(1.92, .44, 4.10), mats.paint, 0, .26, 0);
+  // Rounded clamshell front (Porsche signature)
+  const fb = new THREE.Mesh(new THREE.SphereGeometry(.50, 12, 8, 0, Math.PI*2, 0, Math.PI/2), mats.paint);
+  fb.scale.set(1.92, .58, 1.10); fb.rotation.x = Math.PI;
+  fb.position.set(0, .22, -1.85); g.add(fb);
+  // Aggressive front splitter (GT3 RS)
+  addPart(g, new THREE.BoxGeometry(1.95, .06, .40), mats.matBlk, 0, .08, -2.10);
+  if(!lo){
+    [-.55, .55].forEach(s=>addPart(g, new THREE.BoxGeometry(.30, .14, .14), mats.grille, s, .22, -2.08));
+  }
+  // Round headlights (cylinders, axis perpendicular to face)
+  if(!lo){
+    [-.74, .74].forEach(s=>{
+      const hl = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, .08, 12), mats.head);
+      hl.rotation.x = Math.PI/2; hl.position.set(s, .46, -1.92); g.add(hl);
+    });
+  } else {
+    buildHeadlights(g, mats, {spread:.74, y:.46, z:-1.92, w:.30, h:.16, d:.06});
+  }
+  // Cabin — rounded teardrop (Porsche fastback)
+  addPart(g, new THREE.BoxGeometry(1.66, .40, 1.40), mats.paint, 0, .72, -.10);
+  addPart(g, new THREE.BoxGeometry(1.52, .48, .08), mats.glass, 0, .80, -.78, -.45);
+  [-.83, .83].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .30, 1.20), mats.glass, s, .80, -.10));
+  // Long sloping rear glass (fastback)
+  addPart(g, new THREE.BoxGeometry(1.46, .42, .08), mats.glassDark, 0, .80, .85, .58);
+  addPart(g, new THREE.BoxGeometry(1.36, .04, 1.05), mats.paint, 0, .94, -.20);
+  // Rear deck (lower than cabin — fastback)
+  addPart(g, new THREE.BoxGeometry(1.65, .14, 1.10), mats.paint, 0, .60, 1.10);
+  // Side blade (smaller than Audi)
+  if(!lo){
+    [-1.00, 1.00].forEach(s=>addPart(g, new THREE.BoxGeometry(.05, .14, .60), mats.accent, s, .50, .35));
+  }
+  buildWheelArches(g, mats.paint, {positions:[
+    [-1.00, .44, -1.40], [1.00, .44, -1.40], [-1.00, .44, 1.40], [1.00, .44, 1.40]
+  ]});
+  addPart(g, new THREE.BoxGeometry(1.86, .22, .28), mats.paint, 0, .32, 1.95);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.65, .10, .26), mats.matBlk, 0, .14, 2.00);
+  }
+  // BIG REAR WING (GT3 RS signature) — tall stands + wide plate
+  [-.70, .70].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .50, .12), mats.matBlk, s, 1.05, 1.65));
+  addPart(g, new THREE.BoxGeometry(1.85, .06, .42), mats.paint, 0, 1.32, 1.65);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.85, .03, .12), mats.matBlk, 0, 1.28, 1.55); // wing underside lip
+    [-.92, .92].forEach(s=>addPart(g, new THREE.BoxGeometry(.04, .12, .42), mats.matBlk, s, 1.26, 1.65)); // endplates
+  }
+  buildTaillights(g, mats, {spread:.74, y:.56, z:1.99, w:.34, h:.08, d:.05});
+  // Twin centre exhausts (GT3 RS)
+  buildExhausts(g, mats, {spread:.18, y:.24, z:2.03, radius:.075, length:.30});
+  buildSideSkirts(g, mats, {spread:.99, y:.10, z:0, length:2.6});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// McLAREN P1 — modern hypercar, high mounted active rear wing, aggressive
+// front splitter with nose-cut, carbon-look matBlk accents prominent.
+// Default orange.
+// ─────────────────────────────────────────────────────────────────────────────
+function buildMcLarenP1(g, def, mats, lod){
+  const lo = lod === 'low';
+  addPart(g, new THREE.BoxGeometry(1.90, .40, 4.10), mats.paint, 0, .25, 0);
+  // Pointed low nose with central nose-cut (P1 signature)
+  addPart(g, new THREE.BoxGeometry(1.74, .22, .85), mats.paint, 0, .28, -1.90);
+  // Nose-cut (V-shape suggested with two angled black blocks)
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(.40, .18, .30), mats.matBlk, 0, .26, -2.04);
+  }
+  addPart(g, new THREE.BoxGeometry(1.85, .06, .35), mats.matBlk, 0, .08, -2.10);
+  if(!lo){
+    [-.50, .50].forEach(s=>addPart(g, new THREE.BoxGeometry(.36, .16, .12), mats.grille, s, .20, -2.06));
+  }
+  buildHeadlights(g, mats, {spread:.70, y:.40, z:-1.95, w:.28, h:.10, d:.06});
+  // Hood with aggressive vents
+  addPart(g, new THREE.BoxGeometry(1.74, .08, 1.30), mats.paint, 0, .50, -1.00);
+  if(!lo){
+    [-.50, .50].forEach(s=>addPart(g, new THREE.BoxGeometry(.30, .04, .35), mats.matBlk, s, .56, -.90));
+  }
+  // Cabin — aerodynamic teardrop, narrow
+  addPart(g, new THREE.BoxGeometry(1.58, .40, 1.20), mats.paint, 0, .70, -.15);
+  addPart(g, new THREE.BoxGeometry(1.46, .50, .08), mats.glass, 0, .80, -.85, -.45);
+  [-.79, .79].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .30, 1.00), mats.glass, s, .80, -.15));
+  addPart(g, new THREE.BoxGeometry(1.32, .35, .08), mats.glassDark, 0, .80, .55, .50);
+  addPart(g, new THREE.BoxGeometry(1.30, .04, .95), mats.paint, 0, .94, -.20);
+  // Engine cover with carbon-look slats
+  addPart(g, new THREE.BoxGeometry(1.62, .22, 1.20), mats.paint, 0, .60, .95);
+  if(!lo){
+    [-.45, -.15, .15, .45].forEach(s=>addPart(g, new THREE.BoxGeometry(.08, .04, 1.10), mats.matBlk, s, .73, .95));
+  }
+  // Side intakes positioned HIGH on the doors (McLaren signature)
+  if(!lo){
+    [-1.00, 1.00].forEach(s=>{
+      addPart(g, new THREE.BoxGeometry(.05, .18, .80), mats.matBlk, s, .62, .25);
+      addPart(g, new THREE.BoxGeometry(.04, .10, .65), mats.accent, s, .62, .25);
+    });
+  }
+  buildWheelArches(g, mats.paint, {positions:[
+    [-.99, .42, -1.40], [.99, .42, -1.40], [-.99, .42, 1.40], [.99, .42, 1.40]
+  ]});
+  addPart(g, new THREE.BoxGeometry(1.85, .22, .30), mats.paint, 0, .32, 1.95);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.65, .12, .32), mats.matBlk, 0, .12, 2.00);
+    [-.40, 0, .40].forEach(s=>addPart(g, new THREE.BoxGeometry(.04, .16, .28), mats.blk, s, .14, 2.02));
+  }
+  // High mounted active rear wing (P1 signature) — taller stands
+  [-.62, .62].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .42, .14), mats.matBlk, s, 1.00, 1.72));
+  addPart(g, new THREE.BoxGeometry(1.78, .06, .38), mats.paint, 0, 1.24, 1.72);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.78, .03, .12), mats.matBlk, 0, 1.20, 1.62);
+  }
+  buildTaillights(g, mats, {spread:.70, y:.56, z:1.99, w:.32, h:.08, d:.05});
+  // Single low-mounted exhaust pair (P1 has top-mounted exhausts but we keep low for silhouette readability)
+  buildExhausts(g, mats, {spread:.30, y:.30, z:2.04, radius:.07, length:.28});
+  buildSideSkirts(g, mats, {spread:.98, y:.10, z:0, length:2.6});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KOENIGSEGG JESKO — Swedish hypercar, very high rear wing, roof scoop,
+// aggressive splitter, distinctive low fastback. Default white with blue.
+// ─────────────────────────────────────────────────────────────────────────────
+function buildKoenigseggJesko(g, def, mats, lod){
+  const lo = lod === 'low';
+  addPart(g, new THREE.BoxGeometry(1.90, .40, 4.20), mats.paint, 0, .25, 0);
+  // Pointed sharp front
+  addPart(g, new THREE.BoxGeometry(1.70, .22, .90), mats.paint, 0, .28, -1.95);
+  addPart(g, new THREE.BoxGeometry(1.92, .08, .40), mats.matBlk, 0, .08, -2.15);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(.55, .14, .12), mats.grille, 0, .22, -2.08);
+    [-.30, -.10, .10, .30].forEach(s=>addPart(g, new THREE.BoxGeometry(.08, .06, .04), mats.accent, s, .22, -2.14));
+  }
+  buildHeadlights(g, mats, {spread:.72, y:.42, z:-1.98, w:.30, h:.08, d:.06});
+  addPart(g, new THREE.BoxGeometry(1.72, .08, 1.40), mats.paint, 0, .50, -1.05);
+  // Cabin — fastback teardrop
+  addPart(g, new THREE.BoxGeometry(1.62, .42, 1.30), mats.paint, 0, .72, -.10);
+  addPart(g, new THREE.BoxGeometry(1.50, .50, .08), mats.glass, 0, .80, -.82, -.45);
+  [-.81, .81].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .32, 1.10), mats.glass, s, .80, -.10));
+  addPart(g, new THREE.BoxGeometry(1.42, .42, .08), mats.glassDark, 0, .80, .80, .55);
+  addPart(g, new THREE.BoxGeometry(1.32, .04, 1.05), mats.paint, 0, .96, -.18);
+  // ROOF SCOOP (Jesko signature) — visible vertical intake on the roof
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(.40, .18, .55), mats.matBlk, 0, 1.06, -.05);
+    addPart(g, new THREE.BoxGeometry(.32, .12, .45), mats.accent, 0, 1.06, -.05);
+  }
+  // Engine cover
+  addPart(g, new THREE.BoxGeometry(1.62, .20, 1.10), mats.paint, 0, .60, 1.05);
+  // Side intakes
+  if(!lo){
+    [-1.00, 1.00].forEach(s=>{
+      addPart(g, new THREE.BoxGeometry(.05, .22, .70), mats.matBlk, s, .55, .30);
+    });
+  }
+  buildWheelArches(g, mats.paint, {positions:[
+    [-1.00, .42, -1.45], [1.00, .42, -1.45], [-1.00, .42, 1.45], [1.00, .42, 1.45]
+  ]});
+  addPart(g, new THREE.BoxGeometry(1.86, .22, .28), mats.paint, 0, .32, 2.00);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.66, .14, .30), mats.matBlk, 0, .12, 2.05);
+    [-.50, -.20, .20, .50].forEach(s=>addPart(g, new THREE.BoxGeometry(.04, .18, .28), mats.blk, s, .12, 2.05));
+  }
+  // VERY HIGH REAR WING (Jesko signature) — tallest stands of any car
+  [-.72, .72].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .60, .14), mats.matBlk, s, 1.10, 1.65));
+  addPart(g, new THREE.BoxGeometry(1.92, .06, .42), mats.paint, 0, 1.42, 1.65);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.90, .03, .12), mats.matBlk, 0, 1.38, 1.55);
+    [-.96, .96].forEach(s=>addPart(g, new THREE.BoxGeometry(.04, .14, .42), mats.matBlk, s, 1.36, 1.65));
+  }
+  buildTaillights(g, mats, {spread:.74, y:.55, z:2.04, w:.30, h:.08, d:.05});
+  // Quad exhausts (Jesko signature)
+  if(!lo){
+    [-.45, -.18, .18, .45].forEach(s=>{
+      const ex = new THREE.Mesh(new THREE.CylinderGeometry(.058, .058, .26, 8), mats.chrome);
+      ex.rotation.x = Math.PI/2; ex.position.set(s, .28, 2.10); g.add(ex);
+    });
+  } else {
+    buildExhausts(g, mats, {spread:.40, y:.28, z:2.10, radius:.06, length:.26});
+  }
+  buildSideSkirts(g, mats, {spread:.99, y:.10, z:0, length:2.7});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // REGISTRY — maps def.brand to its builder. Brands not in the registry fall
 // back to the legacy makeCar logic in build.js (for incremental rollout).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -285,8 +526,12 @@ const BRAND_BUILDERS = {
   'FERRARI':     buildFerrariSF90,
   'BUGATTI':     buildBugattiChiron,
   'LAMBORGHINI': buildLamborghiniHuracan,
-  'MASERATI':    buildMaseratiMC20
-  // 8 more brands added incrementally in PR-B
+  'MASERATI':    buildMaseratiMC20,
+  'AUDI':        buildAudiR8,
+  'PORSCHE':     buildPorscheGT3RS,
+  'MCLAREN':     buildMcLarenP1,
+  'KOENIGSEGG':  buildKoenigseggJesko
+  // 4 more brands added incrementally in PR-B (Red Bull/Mercedes F1, Mustang, Tesla)
 };
 
 window.BRAND_BUILDERS = BRAND_BUILDERS;
@@ -294,3 +539,7 @@ window.buildFerrariSF90 = buildFerrariSF90;
 window.buildBugattiChiron = buildBugattiChiron;
 window.buildLamborghiniHuracan = buildLamborghiniHuracan;
 window.buildMaseratiMC20 = buildMaseratiMC20;
+window.buildAudiR8 = buildAudiR8;
+window.buildPorscheGT3RS = buildPorscheGT3RS;
+window.buildMcLarenP1 = buildMcLarenP1;
+window.buildKoenigseggJesko = buildKoenigseggJesko;
