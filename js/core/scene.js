@@ -330,33 +330,49 @@ function buildScene(){
   const isCandy=activeWorld==='candy';
   const isNeon=activeWorld==='neoncity';
   const isThemepark=activeWorld==='themepark';
+  const isVolcano=activeWorld==='volcano';
+  const isArctic=activeWorld==='arctic';
   scene=new THREE.Scene();
+  // Fog color is matched to the skybox horizon (sky-bottom gradient stop) per world,
+  // so fogged distant geometry blends seamlessly into the sky instead of producing a
+  // visible "kleurverschil" band where the fogged scene meets the skybox.
+  // Day/Night fog colors mirror toggleNight()'s skybox swaps so updateSky's lerp
+  // never drifts to a wrong-world fog color (e.g. light-blue fog in the volcano).
   if(isSpace){
     scene.background=makeSpaceSkyTex();
-    scene.fog=new THREE.FogExp2(0x050015,.0008);
-    _fogColorDay.setHex(0x050015);_fogColorNight.setHex(0x020008);
+    scene.fog=new THREE.FogExp2(0x010018,.0014);
+    _fogColorDay.setHex(0x080045);_fogColorNight.setHex(0x010018);
   }else if(isDeepSea){
     scene.background=makeDeepSeaSkyTex();
-    scene.fog=new THREE.FogExp2(0x002233,.0014);
-    _fogColorDay.setHex(0x002233);_fogColorNight.setHex(0x000810);
+    scene.fog=new THREE.FogExp2(0x003355,.0017);
+    _fogColorDay.setHex(0x003355);_fogColorNight.setHex(0x00101a);
   }else if(isCandy){
     scene.background=makeCandySkyTex();
-    scene.fog=new THREE.FogExp2(0xffccee,.0009);
-    _fogColorDay.setHex(0xffccee);_fogColorNight.setHex(0x2a0a1a);
+    scene.fog=new THREE.FogExp2(0xffe4f0,.0015);
+    _fogColorDay.setHex(0xffe4f0);_fogColorNight.setHex(0x280038);
   }else if(isNeon){
     scene.background=makeNeonCitySkyTex();
-    scene.fog=new THREE.FogExp2(0x050012,.0015);
-    _fogColorDay.setHex(0x050012);_fogColorNight.setHex(0x020008);
+    scene.fog=new THREE.FogExp2(0x030012,.0017);
+    _fogColorDay.setHex(0x080025);_fogColorNight.setHex(0x030012);
   }else if(isThemepark){
     scene.background=makeThemeparkSkyTex();
-    scene.fog=new THREE.FogExp2(0x552244,.00095);
-    _fogColorDay.setHex(0x553366);_fogColorNight.setHex(0x0a0018);
+    scene.fog=new THREE.FogExp2(0xff8844,.0015);
+    _fogColorDay.setHex(0xff8844);_fogColorNight.setHex(0x3a0e22);
+  }else if(isVolcano){
+    // Volcano keeps its procedural ember-haze sky in both modes — fog matches
+    // the rusty horizon glow at the bottom of the canvas (~rgba(180,40,0)
+    // composited over #2a0810) so distant lava-rock fades into the sky band.
+    scene.background=makeVolcanoSkyTex();
+    scene.fog=new THREE.FogExp2(0x6a1808,.002);
+    _fogColorDay.setHex(0x6a1808);_fogColorNight.setHex(0x6a1808);
+  }else if(isArctic){
+    scene.background=makeArcticSkyTex();
+    scene.fog=new THREE.FogExp2(0x1a3050,.0035);
+    _fogColorDay.setHex(0x1a3050);_fogColorNight.setHex(0x0a1828);
   }else{
-    // Volcano + arctic worlds overwrite scene.background/fog inside their
-    // buildXxxEnvironment() — so the default below is only used by Grand Prix.
     scene.background=makeGPSkyTex();
-    scene.fog=new THREE.FogExp2(0x8ac0e0,.00125);
-    _fogColorDay.setHex(0x8ac0e0);_fogColorNight.setHex(0x030610);
+    scene.fog=new THREE.FogExp2(0xb8d8ee,.0017);
+    _fogColorDay.setHex(0xb8d8ee);_fogColorNight.setHex(0x030d1e);
   }
   // Per-world color grading + vignette in postfx composite.
   if(typeof setWorldGrading==='function')setWorldGrading(activeWorld);
