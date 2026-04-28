@@ -221,9 +221,12 @@ function updateWeatherForecast(dt){
   if(_weatherForecastFired||gameState!=='RACE')return;
   _weatherForecastTimer-=dt;
   if(_weatherForecastTimer<=8&&_weatherForecastTimer>7.9){
-    // 8s warning before change
+    // 8s warning before change. Use the lightweight top-banner (one-line,
+    // no heavy border/background) — the heavy showBanner is reserved for
+    // big celebrations like "RACE LEADER!".
     const incoming=isRain?'☀ CLEARING UP':'🌧 RAIN INCOMING';
-    showBanner(incoming,'#88ccff',2200);
+    const dur=window._isMobile?3000:4000;
+    showBannerTop(incoming,'#88ccff',dur);
   }
   if(_weatherForecastTimer<=0){
     _weatherForecastFired=true;

@@ -50,7 +50,8 @@ let _elScore=null,_elLapDelta=null;
 // fade-in/out wanneer wear/temp uit het optimale venster komen.
 let _elCarStatus=null;
 // _elSector was dead code (nergens gevuld of gelezen) — verwijderd.
-let _elGapAhead=null,_elGapBehind=null;
+// Gap-display verwijderd in HUD-redesign: leaderboard toont al rij-1/rij+1
+// rond de speler, dus een aparte gap-panel was dubbel-info.
 let _elRpm=null;
 let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;
 // Verhuisd uit main.js — gevuld in cacheHUDRefs hieronder.
@@ -59,7 +60,7 @@ let _drsEl=null,_sectorPanelEl=null,_speedTrapEl=null;
 function cacheHUDRefs(){
   // On mobile: hide performance-heavy HUD elements
   if(window._isMobile){
-    ['hudLeader','sectorPanel','hudGap','hudCarStatus',
+    ['hudLeader','sectorPanel','hudCarStatus',
      'hudRainBtn','hudNightBtn','hudMuteBtn','ghostLabel','drsIndicator',
      'closeBattleEl','speedTrapEl','mirrorFrame','mirrorLabel','speedLines'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
@@ -83,8 +84,6 @@ function cacheHUDRefs(){
   _elLapDelta=document.getElementById('hdLapDelta');
   _elCarStatus=document.getElementById('hudCarStatus');
   _elRpm=document.getElementById('rpmFill');
-  _elGapAhead=document.getElementById('gapAhead');
-  _elGapBehind=document.getElementById('gapBehind');
   _drsEl=document.getElementById('drsIndicator');
   _sectorPanelEl=document.getElementById('sectorPanel');
   _speedTrapEl=document.getElementById('speedTrapEl');

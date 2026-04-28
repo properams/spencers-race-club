@@ -93,7 +93,6 @@ function _resetRaceState(){
   const f1=document.getElementById('f1Lights');if(f1)f1.style.display='none';
   const cf=document.getElementById('colFlash');if(cf)cf.style.opacity='0';
   const ah=document.getElementById('achieveToast');if(ah)ah.style.opacity='0';
-  const gapEl=document.getElementById('hudGap');if(gapEl)gapEl.style.display='none';
   _revLimiterTimer=0;_titleCamT=0;
   const dbEl=document.getElementById('driftBar');if(dbEl)dbEl.style.display='none';
   const dlEl=document.getElementById('driftLabel');if(dlEl)dlEl.style.display='none';

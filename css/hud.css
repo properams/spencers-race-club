@@ -2,6 +2,8 @@
 [id^="hud"]:focus,[id^="hud"]:focus-visible{outline:none}
 .hidden{display:none!important}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:none}
+/* Lightweight transient banner (weather changes, lap announce). */
+#topBanner{position:absolute;top:30%;left:50%;transform:translateX(-50%) translateY(20px);font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:3px;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:var(--z-banner);text-shadow:0 0 14px currentColor}
 /* Race-info panel: consolidated POSITION + LAP + LAPTIME (replaces #hudPos/#hudLap/#hudLapTime/#hudScore). */
 #hudRaceInfo{position:absolute;top:18px;left:18px;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:14px;padding:10px 18px 9px;backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);font-family:'Orbitron',sans-serif;min-width:130px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
 #hudRaceInfo .riPosRow{display:flex;align-items:baseline;gap:6px;line-height:1}
@@ -74,7 +76,6 @@
 #hudCarStatus .csTire{width:18px;height:18px;border-radius:50%;background:var(--hud-success);box-shadow:0 0 0 2px var(--hud-success);transition:background .4s,box-shadow .4s}
 #hudRpm{position:absolute;bottom:160px;right:50px;width:6px;height:120px;background:rgba(0,0,0,.7);border:2px solid #333;border-radius:8px;overflow:hidden}
 #rpmFill{position:absolute;bottom:0;width:100%;border-radius:6px;transition:height .06s}
-#hudGap{position:absolute;top:212px;left:18px;pointer-events:none;display:none;text-align:left;min-width:120px;background:rgba(0,0,0,.72);border:1px solid #2a2a2a;border-radius:10px;padding:4px 10px}
 #driftBar{position:fixed;bottom:52px;left:50%;transform:translateX(-50%);width:180px;height:8px;background:rgba(0,0,0,.55);border:1px solid rgba(255,136,0,.4);border-radius:4px;display:none;overflow:hidden;z-index:12}
 #driftBarFill{height:100%;width:0%;background:linear-gradient(90deg,#ff6600,#ffee00,#ffffff);border-radius:4px;transition:width .06s}
 #drsIndicator{position:absolute;top:34%;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:clamp(14px,2.5vw,28px);font-weight:900;letter-spacing:6px;color:#00ccff;text-shadow:0 0 18px #00ccff;pointer-events:none;display:none}
@@ -129,7 +130,7 @@
     z-index:15!important;
   }
 #nitroLbl{display:none!important}
-#hudGap,#hudLeader,#hudCarStatus,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines{display:none!important}
+#hudLeader,#hudCarStatus,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines{display:none!important}
 #tcSteer{display:none!important}
 #tcLeft,#tcRight{display:flex!important;width:84px!important;height:72px!important;font-size:40px!important;border-radius:36px!important}
 #tcLeft{bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;left:calc(20px + env(safe-area-inset-left,0px))!important}

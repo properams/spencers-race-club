@@ -24,7 +24,7 @@
 //   updateThemeparkWorld, updateHUD, updateSpeedOverlay, getPositions,
 //   updateAmbientWindSpeed, updateAchievements, updateAchievementToast,
 //   updateWeatherForecast, updateQuickRestart, updateDamageSmoke,
-//   updateRpmBar, updateRevLimiter, updateGapDisplay, updateDriftVisuals,
+//   updateRpmBar, updateRevLimiter, updateDriftVisuals,
 //   updateNitroVisual, updateBoostTrail, updateGhost, updateSpeedLines,
 //   updatePitStop, updateFastestLapFlash, updateCloseBattle,
 //   updateCollisionFlash, updateRain, updateCarPreview, updateMirror,
@@ -105,7 +105,6 @@ function loop(){
       updateDamageSmoke();
       updateRpmBar(dt);
       updateRevLimiter(dt);
-      updateGapDisplay();
       updateDriftVisuals(dt);
       updateNitroVisual();
       updateBoostTrail();
