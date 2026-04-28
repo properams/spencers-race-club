@@ -100,16 +100,11 @@ function initEngine(){
   const rGain=ctx.createGain();rGain.gain.value=0;
   rSrc.connect(rFilt);rFilt.connect(rGain);rGain.connect(_dst());rSrc.start();
   _rollGain=rGain;_rollSrc=rSrc;_rollFilt=rFilt;
-  // Car-wind: aparte highpass-filtered noise loop, fade-in boven ~70%
-  // topspeed. Sample-pad: als windHigh-buffer geladen is wordt deze
-  // procedurele bron silently bypassed (zie updateEngine).
-  const wSz=ctx.sampleRate*2,wBuf=ctx.createBuffer(1,wSz,ctx.sampleRate);
-  const wD=wBuf.getChannelData(0);for(let i=0;i<wSz;i++)wD[i]=Math.random()*2-1;
-  const wSrc=ctx.createBufferSource();wSrc.buffer=wBuf;wSrc.loop=true;
-  const wFilt=ctx.createBiquadFilter();wFilt.type='highpass';wFilt.frequency.value=600;wFilt.Q.value=0.6;
-  const wGain=ctx.createGain();wGain.gain.value=0;
-  wSrc.connect(wFilt);wFilt.connect(wGain);wGain.connect(_dst());wSrc.start();
-  _carWindGain=wGain;_carWindSrc=wSrc;_carWindFilt=wFilt;
+  // Car-wind disabled — de procedurele highpass-noise loop klonk als een
+  // sustained suis tijdens het rijden, niet als wind-effect. Re-enable met
+  // lager gain (was 0.18 max) en/of hogere threshold (was 0.65 ratio) als
+  // we 'm later subtieler willen tunen. Update-block gate'd op _carWindGain
+  // dus die slaat zichzelf over zolang de init hier overgeslagen wordt.
 }
 
 
