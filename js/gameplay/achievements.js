@@ -122,13 +122,24 @@ function onLapComplete(){
 }
 
 
+// Pooled toast element — created once, reused for every achievement so we
+// don't churn DOM (and CSS layout) mid-race when an achievement fires.
+let _achievePopupEl=null;
+let _achievePopupHideTimer=null;
 function showAchievementToast(ach){
-  const t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,#1a0035,#2d0050);border:1px solid rgba(180,80,255,.5);border-radius:14px;padding:14px 24px;display:flex;align-items:center;gap:14px;font-family:Orbitron,sans-serif;z-index:var(--z-toast);box-shadow:0 0 30px rgba(180,80,255,.4);opacity:0;transition:all .4s cubic-bezier(.34,1.3,.64,1)';
+  if(!_achievePopupEl){
+    _achievePopupEl=document.createElement('div');
+    _achievePopupEl.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,#1a0035,#2d0050);border:1px solid rgba(180,80,255,.5);border-radius:14px;padding:14px 24px;display:flex;align-items:center;gap:14px;font-family:Orbitron,sans-serif;z-index:var(--z-toast);box-shadow:0 0 30px rgba(180,80,255,.4);opacity:0;transition:all .4s cubic-bezier(.34,1.3,.64,1);pointer-events:none';
+    document.body.appendChild(_achievePopupEl);
+  }
+  const t=_achievePopupEl;
   t.innerHTML='<span style="font-size:28px">'+ach.icon+'</span><div><div style="font-size:8px;color:#cc88ff;letter-spacing:3px">ACHIEVEMENT</div><div style="font-size:13px;color:#fff;letter-spacing:2px">'+ach.title+'</div><div style="font-size:9px;color:#886699;margin-top:2px">'+ach.desc+'</div></div>';
-  document.body.appendChild(t);
+  // If a previous toast is still hiding, cancel its hide and show fresh.
+  if(_achievePopupHideTimer){clearTimeout(_achievePopupHideTimer);_achievePopupHideTimer=null;}
+  t.style.transform='translateX(-50%) translateY(20px)';
+  t.style.opacity='0';
   requestAnimationFrame(()=>{t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';});
-  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400);},3500);
+  _achievePopupHideTimer=setTimeout(()=>{t.style.opacity='0';_achievePopupHideTimer=null;},3500);
 }
 
 function initDailyChallenge(){

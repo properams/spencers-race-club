@@ -414,9 +414,9 @@ function buildSunBillboard(){
   drawRay(-Math.PI/4,90,2,.55);      // diagonal \
   const raysSprite=new THREE.Sprite(new THREE.SpriteMaterial({
     map:new THREE.CanvasTexture(raysCv),blending:THREE.AdditiveBlending,
-    transparent:true,opacity:.7,depthWrite:false
+    transparent:true,opacity:.42,depthWrite:false
   }));
-  raysSprite.scale.set(360,360,1);
+  raysSprite.scale.set(280,280,1);
   _sunBillboard.add(raysSprite);
   // Outer halo: very soft wide glow (extends bloom further)
   const haloCv=document.createElement('canvas');haloCv.width=128;haloCv.height=128;
@@ -475,7 +475,7 @@ function buildGodRays(){
   offsets.forEach(([dx,dz])=>{
     const mat=new THREE.SpriteMaterial({
       map:tex.clone(),blending:THREE.AdditiveBlending,
-      transparent:true,opacity:.55,depthWrite:false
+      transparent:true,opacity:.32,depthWrite:false
     });
     mat.map.needsUpdate=true;
     const beam=new THREE.Sprite(mat);

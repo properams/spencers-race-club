@@ -417,6 +417,14 @@ function floatText3D(text,color,worldPos){
 }
 
 
+// Shared skid-mark geometry — every mark uses the same .38×1.7 plane so we
+// only allocate one BufferGeometry per session instead of one per skid event.
+// Material is still per-mark (opacity fades independently per mark).
+let _skidGeo=null;
+function _getSkidGeo(){
+  if(!_skidGeo)_skidGeo=new THREE.PlaneGeometry(.38,1.7);
+  return _skidGeo;
+}
 function addSkidMark(car,opacityOverride){
   _plFwd.set(0,0,-1).applyQuaternion(car.mesh.quaternion);
   _plRt.set(1,0,0).applyQuaternion(car.mesh.quaternion);
@@ -435,12 +443,14 @@ function addSkidMark(car,opacityOverride){
     themepark:{color:0x1a1020,blend:false},  // donker paars-zwart
     grandprix:{color:0x0a0a0a,blend:false}   // klassiek zwart
   }[activeWorld]||{color:0x0a0a0a,blend:false};
+  const sharedGeo=_getSkidGeo();
   [-0.65,.65].forEach(s=>{
     const matOpts={color:skidCfg.color,transparent:true,opacity:baseOp,depthWrite:false};
     if(skidCfg.blend){matOpts.blending=THREE.AdditiveBlending;}
-    const sm=new THREE.Mesh(new THREE.PlaneGeometry(.38,1.7),new THREE.MeshBasicMaterial(matOpts));
+    const sm=new THREE.Mesh(sharedGeo,new THREE.MeshBasicMaterial(matOpts));
     sm.rotation.x=-Math.PI/2;sm.position.copy(car.mesh.position).addScaledVector(rt,s).addScaledVector(fwd,1.5);sm.position.y=.013;
-    scene.add(sm);skidMarks.push({mesh:sm,born:_nowSec,maxOp:baseOp});while(skidMarks.length>80){const old=skidMarks.shift();old.mesh.geometry.dispose();old.mesh.material.dispose();scene.remove(old.mesh);}
+    scene.add(sm);skidMarks.push({mesh:sm,born:_nowSec,maxOp:baseOp});
+    if(skidMarks.length>80){const old=skidMarks.shift();old.mesh.material.dispose();scene.remove(old.mesh);}
   });
 }
 
@@ -448,7 +458,7 @@ function updateSkidMarks(){
   for(let i=skidMarks.length-1;i>=0;i--){
     const s=skidMarks[i];
     const op=Math.max(0,(s.maxOp||.72)*(1-(_nowSec-s.born)/12));
-    if(op<=0){s.mesh.geometry.dispose();s.mesh.material.dispose();scene.remove(s.mesh);skidMarks.splice(i,1);}
+    if(op<=0){s.mesh.material.dispose();scene.remove(s.mesh);skidMarks.splice(i,1);}
     else s.mesh.material.opacity=op;
   }
 }
