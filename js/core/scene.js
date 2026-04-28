@@ -84,31 +84,47 @@ function buildScene(){
   const isCandy=activeWorld==='candy';
   const isNeon=activeWorld==='neoncity';
   const isThemepark=activeWorld==='themepark';
+  const isVolcano=activeWorld==='volcano';
+  const isArctic=activeWorld==='arctic';
   scene=new THREE.Scene();
+  // Fog color is matched to the skybox horizon (sky-bottom gradient stop) per world,
+  // so fogged distant geometry blends seamlessly into the sky instead of producing a
+  // visible "kleurverschil" band where the fogged scene meets the skybox.
+  // Day/Night fog colors mirror toggleNight()'s skybox swaps so updateSky's lerp
+  // never drifts to a wrong-world fog color (e.g. light-blue fog in the volcano).
   if(isSpace){
     scene.background=makeSkyTex('#000005','#010018');
-    scene.fog=new THREE.FogExp2(0x050015,.0008);
-    _fogColorDay.setHex(0x050015);_fogColorNight.setHex(0x020008);
+    scene.fog=new THREE.FogExp2(0x010018,.0014);
+    _fogColorDay.setHex(0x080045);_fogColorNight.setHex(0x010018);
   }else if(isDeepSea){
     scene.background=makeSkyTex('#001825','#003355');
-    scene.fog=new THREE.FogExp2(0x002233,.0014);
-    _fogColorDay.setHex(0x002233);_fogColorNight.setHex(0x000810);
+    scene.fog=new THREE.FogExp2(0x003355,.0017);
+    _fogColorDay.setHex(0x003355);_fogColorNight.setHex(0x00101a);
   }else if(isCandy){
     scene.background=makeSkyTex('#ff88cc','#ffe4f0');
-    scene.fog=new THREE.FogExp2(0xffccee,.0009);
-    _fogColorDay.setHex(0xffccee);_fogColorNight.setHex(0x2a0a1a);
+    scene.fog=new THREE.FogExp2(0xffe4f0,.0015);
+    _fogColorDay.setHex(0xffe4f0);_fogColorNight.setHex(0x280038);
   }else if(isNeon){
     scene.background=makeSkyTex('#000008','#030012');
-    scene.fog=new THREE.FogExp2(0x050012,.0015);
-    _fogColorDay.setHex(0x050012);_fogColorNight.setHex(0x020008);
+    scene.fog=new THREE.FogExp2(0x030012,.0017);
+    _fogColorDay.setHex(0x080025);_fogColorNight.setHex(0x030012);
   }else if(isThemepark){
     scene.background=makeSkyTex('#2a0844','#ff8844');
-    scene.fog=new THREE.FogExp2(0x552244,.00095);
-    _fogColorDay.setHex(0x553366);_fogColorNight.setHex(0x0a0018);
+    scene.fog=new THREE.FogExp2(0xff8844,.0015);
+    _fogColorDay.setHex(0xff8844);_fogColorNight.setHex(0x3a0e22);
+  }else if(isVolcano){
+    scene.background=makeSkyTex('#ff3300','#1a0400');
+    scene.fog=new THREE.FogExp2(0x1a0400,.002);
+    // Volcano skybox doesn't swap on toggleNight — fog stays anchored to the sky bottom.
+    _fogColorDay.setHex(0x1a0400);_fogColorNight.setHex(0x1a0400);
+  }else if(isArctic){
+    scene.background=makeSkyTex('#0a1525','#1a3050');
+    scene.fog=new THREE.FogExp2(0x1a3050,.0035);
+    _fogColorDay.setHex(0x1a3050);_fogColorNight.setHex(0x0a1828);
   }else{
     scene.background=makeSkyTex('#1e5292','#b8d8ee');
-    scene.fog=new THREE.FogExp2(0x8ac0e0,.00125);
-    _fogColorDay.setHex(0x8ac0e0);_fogColorNight.setHex(0x030610);
+    scene.fog=new THREE.FogExp2(0xb8d8ee,.0017);
+    _fogColorDay.setHex(0xb8d8ee);_fogColorNight.setHex(0x030d1e);
   }
   camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.2,900);
   camera.position.set(0,12,330);camera.lookAt(0,0,280);

@@ -72,6 +72,22 @@ function toggleNight(){
     if(plTail)plTail.intensity=isDark?2.0:0;
     _aiHeadPool.forEach(function(l){l.intensity=isDark?1.8:0;});
     if(_sunBillboard)_sunBillboard.visible=false;
+  }else if(activeWorld==='themepark'){
+    // Sunset park stays sunset-toned; toggle dims/lights it without swapping the skybox to GP blue.
+    if(isDark){
+      scene.background=makeSkyTex('#150022','#3a0e22');scene.fog.density=.0018;
+      sunLight.intensity=.06;ambientLight.intensity=.15;hemiLight.intensity=.12;
+      trackLightList.forEach(l=>l.intensity=2.2);trackPoles.forEach(p=>p.visible=true);
+    }else{
+      scene.background=makeSkyTex('#2a0844','#ff8844');scene.fog.density=.00095;
+      sunLight.intensity=.85;ambientLight.intensity=.45;hemiLight.intensity=.35;
+      trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
+    }
+    if(stars)stars.visible=isDark;
+    if(plHeadL){plHeadL.intensity=isDark?2.4:0;plHeadR.intensity=isDark?2.4:0;}
+    if(plTail)plTail.intensity=isDark?1.6:0;
+    _aiHeadPool.forEach(l=>l.intensity=isDark?1.6:0);
+    if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='candy'){
     // Candy — Day=bright pastel paradise, Night=glow-in-the-dark wonderland
     if(isDark){
