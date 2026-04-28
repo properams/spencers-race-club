@@ -157,6 +157,81 @@ function buildClouds(){
 }
 
 
+// Procedural silhouette canvas: jagged mountain horizon with alpha=0 sky
+// above the ridge. Used as the fallback for parallax background layers.
+function _silhouetteTex(seed, baseColor, accent, jaggedness){
+  const W=2048, H=384;
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const g=c.getContext('2d');
+  // Random walker generates a horizon line. PRNG seeded per-layer so a
+  // far + near pair don't produce identical silhouettes.
+  let s = seed||1;
+  const rnd = () => { s = (s*9301+49297)%233280; return s/233280; };
+  const ys=new Float32Array(W);
+  const baseY = H*0.45;
+  const amp = jaggedness * H * 0.35;
+  // Sum of three octaves of band-limited noise → mountainous shape.
+  for (let octave=0;octave<3;octave++){
+    const wl = 60 / Math.pow(2, octave);
+    const sub = amp / Math.pow(2, octave);
+    let prev = (rnd()-.5)*sub;
+    for (let x=0;x<W;x++){
+      const phase = x / wl;
+      const r = Math.sin(phase + rnd()*0.4) * sub * 0.5 + prev*0.92;
+      prev = r;
+      ys[x] += r;
+    }
+  }
+  // Gradient fill (top: accent, bottom: deepens toward base color).
+  const grad = g.createLinearGradient(0, baseY-amp, 0, H);
+  grad.addColorStop(0, accent);
+  grad.addColorStop(1, baseColor);
+  g.fillStyle = grad;
+  g.beginPath();
+  g.moveTo(0, H);
+  for (let x=0;x<W;x++) g.lineTo(x, baseY + ys[x]);
+  g.lineTo(W, H);
+  g.closePath();
+  g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping;
+  t.needsUpdate = true;
+  if (window.ThreeCompat && ThreeCompat.applyTextureColorSpace) ThreeCompat.applyTextureColorSpace(t);
+  return t;
+}
+
+function buildBackgroundLayers(){
+  // Two parallax silhouette planes ringing the horizon. Far layer sits
+  // farthest, lighter & narrower; near layer is darker & taller. Both
+  // wrap horizontally so panning the camera reveals more landscape.
+  if (activeWorld !== 'grandprix') return;
+
+  // If textured layers exist in the asset cache, prefer them.
+  const farTex  = window.Assets ? Assets.getTexture('grandprix','skybox_layers.mountains_far')  : null;
+  const nearTex = window.Assets ? Assets.getTexture('grandprix','skybox_layers.mountains_near') : null;
+
+  const def = [
+    { tex: farTex  || _silhouetteTex(7, '#3a4960', '#6b7c98', 0.55),
+      radius: 740, height: 110, yBase: 12, color: 0xffffff, opacity: 0.96, repeat: 5 },
+    { tex: nearTex || _silhouetteTex(31, '#222a3d', '#404a64', 0.85),
+      radius: 540, height: 78,  yBase: 5,  color: 0xffffff, opacity: 1.00, repeat: 4 },
+  ];
+  def.forEach(layer=>{
+    layer.tex.wrapS = THREE.RepeatWrapping;
+    layer.tex.repeat.set(layer.repeat, 1);
+    const mat = new THREE.MeshBasicMaterial({
+      map: layer.tex, color: layer.color, transparent:true, opacity: layer.opacity,
+      side: THREE.DoubleSide, depthWrite:false, fog:true,
+    });
+    // CylinderGeometry openEnded with the texture wrapped horizontally.
+    const geo = new THREE.CylinderGeometry(layer.radius, layer.radius, layer.height, 64, 1, true);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.y = layer.yBase + layer.height*0.5;
+    mesh.renderOrder = -10;
+    scene.add(mesh);
+  });
+}
+
 function buildMountains(){
   const mNear=new THREE.MeshLambertMaterial({color:0x3d5878});
   const mFar=new THREE.MeshLambertMaterial({color:0x253850});

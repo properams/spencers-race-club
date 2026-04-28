@@ -450,7 +450,8 @@ function buildScene(){
     buildThemeparkEnvironment();
   }else{
     buildGround();buildClouds();buildBarriers();buildGantry();
-    buildMountains();buildLake();buildGravelTraps();buildEnvironmentTrees();
+    buildMountains();buildBackgroundLayers();buildLake();
+    buildGravelTraps();buildEnvironmentTrees();
     buildNightObjects();buildSpectators();buildSunBillboard();
     buildAdvertisingBoards();buildCornerBoards();buildTrackFlags();
     buildGPTrackProps();
