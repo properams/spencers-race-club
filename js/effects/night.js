@@ -11,6 +11,11 @@
 let _skyT=0,_skyTarget=0;
 const _fogColorDay=new THREE.Color(0x8ac0e0);
 const _fogColorNight=new THREE.Color(0x030610);
+// Per-world "no rain" fog density. updateWeather() reads this so its rain-blend
+// adds rainAdd on top of the active world's base instead of clobbering all worlds
+// to GP-hardcoded values every frame. Set at end of toggleNight() and on
+// non-rain branches of setWeather().
+let _fogBaseDensity=.0021;
 
 function toggleNight(){
   isDark=!isDark;
@@ -26,7 +31,7 @@ function toggleNight(){
       _dsaBioEdges.forEach(e=>e.mat.opacity=.85);
       _jellyfishList.forEach(j=>{const pl=j.children.find(c=>c.isLight);if(pl)pl.intensity=1.4;});
     }else{
-      scene.background=makeSkyTex('#001825','#003355');scene.fog.density=.0014;
+      scene.background=makeSkyTex('#001825','#003355');scene.fog.density=.0019;
       sunLight.intensity=.45;ambientLight.intensity=.55;hemiLight.intensity=.30;
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
       if(stars)stars.visible=false;
@@ -44,7 +49,7 @@ function toggleNight(){
       sunLight.intensity=.02;ambientLight.intensity=.15;hemiLight.intensity=.10;
       trackLightList.forEach(l=>{if(l.intensity>0)l.intensity=Math.min(l.intensity*1.3,4.5);});
     }else{
-      scene.background=makeSkyTex('#040015','#080025');scene.fog.density=.0012;
+      scene.background=makeSkyTex('#040015','#080025');scene.fog.density=.0021;
       sunLight.color.setHex(0x441122);sunLight.intensity=.08;
       ambientLight.intensity=.22;hemiLight.intensity=.18;
     }
@@ -79,7 +84,7 @@ function toggleNight(){
       sunLight.intensity=.06;ambientLight.intensity=.15;hemiLight.intensity=.12;
       trackLightList.forEach(l=>l.intensity=2.2);trackPoles.forEach(p=>p.visible=true);
     }else{
-      scene.background=makeSkyTex('#2a0844','#ff8844');scene.fog.density=.00095;
+      scene.background=makeSkyTex('#2a0844','#ff8844');scene.fog.density=.0019;
       sunLight.intensity=.85;ambientLight.intensity=.45;hemiLight.intensity=.35;
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
     }
@@ -100,7 +105,7 @@ function toggleNight(){
       if(plTail)plTail.intensity=1.6;
       _aiHeadPool.forEach(l=>l.intensity=1.5);
     }else{
-      scene.background=makeSkyTex('#ff88cc','#ffe4f0');scene.fog.density=.0009;
+      scene.background=makeSkyTex('#ff88cc','#ffe4f0');scene.fog.density=.0019;
       sunLight.intensity=1.5;ambientLight.intensity=.65;hemiLight.intensity=.45;
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
       _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=.25;} });
@@ -116,7 +121,7 @@ function toggleNight(){
       scene.background=makeSkyTex('#000005','#010018');scene.fog.density=.0008;
       sunLight.intensity=.04;ambientLight.intensity=.14;hemiLight.intensity=.10;
     }else{
-      scene.background=makeSkyTex('#040025','#080045');scene.fog.density=.0005;
+      scene.background=makeSkyTex('#040025','#080045');scene.fog.density=.0014;
       sunLight.intensity=.10;ambientLight.intensity=.28;hemiLight.intensity=.18;
     }
     if(stars)stars.visible=true; // always on in space
@@ -133,7 +138,7 @@ function toggleNight(){
       if(plHeadL){plHeadL.intensity=2.6;plHeadR.intensity=2.6;}if(plTail)plTail.intensity=1.8;
       _aiHeadPool.forEach(l=>l.intensity=1.7);
     }else{
-      scene.background=makeSkyTex('#1e5292','#b8d8ee');scene.fog.density=.0011;
+      scene.background=makeSkyTex('#1e5292','#b8d8ee');scene.fog.density=.0021;
       sunLight.intensity=1.65;ambientLight.intensity=.50;hemiLight.intensity=.36;
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);if(stars)stars.visible=false;
       if(plHeadL){plHeadL.intensity=0;plHeadR.intensity=0;}if(plTail)plTail.intensity=0;
@@ -145,6 +150,9 @@ function toggleNight(){
     _skyT=_skyTarget;
     scene.fog.color.lerpColors(_fogColorDay,_fogColorNight,_skyT);
   }
+  // Cache per-world "no rain" fog density so updateWeather can layer rain on top
+  // without resetting to GP-hardcoded values every frame.
+  if(scene&&scene.fog)_fogBaseDensity=scene.fog.density;
   if(_sunBillboard)_sunBillboard.visible=!isDark&&!isRain&&activeWorld!=='space'&&activeWorld!=='deepsea';
   // Bloom intensifies bij night (lower threshold, higher strength) — neon
   // emissives gloeien dan dramatischer. Day = subtieler.

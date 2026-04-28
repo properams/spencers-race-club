@@ -34,7 +34,7 @@ function toggleRain(){
   if(gameState==='TITLE'||gameState==='SELECT'){
     _rainIntensity=_rainTarget;
     if(rainCanvas)rainCanvas.style.display=isRain?'block':'none';
-    scene.fog.density=isDark?(isRain?.006:.0035):(isRain?.002:.0011);
+    scene.fog.density=isDark?(isRain?.006:.0035):(isRain?.002:.0021);
     if(_trackMesh){
       const base=_trackMesh.material.userData.baseColor||0x262626;
       // Preserve world track color, only darken slightly when raining
@@ -58,7 +58,7 @@ function setWeather(mode){
   if(activeWorld==='space'){
     if(_snowParticles){scene.remove(_snowParticles);_snowParticles=null;}
     if(mode==='clear'){
-      scene.fog.density=.0008;scene.fog.color.setHex(0x050015);
+      scene.fog.density=.0014;scene.fog.color.setHex(0x050015);
       ambientLight.intensity=isDark?.14:.28;
     } else if(mode==='fog'){
       // Nebula Cloud — dense purple mist
@@ -80,13 +80,14 @@ function setWeather(mode){
       if(!_spaceDustParticles)buildSpaceDust();
       else{_spaceDustParticles.material.opacity=.75;_spaceDustParticles.material.size=.5;}
     }
+    if(mode!=='storm')_fogBaseDensity=scene.fog.density;
     document.querySelectorAll('.wxCard').forEach(b=>b.classList.toggle('wxSel',b.dataset.w===mode));
     localStorage.setItem('src_weather',mode);
     return;
   }
   // ── Grand Prix weather ────────────────────────────────────────
   if(mode==='clear'){
-    scene.fog.density=.0011;scene.fog.color.setHex(0x8ac0e0);
+    scene.fog.density=.0021;scene.fog.color.setHex(0x8ac0e0);
     if(scene.background)scene.background=makeSkyTex('#1e5292','#b8d8ee');
     sunLight.color.setHex(0xfff8f0);sunLight.intensity=1.65;ambientLight.intensity=.50;hemiLight.intensity=.36;
     hemiLight.color.setHex(0x9bbfdd);hemiLight.groundColor.setHex(0x4a7a3d);
@@ -99,7 +100,7 @@ function setWeather(mode){
     if(_sunBillboard)_sunBillboard.visible=false;
     if(_snowParticles){scene.remove(_snowParticles);_snowParticles=null;}
   } else if(mode==='sunset'){
-    scene.fog.density=.0015;scene.fog.color.setHex(0xdd8855);
+    scene.fog.density=.0021;scene.fog.color.setHex(0xdd8855);
     scene.background=makeSkyTex('#ff4400','#ffaa44');
     sunLight.color.setHex(0xff8840);sunLight.intensity=1.2;
     hemiLight.color.setHex(0xff9944);hemiLight.groundColor.setHex(0x664422);hemiLight.intensity=.5;
@@ -128,6 +129,10 @@ function setWeather(mode){
       scene.add(_snowParticles);
     }
   }
+  // Cache "no rain" fog density (used by updateWeather as the base for rain blend).
+  // Storm mode inherently includes rain, so its density already represents rain-on
+  // — we still cache it as base so toggling rain off reverts to the storm density.
+  if(mode!=='storm')_fogBaseDensity=scene.fog.density;
   // Highlight active weather card
   document.querySelectorAll('.wxCard').forEach(b=>b.classList.toggle('wxSel',b.dataset.w===mode));
   localStorage.setItem('src_weather',mode);
@@ -210,8 +215,11 @@ function updateWeather(dt){
     _trackMesh.material.emissive.setRGB(w*.04,w*.05,w*.09);
     _trackMesh.material.needsUpdate=true;
   }
-  // Fog — blend day/night base with rain density
-  const baseFog=isDark?.0035:.0011;
+  // Fog — blend per-world day/night base (cached by toggleNight/setWeather) with
+  // rain density bump. Previously hardcoded GP values clobbered every world's
+  // density every frame, which left non-GP worlds (and the raised day densities)
+  // with too little fog at camera.far=900 → visible prop pop-in while driving.
+  const baseFog=_fogBaseDensity;
   const rainAdd=isDark?.0025:.0009;
   scene.fog.density=baseFog+_rainIntensity*rainAdd;
 }
