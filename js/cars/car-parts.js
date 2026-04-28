@@ -67,51 +67,52 @@ function addPart(group, geo, mat, x, y, z, rx, ry, rz){
   return m;
 }
 
-// One wheel assembly: tire + 5-spoke rim + caliper + disc.
-// Returns the tire mesh (used for spinning userData.wheels).
+// One wheel assembly: a sub-group at (x,y,z) containing tire + rim + spokes
+// + caliper + brake disc. The sub-group spins as one unit (physics.spinWheels
+// rotates everything in userData.wheels[]). Caliper is added as a sibling so
+// it stays static while the wheel spins.
+// Returns the spinning sub-group.
 function buildWheel(group, x, y, z, radius, width, mats, lod){
   const tireSegs = lod==='low' ? 8 : 16;
+  const wheelGroup = new THREE.Group();
+  wheelGroup.position.set(x, y, z);
+  // Orient the wheel so its rotation axis is along world X (left-right).
+  // Spinning forward = rotation around world X = rotation.x on this group.
+  wheelGroup.rotation.z = Math.PI/2;
+  group.add(wheelGroup);
+  // Tire
   const tire = new THREE.Mesh(
     new THREE.CylinderGeometry(radius, radius, width, tireSegs),
     mats.tire
   );
-  tire.rotation.z = Math.PI/2;
-  tire.position.set(x, y, z);
   tire.castShadow = true;
-  group.add(tire);
-  if(lod === 'low'){
-    // mobile/low-quality: skip rim spokes + brake disc — silhouette only
-    return tire;
+  wheelGroup.add(tire);
+  if(lod !== 'low'){
+    // Rim (slightly outside the tire for visibility)
+    const rim = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius*.62, radius*.62, width+.012, 12),
+      mats.rim
+    );
+    wheelGroup.add(rim);
+    // 5 spokes — laid flat across the rim face
+    const spokeGeo = new THREE.BoxGeometry(.04, .025, radius*1.05);
+    for(let s=0; s<5; s++){
+      const sp = new THREE.Mesh(spokeGeo, mats.rim);
+      sp.rotation.y = (s/5)*Math.PI*2;
+      wheelGroup.add(sp);
+    }
+    // Brake disc — same axis as wheel
+    const disc = new THREE.Mesh(
+      new THREE.CylinderGeometry(radius*.55, radius*.55, .03, 12),
+      mats.brakeDisc
+    );
+    wheelGroup.add(disc);
+    // Caliper as sibling (stays static while wheel spins)
+    const cal = new THREE.Mesh(new THREE.BoxGeometry(.08, .18, .22), mats.brakeRed);
+    cal.position.set(x, y-.08, z);
+    group.add(cal);
   }
-  const rim = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius*.62, radius*.62, width+.012, 12),
-    mats.rim
-  );
-  rim.rotation.z = Math.PI/2;
-  rim.position.set(x, y, z);
-  group.add(rim);
-  // 5 spokes
-  const spokeGeo = new THREE.BoxGeometry(radius*1.05, .025, .04);
-  for(let s=0; s<5; s++){
-    const sp = new THREE.Mesh(spokeGeo, mats.rim);
-    sp.rotation.z = Math.PI/2;
-    sp.rotation.y = (s/5)*Math.PI*2;
-    sp.position.set(x, y, z);
-    group.add(sp);
-  }
-  // Brake caliper
-  const cal = new THREE.Mesh(new THREE.BoxGeometry(.08, .18, .22), mats.brakeRed);
-  cal.position.set(x, y-.08, z);
-  group.add(cal);
-  // Brake disc behind rim — visible from side
-  const disc = new THREE.Mesh(
-    new THREE.CylinderGeometry(radius*.55, radius*.55, .03, 12),
-    mats.brakeDisc
-  );
-  disc.rotation.z = Math.PI/2;
-  disc.position.set(x + (x>0 ? -width*.4 : width*.4), y, z);
-  group.add(disc);
-  return tire;
+  return wheelGroup;
 }
 
 // Builds 4 wheels at the standard sedan/super positions and registers them
@@ -129,8 +130,8 @@ function buildAllWheels(group, def, mats, lod, posOverride){
   const width = isF1 ? .42 : .26;
   group.userData.wheels = [];
   positions.forEach(([wx,wy,wz])=>{
-    const tire = buildWheel(group, wx, wy, wz, radius, width, mats, lod);
-    group.userData.wheels.push(tire);
+    const wheelGrp = buildWheel(group, wx, wy, wz, radius, width, mats, lod);
+    group.userData.wheels.push(wheelGrp);
   });
   // Map to FL/FR/RL/RR for engine.js / physics.js consumers.
   const w = group.userData.wheels;

@@ -1,11 +1,36 @@
-// js/cars/build.js — non-module script.
+// js/cars/build.js — entry point for car building.
+// Non-module script. Loaded AFTER car-parts.js + brands.js.
+//
+// makeCar(def):
+//   1. If a brand-specific builder exists in BRAND_BUILDERS, build the body
+//      via that builder and add wheels via the shared buildAllWheels helper.
+//   2. Otherwise fall back to the legacy parametric body (preserved below
+//      as _makeCarLegacy) so brands without an explicit builder still work
+//      while we incrementally roll out the brand-specific overhaul.
+//
+// makeAllCars() — places all 9 race entrants on the grid (unchanged from
+// the legacy implementation).
 
 'use strict';
 
-// makeWheel was dead code — niet aangeroepen door makeCar (die bouwt
-// wheels inline). Verwijderd in dead-code cleanup.
-
 function makeCar(def){
+  const lod = (typeof carLOD === 'function') ? carLOD() : 'high';
+  const brandBuilder = (window.BRAND_BUILDERS && window.BRAND_BUILDERS[def.brand]) || null;
+  if(brandBuilder && typeof getSharedCarMats === 'function'){
+    const g = new THREE.Group();
+    const shared = getSharedCarMats();
+    const paintMats = makePaintMats(def);
+    const mats = Object.assign({}, shared, paintMats);
+    brandBuilder(g, def, mats, lod);
+    buildAllWheels(g, def, mats, lod);
+    return g;
+  }
+  return _makeCarLegacy(def);
+}
+
+// Legacy parametric body — preserved for brands without an explicit builder.
+// Will be removed once all 12 brands have brand-specific builders (PR-B).
+function _makeCarLegacy(def){
   const g=new THREE.Group();
   const isF1=def.type==='f1',isMuscle=def.type==='muscle';
   const paint=new THREE.MeshLambertMaterial({color:def.color});
@@ -196,4 +221,3 @@ function makeAllCars(){
   // Init near-miss cooldowns for all cars
   for(let i=0;i<CAR_DEFS.length;i++)_nearMissCooldown[i]=0;
 }
-

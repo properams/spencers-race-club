@@ -62,6 +62,11 @@ function showFinish(){
     }
   }
   const newUnlocks=checkUnlocks(p);
+  // Per-(world × difficulty) lap record — used by selection-screen rival display.
+  if(typeof recordLapTime==='function'&&bestLapTime<Infinity){
+    const playerCar=carObjs[playerIdx];
+    if(playerCar&&playerCar.def)recordLapTime(activeWorld,difficulty,bestLapTime,playerCar.def);
+  }
   savePersistent();
   if(newUnlocks.length>0)setTimeout(()=>showUnlocks(newUnlocks),2500);
   // Detect personal record BEFORE savePersistent updates the cached values
