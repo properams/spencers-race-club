@@ -70,6 +70,7 @@ function _resetRaceState(){
   if(typeof disposeVolcanoBridge==='function')disposeVolcanoBridge();
   if(typeof disposeArcticIceShelf==='function')disposeArcticIceShelf();
   if(typeof disposeCandyChocoBridge==='function')disposeCandyChocoBridge();
+  if(typeof disposeThemeparkCoaster==='function')disposeThemeparkCoaster();
   _arcticIcePatches.length=0;_arcticAurora.length=0;_arcticBlizzardGeo=null;
   _lastGear=1;_currentGear=1;_lastPPos=0;_lastLeaderOrder='';
   _leaderPendingKey='';_leaderStableT=0;_posStableValue=0;_posStableT=0;
