@@ -64,7 +64,8 @@ var titleMusic=null,musicSched=null,selectMusic=null; // var: music ES-module sc
 // zijn beschikbaar via window.xxx (module laadt deferred).
 
 var audioCtx=null; // var: music ES-module leest window.audioCtx
-// Engine audio state (engineOsc, engineGain, _rollGain, _rollSrc, _rollFilt) → js/audio/engine.js
+// Engine audio state (engineOsc, engineGain, _rollGain, _rollSrc, _rollFilt,
+// _carWindGain/_carWindSrc/_carWindFilt, _carWindSampleGain/_carWindSampleSrc) → js/audio/engine.js
 
 // Special track objects
 const jumpRamps=[],spinPads=[],boostPads=[],collectibles=[];

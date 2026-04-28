@@ -528,8 +528,9 @@ class RaceMusic{
     }catch(_){}
   }
 
-  // Intensity 0 = normaal, 1 = final lap urgency (dichter hat-patroon)
-  setIntensity(level){this.intensity=level|0;}
+  // Intensity 0..1 (continu): hat-velocity scaled, urgent-pattern boven 0.5.
+  // Final-lap forceert effectief 1 via finalLap-flag.
+  setIntensity(level){this.intensity=Math.max(0,Math.min(1,+level||0));}
 
   setFinalLap(){
     if(this.finalLap)return;this.finalLap=true;if(!window.audioCtx)return;
@@ -616,9 +617,11 @@ class RaceMusic{
       // A/B section — elke 8 bars wisselen we voor subtiele hat-variatie
       const section=Math.floor(this.bar/8)%2;
       const isB=section===1;
-      // Intensity of finalLap verhogen de hat-velocity
-      const urgent=this.finalLap||this.intensity>0;
-      const hv=urgent?.036:.022;
+      // Continu intensity-driven hat-velocity. Urgent-pattern (16ths op
+      // bar 2/4) boven 0.5 of op final-lap.
+      const intLevel=this.finalLap?1:this.intensity;
+      const urgent=this.finalLap||this.intensity>0.5;
+      const hv=.022+intLevel*.014;
 
       // ── GRAND PRIX: driving techno, kick every beat ──
       if(this.style==='grandprix'){
@@ -879,9 +882,26 @@ function startSelectMusic(){
   if(window.selectMusic&&window.selectMusic.running)return;
   if(window.selectMusic){try{window.selectMusic.stop();}catch(_){}window.selectMusic=null;}
   window.selectMusic=_safeStartMusic(()=>new SelectMusic(window.audioCtx));
+  // Preload muziek-stems + globale SFX + surface voor de huidige wereld
+  // (idempotent). Als user een andere wereld kiest triggert select.js
+  // rebuildWorld een nieuwe preload-cyclus.
+  if(window.activeWorld&&typeof window._preloadWorld==='function'){
+    window._preloadWorld(window.activeWorld);
+  }
+  if(typeof window._preloadSFX==='function')window._preloadSFX();
+  if(typeof window._preloadAmbient==='function')window._preloadAmbient();
+  if(typeof window._preloadSurfacesForWorld==='function'&&window.activeWorld){
+    window._preloadSurfacesForWorld(window.activeWorld);
+  }
 }
 
 function _createRaceMusicForWorld(){
+  // Dispatcher: als samples.js stems heeft geladen voor de actieve wereld,
+  // gebruik StemRaceMusic; anders fallback naar procedurele RaceMusic.
+  if(typeof window._createStemRaceMusicIfReady === 'function'){
+    const stem = window._createStemRaceMusicIfReady();
+    if(stem) return stem;
+  }
   return new RaceMusic(window.audioCtx);
 }
 

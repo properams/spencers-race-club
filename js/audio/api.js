@@ -27,6 +27,7 @@ const Audio = {
   playLand()          { return window.playLandSound && window.playLandSound(); },
   playSpin()          { return window.playSpinSound && window.playSpinSound(); },
   playCollision()     { return window.playCollisionSound && window.playCollisionSound(); },
+  playBrake()         { return window.playBrakeSound && window.playBrakeSound(); },
   playVictory()       { return window.playVictoryFanfare && window.playVictoryFanfare(); },
   playCount(n)        { return window.playCountBeep && window.playCountBeep(n); },
   playFanfare()       { return window.playFanfare && window.playFanfare(); },
@@ -38,6 +39,29 @@ const Audio = {
   startSelectMusic()  { return window.startSelectMusic && window.startSelectMusic(); },
   // Race music: dispatcher. Aanroeper geeft activeWorld impliciet (via window.activeWorld).
   createRaceMusic()   { return window._createRaceMusicForWorld && window._createRaceMusicForWorld(); },
+  // Preload muziek-stems voor een wereld. Fire-and-forget vanaf track-select;
+  // als preload klaar is voor race-start gebruikt _createRaceMusicForWorld
+  // automatisch de samples, anders fallback naar procedurele synth.
+  preloadWorld(worldId){
+    if(typeof window._preloadWorld !== 'function') return Promise.resolve({kind:'procedural'});
+    return window._preloadWorld(worldId);
+  },
+  // Preload alle dispatch-categorieën voor de huidige race-config:
+  // SFX (globaal), surface voor de actieve wereld, engine voor het geselecteerde
+  // car-type. Idempotent — caches dedupliceren herhaalde aanroepen. Wordt
+  // aangeroepen vanaf select-flow zodat samples klaar zijn voor race-start.
+  preloadAll(carType){
+    const out = [];
+    if(window._preloadSFX) out.push(window._preloadSFX());
+    if(window._preloadAmbient) out.push(window._preloadAmbient());
+    if(window._preloadSurfacesForWorld && window.activeWorld){
+      out.push(window._preloadSurfacesForWorld(window.activeWorld));
+    }
+    if(window._preloadEngine && carType){
+      out.push(window._preloadEngine(carType));
+    }
+    return Promise.all(out);
+  },
   fadeOut(sched, dur) { return window._fadeOutMusic && window._fadeOutMusic(sched, dur); },
   safeStart(factory)  { return window._safeStartMusic && window._safeStartMusic(factory); },
   applyMusicGain(ramp){ return window._applyMusicGain && window._applyMusicGain(ramp); },
@@ -55,6 +79,25 @@ const Audio = {
     const s = window.musicSched;
     if (s && s.setFinalLap) s.setFinalLap();
     if (s && s.setIntensity) s.setIntensity(1);
+  },
+
+  // Per-frame intensity update gebaseerd op race-state. Gameplay roept dit
+  // aan elke tick met (positie, speedRatio 0..1, comboActief). De facade
+  // berekent een continue 0..1 intensity en stuurt die door naar de actieve
+  // scheduler. Wordt genegeerd na setFinalLap (intensity locked op 1).
+  // Delta-gate voorkomt dat StemRaceMusic.setIntensity per-frame opnieuw
+  // AudioParam-ramps schedule't terwijl de waarde nauwelijks verandert.
+  updateMusicIntensity(pos, speedRatio, comboActive){
+    const s = window.musicSched;
+    if (!s || !s.setIntensity) return;
+    if (s.finalLap) return;
+    const posEnergy = pos===1 ? 0.55 : pos===2 ? 0.40 : pos===3 ? 0.30 : 0.20;
+    const comboBoost = comboActive ? 0.30 : 0;
+    const speedBoost = Math.max(0, Math.min(1, +speedRatio || 0)) * 0.15;
+    const intensity = Math.max(0, Math.min(1, posEnergy + comboBoost + speedBoost));
+    if (this._lastIntensity !== undefined && Math.abs(intensity - this._lastIntensity) < 0.02) return;
+    this._lastIntensity = intensity;
+    s.setIntensity(intensity);
   },
 
   // Duck (pit-stop, etc). Mutated window._musicDuck + re-applies.
