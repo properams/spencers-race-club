@@ -262,6 +262,12 @@ function buildCarSelectUI(){
     wInd.textContent=(wIcons[activeWorld]||'⬢')+' '+(wNames2[activeWorld]||activeWorld.toUpperCase());
   }
   _weatherMode='clear';
+  // Sync difficulty tab visual state to current `difficulty` global.
+  ['dEasy','dNorm','dHard'].forEach((id,i)=>{
+    const el=document.getElementById(id);if(!el)return;
+    el.classList.toggle('setOptSel',i===difficulty);
+    el.classList.toggle('diffSel',i===difficulty);
+  });
   // Wire LAPS tab options.
   [1,3,5].forEach(n=>{
     const btn=document.getElementById('lap'+n);if(!btn)return;
