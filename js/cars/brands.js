@@ -519,6 +519,129 @@ function buildKoenigseggJesko(g, def, mats, lod){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// F1 SHARED — builds the chassis tub, sidepods, halo, cockpit, airbox.
+// Wing/nose details differ per team and are added by the brand-specific
+// builders that call this helper.
+// ─────────────────────────────────────────────────────────────────────────────
+function _buildF1Common(g, def, mats, lod){
+  const lo = lod === 'low';
+  // Chassis tub — narrow, long
+  addPart(g, new THREE.BoxGeometry(.78, .26, 4.40), mats.paint, 0, .15, 0);
+  // Bargeboards / floor extensions
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(2.00, .04, 3.40), mats.matBlk, 0, .04, 0);
+  }
+  // Sidepods
+  [-1, 1].forEach(s=>{
+    addPart(g, new THREE.BoxGeometry(.50, .30, 1.95), mats.paint, s*.85, .18, .35);
+    if(!lo){
+      // Sidepod intakes (front)
+      addPart(g, new THREE.BoxGeometry(.40, .20, .12), mats.grille, s*.92, .22, -.50);
+    }
+  });
+  // Cockpit opening (raised collar)
+  addPart(g, new THREE.BoxGeometry(.66, .26, .80), mats.matBlk, 0, .30, .05);
+  // Halo bar — torus arc above cockpit
+  if(!lo){
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(.30, .035, 6, 16), mats.chrome);
+    halo.position.set(0, .58, .05); g.add(halo);
+    // Halo front strut
+    addPart(g, new THREE.BoxGeometry(.05, .25, .05), mats.chrome, 0, .42, -.18);
+  }
+  // Engine airbox (above driver, behind cockpit) + roll hoop
+  addPart(g, new THREE.BoxGeometry(.45, .35, .50), mats.paint, 0, .50, .55);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(.30, .20, .04), mats.matBlk, 0, .54, .30); // airbox intake mouth
+  }
+  // Engine cover sloping back
+  addPart(g, new THREE.BoxGeometry(.50, .24, 1.10), mats.paint, 0, .42, 1.30);
+  if(!lo){
+    // Camera mount on top
+    addPart(g, new THREE.BoxGeometry(.10, .06, .18), mats.matBlk, 0, .56, 1.00);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RED BULL RB F1 — pointed nose, twin-pillar rear wing, bull motif suggested
+// by red accent stripes. Default dark blue with red accents.
+// ─────────────────────────────────────────────────────────────────────────────
+function buildRedBullRBF1(g, def, mats, lod){
+  const lo = lod === 'low';
+  _buildF1Common(g, def, mats, lod);
+  // Pointed nose — long tapered cone (tip near front wing)
+  const nose = new THREE.Mesh(new THREE.CylinderGeometry(.05, .35, 1.80, 10), mats.paint);
+  nose.rotation.z = Math.PI/2; nose.rotation.y = Math.PI/2; // align long axis with Z (forward)
+  nose.position.set(0, .22, -2.10); g.add(nose);
+  // Front wing — wide low plate
+  addPart(g, new THREE.BoxGeometry(2.20, .04, .60), mats.paint, 0, .08, -2.55);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(2.20, .02, .12), mats.accent, 0, .12, -2.40); // upper element
+    // Endplates
+    [-1.10, 1.10].forEach(s=>addPart(g, new THREE.BoxGeometry(.05, .20, .55), mats.matBlk, s, .14, -2.55));
+    // Front-wing element strakes
+    [-.50, 0, .50].forEach(s=>addPart(g, new THREE.BoxGeometry(.04, .06, .50), mats.matBlk, s, .10, -2.55));
+  }
+  // Rear wing — twin-pillar, big plate
+  [-.20, .20].forEach(s=>addPart(g, new THREE.BoxGeometry(.08, .42, .12), mats.matBlk, s, .56, 2.10));
+  addPart(g, new THREE.BoxGeometry(2.10, .04, .42), mats.paint, 0, .80, 2.10);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(2.10, .02, .14), mats.accent, 0, .84, 2.16); // upper flap
+    [-1.04, 1.04].forEach(s=>addPart(g, new THREE.BoxGeometry(.04, .26, .45), mats.matBlk, s, .76, 2.10));
+  }
+  // DRS pod / rain light at rear
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(.08, .08, .04), mats.tail, 0, .60, 2.22);
+  }
+  // Red accent stripe along sidepods (Red Bull livery)
+  if(!lo){
+    [-1.05, 1.05].forEach(s=>{
+      addPart(g, new THREE.BoxGeometry(.04, .06, 1.80), mats.accent, s, .26, .35);
+    });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MERCEDES W14 F1 — longer nose, sleeker airbox, Mercedes star suggestion
+// via chrome accents. Default teal with chrome accents.
+// ─────────────────────────────────────────────────────────────────────────────
+function buildMercedesW14F1(g, def, mats, lod){
+  const lo = lod === 'low';
+  _buildF1Common(g, def, mats, lod);
+  // Slimmer, longer nose (Mercedes W14 styling)
+  const nose = new THREE.Mesh(new THREE.CylinderGeometry(.06, .30, 2.00, 10), mats.paint);
+  nose.rotation.z = Math.PI/2; nose.rotation.y = Math.PI/2;
+  nose.position.set(0, .22, -2.20); g.add(nose);
+  // Front wing — flatter, more elements
+  addPart(g, new THREE.BoxGeometry(2.20, .04, .60), mats.paint, 0, .08, -2.65);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(2.18, .02, .14), mats.chrome, 0, .12, -2.50);
+    addPart(g, new THREE.BoxGeometry(2.16, .02, .10), mats.chrome, 0, .16, -2.42);
+    [-1.10, 1.10].forEach(s=>addPart(g, new THREE.BoxGeometry(.05, .22, .55), mats.matBlk, s, .15, -2.65));
+    [-.45, 0, .45].forEach(s=>addPart(g, new THREE.BoxGeometry(.04, .06, .50), mats.matBlk, s, .10, -2.65));
+  }
+  // Slimmer rear wing — single tall pillar each side
+  [-.16, .16].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .50, .12), mats.matBlk, s, .60, 2.10));
+  addPart(g, new THREE.BoxGeometry(2.00, .04, .38), mats.paint, 0, .88, 2.10);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(2.00, .02, .12), mats.chrome, 0, .92, 2.14);
+    [-.99, .99].forEach(s=>addPart(g, new THREE.BoxGeometry(.04, .30, .42), mats.matBlk, s, .82, 2.10));
+  }
+  // DRS pod
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(.08, .08, .04), mats.tail, 0, .68, 2.22);
+  }
+  // Chrome accent stripe along sidepods (Mercedes silver arrow)
+  if(!lo){
+    [-1.05, 1.05].forEach(s=>{
+      addPart(g, new THREE.BoxGeometry(.04, .04, 1.80), mats.chrome, s, .30, .35);
+    });
+    // Three-pointed star suggestion on nose (small chrome cross)
+    addPart(g, new THREE.BoxGeometry(.16, .04, .04), mats.chrome, 0, .28, -1.55);
+    addPart(g, new THREE.BoxGeometry(.04, .04, .16), mats.chrome, 0, .28, -1.55);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // REGISTRY — maps def.brand to its builder. Brands not in the registry fall
 // back to the legacy makeCar logic in build.js (for incremental rollout).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -530,8 +653,10 @@ const BRAND_BUILDERS = {
   'AUDI':        buildAudiR8,
   'PORSCHE':     buildPorscheGT3RS,
   'MCLAREN':     buildMcLarenP1,
-  'KOENIGSEGG':  buildKoenigseggJesko
-  // 4 more brands added incrementally in PR-B (Red Bull/Mercedes F1, Mustang, Tesla)
+  'KOENIGSEGG':  buildKoenigseggJesko,
+  'RED BULL':    buildRedBullRBF1,
+  'MERCEDES':    buildMercedesW14F1
+  // 2 more brands added in final batch: Ford Mustang + Tesla Model S
 };
 
 window.BRAND_BUILDERS = BRAND_BUILDERS;
@@ -543,3 +668,5 @@ window.buildAudiR8 = buildAudiR8;
 window.buildPorscheGT3RS = buildPorscheGT3RS;
 window.buildMcLarenP1 = buildMcLarenP1;
 window.buildKoenigseggJesko = buildKoenigseggJesko;
+window.buildRedBullRBF1 = buildRedBullRBF1;
+window.buildMercedesW14F1 = buildMercedesW14F1;
