@@ -180,20 +180,38 @@ function initPostFX(){
   _applyFxPreference();
 }
 
-// Day/night bloom tuning — at night we use a lower threshold and slightly
-// higher strength so neon/emissive props bloom more dramatically; by day we
-// keep bloom subtle so highlights don't blow out the sky.
+// Day/night bloom tuning — at night we use a slightly lower threshold so
+// neon/emissive props bloom more dramatically; by day we keep bloom subtle
+// so highlights don't blow out the sky. Per-world multipliers below let
+// pastel/dense-emissive worlds (Candy, Themepark) get less bleed without
+// dimming Neon City's intentional neon aesthetic.
+let _bloomWorldStrengthMul = 1.0;
+const _BLOOM_WORLD_MUL = {
+  candy:    0.55,   // 44 lollipops + 22 candles + 48 lampposts = bloom flood
+  themepark:0.70,   // sunset + ride lights stack
+  arctic:   0.75,   // bright snow ground reflects bloom
+  grandprix:0.85,   // grass is fine; only curb lights bloom
+  neoncity: 1.00,   // intentionally heavy bloom — neon look
+  volcano:  1.00,   // lava emissives are the show
+  space:    1.00,   // deliberate cosmic bloom
+  deepsea:  0.85    // bioluminescence subtle
+};
 function setBloomDayNight(dark){
   if(!_postfx.ready) return;
   if(dark){
     _postfx.threshold = 0.74;
-    _postfx.strength = 0.78;
+    _postfx.strength = 0.78 * _bloomWorldStrengthMul;
   } else {
     _postfx.threshold = 0.80;
-    _postfx.strength = 0.66;
+    _postfx.strength = 0.66 * _bloomWorldStrengthMul;
   }
   _postfx.matExtract.uniforms.threshold.value = _postfx.threshold;
   _postfx.matComposite.uniforms.strength.value = _postfx.strength;
+}
+function setBloomWorld(world){
+  _bloomWorldStrengthMul = _BLOOM_WORLD_MUL[world] || 1.0;
+  // Re-apply current day/night to pick up the new multiplier.
+  if(_postfx.ready) setBloomDayNight(typeof isDark!=='undefined' && isDark);
 }
 
 // User-toggleable quality: when localStorage('src_fx')==='0', skip alle

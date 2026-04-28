@@ -35,12 +35,14 @@ function buildCandyEnvironment(){
 
 
 function buildCandyGround(){
-  // Pink fondant main ground
-  const gMat=new THREE.MeshLambertMaterial({color:0xffaacc});
+  // Pink fondant main ground — desaturated from 0xffaacc (lum 0.78, blooms
+  // from headlight+candle illumination) to 0xcc7799 (lum 0.55) so it stays
+  // pink under day light but doesn't blow out at night.
+  const gMat=new THREE.MeshLambertMaterial({color:0xcc7799});
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),gMat);
   ground.rotation.x=-Math.PI/2;ground.position.y=-.12;ground.receiveShadow=true;scene.add(ground);
-  // Infield: light lavender fondant
-  const infMat=new THREE.MeshLambertMaterial({color:0xeeaaee});
+  // Infield: light lavender fondant — also toned down.
+  const infMat=new THREE.MeshLambertMaterial({color:0xbb88bb});
   const inf=new THREE.Mesh(new THREE.PlaneGeometry(440,580),infMat);
   inf.rotation.x=-Math.PI/2;inf.position.set(-40,-.11,-60);scene.add(inf);
   // Coloured candy spot circles on the ground
@@ -85,9 +87,11 @@ function buildLollipopTrees(){
     // Stick
     const stick=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,h,6),stickMat);
     stick.position.set(cx,h*.5,cz);scene.add(stick);
-    // Head (flattened sphere)
+    // Head (flattened sphere). Emissive intentionally low — there are 44 of
+    // these around the track so cumulative bloom would otherwise wash the
+    // ground and bleed through narrow track at distance.
     const hCol=headColors[i%headColors.length];
-    const headMat=new THREE.MeshLambertMaterial({color:hCol,emissive:new THREE.Color(hCol),emissiveIntensity:.55});
+    const headMat=new THREE.MeshLambertMaterial({color:hCol,emissive:new THREE.Color(hCol),emissiveIntensity:.22});
     const hr=1.8+Math.random()*.9;
     const head=new THREE.Mesh(new THREE.SphereGeometry(hr,10,8),headMat);
     head.scale.y=.72;head.position.set(cx,h+hr*.72,cz);scene.add(head);
@@ -393,7 +397,7 @@ function buildCandyBarriers(){
     [-1,1].forEach((s,si)=>{
       const pp=p.clone().addScaledVector(nr,s*(BARRIER_OFF+1.5));
       const col=headColors[(li*2+si)%headColors.length];
-      const headMat=new THREE.MeshLambertMaterial({color:col,emissive:new THREE.Color(col),emissiveIntensity:.7});
+      const headMat=new THREE.MeshLambertMaterial({color:col,emissive:new THREE.Color(col),emissiveIntensity:.30});
       const pole=new THREE.Mesh(new THREE.CylinderGeometry(.1,.12,3,5),
         new THREE.MeshLambertMaterial({color:0xffffff}));
       pole.position.copy(pp);pole.position.y=1.5;pole.visible=false;scene.add(pole);trackPoles.push(pole);
