@@ -44,7 +44,8 @@ window.fmtTime=fmtTime;
 // gameplay/spacefx.js, gameplay/tracklimits.js, effects/visuals.js.
 let _elSlip,_elWarn,_mapCvs,_mapCtx,_elGear,_elLeader;
 let _elWrongWay=null;
-let _elScore=null,_elLapDelta=null;
+// _elScore is opgegaan in finish-screen — geen race-HUD score meer.
+let _elLapDelta=null;
 // _elTire (oude separate tire-dot text) is opgegaan in _elTireT (4 csTire dots)
 // die nu zowel temp als damage encoden. _elCarStatus is de panel-wrapper voor
 // fade-in/out wanneer wear/temp uit het optimale venster komen.
@@ -82,7 +83,6 @@ function cacheHUDRefs(){
   _elGear=document.getElementById('hdGear');
   _elLeader=document.getElementById('hudLeader');
   _elWrongWay=document.getElementById('wrongWayOverlay');
-  _elScore=document.getElementById('hdScore');
   _elLapDelta=document.getElementById('hdLapDelta');
   _elCarStatus=document.getElementById('hudCarStatus');
   _elRpm=document.getElementById('rpmFill');
@@ -162,8 +162,6 @@ function updateHUD(dt){
     _elLapDelta.textContent=sign+delta.toFixed(2);
     _elLapDelta.style.color=delta<0?'var(--hud-success)':'var(--hud-warning)';
   }
-  // Score is shown only on the finish screen — no longer in race HUD.
-  if(_elScore)_elScore.textContent=totalScore.toLocaleString();
   // Car status: 4 tyre dots, dual-encoded (inner=temp, ring=damage).
   // Panel auto-fades in when wear>=30% or any tyre is outside the optimal
   // window. Stays hidden during a clean drive so it doesn't add visual noise.
@@ -186,12 +184,11 @@ function updateHUD(dt){
                   ||_tireTemp.fl>0.65||_tireTemp.fr>0.65||_tireTemp.rl>0.65||_tireTemp.rr>0.65;
     const showStatus = dmg>=0.30 || tempBad;
     _elCarStatus.classList.toggle('csOn',showStatus);
-    const tireKey=(Math.round(w*16)<<8)
-                 |(Math.min(hits,15)<<4)
-                 |(Math.round(_tireTemp.fl*4)<<3)
-                 |(Math.round(_tireTemp.fr*4)<<2)
-                 |(Math.round(_tireTemp.rl*4)<<1)
-                 | Math.round(_tireTemp.rr*4);
+    // Composite key — string keeps each component unambiguous and allocation
+    // cost is negligible (only used to skip already-up-to-date DOM writes).
+    const tireKey=Math.round(w*16)+'|'+Math.min(hits,15)
+                 +'|'+Math.round(_tireTemp.fl*8)+'|'+Math.round(_tireTemp.fr*8)
+                 +'|'+Math.round(_tireTemp.rl*8)+'|'+Math.round(_tireTemp.rr*8);
     if(tireKey!==_lastTireKey){
       _lastTireKey=tireKey;
       if(_elTireT.fl){_elTireT.fl.style.background=tireFill(_tireTemp.fl);_elTireT.fl.style.boxShadow='0 0 0 2px '+ringCol;}

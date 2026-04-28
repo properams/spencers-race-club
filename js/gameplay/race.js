@@ -59,7 +59,6 @@ function _resetRaceState(){
   _rainIntensity=_rainTarget; // snap to current rain state (no lingering transition)
   if(_elWrongWay)_elWrongWay.style.display='none';
   totalScore=0;
-  if(_elScore)_elScore.textContent='0';
   if(_elLapDelta){_elLapDelta.textContent='';_elLapDelta.style.color='';}
   const _ccvs=document.getElementById('confettiCvs');if(_ccvs)_ccvs.style.display='none';
   const _sov=document.getElementById('speedOverlay');if(_sov)_sov.style.opacity='0';
