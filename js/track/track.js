@@ -58,7 +58,13 @@ function buildTrack(){
   // edge lines and startline overlays win the depth test on low-precision depth buffers (iPad).
   const _baseTrackColor=activeWorld==='space'?0x141420:activeWorld==='deepsea'?0x1a2830:activeWorld==='candy'?0xee3388:activeWorld==='neoncity'?0x0a0a14:activeWorld==='volcano'?0x2a0808:activeWorld==='arctic'?0x667788:activeWorld==='themepark'?0x221030:0x262626;
   const _trackMat=new THREE.MeshLambertMaterial({color:_baseTrackColor,map:_buildTrackSurfaceTex()});
-  _trackMat.polygonOffset=true;_trackMat.polygonOffsetFactor=1;_trackMat.polygonOffsetUnits=1;
+  // No polygonOffset on asphalt itself — it sits at y=0.005, well above the
+  // ground plane at y=-0.12, so natural depth ordering keeps asphalt on top
+  // of grass/sand. Pushing asphalt away (the previous +1 offset) caused
+  // distant track sections to lose the depth test against the ground plane
+  // at low z-precision → grass bled THROUGH the track. Curbs/edge-lines/
+  // startline carry NEGATIVE offsets (pull-toward-camera) so they still
+  // win against asphalt regardless.
   _trackMat.userData.baseColor=_baseTrackColor; // stashed for rain/day-night tinting
   const rm=ribbon(N,t=>{
     const p=trackCurve.getPoint(t),tg=trackCurve.getTangent(t).normalize();
