@@ -72,13 +72,19 @@ function _wireMenuButtons(){
       },220);
     });
   });
-  // Difficulty knoppen 0=easy 1=normal 2=hard.
+  // Difficulty tab options 0=easy 1=normal 2=hard. Toggles both legacy
+  // .diffSel and new .setOptSel klasse. Triggert rival-refresh aangezien
+  // de rival hangt af van (world × difficulty).
   ['dEasy','dNorm','dHard'].forEach((id,i)=>{
     const el=document.getElementById(id);if(!el)return;
     el.addEventListener('click',()=>{
       difficulty=i;
-      document.querySelectorAll('.diffBtn').forEach((b,j)=>b.classList.toggle('diffSel',j===i));
+      document.querySelectorAll('.diffBtn').forEach((b,j)=>{
+        b.classList.toggle('diffSel',j===i);
+        b.classList.toggle('setOptSel',j===i);
+      });
       _updateSelectSummary();
+      if(typeof _renderRival==='function')_renderRival();
     });
   });
   // Enter op title screen → car select.
