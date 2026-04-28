@@ -264,44 +264,192 @@ function buildGravelTraps(){
 }
 
 
-function buildEnvironmentTrees(){
-  const trunkGeo=new THREE.CylinderGeometry(.11,.17,1.5,5);
-  const cGeo1=new THREE.ConeGeometry(1,4.5,7);
-  const cGeo2=new THREE.ConeGeometry(.62,3.5,7);
-  const tMat=new THREE.MeshLambertMaterial({color:0x6b4226});
-  const lMats=[0x1d6b32,0x2a8040,0x145a28,0x226b35,0x1a5c2a,0x2d7a3a]
-    .map(c=>new THREE.MeshLambertMaterial({color:c}));
-
-  function placeTree(x,z,s=1){
-    const sc=s*(0.82+Math.random()*.44);
-    const lm=lMats[Math.floor(Math.random()*lMats.length)];
-    const ry=Math.random()*Math.PI*2;
-    const trunk=new THREE.Mesh(trunkGeo,tMat);
-    trunk.position.set(x,.75*sc,z);trunk.scale.setScalar(sc);scene.add(trunk);
-    const c1=new THREE.Mesh(cGeo1,lm);
-    c1.position.set(x,2.5*sc,z);c1.scale.setScalar(sc);c1.rotation.y=ry;scene.add(c1);
-    const c2=new THREE.Mesh(cGeo2,lm);
-    c2.position.set(x,4.2*sc,z);c2.scale.setScalar(sc);c2.rotation.y=ry+.55;scene.add(c2);
-  }
-
-  // Trees just outside the track barriers (55 sample points, both sides)
-  for(let i=0;i<55;i++){
-    const t=i/55;
+// Generate (x,z,scale,rotY) placements once so the GLTF and procedural paths
+// produce the same forest shape — only the tree geometry differs.
+function _buildTreePlacements(){
+  const out=[];
+  // Sample more densely along the track than the original 55 — speler
+  // beschrijft de scene als "leeg". 90 sample points × 2 sides + jitter.
+  const N=90;
+  for(let i=0;i<N;i++){
+    const t=i/N;
     const p=trackCurve.getPoint(t);
     const tg=trackCurve.getTangent(t).normalize();
     const nr=new THREE.Vector3(-tg.z,0,tg.x);
     [-1,1].forEach(side=>{
-      const d=BARRIER_OFF+20+Math.random()*38;
-      placeTree(
-        p.x+nr.x*side*d+(Math.random()-.5)*7,
-        p.z+nr.z*side*d+(Math.random()-.5)*7
-      );
+      // Two rings: a closer dense band 14-32m from the barrier (so the eye
+      // catches them at racing speed) and a thinner far ring 40-90m out.
+      const inClose = Math.random() < 0.72;
+      const d = inClose
+        ? BARRIER_OFF + 14 + Math.random()*18
+        : BARRIER_OFF + 40 + Math.random()*50;
+      out.push({
+        x: p.x + nr.x*side*d + (Math.random()-.5)*7,
+        z: p.z + nr.z*side*d + (Math.random()-.5)*7,
+        s: 0.7 + Math.random()*0.7,
+        r: Math.random()*Math.PI*2,
+      });
     });
   }
-  // Infield trees (ring around lake, inside circuit)
-  for(let i=0;i<32;i++){
-    const a=Math.random()*Math.PI*2,d=68+Math.random()*85;
-    placeTree(-10+Math.cos(a)*d,-50+Math.sin(a)*d,.85+Math.random()*.3);
+  // Infield trees (ring around the lake, inside the circuit)
+  for(let i=0;i<48;i++){
+    const a=Math.random()*Math.PI*2,d=68+Math.random()*95;
+    out.push({
+      x: -10 + Math.cos(a)*d,
+      z: -50 + Math.sin(a)*d,
+      s: 0.85 + Math.random()*0.3,
+      r: Math.random()*Math.PI*2,
+    });
+  }
+  // Small clusters of 3-5 trees so distribution looks organic instead of
+  // perfectly even (~6 cluster origins, each adds 2-4 nearby siblings).
+  const seeds=[];
+  for(let i=0;i<6;i++){
+    const t=Math.random();
+    const p=trackCurve.getPoint(t);
+    const tg=trackCurve.getTangent(t).normalize();
+    const nr=new THREE.Vector3(-tg.z,0,tg.x);
+    const side=(i%2===0?1:-1);
+    const d=BARRIER_OFF+22+Math.random()*30;
+    seeds.push({x:p.x+nr.x*side*d, z:p.z+nr.z*side*d});
+  }
+  seeds.forEach(s=>{
+    const k=2+(Math.random()*3|0);
+    for(let i=0;i<k;i++){
+      out.push({
+        x: s.x + (Math.random()-.5)*9,
+        z: s.z + (Math.random()-.5)*9,
+        s: 0.75 + Math.random()*0.5,
+        r: Math.random()*Math.PI*2,
+      });
+    }
+  });
+  return out;
+}
+
+function _spawnInstancedTreesGLTF(protos, placements){
+  // Group every (geometry, material) pair across every prototype into one
+  // InstancedMesh. Typical Quaternius pine = 2 meshes (trunk + leaves) so
+  // 2 protos × 2 meshes = 4 InstancedMeshes total — well within budget.
+  const proto=protos[0]; // Use first prototype's geometry for sizing
+  // Compute a normalization factor so wildly different GLTF scales fit our
+  // ~5m tall trees. Sample bounding box of the prototype root.
+  const box=new THREE.Box3().setFromObject(proto.scene);
+  const size=new THREE.Vector3(); box.getSize(size);
+  const targetH=4.8;
+  const baseScale=size.y>0.01 ? targetH/size.y : 1;
+
+  // Count instances per (geometry, material) signature.
+  const slots=new Map(); // key → { geo, mat, count, offsets:[Matrix4] }
+  const tmpMat=new THREE.Matrix4();
+  const tmpQuat=new THREE.Quaternion();
+  const tmpScl=new THREE.Vector3();
+  const tmpPos=new THREE.Vector3();
+
+  // For each placement, walk every prototype's mesh tree and record a
+  // matrix that combines proto-local transform with placement-world transform.
+  placements.forEach(pl=>{
+    const proto=protos[(Math.random()*protos.length)|0];
+    proto.scene.traverse(node=>{
+      if(!node.isMesh) return;
+      // Build per-mesh local matrix (relative to proto root).
+      node.updateWorldMatrix(true,false);
+      const local=node.matrixWorld.clone();
+      // Compose world placement: translate(pl.x,0,pl.z) * rotateY(pl.r) * scale(baseScale*pl.s)
+      const wScale=baseScale*pl.s;
+      tmpQuat.setFromAxisAngle(new THREE.Vector3(0,1,0), pl.r);
+      tmpScl.set(wScale,wScale,wScale);
+      tmpPos.set(pl.x, 0, pl.z);
+      const place=new THREE.Matrix4().compose(tmpPos,tmpQuat,tmpScl);
+      const m=new THREE.Matrix4().multiplyMatrices(place, local);
+
+      const key = node.geometry.uuid + '|' + (node.material.uuid || '');
+      let slot = slots.get(key);
+      if (!slot){
+        slot = { geo: node.geometry, mat: node.material, mats: [] };
+        slots.set(key, slot);
+      }
+      slot.mats.push(m.clone());
+    });
+  });
+
+  slots.forEach(slot=>{
+    const im=new THREE.InstancedMesh(slot.geo, slot.mat, slot.mats.length);
+    slot.mats.forEach((m,i)=>im.setMatrixAt(i,m));
+    im.instanceMatrix.needsUpdate=true;
+    im.castShadow=false; im.receiveShadow=false;
+    // Mark geometry/material as shared so disposeScene doesn't kill them
+    // (they live in the GLTF cache for reuse on the next race).
+    slot.geo.userData = slot.geo.userData || {}; slot.geo.userData._sharedAsset=true;
+    slot.mat.userData = slot.mat.userData || {}; slot.mat.userData._sharedAsset=true;
+    im.userData._sharedAsset=true; // disposeScene skip
+    scene.add(im);
+  });
+  if (window.dbg) dbg.log('env','GLTF trees spawned',{instances:placements.length, drawCalls:slots.size});
+}
+
+function _spawnInstancedTreesProcedural(placements){
+  // Single-mesh-per-part procedural fallback, but rendered as InstancedMesh
+  // so the higher tree count doesn't blow up draw calls. 3 instanced meshes
+  // total: trunk + lower cone + upper cone.
+  const trunkGeo=new THREE.CylinderGeometry(.11,.17,1.5,5);
+  const cGeo1=new THREE.ConeGeometry(1,4.5,7);
+  const cGeo2=new THREE.ConeGeometry(.62,3.5,7);
+  const trunkMat=new THREE.MeshLambertMaterial({color:0x6b4226});
+  // Slight per-tree color variation via instanceColor instead of N materials.
+  const leafMat=new THREE.MeshLambertMaterial({color:0xffffff,vertexColors:false});
+  const N=placements.length;
+  const trunk=new THREE.InstancedMesh(trunkGeo, trunkMat, N);
+  const c1=new THREE.InstancedMesh(cGeo1, leafMat, N);
+  const c2=new THREE.InstancedMesh(cGeo2, leafMat, N);
+  c1.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(N*3),3);
+  c2.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(N*3),3);
+  const leafCols=[
+    [0.114,0.418,0.196],[0.165,0.502,0.251],[0.078,0.353,0.157],
+    [0.133,0.418,0.208],[0.102,0.361,0.165],[0.176,0.478,0.227]
+  ];
+  const tmpQuat=new THREE.Quaternion();
+  const yAxis=new THREE.Vector3(0,1,0);
+  placements.forEach((pl,i)=>{
+    const sc=pl.s;
+    tmpQuat.setFromAxisAngle(yAxis, pl.r);
+    const baseT=new THREE.Matrix4().compose(
+      new THREE.Vector3(pl.x, .75*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
+    trunk.setMatrixAt(i, baseT);
+    tmpQuat.setFromAxisAngle(yAxis, pl.r); // c1 uses same rot
+    const m1=new THREE.Matrix4().compose(
+      new THREE.Vector3(pl.x, 2.5*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
+    c1.setMatrixAt(i, m1);
+    tmpQuat.setFromAxisAngle(yAxis, pl.r + 0.55);
+    const m2=new THREE.Matrix4().compose(
+      new THREE.Vector3(pl.x, 4.2*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
+    c2.setMatrixAt(i, m2);
+    const col = leafCols[(Math.random()*leafCols.length)|0];
+    c1.instanceColor.array[i*3  ]=col[0]; c1.instanceColor.array[i*3+1]=col[1]; c1.instanceColor.array[i*3+2]=col[2];
+    c2.instanceColor.array[i*3  ]=col[0]; c2.instanceColor.array[i*3+1]=col[1]; c2.instanceColor.array[i*3+2]=col[2];
+  });
+  trunk.instanceMatrix.needsUpdate=true;
+  c1.instanceMatrix.needsUpdate=true; c1.instanceColor.needsUpdate=true;
+  c2.instanceMatrix.needsUpdate=true; c2.instanceColor.needsUpdate=true;
+  scene.add(trunk); scene.add(c1); scene.add(c2);
+}
+
+function buildEnvironmentTrees(){
+  const placements=_buildTreePlacements();
+  // Try GLTF prototypes first.
+  const protos=[];
+  if(window.Assets){
+    Assets.listProps('grandprix').forEach(k=>{
+      if(/^tree/.test(k)){
+        const g=Assets.getGLTF('grandprix', k);
+        if(g && g.scene) protos.push(g);
+      }
+    });
+  }
+  if (protos.length > 0){
+    _spawnInstancedTreesGLTF(protos, placements);
+  } else {
+    _spawnInstancedTreesProcedural(placements);
   }
 }
 
