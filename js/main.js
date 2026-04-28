@@ -207,7 +207,6 @@ var WORLD_PRICES={};    // var: idem
 // (SimpleParticles class → js/effects/particles.js)
 // (Environment, world builders en gameplay-checks zijn verhuisd naar
 //  js/track/environment.js, js/worlds/*, js/effects/*, js/gameplay/*.)
-let _wormholeCooldown=0; // wormhole cooldown — gelezen door worlds/space.js
 // (Night/rain/cars/physics/AI/special-checks/track-limits/camera/HUD-refs
 //  → respective js/* modules.)
 // popupTimeouts / bannerTimer / fmtTime / _lastPPos → js/ui/hud.js

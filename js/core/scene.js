@@ -304,7 +304,7 @@ function buildScene(){
   _boostLight=null;_trackMesh=null;_sunBillboard=null;
   _spaceAsteroids.length=0;_spaceDustParticles=null;_spaceDustGeo=null;
   _snowParticles=null;_snowGeo=null;
-  _spaceGravityWells.length=0;_spaceRailguns.length=0;_spaceWormholes.length=0;
+  _spaceGravityWells.length=0;_spaceRailguns.length=0;
   _spaceUFOs.length=0;_spaceMeteors.length=0;_spaceMeteorTimer=18;
   _spaceBeamMesh=null;_spaceBeamTimer=0;_spaceUnderglow.length=0;
   _kelpList.length=0;_jellyfishList.length=0;_dsaLightRays.length=0;_dsaBioEdges.length=0;

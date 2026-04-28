@@ -44,7 +44,7 @@ function _resetRaceState(){
   skidMarks.length=0;
   nitroLevel=100;nitroActive=false;driftScore=0;driftTimer=0;
   lapStartTime=0;lastLapTime=0;bestLapTime=Infinity;
-  recoverActive=false;recoverTimer=0;camShake=0;slipTimer=0;_wormholeCooldown=0;
+  recoverActive=false;recoverTimer=0;camShake=0;slipTimer=0;
   _wrongWayTimer=0;_miniTurboReady=false;_camLateralT=0;_tireWarnCooldown=0;
   _introPanTimer=0;_camView=0;_raceMaxSpeed=0;_raceOvertakes=0;_lastPlayerPos=9;_raceStartGrace=0;
   _achieveUnlocked.clear();_achieveQueue.length=0;_achieveTimer=0;
