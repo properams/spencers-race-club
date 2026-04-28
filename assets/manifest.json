@@ -1,0 +1,32 @@
+{
+  "_comment": "Asset slots per world. Empty string or missing key means no asset — game falls back to procedural. Drop matching files at the listed relative paths to activate.",
+  "_format_version": 1,
+  "worlds": {
+    "grandprix": {
+      "hdri": "assets/hdri/grandprix_dusk_2k.hdr",
+      "ground": {
+        "color":     "assets/textures/grandprix/ground_color.jpg",
+        "normal":    "assets/textures/grandprix/ground_normal.jpg",
+        "roughness": "assets/textures/grandprix/ground_rough.jpg"
+      },
+      "props": {
+        "tree_pine":   "assets/models/vegetation/pine_low.glb",
+        "tree_birch":  "assets/models/vegetation/birch_low.glb",
+        "rock_small":  "assets/models/props/rock_small.glb",
+        "rock_medium": "assets/models/props/rock_medium.glb",
+        "haybale":     "assets/models/props/haybale.glb"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/grandprix/mountains_far.png",
+        "mountains_near": "assets/textures/grandprix/mountains_near.png"
+      }
+    },
+    "neoncity":  {},
+    "space":     {},
+    "deepsea":   {},
+    "candy":     {},
+    "volcano":   {},
+    "arctic":    {},
+    "themepark": {}
+  }
+}
