@@ -175,20 +175,28 @@ function updateCarLights(){
     if(car.speed<-0.05){mat.emissiveIntensity=2.5;mat.opacity=1;}
     else{mat.emissiveIntensity=0;}
   });
-  // Visible headlight beam-cones op player car (alleen bij night, alleen
-  // chase-cam want in hood/bumper-cam zit de camera binnen de cone-tip
-  // en zou de binnenkant een onaangename screen-wash geven).
-  const pCar=carObjs[playerIdx];
-  if(pCar&&pCar.mesh){
-    const ratio=Math.abs(pCar.speed)/Math.max(.01,pCar.def.topSpd);
-    const chaseCam=(typeof _camView==='undefined'||_camView===0);
-    const beamOp=(isDark&&chaseCam)?(0.16+ratio*0.18):0;
-    pCar.mesh.children.forEach(ch=>{
+  // Visible headlight beam-cones — every car gets a pair (added in
+  // makeAllCars). Player gets the chase-cam guard (no beams in hood/bumper
+  // cam → camera sits inside the cone-tip and the inside view washes out).
+  // AI cars always show beams when isDark — gives the field a night-race
+  // feel with multiple visible beams from your mirror or when leading.
+  // Beam strength scales with each car's own speed (faster = brighter beam).
+  const chaseCam=(typeof _camView==='undefined'||_camView===0);
+  carObjs.forEach((car,ci)=>{
+    if(!car||!car.mesh)return;
+    const isPlayer=(ci===playerIdx);
+    const ratio=Math.abs(car.speed)/Math.max(.01,car.def.topSpd);
+    let beamOp=0;
+    if(isDark){
+      if(isPlayer)beamOp=chaseCam?(0.16+ratio*0.18):0;
+      else beamOp=0.10+ratio*0.16; // slightly dimmer than player so own beams stay dominant
+    }
+    car.mesh.children.forEach(ch=>{
       if(ch.userData&&ch.userData.isHeadBeam&&ch.material){
         ch.material.opacity+=(beamOp-ch.material.opacity)*0.15; // smooth fade
       }
     });
-  }
+  });
   if(!isDark||!plHeadL)return;
   const car=carObjs[playerIdx];if(!car)return;
   _plFwd.set(0,0,-1).applyQuaternion(car.mesh.quaternion);

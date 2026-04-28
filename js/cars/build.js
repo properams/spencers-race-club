@@ -97,25 +97,21 @@ function makeAllCars(){
       ug.rotation.x=-Math.PI/2;ug.position.y=-.32;
       mesh.add(ug);
     }
-    // Player headlight beam-cones (alleen zichtbaar bij night) — ConeGeometry
-    // met fade-gradient material, additive. Auto-parent aan car mesh zodat
-    // ze meedraaien. Visibility wordt in updateCarLights getoggeld.
-    if(isPlayer){
+    // Headlight beam-cones — every car (player + AI) gets a pair so that at
+    // night the field looks alive instead of just the player car projecting
+    // light. Visibility is faded in/out by updateCarLights in night.js based
+    // on isDark + per-car speed (faster = stronger beams). Cone with top at
+    // the headlight position, base 12 units forward. Skipped on low-quality
+    // mobile fallback to save fillrate (additive blends are expensive).
+    if(!window._lowQuality){
       const beamMat=new THREE.MeshBasicMaterial({
         color:0xfff5d0,transparent:true,opacity:0,
         blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
       });
-      // Cone met top dichtbij headlight, base 12 units voor de auto
       const coneGeo=new THREE.ConeGeometry(2.4,12,12,1,true);
       [-0.62,0.62].forEach(s=>{
         const beam=new THREE.Mesh(coneGeo,beamMat.clone());
-        // Cone default points up (+Y) → roteer 90° rond X zodat top naar achter
-        // wijst en base naar voren (in car-local -Z = forward)
         beam.rotation.x=-Math.PI/2;
-        // Position: tip (top) bij headlight, base 12 units voor de auto
-        // Voor ConeGeometry zit base op y=-h/2, top op y=+h/2 (na rotation:
-        // base at z=+h/2, top at z=-h/2). We willen top bij headlight (z=-1.9 in
-        // car-local, verboven nose) en base verder naar voor (z=-7.9).
         beam.position.set(s,0.45,-7.9);
         beam.userData.isHeadBeam=true;
         mesh.add(beam);
