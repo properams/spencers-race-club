@@ -258,20 +258,37 @@ function updateHUD(dt){
   // Gear indicator
   if(_elGear)_elGear.textContent=_currentGear;
   // Live leaderboard — only rebuild HTML when order is stable for 0.5s
-  // Prevents P1/P2/P3 rows from constantly jumping when cars jostle
+  // Prevents P1/P2/P3 rows from constantly jumping when cars jostle.
+  // Default state is "collapsed": top-3 + driver above/below player + player.
+  // Hotkey L (handled in ui/input.js) flips window._leaderExpanded to show all.
   if(_elLeader&&dt){
-    const key=pos.map(c=>c.def.id).join(',');
+    const expanded=!!window._leaderExpanded;
+    // Include the expanded flag in the cache-key so a toggle forces a rebuild.
+    const key=pos.map(c=>c.def.id).join(',')+(expanded?':E':':C');
     if(key!==_leaderPendingKey){
-      _leaderPendingKey=key;_leaderStableT=0; // new order candidate
+      _leaderPendingKey=key;_leaderStableT=0;
     }else if(key!==_lastLeaderOrder){
-      _leaderStableT+=dt;
+      // Manual toggle should feel instant — no 0.5s wait when only the flag flipped.
+      const orderChanged=key.replace(/:[EC]$/,'')!==_lastLeaderOrder.replace(/:[EC]$/,'');
+      _leaderStableT = orderChanged ? _leaderStableT+dt : 0.5;
       if(_leaderStableT>=0.5){
-        // Order stable for 0.5s — commit to screen
         _lastLeaderOrder=key;_leaderStableT=0;
         const refTime=bestLapTime<Infinity?bestLapTime:55;
         const leader=pos[0];
-        _elLeader.innerHTML=pos.map((c,i)=>{
-          let gapStr='';
+        const pIdx=pos.findIndex(c=>c.isPlayer);
+        // Decide which row indices to render.
+        let rowIdx;
+        if(expanded||pos.length<=5){
+          rowIdx=pos.map((_,i)=>i);
+        }else{
+          // Always include podium + player + the cars directly ahead/behind player.
+          const set=new Set([0,1,2]);
+          if(pIdx>=0){set.add(pIdx);if(pIdx>0)set.add(pIdx-1);if(pIdx<pos.length-1)set.add(pIdx+1);}
+          rowIdx=[...set].sort((a,b)=>a-b);
+        }
+        const rowFor=i=>{
+          const c=pos[i];
+          let gapStr;
           if(i===0){gapStr='<span class="lGap">LEAD</span>';}
           else{
             const lapDiff=leader.lap-c.lap;
@@ -280,12 +297,17 @@ function updateHUD(dt){
               gapStr=`<span class="lGap">+${lapDiff}LAP</span>`;
             }else{
               const secGap=Math.max(0,(lapDiff+progGap)*refTime);
-              // Show "BATTLE" instead of 0.0s when cars are within 0.5s of each other
-              gapStr=secGap<0.5?`<span class="lGap" style="color:#ff9900">BATTLE</span>`:`<span class="lGap">+${secGap.toFixed(1)}s</span>`;
+              gapStr=secGap<0.5?'<span class="lGap" style="color:var(--hud-warning)">BATTLE</span>':`<span class="lGap">+${secGap.toFixed(1)}s</span>`;
             }
           }
           return `<div class="lRow${c.isPlayer?' lMe':''}"><span class="lPos">P${i+1}</span><span class="lName">${c.def.name}</span>${gapStr}</div>`;
-        }).join('');
+        };
+        const parts=[];
+        for(let k=0;k<rowIdx.length;k++){
+          if(k>0&&rowIdx[k]-rowIdx[k-1]>1)parts.push('<div class="lSep">···</div>');
+          parts.push(rowFor(rowIdx[k]));
+        }
+        _elLeader.innerHTML=parts.join('');
       }
     }
   }

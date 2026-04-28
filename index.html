@@ -211,7 +211,10 @@
     <div class="riLapRow"><span class="riLabel">LAP</span><span class="riLap" id="hdLap">1 / 3</span></div>
     <div class="riTimeRow"><span id="hdLapTime"></span><span id="hdLapDelta"></span></div>
   </div>
-  <div id="hudSpd"><div class="hBig" id="hdSpd">0</div><div class="hLabel">KM/H</div></div>
+  <div id="hudInstruments">
+    <div class="hiGearBox"><span class="hiGearLbl">GEAR</span><span class="hiGearVal" id="hdGear">1</span></div>
+    <div class="hiSpdBox"><span class="hiSpdVal" id="hdSpd">0</span><span class="hiSpdLbl">KM/H</span></div>
+  </div>
   <div id="hudMap"><canvas id="mapCvs" width="150" height="150"></canvas></div>
   <div id="nitroBar"><div id="nitroFill" style="height:100%"></div></div>
   <div id="nitroLbl">NITRO</div>
@@ -221,7 +224,6 @@
   <button id="hudPauseBtn" onclick="togglePause()">⏸ PAUSE</button>
   <button id="hudMuteBtn" onclick="toggleMute()">🔊</button>
   <div id="hudLeader"></div>
-  <div id="hudGear"><div class="hLabel">GEAR</div><div class="hBig" id="hdGear">1</div></div>
   <div id="hudRpm"><div id="rpmFill"></div></div>
   <div id="hudGap"><div class="gapLine" id="gapAhead"></div><div class="gapLine" id="gapBehind"></div></div>
 </div>

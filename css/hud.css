@@ -14,9 +14,15 @@
 .hLabel{font-family:'Orbitron',sans-serif;font-size:8px;color:var(--hud-text-dim);letter-spacing:3px}
 .hBig{font-family:'Orbitron',sans-serif;font-size:40px;font-weight:900;line-height:1}
 .hSm{font-family:'Rajdhani',sans-serif;font-size:13px;color:#888}
-#hudSpd{position:absolute;bottom:28px;right:28px;background:rgba(0,0,0,.78);border:2px solid #333;border-radius:12px;padding:8px 18px;text-align:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#hudSpd .hBig{font-size:54px;color:#ff7700}
-#hudMap{position:absolute;bottom:28px;left:28px;width:150px;height:150px;background:rgba(0,0,0,.85);border:2px solid #2a2a2a;border-radius:50%;overflow:hidden}
+/* Driving instruments: gear + speed in one shared-background unit. */
+#hudInstruments{position:absolute;bottom:28px;right:28px;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:14px;padding:8px 18px 7px;backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);font-family:'Orbitron',sans-serif;display:flex;align-items:center;gap:14px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+#hudInstruments .hiGearBox{display:flex;flex-direction:column;align-items:center;line-height:1;border-right:1px solid var(--hud-border);padding-right:14px}
+#hudInstruments .hiGearLbl{font-size:8px;color:var(--hud-text-dim);letter-spacing:3px;margin-bottom:4px}
+#hudInstruments .hiGearVal{font-size:32px;font-weight:900;color:var(--hud-text)}
+#hudInstruments .hiSpdBox{display:flex;flex-direction:column;align-items:center;line-height:1}
+#hudInstruments .hiSpdVal{font-size:48px;font-weight:900;color:var(--hud-accent);letter-spacing:1px}
+#hudInstruments .hiSpdLbl{font-size:8px;color:var(--hud-text-dim);letter-spacing:3px;margin-top:3px}
+#hudMap{position:absolute;bottom:28px;left:28px;width:150px;height:150px;background:rgba(0,0,0,.55);border:1px solid var(--hud-border);border-radius:50%;overflow:hidden;box-shadow:0 6px 22px rgba(0,0,0,.5)}
 .tcBtn{position:fixed;z-index:50;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent;transition:transform .09s ease,box-shadow .12s,background .12s,border-color .12s;background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.03) 100%);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.2);box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.25)}
 .tcBtn.active{transform:scale(.92)}
 #tcLeft,#tcRight{width:74px;height:74px;font-size:42px;font-weight:300;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;border-radius:22px;line-height:1;padding-bottom:4px}
@@ -44,12 +50,15 @@
 #hudRainBtn{position:absolute;top:56px;right:18px;pointer-events:all;font-family:'Orbitron',sans-serif;font-size:11px;color:#88ccff;background:rgba(0,0,0,.7);border:1px solid #336;border-radius:20px;padding:7px 16px;cursor:pointer;letter-spacing:2px}
 #wrongWayOverlay{position:fixed;top:26%;left:50%;transform:translateX(-50%);z-index:38;pointer-events:none;display:none;font-family:'Orbitron',sans-serif;font-size:38px;font-weight:900;color:#ff2222;text-shadow:0 0 18px #ff0000,0 0 40px #ff000088;letter-spacing:6px;animation:wrongPulse .55s ease-in-out infinite alternate}
 @keyframes wrongPulse{from{opacity:.7;transform:translateX(-50%) scale(.97)}to{opacity:1;transform:translateX(-50%) scale(1.04)}}
-#hudLeader{position:absolute;top:172px;right:18px;pointer-events:none;background:rgba(0,0,0,.72);border:1px solid #2a2a2a;border-radius:10px;padding:5px 8px;min-width:118px}
-#hudGear{position:absolute;bottom:146px;right:28px;background:rgba(0,0,0,.78);border:2px solid #333;border-radius:12px;padding:6px 18px;text-align:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-#hudGear .hBig{font-size:36px;color:#aaa}
-#hudPauseBtn{position:absolute;pointer-events:all;font-family:'Orbitron',sans-serif;font-size:13px;color:#aaa;background:rgba(0,0,0,.7);border:1px solid #444;border-radius:20px;padding:7px 14px;cursor:pointer;letter-spacing:1px}
-#hudPauseBtn{top:94px;right:18px}
-#hudMuteBtn{position:absolute;top:132px;right:18px;pointer-events:all;font-family:'Orbitron',sans-serif;font-size:13px;color:#aaa;background:rgba(0,0,0,.7);border:1px solid #444;border-radius:20px;padding:7px 14px;cursor:pointer;letter-spacing:1px}
+/* Leaderboard: subtle panel, expand/collapse via L hotkey. Separator dots
+   between non-contiguous rows mimic F1 TV graphics. */
+#hudLeader{position:absolute;top:108px;right:18px;pointer-events:none;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:10px;padding:6px 10px;min-width:124px;backdrop-filter:blur(8px) saturate(140%);-webkit-backdrop-filter:blur(8px) saturate(140%);box-shadow:0 6px 22px rgba(0,0,0,.4)}
+#hudLeader .lSep{font-family:'Rajdhani',sans-serif;font-size:11px;color:var(--hud-text-mute);text-align:center;letter-spacing:3px;line-height:1.4;padding:1px 0}
+/* Pause + mute as ghost buttons — no harsh borders, low-emphasis until hover. */
+#hudPauseBtn,#hudMuteBtn{position:absolute;pointer-events:all;font-family:'Orbitron',sans-serif;font-size:13px;color:var(--hud-text-dim);background:transparent;border:1px solid transparent;border-radius:20px;padding:7px 14px;cursor:pointer;letter-spacing:1px;transition:background .15s,color .15s,border-color .15s}
+#hudPauseBtn:hover,#hudMuteBtn:hover{color:var(--hud-text);background:var(--hud-bg);border-color:var(--hud-border)}
+#hudPauseBtn{top:18px;right:18px}
+#hudMuteBtn{top:60px;right:18px}
 .hintBox{font-family:'Rajdhani',sans-serif;font-size:13px;color:rgba(255,255,255,.65);background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 22px;letter-spacing:2px;white-space:nowrap}
 #speedOverlay{position:fixed;inset:0;pointer-events:none;z-index:9;
   background:radial-gradient(ellipse 72% 58% at 50% 52%,transparent 0%,transparent 38%,rgba(0,0,0,.18) 62%,rgba(0,0,0,.58) 82%,rgba(0,0,0,.80) 100%);
@@ -100,27 +109,26 @@
     left:calc(20px + env(safe-area-inset-left,0px))!important;
     border-width:1px!important;border-radius:50%!important;
   }
-#hudSpd{
-    position:absolute!important;
+#hudInstruments{
     bottom:calc(140px + env(safe-area-inset-bottom,0px))!important;
     right:calc(16px + env(safe-area-inset-right,0px))!important;
-    padding:5px 10px!important;
-    border-width:1px!important;border-radius:12px!important;
-    width:68px!important;min-width:68px!important;max-width:68px!important;
-    text-align:center!important;
-    box-sizing:border-box!important;
+    padding:5px 10px 4px!important;
+    border-radius:12px!important;
+    gap:8px!important;
     z-index:15!important;
   }
-#hudSpd .hBig{font-size:24px!important;line-height:1!important}
-#hudSpd .hLabel,#hudSpd .hSm{font-size:8px!important}
+#hudInstruments .hiGearBox{padding-right:8px!important}
+#hudInstruments .hiGearLbl{display:none!important}
+#hudInstruments .hiGearVal{font-size:18px!important}
+#hudInstruments .hiSpdVal{font-size:24px!important;line-height:1!important}
+#hudInstruments .hiSpdLbl{font-size:7px!important}
 #nitroBar{
     bottom:calc(140px + env(safe-area-inset-bottom,0px))!important;
-    right:calc(96px + env(safe-area-inset-right,0px))!important;  /* 16 (hudSpd right) + 68 (width) + 12 gap */
+    right:calc(126px + env(safe-area-inset-right,0px))!important;
     width:10px!important;height:60px!important;
     z-index:15!important;
   }
 #nitroLbl{display:none!important}
-#hudGear{display:none!important}
 #hudGap,#hudLeader,#hudCarStatus,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines{display:none!important}
 #tcSteer{display:none!important}
 #tcLeft,#tcRight{display:flex!important;width:84px!important;height:72px!important;font-size:40px!important;border-radius:36px!important}
@@ -151,8 +159,9 @@
 .tcBtn{background:rgba(0,0,0,.45)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border:1px solid rgba(255,255,255,.18)!important;color:#fff!important}
 #tcGas{background:linear-gradient(135deg,rgba(0,150,80,.55),rgba(0,90,40,.4))!important;border-color:rgba(0,200,110,.5)!important}
 #tcNitro{background:linear-gradient(135deg,rgba(200,150,0,.55),rgba(160,100,0,.4))!important;border-color:rgba(255,200,40,.5)!important}
-#hudSpd{bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;right:calc(155px + env(safe-area-inset-right,0px))!important}
-#hudSpd .hBig{font-size:44px!important}
+#hudInstruments{bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;right:calc(155px + env(safe-area-inset-right,0px))!important}
+#hudInstruments .hiGearVal{font-size:24px!important}
+#hudInstruments .hiSpdVal{font-size:36px!important}
 #hudPauseBtn{top:calc(16px + env(safe-area-inset-top,0px))!important;right:calc(16px + env(safe-area-inset-right,0px))!important;padding:10px 18px!important;font-size:13px!important}
 #hudLeader{top:calc(108px + env(safe-area-inset-top,0px))!important;right:calc(18px + env(safe-area-inset-right,0px))!important;max-height:calc(100vh - 280px)!important;overflow:hidden!important}
 #nitroBar{bottom:calc(245px + env(safe-area-inset-bottom,0px))!important;right:calc(30px + env(safe-area-inset-right,0px))!important;width:14px!important;height:110px!important}
@@ -162,9 +171,10 @@
 #hudRaceInfo .riPos{font-size:22px!important}
 #hudRaceInfo .riLap{font-size:11px!important}
 #hudRaceInfo .riTimeRow{font-size:9px!important}
-#hudSpd{bottom:auto!important;top:calc(6px + env(safe-area-inset-top,0px))!important;right:calc(8px + env(safe-area-inset-right,0px))!important;padding:3px 10px!important}
-#hudSpd .hBig{font-size:24px!important}
-#hudGear{display:none!important}
+#hudInstruments{bottom:auto!important;top:calc(6px + env(safe-area-inset-top,0px))!important;right:calc(8px + env(safe-area-inset-right,0px))!important;padding:3px 10px!important}
+#hudInstruments .hiGearBox{display:none!important}
+#hudInstruments .hiSpdVal{font-size:22px!important}
+#hudInstruments .hiSpdLbl{display:none!important}
 #hudMap{width:72px!important;height:72px!important;top:calc(52px + env(safe-area-inset-top,0px))!important;left:calc(8px + env(safe-area-inset-left,0px))!important;bottom:auto!important}
 #hudPauseBtn{top:auto!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;right:auto!important;left:50%!important;transform:translateX(-50%)!important;padding:7px 14px!important;font-size:11px!important}
 #nitroBar{display:none!important}

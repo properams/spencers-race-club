@@ -26,6 +26,7 @@ const HELP_BINDINGS = [
   { group: 'Game', keys: [
     ['P / Esc',        'Pauze tijdens race'],
     ['M',              'Geluid aan/uit'],
+    ['L',              'Leaderboard volledig / compact'],
     ['Enter',          'Vanaf titel-scherm: doorgaan'],
   ]},
   { group: 'Debug', keys: [
