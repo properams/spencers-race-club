@@ -32,6 +32,7 @@ function buildNeonGround(){
   const asphalt=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
     new THREE.MeshLambertMaterial({color:0x080810}));
   asphalt.rotation.x=-Math.PI/2;asphalt.position.y=-.15;asphalt.receiveShadow=true;
+  asphalt.userData._isProcGround=true;
   scene.add(asphalt);
   // Wet reflective overlay — key for the Blade Runner look
   const wet=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),

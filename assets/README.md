@@ -63,9 +63,37 @@ assets/
 4. If a slot stays `✗`, open the error viewer (Ctrl+Shift+E) — the asset
    loader logs the failed path under channel `assets`.
 
-## Next worlds
+## All-worlds rollout (sessie 5)
 
-This sessie pilots the pipeline on Grand Prix only. Manifests for other
-worlds are stubbed (`{}`) so missing assets stay silent. Future sessies
-will roll out matching slots for Neon City, Volcano, Arctic, Themepark,
-Space, Deep Sea, and Candy.
+The pipeline is now active on every world that benefits from realism
+upgrades. Drop matching files in the paths listed in `manifest.json`:
+
+| World      | HDRI | Ground PBR | Skybox layers | Notes |
+|------------|:---:|:---:|:---:|---|
+| grandprix  | ✓ | ✓ | ✓ | Full pilot — also has GLTF tree + prop slots |
+| neoncity   | ✓ | ✓ (wet asphalt) | ✓ (skyline silhouettes) | Procedural silhouettes off; only textured layers render |
+| volcano    | ✓ | ✓ (lava rock) | ✓ (volcano silhouettes) | Same — opt-in via texture |
+| arctic     | ✓ | ✓ (snow/ice) | ✓ (ice peaks) | Same |
+| themepark  | ✓ | ✓ (pavement) | ✓ (silhouettes) | Same |
+| deepsea    | — | ✓ (sand floor) | — | No HDRI — underwater. PBR sand floor only. |
+| space      | — | — | — | No-op; cosmic skybox + abyss are procedural by design |
+| candy      | — | — | — | Skipped — thematic visuals would clash with PBR realism |
+
+### Recommended HDRI variants per world
+
+- **grandprix**: Poly Haven `kloofendal_48d_partly_cloudy_puresky` 2K, or `meadow_2`
+- **neoncity**: Poly Haven `urban_alley_01` 2K (night-tinted), or `dikhololo_night`
+- **volcano**: Poly Haven `lonely_road_afternoon_puresky` (warm), or any dusk HDRI
+- **arctic**: Poly Haven `snowy_park_01` 2K
+- **themepark**: Poly Haven `evening_road_01_puresky` 2K
+
+### Notes on world-specific behaviour
+
+- HDRI fog-color sampling overrides the world's procedural fog tint. For
+  thematic worlds (volcano red, neon purple) this is the user's opt-in
+  trade — drop a matching HDRI or stick to procedural.
+- Procedural background silhouettes still only render automatically on
+  Grand Prix. For other worlds, silhouettes appear only when textured
+  `mountains_far.png` / `mountains_near.png` are present.
+- GLTF tree + prop slots remain Grand Prix-only this round. Per-world
+  prop dispatchers will follow in later sessies.

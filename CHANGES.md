@@ -1,5 +1,66 @@
 # CHANGES
 
+## Track Realism Overhaul (sessie 5) — Roll-out naar alle werelden
+
+> "Ziet er goed uit. Je mag nu verder met alle tracks."
+
+Pipeline uit sessie 4 uitgerold over Neon City, Volcano, Arctic, Themepark
+en DeepSea zonder gedrag te wijzigen totdat de gebruiker assets laat
+landen. Procedurele paths en bestaande wereld-stijlen blijven volledig
+intact — pas bij een gedropt bestand verandert wat er op het scherm
+verschijnt.
+
+### Aanpassingen
+
+- **`assets/manifest.json`** — slots toegevoegd voor 5 werelden:
+  - HDRI: neoncity / volcano / arctic / themepark
+  - Ground PBR (color + normal + roughness): neoncity (wet asphalt),
+    volcano (lava rock), arctic (snow/ice), themepark (pavement),
+    deepsea (sand floor)
+  - Skybox layers: neoncity / volcano / arctic / themepark
+  - Space en candy blijven `{}` (geen baat bij PBR-realism)
+
+- **Per-wereld proc-ground meshes getagd** (`_isProcGround=true`) zodat
+  `asset-bridge.applyGround` ze kan herkennen wanneer PBR-textures
+  geladen zijn:
+  - `js/worlds/arctic.js` (ice plane)
+  - `js/worlds/volcano.js` (rock plane)
+  - `js/worlds/deepsea.js` (sand floor in `buildSeaFloor`)
+  - `js/worlds/themepark.js` (pavement plane)
+  - `js/worlds/neoncity.js` (asphalt base — overlay wet/sheen meshes
+    blijven onaangetast bovenop de Standard ground)
+
+- **`buildBackgroundLayers` gegeneraliseerd** in
+  `js/track/environment.js`: leest nu `skybox_layers.mountains_far/_near`
+  uit het manifest van de actieve wereld. Procedurele canvas-silhouetten
+  blijven Grand-Prix-only (om bestaande rich horizons in andere werelden
+  niet te overschrijven). Wireup in `js/core/scene.js` voegt de call toe
+  aan neoncity / volcano / arctic / themepark zodat hun textured layers
+  meegerenderd worden zodra ze in de cache zitten.
+
+- **`assets/README.md`** uitgebreid met per-wereld activatie-tabel +
+  HDRI-suggesties (Poly Haven CC0).
+
+### Veiligheidsanalyse
+
+- Zonder asset-bestanden: alle werelden zien er identiek uit aan main.
+  `applyHDRI` / `applyGround` returnen `null` zonder cache hit;
+  `buildBackgroundLayers` no-op't voor non-GP zonder textured layers.
+- HDRI fog-overschrijving voor stylistische werelden (volcano red,
+  neon purple) is een bewuste opt-in trade: wie een Poly Haven HDRI
+  dropt accepteert dat de wereld richting realistic schuift. Stick met
+  procedural om de stijlkleuren te behouden.
+
+### Niet uitgerold deze sessie
+
+- GLTF tree-pool en prop-pool blijven GP-only. Per-wereld prop
+  dispatchers (volcano: rocks/ash; arctic: icebergs; themepark: traffic
+  cones; neoncity: trash bins/bollards) zijn aparte sessies.
+- Auto materials nog steeds Lambert. Materiaalupgrade naar Standard
+  blijft een aparte beslissing.
+
+---
+
 ## Track Realism Overhaul (sessie 4) — Spencer Grand Prix als pilot
 
 > "Ik vind de ondergrond van de tracks echt heel goed. Maar ik zie nog steeds

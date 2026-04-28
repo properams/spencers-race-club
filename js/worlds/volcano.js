@@ -12,7 +12,9 @@ function buildVolcanoEnvironment(){
   // Ground
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
     new THREE.MeshLambertMaterial({color:0x4a2515,map:_rockGroundTex()}));
-  g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;scene.add(g);
+  g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;
+  g.userData._isProcGround=true;
+  scene.add(g);
   // Sky + fog set in core/scene.js so updateSky's lerp uses world-matched colors.
   sunLight.color.setHex(0xff4422);sunLight.intensity=.7;
   ambientLight.color.setHex(0x441100);ambientLight.intensity=.35;

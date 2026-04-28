@@ -9,7 +9,9 @@ let _arcticIcePatches=[],_arcticAurora=[],_arcticBlizzardGeo=null;
 function buildArcticEnvironment(){
   var g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
     new THREE.MeshLambertMaterial({color:0xccddee,map:_iceGroundTex()}));
-  g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;scene.add(g);
+  g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;
+  g.userData._isProcGround=true; // hookable by asset-bridge if PBR ice maps loaded
+  scene.add(g);
   // Sky + fog set in core/scene.js so updateSky's lerp uses world-matched colors.
   sunLight.color.setHex(0xaaccff);sunLight.intensity=.8;
   ambientLight.color.setHex(0x445566);ambientLight.intensity=.45;

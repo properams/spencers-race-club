@@ -21,12 +21,63 @@
         "mountains_near": "assets/textures/grandprix/mountains_near.png"
       }
     },
-    "neoncity":  {},
+    "neoncity": {
+      "hdri": "assets/hdri/neoncity_night_2k.hdr",
+      "ground": {
+        "color":     "assets/textures/neoncity/asphalt_wet_color.jpg",
+        "normal":    "assets/textures/neoncity/asphalt_wet_normal.jpg",
+        "roughness": "assets/textures/neoncity/asphalt_wet_rough.jpg"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/neoncity/skyline_far.png",
+        "mountains_near": "assets/textures/neoncity/skyline_near.png"
+      }
+    },
+    "volcano": {
+      "hdri": "assets/hdri/volcano_dusk_2k.hdr",
+      "ground": {
+        "color":     "assets/textures/volcano/lavarock_color.jpg",
+        "normal":    "assets/textures/volcano/lavarock_normal.jpg",
+        "roughness": "assets/textures/volcano/lavarock_rough.jpg"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/volcano/silhouette_far.png",
+        "mountains_near": "assets/textures/volcano/silhouette_near.png"
+      }
+    },
+    "arctic": {
+      "hdri": "assets/hdri/arctic_overcast_2k.hdr",
+      "ground": {
+        "color":     "assets/textures/arctic/snowice_color.jpg",
+        "normal":    "assets/textures/arctic/snowice_normal.jpg",
+        "roughness": "assets/textures/arctic/snowice_rough.jpg"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/arctic/icepeaks_far.png",
+        "mountains_near": "assets/textures/arctic/icepeaks_near.png"
+      }
+    },
+    "themepark": {
+      "hdri": "assets/hdri/themepark_evening_2k.hdr",
+      "ground": {
+        "color":     "assets/textures/themepark/pavement_color.jpg",
+        "normal":    "assets/textures/themepark/pavement_normal.jpg",
+        "roughness": "assets/textures/themepark/pavement_rough.jpg"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/themepark/silhouette_far.png",
+        "mountains_near": "assets/textures/themepark/silhouette_near.png"
+      }
+    },
+    "deepsea": {
+      "hdri": "",
+      "ground": {
+        "color":     "assets/textures/deepsea/sand_color.jpg",
+        "normal":    "assets/textures/deepsea/sand_normal.jpg",
+        "roughness": "assets/textures/deepsea/sand_rough.jpg"
+      }
+    },
     "space":     {},
-    "deepsea":   {},
-    "candy":     {},
-    "volcano":   {},
-    "arctic":    {},
-    "themepark": {}
+    "candy":     {}
   }
 }

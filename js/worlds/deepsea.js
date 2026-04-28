@@ -154,7 +154,9 @@ function buildSeaFloor(){
   // Main sandy seafloor
   const sandMat=new THREE.MeshLambertMaterial({color:0xc8a96a,map:_sandGroundTex()});
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400,1,1),sandMat);
-  floor.rotation.x=-Math.PI/2;floor.position.y=-.18;floor.receiveShadow=true;scene.add(floor);
+  floor.rotation.x=-Math.PI/2;floor.position.y=-.18;floor.receiveShadow=true;
+  floor.userData._isProcGround=true;
+  scene.add(floor);
   // Darker infield — ocean trench / crevice
   const trenchMat=new THREE.MeshLambertMaterial({color:0x001830});
   const trench=new THREE.Mesh(new THREE.PlaneGeometry(380,320,1,1),trenchMat);

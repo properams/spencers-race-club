@@ -200,22 +200,29 @@ function _silhouetteTex(seed, baseColor, accent, jaggedness){
   return t;
 }
 
-function buildBackgroundLayers(){
-  // Two parallax silhouette planes ringing the horizon. Far layer sits
-  // farthest, lighter & narrower; near layer is darker & taller. Both
-  // wrap horizontally so panning the camera reveals more landscape.
-  if (activeWorld !== 'grandprix') return;
+// Procedural silhouettes are only auto-generated for Grand Prix because the
+// other worlds already build rich horizons (volcano embers, neon skyscrapers,
+// arctic auroras, themepark fireworks, etc.). For those worlds the layers
+// only render when the manifest provides actual mountains_far/_near images,
+// so the upgrade is fully opt-in and doesn't change the existing look until
+// the user drops a file in.
+const _GP_SILHOUETTE = {
+  far:  ['#3a4960','#6b7c98',0.55],
+  near: ['#222a3d','#404a64',0.85],
+};
 
-  // If textured layers exist in the asset cache, prefer them.
-  const farTex  = window.Assets ? Assets.getTexture('grandprix','skybox_layers.mountains_far')  : null;
-  const nearTex = window.Assets ? Assets.getTexture('grandprix','skybox_layers.mountains_near') : null;
+function buildBackgroundLayers(){
+  const farTex  = window.Assets ? Assets.getTexture(activeWorld,'skybox_layers.mountains_far')  : null;
+  const nearTex = window.Assets ? Assets.getTexture(activeWorld,'skybox_layers.mountains_near') : null;
+  const useProc = activeWorld === 'grandprix';
+  if (!useProc && !farTex && !nearTex) return;
 
   const def = [
-    { tex: farTex  || _silhouetteTex(7, '#3a4960', '#6b7c98', 0.55),
+    { tex: farTex  || (useProc ? _silhouetteTex(7,  _GP_SILHOUETTE.far[0],  _GP_SILHOUETTE.far[1],  _GP_SILHOUETTE.far[2])  : null),
       radius: 740, height: 110, yBase: 12, color: 0xffffff, opacity: 0.96, repeat: 5 },
-    { tex: nearTex || _silhouetteTex(31, '#222a3d', '#404a64', 0.85),
+    { tex: nearTex || (useProc ? _silhouetteTex(31, _GP_SILHOUETTE.near[0], _GP_SILHOUETTE.near[1], _GP_SILHOUETTE.near[2]) : null),
       radius: 540, height: 78,  yBase: 5,  color: 0xffffff, opacity: 1.00, repeat: 4 },
-  ];
+  ].filter(d => d.tex);
   def.forEach(layer=>{
     layer.tex.wrapS = THREE.RepeatWrapping;
     layer.tex.repeat.set(layer.repeat, 1);
