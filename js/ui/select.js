@@ -70,30 +70,39 @@ function updateCarPreview(dt){
 
 
 function _updateSelectSummary(){
-  const dNames=['EASY','NORMAL','HARD'];
-  const mode=isDark?'DARK':'LIGHT';
+  const dNames=['easy','normal','hard'];
+  const mode=isDark?'dark':'light';
   const el=document.getElementById('lapSummary');
-  if(el)el.textContent=_selectedLaps+' LAP'+(+_selectedLaps>1?'S':'')+' · '+dNames[difficulty]+' · '+mode;
+  if(el)el.textContent=_selectedLaps+' lap'+(+_selectedLaps>1?'s':'')+' · '+dNames[difficulty]+' · '+mode;
 }
 
 function _selectPreviewCar(defId){
   selCarId=defId;
   setPreviewCar(defId);
   const def=CAR_DEFS.find(d=>d.id===defId);if(!def)return;
-  // Preload engine-samples voor dit car-type (idempotent). Als ENGINE_MANIFEST
-  // voor dit type lege URLs heeft is dit gratis een no-op.
   if(window.Audio&&window.Audio.preloadAll)window.Audio.preloadAll(def.type);
-  const n=document.getElementById('prevName');
-  if(n){n.style.cssText+='transition:none;opacity:0;transform:translateY(8px)';setTimeout(()=>{n.textContent=def.name;n.style.cssText+='transition:all .25s ease;opacity:1;transform:translateY(0)';},80);}
+  // Brand line + model + specs
   const b=document.getElementById('prevBrand');if(b)b.textContent=def.brand;
-  const tp=document.getElementById('prevType');if(tp)tp.textContent=def.type.toUpperCase();
+  const n=document.getElementById('prevName');
+  if(n){n.style.cssText+='transition:none;opacity:0;transform:translateY(6px)';setTimeout(()=>{n.textContent=def.name;n.style.cssText+='transition:all .22s ease;opacity:1;transform:translateY(0)';},60);}
+  const sp=document.getElementById('prevSpecs');
+  if(sp){
+    const tlabel=def.type==='f1'?'F1':def.type==='muscle'?'MUSCLE':def.type==='electric'?'ELECTRIC':'SUPER';
+    const hp=Math.round(def.topSpd*820);
+    const tk=Math.round(def.topSpd*255);
+    sp.textContent=tlabel+' · '+hp+' hp · '+tk+' km/h';
+  }
+  // 4-stat card grid: SPEED / ACCEL / HANDLING / NITRO.
   const statsEl=document.getElementById('prevStats');
   if(statsEl){
-    const spd=Math.round((def.topSpd/1.35)*100),acc=Math.round((def.accel/.025)*100),hdl=Math.round((def.hdlg/.058)*100);
-    const bar=(v,col,lbl)=>`<div class="statRow"><span class="statLbl">${lbl}</span><div class="statBar"><div class="statFill" style="width:${v}%;background:${col};box-shadow:0 0 5px ${col}88"></div></div></div>`;
-    statsEl.innerHTML=bar(spd,'#ff7700','SPD')+bar(acc,'#00ccff','ACC')+bar(hdl,'#88ff44','HDL');
+    const spd=Math.round((def.topSpd/1.38)*100);
+    const acc=Math.round((def.accel/.026)*100);
+    const hdl=Math.round((def.hdlg/.060)*100);
+    const ntr=Math.round(((def.nitro||5)/10)*100);
+    const card=(lbl,v,col)=>`<div class="statCard"><div class="statCardLbl">${lbl}</div><div class="statCardBar"><div class="statCardFill" style="width:${v}%;background:${col};box-shadow:0 0 6px ${col}99"></div></div><div class="statCardVal" style="color:${col}">${v}</div></div>`;
+    statsEl.innerHTML=card('SPEED',spd,'#ff7700')+card('ACCEL',acc,'#00aaff')+card('HANDLING',hdl,'#00ff88')+card('NITRO',ntr,'#ff3a8c');
   }
-  // Color picker
+  // Color swatches — overlay on preview canvas (no separate "COLOUR" label).
   const colorEl=document.getElementById('colorRow');
   if(colorEl){
     colorEl.innerHTML='';
@@ -103,7 +112,6 @@ function _selectPreviewCar(defId){
       dot.style.background='#'+hex.toString(16).padStart(6,'0');
       dot.onclick=()=>{
         _carColorOverride[defId]=hex;
-        // Update mesh in preview
         if(_prevCarMesh){_prevCarMesh.traverse(o=>{if(o.isMesh&&o.material&&o.material.color){const m=o.material;if(m.color.getHex()===def.color||m.color.getHex()===(_carColorOverride[defId]||def.color)){m.color.setHex(hex);}}});}
         colorEl.querySelectorAll('.colorDot').forEach(d=>d.classList.remove('cSel'));
         dot.classList.add('cSel');
@@ -111,6 +119,7 @@ function _selectPreviewCar(defId){
       colorEl.appendChild(dot);
     });
   }
+  _renderRival();
 }
 
 function rebuildWorld(newWorld){
