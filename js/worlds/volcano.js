@@ -1,6 +1,8 @@
 // js/worlds/volcano.js — volcano world builders + update + collision checks
 // Non-module script.
 
+'use strict';
+
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _volcanoLavaRivers=[],_volcanoGeisers=[],_volcanoEmberGeo=null;
 let _volcanoEruption=null,_volcanoEruptionTimer=3;
@@ -94,6 +96,8 @@ function buildVolcanoEnvironment(){
     var pl=new THREE.PointLight(0xff4400,2.0,22);pl.position.copy(p);pl.position.y=2;scene.add(pl);
     _volcanoGeisers.push({pos:p.clone(),geyser:gey,light:pl,active:false,timer:5+gi*3,activeDur:2.5});
   });
+  // Bridge over lava (signature moment — collapsing in lap 3).
+  if(typeof buildVolcanoBridge==='function')buildVolcanoBridge();
   // Barriers
   buildBarriers();buildStartLine();
   // Lights setup (headlights/taillights)
@@ -115,6 +119,10 @@ function buildVolcanoEnvironment(){
 
 function updateVolcanoWorld(dt){
   var t=_nowSec;
+  if(typeof updateVolcanoBridge==='function'){
+    var pl=carObjs[playerIdx];
+    updateVolcanoBridge(dt, pl?pl.lap:1);
+  }
   // Smoke clouds drift slowly across the volcanic sky
   if(scene&&scene.background&&scene.background.isTexture){
     scene.background.offset.x=(scene.background.offset.x+dt*.005)%1;

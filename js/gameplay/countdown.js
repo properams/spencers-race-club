@@ -1,6 +1,6 @@
-// js/gameplay/countdown.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/countdown.js — non-module script.
 
+'use strict';
 
 function runCountdown(onGo){
   try{
@@ -40,35 +40,22 @@ function runCountdown(onGo){
               if(cdOv)cdOv.style.display='flex';
               if(num){num.textContent='GO!';num.style.color='#00ff55';num.style.textShadow='0 0 60px #00ff88,0 0 120px #00cc55';num.style.opacity='1';num.style.transform='scale(1.5)';}
               if(f1El)f1El.style.display='none';
-            }catch(e){console.error('Countdown GO error:',e);}
+            }catch(e){window.dbg?dbg.error('countdown',e,'GO error'):console.error('Countdown GO error:',e);}
             // ALWAYS fire onGo — even if visuals fail
             onGo();
             if(num)fadePop(num,550,function(){if(cdOv)cdOv.style.display='none';});
           },150+Math.random()*130);
         }
-      }catch(e){console.error('Countdown lightOn error:',e);onGo();}
+      }catch(e){window.dbg?dbg.error('countdown',e,'lightOn error'):console.error('Countdown lightOn error:',e);onGo();}
     };
     setTimeout(lightOn,600);
   }catch(e){
-    console.error('Countdown crashed:',e);
+    if(window.dbg)dbg.error('countdown',e,'runCountdown crashed');
+    else console.error('Countdown crashed:',e);
     onGo();
   }
 }
 
-function playGridRevving(){
-  // Simulate multiple engines revving before race start
-  if(!audioCtx)return;
-  const car=carObjs[playerIdx];
-  const typeFreq=car?((car.def.type==='f1')?1.55:(car.def.type==='muscle')?0.7:(car.def.type==='electric')?0.4:1.0):1.0;
-  // Quick aggressive blip
-  const blip=(delay,freq,vol)=>{
-    const t=audioCtx.currentTime+delay;
-    const o=audioCtx.createOscillator(),g=audioCtx.createGain(),f=audioCtx.createBiquadFilter();
-    o.type='sawtooth';f.type='lowpass';f.frequency.value=1800;f.Q.value=1.2;
-    o.frequency.setValueAtTime(freq*typeFreq*.5,t);o.frequency.exponentialRampToValueAtTime(freq*typeFreq*1.8,t+.18);
-    o.frequency.exponentialRampToValueAtTime(freq*typeFreq*.6,t+.4);
-    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+.06);g.gain.exponentialRampToValueAtTime(.001,t+.45);
-    o.connect(f);f.connect(g);g.connect(_dst());o.start(t);o.stop(t+.5);
-  };
-  blip(0,200,.18);blip(.55,220,.2);blip(1.1,240,.22);blip(1.65,260,.25);blip(2.2,300,.28);
-}
+// playGridRevving was dead — pre-race grid-revving SFX, nooit ge-wired
+// in runCountdown (alleen Audio.playCount + Audio.playCrowdCheer worden
+// op grid afgespeeld). Verwijderd in dead-code cleanup.

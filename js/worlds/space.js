@@ -1,6 +1,8 @@
 // js/worlds/space.js — space world builders + update + collision checks
 // Non-module script.
 
+'use strict';
+
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _spaceAsteroids=[];
 let _spaceDustGeo=null,_spaceDustParticles=null;

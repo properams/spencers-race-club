@@ -1,6 +1,6 @@
-// js/gameplay/finish.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/finish.js — non-module script.
 
+'use strict';
 
 function showFinish(){
   gameState='FINISH';document.getElementById('hud').style.display='none';setTouchControlsVisible(false);

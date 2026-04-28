@@ -1,14 +1,18 @@
-// js/ui/pause.js — Fase 2.3/2.4 extraction. Non-module script.
+// js/ui/pause.js — non-module script.
 
+'use strict';
 
 function togglePause(){
-  if(gameState!=='RACE')return;
+  if(gameState!=='RACE'){window.dbg&&dbg.log('pause','skip — gameState='+gameState);return;}
   gamePaused=!gamePaused;
-  document.getElementById('pauseOverlay').style.display=gamePaused?'flex':'none';
+  const ov=document.getElementById('pauseOverlay');
+  if(!ov){window.dbg&&dbg.error('pause','pauseOverlay element niet gevonden');}
+  else ov.style.display=gamePaused?'flex':'none';
   const btn=document.getElementById('hudPauseBtn');
   if(btn)btn.textContent=gamePaused?'▶ PLAY':'⏸ PAUSE';
   // Music-ducking via gain ramp in plaats van audioCtx.suspend — suspend breekt setTimeout scheduling.
   _musicMuted=gamePaused;_applyMusicGain(0.2);
+  window.dbg&&dbg.log('pause',gamePaused?'paused':'resumed','overlay='+(ov?ov.style.display:'(missing)'));
 }
 
 function toggleMute(){

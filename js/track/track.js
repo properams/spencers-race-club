@@ -1,5 +1,6 @@
-// js/track/track.js — auto-extracted in Fase 4
-// Non-module script.
+// js/track/track.js — non-module script.
+
+'use strict';
 
 // Procedurele asfalt-noise texture — werkt multiplicatief over material.color
 // zodat per-world tint (color) behouden blijft. Tileable 256×256 canvas met

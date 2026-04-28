@@ -1,5 +1,48 @@
 // js/audio/engine.js — Fase 2.3/2.4 extraction. Non-module script.
+//
+// SURFACE-AWARE TIRE: tire-rolling noise loop wordt per oppervlakte
+// gefilterd zodat asphalt/sand/ice/metal/water elk eigen karakter
+// hebben. Surface komt uit window._getCurrentSurface() (samples.js,
+// per-wereld default in WORLD_DEFAULT_SURFACE).
+//
+// SAMPLE ENGINE: als _hasEngineSamples(carType) true is en de A/B toggle
+// niet gedwongen procedural staat, dispatcht updateEngine naar SampleEngine
+// en wordt de procedurele 4-osc gain stilgezet. Als samples ontbreken
+// blijft de bestaande procedural setup actief.
+//
+// CAR-WIND: aparte highpass-filtered noise loop, fade-in boven ~70%
+// topspeed. Onafhankelijk van engine-pad — werkt altijd.
 
+// Per-surface tire-rolling parameters: noise filter freq + Q + gain-mult.
+// Gekozen op gehoor — sand = laag/breed (rommelig), ice = hoog/sparse,
+// water = mid/laag-Q (vlot), metal = mid/hoog-Q (zingt mee), dirt =
+// asphalt + lager center.
+const SURFACE_PARAMS = {
+  asphalt: { freqBase: 200, freqScale: 180, Q: 2.0, gain: 0.025 },
+  sand:    { freqBase: 140, freqScale: 100, Q: 0.7, gain: 0.045 },
+  ice:     { freqBase: 320, freqScale: 240, Q: 1.2, gain: 0.018 },
+  water:   { freqBase: 180, freqScale: 140, Q: 0.9, gain: 0.038 },
+  metal:   { freqBase: 240, freqScale: 220, Q: 4.5, gain: 0.022 },
+  dirt:    { freqBase: 160, freqScale: 130, Q: 1.4, gain: 0.034 },
+};
+
+'use strict';
+
+// Engine audio state (uit main.js verhuisd).
+//   engineOsc / engineGain — multi-oscillator engine (initEngine() wijst toe).
+//   _rollGain / _rollSrc / _rollFilt — rolling-noise layer (tire/road).
+//   _carWindGain / _carWindSrc / _carWindFilt — highpass-filtered car-wind loop,
+//     fade-in boven ~65% topspeed (Fase 2.3 audio upgrade).
+//   _carWindSampleGain / _carWindSampleSrc — sample-pad fallback wanneer
+//     windHigh-buffer geladen is (lazy-init bij eerste detectie).
+//   _lastGear — vorige gear voor up/down-shift trigger in updateEngine.
+// Cross-script: gameplay/finish.js fade engineGain naar 0; gameplay/race.js
+// reset _lastGear=1.
+let engineOsc=null,engineGain=null;
+let _rollGain=null,_rollSrc=null,_rollFilt=null;
+let _carWindGain=null,_carWindSrc=null,_carWindFilt=null;
+let _carWindSampleGain=null,_carWindSampleSrc=null;
+let _lastGear=1;
 
 function initAudio(){
   if(audioCtx)return;
@@ -57,6 +100,16 @@ function initEngine(){
   const rGain=ctx.createGain();rGain.gain.value=0;
   rSrc.connect(rFilt);rFilt.connect(rGain);rGain.connect(_dst());rSrc.start();
   _rollGain=rGain;_rollSrc=rSrc;_rollFilt=rFilt;
+  // Car-wind: aparte highpass-filtered noise loop, fade-in boven ~70%
+  // topspeed. Sample-pad: als windHigh-buffer geladen is wordt deze
+  // procedurele bron silently bypassed (zie updateEngine).
+  const wSz=ctx.sampleRate*2,wBuf=ctx.createBuffer(1,wSz,ctx.sampleRate);
+  const wD=wBuf.getChannelData(0);for(let i=0;i<wSz;i++)wD[i]=Math.random()*2-1;
+  const wSrc=ctx.createBufferSource();wSrc.buffer=wBuf;wSrc.loop=true;
+  const wFilt=ctx.createBiquadFilter();wFilt.type='highpass';wFilt.frequency.value=600;wFilt.Q.value=0.6;
+  const wGain=ctx.createGain();wGain.gain.value=0;
+  wSrc.connect(wFilt);wFilt.connect(wGain);wGain.connect(_dst());wSrc.start();
+  _carWindGain=wGain;_carWindSrc=wSrc;_carWindFilt=wFilt;
 }
 
 
@@ -67,33 +120,100 @@ function updateEngine(spd){
   const car=carObjs[playerIdx];
   const max=car?car.def.topSpd:1.8;
   const carType=car?car.def.type:'super';
-  // Per-type frequency multiplier: F1 screams, muscle deep, electric silent
-  const typeFreqM=carType==='f1'?1.55:carType==='muscle'?0.72:carType==='electric'?0.3:1.0;
-  const typeGainM=carType==='electric'?0.12:carType==='muscle'?1.35:carType==='f1'?1.15:1.0;
   const ratio=Math.min(1,abs/max);
   const gear=Math.min(5,Math.floor(ratio*5)+1);
   _currentGear=gear;
-  const inGear=ratio*5-(gear-1);
-  const rpm=700+inGear*4200;
-  const base=(rpm/60*1.2)*typeFreqM;
   const t=audioCtx.currentTime;
   const isBoost=nitroActive||(car&&car.boostTimer>0);
-  engineOsc.frequency.setTargetAtTime(base*(isBoost?1.06:1),t,.035);
-  engineOsc._o2.frequency.setTargetAtTime(base*2*(isBoost?1.04:1),t,.035);
-  engineOsc._o3.frequency.setTargetAtTime(base*3,t,.035);
-  if(engineOsc._o4)engineOsc._o4.frequency.setTargetAtTime(35+ratio*45,t,.06);
-  // F1: open filter for screaming tone; muscle: tight lowpass for burble
-  const filtFreq=carType==='f1'?(600+inGear*4500):carType==='muscle'?(180+inGear*1400):(isBoost?(500+inGear*3200):(280+inGear*2400));
-  engineOsc._filt.frequency.setTargetAtTime(filtFreq,t,.05);
-  engineGain.gain.setTargetAtTime(abs>.01?(isBoost?(.12+ratio*.07)*typeGainM:(.09+ratio*.05)*typeGainM):.022*typeGainM,t,.08);
-  // Electric: add high-pitch whirr instead of roar
-  if(carType==='electric'&&engineOsc._o3){
-    engineOsc._o3.frequency.setTargetAtTime(800+ratio*3200,t,.05);
+
+  // ── SAMPLE ENGINE DISPATCH ─────────────────────────────────────────────
+  // Als RPM-samples voor dit car-type geladen zijn én A/B toggle niet op
+  // forced procedural staat, route naar SampleEngine. Procedurele osc
+  // blijft draaien maar gain wordt naar 0 geramped (geen dubbele bron).
+  const useSamples=!window._forceProceduralAudio
+    && window._hasEngineSamples
+    && window._hasEngineSamples(carType);
+  if(useSamples){
+    if(!window._sampleEngine||window._sampleEngine.carType!==carType){
+      if(window._sampleEngine){try{window._sampleEngine.stop();}catch(_){}}
+      window._sampleEngine=window._createSampleEngineForCarType(carType);
+      if(window._sampleEngine&&window._sampleEngine.start)window._sampleEngine.start();
+    }
+    if(window._sampleEngine&&window._sampleEngine.update){
+      window._sampleEngine.update(ratio,isBoost,gear);
+      engineGain.gain.setTargetAtTime(0,t,.1);
+    }
+  }else{
+    if(window._sampleEngine){try{window._sampleEngine.stop();}catch(_){}window._sampleEngine=null;}
+    // Procedurele 4-osc pad
+    const typeFreqM=carType==='f1'?1.55:carType==='muscle'?0.72:carType==='electric'?0.3:1.0;
+    const typeGainM=carType==='electric'?0.12:carType==='muscle'?1.35:carType==='f1'?1.15:1.0;
+    const inGear=ratio*5-(gear-1);
+    const rpm=700+inGear*4200;
+    const base=(rpm/60*1.2)*typeFreqM;
+    engineOsc.frequency.setTargetAtTime(base*(isBoost?1.06:1),t,.035);
+    engineOsc._o2.frequency.setTargetAtTime(base*2*(isBoost?1.04:1),t,.035);
+    engineOsc._o3.frequency.setTargetAtTime(base*3,t,.035);
+    if(engineOsc._o4)engineOsc._o4.frequency.setTargetAtTime(35+ratio*45,t,.06);
+    const filtFreq=carType==='f1'?(600+inGear*4500):carType==='muscle'?(180+inGear*1400):(isBoost?(500+inGear*3200):(280+inGear*2400));
+    engineOsc._filt.frequency.setTargetAtTime(filtFreq,t,.05);
+    engineGain.gain.setTargetAtTime(abs>.01?(isBoost?(.12+ratio*.07)*typeGainM:(.09+ratio*.05)*typeGainM):.022*typeGainM,t,.08);
+    if(carType==='electric'&&engineOsc._o3){
+      engineOsc._o3.frequency.setTargetAtTime(800+ratio*3200,t,.05);
+    }
   }
-  if(_rollGain){_rollGain.gain.setTargetAtTime(abs*.025,t,.1);if(_rollFilt)_rollFilt.frequency.setTargetAtTime(200+abs*180,t,.1);}
-  if(gear!==_lastGear&&abs>.3){
+
+  // ── TIRE ROLLING (surface-aware) — beide engine-paden ──────────────────
+  if(_rollGain){
+    // SAMPLES DISPATCH POINT: surface-sample buffer kan _rollGain vervangen
+    // door een looping AudioBufferSourceNode op assets/audio/surface/<x>.ogg.
+    const surface=(window._getCurrentSurface?window._getCurrentSurface():'asphalt');
+    const sp=SURFACE_PARAMS[surface]||SURFACE_PARAMS.asphalt;
+    _rollGain.gain.setTargetAtTime(abs*sp.gain,t,.1);
+    if(_rollFilt){
+      _rollFilt.frequency.setTargetAtTime(sp.freqBase+abs*sp.freqScale,t,.1);
+      _rollFilt.Q.setTargetAtTime(sp.Q,t,.15);
+    }
+  }
+
+  // ── CAR-WIND (boven ~65% topspeed) — beide engine-paden ────────────────
+  // Ratio-gain: 0 onder 0.65, lineair naar 0.18 op ratio 1.0. Sample-pad
+  // (windHigh in SFX_MANIFEST) krijgt voorrang als beschikbaar; anders
+  // fallback naar de procedurele highpass-noise loop uit initEngine.
+  if(_carWindGain){
+    const windGain=ratio<0.65?0:(ratio-0.65)*(0.18/0.35);
+    const useWindSample=!window._forceProceduralAudio
+      && window._hasSFXSample
+      && window._hasSFXSample('windHigh');
+    if(useWindSample){
+      // Lazy init sample-loop bij eerste keer dat sample beschikbaar is.
+      if(!_carWindSampleGain){
+        const buf=window._getSFXBuffer('windHigh');
+        if(buf){
+          const src=audioCtx.createBufferSource();
+          src.buffer=buf;src.loop=true;
+          const g=audioCtx.createGain();g.gain.value=0;
+          src.connect(g);g.connect(_dst());
+          src.start(audioCtx.currentTime);
+          _carWindSampleGain=g;_carWindSampleSrc=src;
+        }
+      }
+      // Mute procedural, ramp sample
+      _carWindGain.gain.setTargetAtTime(0,t,.25);
+      if(_carWindSampleGain)_carWindSampleGain.gain.setTargetAtTime(windGain,t,.25);
+    }else{
+      // Mute sample (indien actief), ramp procedural
+      if(_carWindSampleGain)_carWindSampleGain.gain.setTargetAtTime(0,t,.25);
+      _carWindGain.gain.setTargetAtTime(windGain,t,.25);
+      if(_carWindFilt){
+        _carWindFilt.frequency.setTargetAtTime(600+ratio*1800,t,.25);
+      }
+    }
+  }
+
+  // ── GEAR SHIFT CHIRP (alleen procedural pad) ───────────────────────────
+  if(!useSamples&&gear!==_lastGear&&abs>.3){
     const up=gear>_lastGear,o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    // F1 gear shift: rapid chirp; muscle: loud pop; other: normal blip
     o.type=carType==='muscle'?'sawtooth':'sawtooth';
     const chirpF=carType==='f1'?480:carType==='muscle'?120:290;
     o.frequency.setValueAtTime(up?chirpF:chirpF*.7,t);
@@ -101,7 +221,7 @@ function updateEngine(spd){
     const chirpV=carType==='muscle'?.11:carType==='f1'?.055:.065;
     g.gain.setValueAtTime(chirpV,t);g.gain.exponentialRampToValueAtTime(.001,t+(carType==='f1'?.07:.13));
     o.connect(g);g.connect(_dst());o.start(t);o.stop(t+(carType==='f1'?.08:.15));
-    _lastGear=gear;
   }
+  if(gear!==_lastGear)_lastGear=gear;
 }
 

@@ -1,6 +1,12 @@
-// js/gameplay/tracklimits.js — auto-extracted in Fase 4
-// Non-module script.
+// js/gameplay/tracklimits.js — non-module script.
 
+'use strict';
+
+// Wrong-way detector accumulator (uit main.js verhuisd). Builds up zolang
+// speler tegenovergestelde richting rijdt; reset in gameplay/race.js +
+// gameplay/spacefx.js + in deze module bij sector-cross. Cross-script reads
+// in ui/hud.js voor _elWrongWay overlay-toggle.
+let _wrongWayTimer=0;
 
 function checkTrackLimits(dt){
   const car=carObjs[playerIdx];if(!car||car.finished)return;

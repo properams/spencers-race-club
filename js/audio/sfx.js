@@ -1,5 +1,39 @@
 // js/audio/sfx.js — Fase 2.3/2.4 extraction. Non-module script.
+//
+// Dispatch-laag: elke functie checkt eerst of er een sample voor dit
+// effect geladen is (via window._hasSFXSample uit samples.js). Zo ja →
+// sample. Zo nee → procedurele synth-fallback. Geen gameplay-koppeling
+// die breekt als samples ontbreken.
 
+
+// Generic one-shot sample player. hasFn/getFn parametriseren de categorie
+// (SFX, Ambient, ...) zodat dezelfde implementatie hergebruikt wordt.
+// slots = string of array; bij array random pick (variatie voor drift etc).
+function _playBufferOneShot(hasFn, getFn, slots, vol=0.6, delay=0){
+  if(!audioCtx||!hasFn||!getFn)return false;
+  if(window._forceProceduralAudio)return false;
+  const list=Array.isArray(slots)?slots:[slots];
+  const available=list.filter(s=>hasFn(s));
+  if(!available.length)return false;
+  const slot=available[Math.floor(Math.random()*available.length)];
+  const buf=getFn(slot);
+  if(!buf)return false;
+  const t=audioCtx.currentTime+delay;
+  const src=audioCtx.createBufferSource();
+  src.buffer=buf;
+  const g=audioCtx.createGain();
+  g.gain.value=vol;
+  src.connect(g);g.connect(_dst());
+  src.start(t);
+  return true;
+}
+
+// SFX shorthand — gebruikt door playTireScreech / playLandSound / etc.
+function _playSampleOneShot(slots, vol=0.6, delay=0){
+  return _playBufferOneShot(window._hasSFXSample,window._getSFXBuffer,slots,vol,delay);
+}
+
+'use strict';
 
 function beep(f,d,v=.25,delay=0,type='sine'){
   if(!audioCtx)return;
@@ -43,22 +77,40 @@ function playNitroActivate(){
   _noise(.32,2400,1.5,.18);
 }
 
-function playTireScreech(){_noise(.22,680,4.5,.2);_noise(.2,1500,2,.09);}
+function playTireScreech(){
+  if(_playSampleOneShot(['drift1','drift2','drift3'], 0.55))return;
+  _noise(.22,680,4.5,.2);_noise(.2,1500,2,.09);
+}
 
 function playJumpSound(){
   beep(210,.05,.2,0,'sine');beep(360,.07,.15,.04,'sine');_noise(.1,580,4,.08);
 }
 
 function playLandSound(){
+  if(_playSampleOneShot('suspension', 0.7))return;
   beep(60,.28,.45,0,'sawtooth');_noise(.2,210,1.5,.32);
 }
 
 function playSpinSound(){_noise(.7,540,3.5,.2);beep(255,.5,.07,0,'sine');}
 
 function playCollisionSound(){
+  // Sample-pad: hard impact + glass scatter overlay als beide aanwezig.
+  if(_playSampleOneShot('impactHard', 0.85)){
+    _playSampleOneShot('glassScatter', 0.5, 0.05);
+    return;
+  }
   beep(58,.18,.65,0,'sine');           // low thud
   _noise(.32,1300,1.1,.28,.01);        // metal crunch
   _noise(.18,4200,3.5,.35,.06);        // glass scatter
+}
+
+// Brake squeal — sample-prefer met procedurele fallback. Triggert vanuit
+// gameplay (physics.js) wanneer er hard wordt geremd op snelheid.
+function playBrakeSound(){
+  if(_playSampleOneShot('brake', 0.45))return;
+  // Korte gefilterde noise-burst — high-Q bandpass = squeal-feel.
+  _noise(.18, 2200, 6, .12);
+  _noise(.12, 3400, 4, .08, .04);
 }
 
 function playVictoryFanfare(){

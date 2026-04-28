@@ -1,10 +1,14 @@
-// js/cars/physics.js — auto-extracted in Fase 4
-// Non-module script.
+// js/cars/physics.js — non-module script.
+
+'use strict';
 
 // Pre-allocated scratch vectors (uit main.js verhuisd) — cross-script
 // zichtbaar voor effects/night.js + visuals.js die _plFwd/_plRt lezen.
 const _plFwd=new THREE.Vector3(),_plBk=new THREE.Vector3(),_plRt=new THREE.Vector3();
 const _slipFwd=new THREE.Vector3(),_slipDir=new THREE.Vector3();
+
+// Brake-release detector — set elke frame in updatePlayer, gereset in race.js.
+let _wasBraking=false;
 
 function updatePlayer(dt){
   if(recoverActive)return;
@@ -291,6 +295,9 @@ function updatePlayer(dt){
 
   // ── Turbo spool effect (lift then reapply at speed) ─────────────
   const nowBraking=brk&&spd>.5;
+  // Brake squeal one-shot: trigger op brake-onset bij hoge snelheid.
+  // Vermijdt spam tijdens sustained braking.
+  if(nowBraking&&!_wasBraking&&spd>.7)Audio.playBrake();
   if(_wasBraking&&acc&&!brk&&spd>.5){
     // Transition: was braking, now accelerating
     if(audioCtx&&Math.random()>.5){

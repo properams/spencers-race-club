@@ -1,23 +1,9 @@
-// js/cars/build.js — auto-extracted in Fase 4
-// Non-module script.
+// js/cars/build.js — non-module script.
 
+'use strict';
 
-function makeWheel(radius,width,chromeMat,redMat){
-  const g=new THREE.Group();
-  const tire=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,width,20),
-    new THREE.MeshLambertMaterial({color:0x111111}));
-  tire.rotation.z=Math.PI/2;g.add(tire);
-  const hub=new THREE.Mesh(new THREE.CylinderGeometry(radius*.52,radius*.52,width+.01,12),chromeMat);
-  hub.rotation.z=Math.PI/2;g.add(hub);
-  for(let s=0;s<5;s++){
-    const ang=(s/5)*Math.PI*2;
-    const spoke=new THREE.Mesh(new THREE.BoxGeometry(radius*.85,width*.65,.05),chromeMat);
-    spoke.rotation.z=Math.PI/2;spoke.rotation.y=ang;g.add(spoke);
-  }
-  const caliper=new THREE.Mesh(new THREE.BoxGeometry(.14,.22,.20),redMat);
-  caliper.position.set(0,-radius*.52,0);g.add(caliper);
-  return g;
-}
+// makeWheel was dead code — niet aangeroepen door makeCar (die bouwt
+// wheels inline). Verwijderd in dead-code cleanup.
 
 function makeCar(def){
   const g=new THREE.Group();

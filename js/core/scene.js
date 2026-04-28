@@ -286,6 +286,7 @@ function makeGPSkyTex(){
 }
 
 function buildScene(){
+  window.dbg&&dbg.log('scene','buildScene start — world='+activeWorld);
   disposeScene();
   // ── Swap TRACK_WP data for active world ───────────────────────
   {const src=(_TRACKS&&_TRACKS[activeWorld])||_GP_WP;
@@ -421,4 +422,5 @@ function buildScene(){
   _mmBounds={mnX:Math.min(..._xs),mxX:Math.max(..._xs),mnZ:Math.min(..._zs),mxZ:Math.max(..._zs)};
   // Default to dark mode (isDark=false at entry, toggleNight sets it dark)
   isDark=false;toggleNight();
+  window.dbg&&dbg.snapshot('scene','buildScene done',{world:activeWorld,objects:scene.children.length,camPos:camera.position});
 }
