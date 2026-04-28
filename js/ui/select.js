@@ -157,6 +157,14 @@ function updateCarPreview(dt){
   if(gameState!=='SELECT')return;
   if(!_prevScene)initCarPreview();
   if(!_prevRen||!_prevScene||!_prevCam)return;
+  // initCarPreview may have run while #sSelect was still display:none
+  // (clientWidth=0). Once layout is real, re-size before rendering so
+  // the first visible frame uses the correct framebuffer + aspect.
+  if(_prevSizeW<=2){
+    const cvs=_prevRen.domElement;
+    if(cvs&&cvs.clientWidth>2)_resizePreviewRenderer(cvs);
+    if(_prevSizeW<=2)return;
+  }
   if(_prevDragHoldT>0)_prevDragHoldT=Math.max(0,_prevDragHoldT-dt);
   if(_prevCarMesh&&!_prevDragging&&_prevDragHoldT<=0)_prevCarMesh.rotation.y+=dt*0.3;
   if(_prevPodiumGridTex){
@@ -237,7 +245,15 @@ function _selectPreviewCar(defId){
   // Brand line + model + specs
   const b=document.getElementById('prevBrand');if(b)b.textContent=def.brand;
   const n=document.getElementById('prevName');
-  if(n){n.style.cssText+='transition:none;opacity:0;transform:translateY(6px)';setTimeout(()=>{n.textContent=def.name;n.style.cssText+='transition:all .22s ease;opacity:1;transform:translateY(0)';},60);}
+  if(n){
+    if(n._fadeT){clearTimeout(n._fadeT);n._fadeT=null;}
+    n.style.cssText+='transition:none;opacity:0;transform:translateY(6px)';
+    n._fadeT=setTimeout(()=>{
+      n.textContent=def.name;
+      n.style.cssText+='transition:all .22s ease;opacity:1;transform:translateY(0)';
+      n._fadeT=null;
+    },60);
+  }
   const sp=document.getElementById('prevSpecs');
   if(sp){
     const tlabel=def.type==='f1'?'F1':def.type==='muscle'?'MUSCLE':def.type==='electric'?'ELECTRIC':'SUPER';

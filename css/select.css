@@ -18,7 +18,9 @@
   pointer-events:none;opacity:.65;z-index:0
 }
 /* Perspective grid floor at the bottom — Tron-style horizon. Faded to
-   transparent at the top via a mask gradient. */
+   transparent at the top via a mask gradient. Hidden when motion is
+   reduced or on small phones to keep the masked-transformed layer off
+   low-end paint paths. */
 #sSelect::after{
   content:'';position:absolute;left:-20%;right:-20%;bottom:0;height:240px;
   background-image:
@@ -29,6 +31,9 @@
   transform:perspective(320px) rotateX(58deg);transform-origin:50% 100%;
   mask-image:linear-gradient(transparent 0%,black 65%);
   -webkit-mask-image:linear-gradient(transparent 0%,black 65%)
+}
+@media (prefers-reduced-motion:reduce),(max-width:600px){
+  #sSelect::after{display:none}
 }
 
 /* ── HEADER ──────────────────────────────────────────────────────────── */
