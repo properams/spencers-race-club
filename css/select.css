@@ -6,12 +6,29 @@
   background:radial-gradient(ellipse at 30% 50%,#0d0020,#050010,#000005);
   justify-content:flex-start;padding:0;overflow:hidden
 }
+/* Dot field + ultra-faint scanlines layered together for a CRT feel. */
 #sSelect::before{
   content:'';position:absolute;inset:0;
-  background-image:radial-gradient(circle,rgba(180,100,255,.3) 1px,transparent 1px),
-                   radial-gradient(circle,rgba(100,200,255,.15) .7px,transparent .7px);
-  background-size:32px 32px,20px 20px;background-position:3px 4px,12px 14px;
-  pointer-events:none;opacity:.2;z-index:0
+  background-image:
+    repeating-linear-gradient(0deg,transparent 0,transparent 1px,rgba(255,255,255,.025) 1px,rgba(255,255,255,.025) 2px),
+    radial-gradient(circle,rgba(180,100,255,.3) 1px,transparent 1px),
+    radial-gradient(circle,rgba(100,200,255,.15) .7px,transparent .7px);
+  background-size:100% 2px,32px 32px,20px 20px;
+  background-position:0 0,3px 4px,12px 14px;
+  pointer-events:none;opacity:.65;z-index:0
+}
+/* Perspective grid floor at the bottom — Tron-style horizon. Faded to
+   transparent at the top via a mask gradient. */
+#sSelect::after{
+  content:'';position:absolute;left:-20%;right:-20%;bottom:0;height:240px;
+  background-image:
+    linear-gradient(rgba(255,45,111,.35) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,45,111,.35) 1px,transparent 1px);
+  background-size:46px 46px;
+  pointer-events:none;z-index:0;opacity:.18;
+  transform:perspective(320px) rotateX(58deg);transform-origin:50% 100%;
+  mask-image:linear-gradient(transparent 0%,black 65%);
+  -webkit-mask-image:linear-gradient(transparent 0%,black 65%)
 }
 
 /* ── HEADER ──────────────────────────────────────────────────────────── */
@@ -24,7 +41,14 @@
 .selHeaderRight{display:flex;gap:8px;align-items:center}
 .selTitle{
   font-family:'Orbitron',sans-serif;font-size:clamp(13px,1.6vw,18px);
-  letter-spacing:5px;margin:0;color:#ff3a8c;font-weight:700
+  letter-spacing:5px;margin:0;color:#ff3a8c;font-weight:700;
+  text-shadow:0 0 10px rgba(255,58,140,.55);
+  animation:titleFlicker 8s infinite
+}
+@keyframes titleFlicker{
+  0%,4%,5.5%,7%,9%,100%{opacity:1}
+  4.5%{opacity:.78}
+  6%,8%{opacity:.92}
 }
 .selSubtitle{font-family:'Rajdhani',sans-serif;font-size:11px;color:#6e5a9a;letter-spacing:2px}
 .selBack{
@@ -167,6 +191,16 @@
   background:radial-gradient(ellipse at 50% 60%,#2a1a4a,#0d0820);
   overflow:hidden
 }
+/* Magenta L-shaped corner brackets — anchors the preview as a viewport. */
+.prevCorner{
+  position:absolute;width:18px;height:18px;pointer-events:none;
+  border:0 solid #ff2d6f;
+  filter:drop-shadow(0 0 5px rgba(255,45,111,.7))
+}
+.prevCornerTL{top:7px;left:7px;border-top-width:2px;border-left-width:2px;border-top-left-radius:5px}
+.prevCornerTR{top:7px;right:7px;border-top-width:2px;border-right-width:2px;border-top-right-radius:5px}
+.prevCornerBL{bottom:7px;left:7px;border-bottom-width:2px;border-left-width:2px;border-bottom-left-radius:5px}
+.prevCornerBR{bottom:7px;right:7px;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:5px}
 #carPreviewCvs{
   width:100%;height:100%;display:block;cursor:grab
 }
