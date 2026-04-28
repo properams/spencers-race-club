@@ -356,33 +356,6 @@ function playRevLimiter(){
   src.connect(f);f.connect(g);g.connect(_dst());src.start(t);src.stop(t+.045);
 }
 
-function updateGapDisplay(){
-  const pos=getPositions();
-  const pIdx=pos.findIndex(c=>c.isPlayer);
-  const gapEl=document.getElementById('hudGap');
-  if(!gapEl||!_elGapAhead||!_elGapBehind)return;
-  if(pIdx<0){gapEl.style.display='none';return;}
-  gapEl.style.display='block';
-  const refLap=bestLapTime<Infinity?bestLapTime:60; // use best lap time as scale
-  // Car ahead
-  if(pIdx>0){
-    const ahead=pos[pIdx-1];
-    const pg=(ahead.lap-pos[pIdx].lap)+(ahead.progress-pos[pIdx].progress);
-    const sec=Math.abs(pg)*refLap;
-    _elGapAhead.textContent='▲ P'+(pIdx)+' +'+sec.toFixed(1)+'s';
-    _elGapAhead.style.display='block';
-  }else{_elGapAhead.style.display='none';}
-  // Car behind
-  if(pIdx<pos.length-1){
-    const behind=pos[pIdx+1];
-    const pg=(pos[pIdx].lap-behind.lap)+(pos[pIdx].progress-behind.progress);
-    const sec=Math.abs(pg)*refLap;
-    _elGapBehind.textContent='▼ P'+(pIdx+2)+' -'+sec.toFixed(1)+'s';
-    _elGapBehind.style.display='block';
-  }else{_elGapBehind.style.display='none';}
-}
-
-
 function updateQuickRestart(dt){
   const holding=keys['KeyR']&&gameState==='RACE';
   const bar=document.getElementById('rstBar'),fill=document.getElementById('rstFill');

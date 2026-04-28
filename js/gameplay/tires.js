@@ -12,4 +12,5 @@
 
 let _tireTemp={fl:.15,fr:.15,rl:.15,rr:.15};
 let _tireWarnCooldown=0;
-let _lastTireKey=-1;
+// String-key sinds de car-status panel zowel temp als damage encodeert.
+let _lastTireKey='';

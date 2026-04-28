@@ -148,9 +148,9 @@ function applyWorldHUDTint(world){
   if(hdGear)hdGear.style.color=isSpace?'#00eeff':isDeepSea?'#00ffcc':'#fff';
   const hdSpd=document.getElementById('hdSpd');
   if(hdSpd)hdSpd.style.color=isSpace?'#00eeff':isDeepSea?'#00ffcc':'#fff';
-  // HUD border tint
-  const hudPos=document.getElementById('hudPos');
-  if(hudPos)hudPos.style.borderColor=isDeepSea?'#00ddaa':isSpace?'#00ccff':isNeonW?'#00ffee':'#ff7700';
+  // HUD accent tint per world (applied to race-info panel border).
+  const hudInfo=document.getElementById('hudRaceInfo');
+  if(hudInfo)hudInfo.style.borderColor=isDeepSea?'rgba(0,221,170,.45)':isSpace?'rgba(0,204,255,.45)':isNeonW?'rgba(0,255,238,.45)':'rgba(255,255,255,.10)';
 }
 
 function buildCarSelectUI(){

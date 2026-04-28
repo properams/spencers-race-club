@@ -59,7 +59,6 @@ function _resetRaceState(){
   _rainIntensity=_rainTarget; // snap to current rain state (no lingering transition)
   if(_elWrongWay)_elWrongWay.style.display='none';
   totalScore=0;
-  if(_elScore)_elScore.textContent='0';
   if(_elLapDelta){_elLapDelta.textContent='';_elLapDelta.style.color='';}
   const _ccvs=document.getElementById('confettiCvs');if(_ccvs)_ccvs.style.display='none';
   const _sov=document.getElementById('speedOverlay');if(_sov)_sov.style.opacity='0';
@@ -93,7 +92,6 @@ function _resetRaceState(){
   const f1=document.getElementById('f1Lights');if(f1)f1.style.display='none';
   const cf=document.getElementById('colFlash');if(cf)cf.style.opacity='0';
   const ah=document.getElementById('achieveToast');if(ah)ah.style.opacity='0';
-  const gapEl=document.getElementById('hudGap');if(gapEl)gapEl.style.display='none';
   _revLimiterTimer=0;_titleCamT=0;
   const dbEl=document.getElementById('driftBar');if(dbEl)dbEl.style.display='none';
   const dlEl=document.getElementById('driftLabel');if(dlEl)dlEl.style.display='none';

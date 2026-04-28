@@ -101,7 +101,7 @@ var _musicDuck=1.0;         // pit-stop ducking factor (1.0 = no duck)
 // _pl* + _slip* scratch vectors → cars/physics.js
 // _wrongWayTimer → gameplay/tracklimits.js, _elWrongWay → ui/hud.js
 // _miniTurboReady → js/gameplay/combo.js
-// Score system — _elScore/_elLapDelta → ui/hud.js
+// Score system — _elLapDelta → ui/hud.js (geen aparte score-element in race-HUD meer; score wordt alleen op finish-scherm getoond)
 var totalScore=0; // var: ES-modules schrijven window.totalScore
 // Difficulty (0=easy 1=normal 2=hard) — DIFF_MULT in js/config.js
 var difficulty=1; // var: ES-modules lezen window.difficulty
@@ -119,7 +119,7 @@ let _sunBillboard=null;
 // Safety car (spawns during recovery)
 let _safetyCar=null;
 // Tire state (_tireTemp, _tireWarnCooldown, _lastTireKey) → js/gameplay/tires.js
-// _elTire → ui/hud.js
+// _elCarStatus / _elTireT → ui/hud.js (oude _elTire is opgegaan in dual-encoded csTire dots)
 // Day↔night smooth-transition state (_skyT, _skyTarget, _fogColorDay, _fogColorNight) → js/effects/night.js
 // _thunderTimer / _weatherMode / _stormFlashTimer / _snowParticles / _snowGeo → js/effects/weather.js
 // _crowdSrc / _crowdGain → js/audio/ambient.js

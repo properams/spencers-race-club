@@ -37,6 +37,10 @@ window.addEventListener('keydown',e=>{
     if(ml)ml.style.display=_mirrorEnabled&&_camView===0?'block':'none';
     showPopup(_mirrorEnabled?'MIRROR ON':'MIRROR OFF','#88ddff',700);
   }
+  if(e.code==='KeyL'&&gameState==='RACE'){
+    window._leaderExpanded=!window._leaderExpanded;
+    showPopup(window._leaderExpanded?'LEADERBOARD: FULL':'LEADERBOARD: COMPACT','#88ddff',900);
+  }
   if(e.code==='KeyH'&&gameState==='RACE'){
     const car=carObjs[playerIdx];
     if(car&&!_pitStopActive&&!_pitStopUsed){

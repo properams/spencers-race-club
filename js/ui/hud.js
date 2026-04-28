@@ -44,10 +44,15 @@ window.fmtTime=fmtTime;
 // gameplay/spacefx.js, gameplay/tracklimits.js, effects/visuals.js.
 let _elSlip,_elWarn,_mapCvs,_mapCtx,_elGear,_elLeader;
 let _elWrongWay=null;
-let _elScore=null,_elLapDelta=null;
-let _elTire=null;
+// _elScore is opgegaan in finish-screen — geen race-HUD score meer.
+let _elLapDelta=null;
+// _elTire (oude separate tire-dot text) is opgegaan in _elTireT (4 csTire dots)
+// die nu zowel temp als damage encoden. _elCarStatus is de panel-wrapper voor
+// fade-in/out wanneer wear/temp uit het optimale venster komen.
+let _elCarStatus=null;
 // _elSector was dead code (nergens gevuld of gelezen) — verwijderd.
-let _elGapAhead=null,_elGapBehind=null;
+// Gap-display verwijderd in HUD-redesign: leaderboard toont al rij-1/rij+1
+// rond de speler, dus een aparte gap-panel was dubbel-info.
 let _elRpm=null;
 let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;
 // Verhuisd uit main.js — gevuld in cacheHUDRefs hieronder.
@@ -56,7 +61,9 @@ let _drsEl=null,_sectorPanelEl=null,_speedTrapEl=null;
 function cacheHUDRefs(){
   // On mobile: hide performance-heavy HUD elements
   if(window._isMobile){
-    ['hudLeader','sectorPanel','hudGap','hudScore','hudTire','hudTireTemp',
+    // hudLeader stays a CSS-only hide so the L-hotkey can still un-hide it
+    // via the .lShow override (handy on tablets with external keyboards).
+    ['sectorPanel','hudCarStatus',
      'hudRainBtn','hudNightBtn','hudMuteBtn','ghostLabel','drsIndicator',
      'closeBattleEl','speedTrapEl','mirrorFrame','mirrorLabel','speedLines'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
@@ -76,12 +83,9 @@ function cacheHUDRefs(){
   _elGear=document.getElementById('hdGear');
   _elLeader=document.getElementById('hudLeader');
   _elWrongWay=document.getElementById('wrongWayOverlay');
-  _elScore=document.getElementById('hdScore');
   _elLapDelta=document.getElementById('hdLapDelta');
-  _elTire=document.getElementById('hdTire');
+  _elCarStatus=document.getElementById('hudCarStatus');
   _elRpm=document.getElementById('rpmFill');
-  _elGapAhead=document.getElementById('gapAhead');
-  _elGapBehind=document.getElementById('gapBehind');
   _drsEl=document.getElementById('drsIndicator');
   _sectorPanelEl=document.getElementById('sectorPanel');
   _speedTrapEl=document.getElementById('speedTrapEl');
@@ -138,51 +142,60 @@ function updateHUD(dt){
   const car=carObjs[playerIdx];if(!car)return;
   const pos=getPositions(),pPos=pos.findIndex(c=>c.isPlayer)+1;
   _elPos.textContent='P'+pPos;
-  _elPos.style.color=pPos===1?'#00ee66':pPos<=3?'#ff9900':pPos>=6?'#ff4444':'#ffffff';
-  _elPosOf.textContent='of '+carObjs.length;
+  // Semantic palette: P1 = success, podium = accent, midfield = primary, back = warning.
+  _elPos.style.color = pPos===1 ? 'var(--hud-success)'
+                     : pPos<=3 ? 'var(--hud-accent)'
+                     : pPos>=6 ? 'var(--hud-warning)'
+                     : 'var(--hud-text)';
+  _elPosOf.textContent='/'+carObjs.length;
   _elLap.textContent=Math.max(1,Math.min(car.lap,TOTAL_LAPS))+' / '+TOTAL_LAPS;
   _elSpd.textContent=Math.min(380,Math.round(Math.abs(car.speed)*165)); // 165 → Ferrari≈196 km/h, F1≈223 km/h, max boost cap 380
   if(_elLapTime){
     const elapsed=_nowSec-lapStartTime;
-    _elLapTime.textContent='LAP '+fmtTime(elapsed)+(bestLapTime<Infinity?' · BEST '+fmtTime(bestLapTime):'');
+    _elLapTime.textContent=fmtTime(elapsed)+(bestLapTime<Infinity?' · '+fmtTime(bestLapTime):'');
   }
   // Lap delta vs personal best
   if(_elLapDelta&&car._lapStart&&bestLapTime<Infinity){
     const elapsed2=_nowSec-car._lapStart;
     const delta=elapsed2-bestLapTime;
     const sign=delta>=0?'+':'';
-    _elLapDelta.textContent=' '+sign+delta.toFixed(2)+'s';
-    _elLapDelta.style.color=delta<0?'#00ee66':'#ff4444';
+    _elLapDelta.textContent=sign+delta.toFixed(2);
+    _elLapDelta.style.color=delta<0?'var(--hud-success)':'var(--hud-warning)';
   }
-  // Score display
-  if(_elScore)_elScore.textContent=totalScore.toLocaleString();
-  // Tire wear indicator — 4 dots, only update when value changes
-  if(_elTire){
-    const w=car.tireWear||0;const filled=4-Math.round(w*4);
+  // Car status: 4 tyre dots, dual-encoded (inner=temp, ring=damage).
+  // Panel auto-fades in when wear>=30% or any tyre is outside the optimal
+  // window. Stays hidden during a clean drive so it doesn't add visual noise.
+  if(_elCarStatus&&_elTireT){
+    const w=car.tireWear||0;
     const hits=car.hitCount||0;
-    const tireKey=(filled<<4)|Math.min(hits,7);
+    const dmg=Math.max(w,Math.min(1,hits/9));
+    // Damage ring: green (clean) → amber (worn) → red (critical)
+    const ringCol = dmg<.35 ? 'var(--hud-success)'
+                  : dmg<.7  ? 'var(--hud-accent)'
+                              : 'var(--hud-warning)';
+    // Cold/optimal/hot fill per wheel
+    const tireFill=t=>{
+      if(t<0.28)return'var(--hud-primary)';   // cold
+      if(t<0.65)return'var(--hud-success)';   // optimal
+      if(t<0.85)return'var(--hud-accent)';    // hot
+      return'var(--hud-warning)';              // overheated
+    };
+    const tempBad = _tireTemp.fl<0.28||_tireTemp.fr<0.28||_tireTemp.rl<0.28||_tireTemp.rr<0.28
+                  ||_tireTemp.fl>0.65||_tireTemp.fr>0.65||_tireTemp.rl>0.65||_tireTemp.rr>0.65;
+    const showStatus = dmg>=0.30 || tempBad;
+    _elCarStatus.classList.toggle('csOn',showStatus);
+    // Composite key — string keeps each component unambiguous and allocation
+    // cost is negligible (only used to skip already-up-to-date DOM writes).
+    const tireKey=Math.round(w*16)+'|'+Math.min(hits,15)
+                 +'|'+Math.round(_tireTemp.fl*8)+'|'+Math.round(_tireTemp.fr*8)
+                 +'|'+Math.round(_tireTemp.rl*8)+'|'+Math.round(_tireTemp.rr*8);
     if(tireKey!==_lastTireKey){
       _lastTireKey=tireKey;
-      const col=w<.35?'#00ee66':w<.65?'#ffbb00':'#ff3333';
-      _elTire.style.color=col;
-      const dmgStr=hits>=6?' DMG!':hits>=3?' DMG':'';
-      _elTire.textContent='●'.repeat(filled)+'○'.repeat(4-filled)+dmgStr;
+      if(_elTireT.fl){_elTireT.fl.style.background=tireFill(_tireTemp.fl);_elTireT.fl.style.boxShadow='0 0 0 2px '+ringCol;}
+      if(_elTireT.fr){_elTireT.fr.style.background=tireFill(_tireTemp.fr);_elTireT.fr.style.boxShadow='0 0 0 2px '+ringCol;}
+      if(_elTireT.rl){_elTireT.rl.style.background=tireFill(_tireTemp.rl);_elTireT.rl.style.boxShadow='0 0 0 2px '+ringCol;}
+      if(_elTireT.rr){_elTireT.rr.style.background=tireFill(_tireTemp.rr);_elTireT.rr.style.boxShadow='0 0 0 2px '+ringCol;}
     }
-  }
-  // Tire temperature display
-  const tempColor=t=>{
-    if(t<0.18)return'#4488ff'; // cold — blue
-    if(t<0.28)return'#88aaff'; // warming — light blue
-    if(t<0.55)return'#00ee66'; // optimal — green
-    if(t<0.72)return'#ffdd00'; // hot — yellow
-    if(t<0.85)return'#ff8800'; // very hot — orange
-    return'#ff2200';            // overheated — red
-  };
-  if(_elTireT){
-    if(_elTireT.fl)_elTireT.fl.style.background=tempColor(_tireTemp.fl);
-    if(_elTireT.fr)_elTireT.fr.style.background=tempColor(_tireTemp.fr);
-    if(_elTireT.rl)_elTireT.rl.style.background=tempColor(_tireTemp.rl);
-    if(_elTireT.rr)_elTireT.rr.style.background=tempColor(_tireTemp.rr);
   }
   // Sector panel update
   const secColors=['#cc44ff','#00ee66','#ffbb00','#666'];// purple=best,green=pb,yellow=slow,grey=no data
@@ -228,10 +241,10 @@ function updateHUD(dt){
           totalScore+=50;
           Audio.playCrowdCheer();
         }
-        floatText('▲ P'+pPos,'#00ff88',innerWidth*.5,innerHeight*.42);
+        // Floating "▲ P"/"▼ P" label removed — position is permanently shown
+        // in the race-info panel and posPulse already animates the change.
       }else{
         showPopup('▼ P'+pPos,'#ff6644',1200);
-        floatText('▼ P'+pPos,'#ff6644',innerWidth*.5,innerHeight*.42);
       }
       if(_elPos){_elPos.classList.remove('posPulse');void _elPos.offsetWidth;_elPos.classList.add('posPulse');}
       _lastPPos=pPos;
@@ -243,20 +256,40 @@ function updateHUD(dt){
   // Gear indicator
   if(_elGear)_elGear.textContent=_currentGear;
   // Live leaderboard — only rebuild HTML when order is stable for 0.5s
-  // Prevents P1/P2/P3 rows from constantly jumping when cars jostle
+  // Prevents P1/P2/P3 rows from constantly jumping when cars jostle.
+  // Default state is "collapsed": top-3 + driver above/below player + player.
+  // Hotkey L (handled in ui/input.js) flips window._leaderExpanded to show all.
   if(_elLeader&&dt){
-    const key=pos.map(c=>c.def.id).join(',');
+    const expanded=!!window._leaderExpanded;
+    // On mobile, .lShow overrides the CSS display:none so the L-hotkey
+    // still works for users with an external keyboard.
+    _elLeader.classList.toggle('lShow',expanded);
+    // Include the expanded flag in the cache-key so a toggle forces a rebuild.
+    const key=pos.map(c=>c.def.id).join(',')+(expanded?':E':':C');
     if(key!==_leaderPendingKey){
-      _leaderPendingKey=key;_leaderStableT=0; // new order candidate
+      _leaderPendingKey=key;_leaderStableT=0;
     }else if(key!==_lastLeaderOrder){
-      _leaderStableT+=dt;
+      // Manual toggle should feel instant — no 0.5s wait when only the flag flipped.
+      const orderChanged=key.replace(/:[EC]$/,'')!==_lastLeaderOrder.replace(/:[EC]$/,'');
+      _leaderStableT = orderChanged ? _leaderStableT+dt : 0.5;
       if(_leaderStableT>=0.5){
-        // Order stable for 0.5s — commit to screen
         _lastLeaderOrder=key;_leaderStableT=0;
         const refTime=bestLapTime<Infinity?bestLapTime:55;
         const leader=pos[0];
-        _elLeader.innerHTML=pos.map((c,i)=>{
-          let gapStr='';
+        const pIdx=pos.findIndex(c=>c.isPlayer);
+        // Decide which row indices to render.
+        let rowIdx;
+        if(expanded||pos.length<=5){
+          rowIdx=pos.map((_,i)=>i);
+        }else{
+          // Always include podium + player + the cars directly ahead/behind player.
+          const set=new Set([0,1,2]);
+          if(pIdx>=0){set.add(pIdx);if(pIdx>0)set.add(pIdx-1);if(pIdx<pos.length-1)set.add(pIdx+1);}
+          rowIdx=[...set].sort((a,b)=>a-b);
+        }
+        const rowFor=i=>{
+          const c=pos[i];
+          let gapStr;
           if(i===0){gapStr='<span class="lGap">LEAD</span>';}
           else{
             const lapDiff=leader.lap-c.lap;
@@ -265,12 +298,17 @@ function updateHUD(dt){
               gapStr=`<span class="lGap">+${lapDiff}LAP</span>`;
             }else{
               const secGap=Math.max(0,(lapDiff+progGap)*refTime);
-              // Show "BATTLE" instead of 0.0s when cars are within 0.5s of each other
-              gapStr=secGap<0.5?`<span class="lGap" style="color:#ff9900">BATTLE</span>`:`<span class="lGap">+${secGap.toFixed(1)}s</span>`;
+              gapStr=secGap<0.5?'<span class="lGap" style="color:var(--hud-warning)">BATTLE</span>':`<span class="lGap">+${secGap.toFixed(1)}s</span>`;
             }
           }
           return `<div class="lRow${c.isPlayer?' lMe':''}"><span class="lPos">P${i+1}</span><span class="lName">${c.def.name}</span>${gapStr}</div>`;
-        }).join('');
+        };
+        const parts=[];
+        for(let k=0;k<rowIdx.length;k++){
+          if(k>0&&rowIdx[k]-rowIdx[k-1]>1)parts.push('<div class="lSep">···</div>');
+          parts.push(rowFor(rowIdx[k]));
+        }
+        _elLeader.innerHTML=parts.join('');
       }
     }
   }
