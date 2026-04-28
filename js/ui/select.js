@@ -198,21 +198,27 @@ function applyWorldHUDTint(world){
   if(hudInfo)hudInfo.style.borderColor=isDeepSea?'rgba(0,221,170,.45)':isSpace?'rgba(0,204,255,.45)':isNeonW?'rgba(0,255,238,.45)':'rgba(255,255,255,.10)';
 }
 
-function buildCarSelectUI(){
-  loadPersistent();
-  _prevDefId=-1;
-  initCarPreview();_selectPreviewCar(selCarId);
-  const grid=document.getElementById('carGrid');if(!grid)return;grid.innerHTML='';
+// Active tier filter for the garage list. 'all' shows everything; otherwise
+// only def.type === tier is rendered.
+let _activeTier='all';
+const _carPrices={4:0,5:0,6:0,7:0,8:800,9:1200,10:1500,11:2000};
+
+function _renderGarageList(){
+  const grid=document.getElementById('carGrid');if(!grid)return;
+  grid.innerHTML='';
   CAR_DEFS.forEach(def=>{
+    if(_activeTier!=='all'&&def.type!==_activeTier)return;
     const unlocked=_unlockedCars.has(def.id);
-    const card=document.createElement('div');card.className='carCard'+(def.id===selCarId&&unlocked?' sel':'');
+    const card=document.createElement('div');
+    card.className='carCard'+(def.id===selCarId&&unlocked?' sel':'')+(unlocked?'':' locked');
     const col=(_carColorOverride[def.id]||def.color).toString(16).padStart(6,'0');
-    const tl=def.type==='f1'?'F1':def.type==='muscle'?'MUSCLE':def.type==='electric'?'ELECTRIC':'SUPER';
-    card.innerHTML=`<div class="carSwatch" style="background:linear-gradient(135deg,#${col},#${col}44)"></div><div class="carInfo"><div class="carBrand">${def.brand}</div><div class="carName">${def.name}</div><div class="carTypeBadge">${tl}</div></div>`;
+    let trail='';
     if(!unlocked){
-      const lock=document.createElement('div');lock.className='carLock';
-      lock.innerHTML=`<div style="font-size:18px">🔒</div><div style="font-size:9px">${_unlockHints[def.id]||'Complete challenges'}</div>`;
-      card.appendChild(lock);
+      const price=_carPrices[def.id];
+      trail=price?`<div class="carPriceLbl">${price}c</div>`:`<div class="carLockIcon">🔒</div>`;
+    }
+    card.innerHTML=`<div class="carSwatch" style="background:#${col}"></div><div class="carInfo"><div class="carBrand">${def.brand}</div><div class="carName">${def.name}</div></div>${trail}`;
+    if(!unlocked){
       card.onclick=()=>showPopup('🔒 LOCKED — '+(_unlockHints[def.id]||'complete challenges'),'#ff6644',1800);
     }else{
       card.onclick=()=>{
@@ -222,24 +228,67 @@ function buildCarSelectUI(){
     }
     grid.appendChild(card);
   });
-  // Update world indicator badge in select header
+}
+
+function _renderHeaderSubtitle(){
+  const el=document.getElementById('selSubtitle');
+  if(!el)return;
+  const u=_unlockedCars.size,t=CAR_DEFS.length;
+  const c=window._coins|0;
+  el.textContent=u+' of '+t+' unlocked · '+c.toLocaleString('en')+' coins';
+}
+
+function buildCarSelectUI(){
+  loadPersistent();
+  _prevDefId=-1;
+  initCarPreview();_selectPreviewCar(selCarId);
+  _renderHeaderSubtitle();
+  _renderGarageList();
+  _renderRival();
+  // Tier tabs — filter the garage list by car type.
+  document.querySelectorAll('.tierTab').forEach(tab=>{
+    tab.classList.toggle('tierTabSel',tab.dataset.tier===_activeTier);
+    tab.onclick=()=>{
+      _activeTier=tab.dataset.tier;
+      document.querySelectorAll('.tierTab').forEach(t=>t.classList.toggle('tierTabSel',t.dataset.tier===_activeTier));
+      _renderGarageList();
+    };
+  });
+  // World indicator badge
   const wInd=document.getElementById('worldIndicator');
   if(wInd){
     const wIcons={grandprix:'🏁',space:'🚀',deepsea:'🌊',candy:'🍬',neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢'};
     const wNames2={grandprix:'GRAND PRIX',space:'COSMIC',deepsea:'DEEP SEA',candy:'CANDY',neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK'};
-    wInd.textContent=(wIcons[activeWorld]||'🌍')+' '+(wNames2[activeWorld]||activeWorld.toUpperCase())+' ↩';
+    wInd.textContent=(wIcons[activeWorld]||'⬢')+' '+(wNames2[activeWorld]||activeWorld.toUpperCase());
   }
-  // Weather always clear (no selection UI)
   _weatherMode='clear';
-  // Wire lap buttons
+  // Wire LAPS tab options.
   [1,3,5].forEach(n=>{
     const btn=document.getElementById('lap'+n);if(!btn)return;
-    btn.classList.toggle('lapSel',n===_selectedLaps);
-    btn.onclick=()=>{_selectedLaps=n;TOTAL_LAPS=n;document.querySelectorAll('.lapBtn').forEach(b=>b.classList.remove('lapSel'));btn.classList.add('lapSel');_updateSelectSummary();};
+    btn.classList.toggle('setOptSel',n===_selectedLaps);
+    btn.onclick=()=>{
+      _selectedLaps=n;TOTAL_LAPS=n;
+      [1,3,5].forEach(m=>{const b=document.getElementById('lap'+m);if(b)b.classList.toggle('setOptSel',m===n);});
+      _updateSelectSummary();
+    };
   });
-  // Wire night buttons
+  // Wire MODE tab options (Light / Dark).
   const nOff=document.getElementById('togNightOff'),nOn=document.getElementById('togNightOn');
-  if(nOff){nOff.classList.toggle('togSel',!isDark);nOff.onclick=()=>{if(isDark){initAudio();startSelectMusic();toggleNight();}nOff.classList.add('togSel');nOn.classList.remove('togSel');_updateSelectSummary();};}
-  if(nOn){nOn.classList.toggle('togSel',isDark);nOn.onclick=()=>{if(!isDark){initAudio();startSelectMusic();toggleNight();}nOn.classList.add('togSel');nOff.classList.remove('togSel');_updateSelectSummary();};}
+  if(nOff){
+    nOff.classList.toggle('setOptSel',!isDark);
+    nOff.onclick=()=>{
+      if(isDark){initAudio();startSelectMusic();toggleNight();}
+      nOff.classList.add('setOptSel');nOn.classList.remove('setOptSel');
+      _updateSelectSummary();
+    };
+  }
+  if(nOn){
+    nOn.classList.toggle('setOptSel',isDark);
+    nOn.onclick=()=>{
+      if(!isDark){initAudio();startSelectMusic();toggleNight();}
+      nOn.classList.add('setOptSel');nOff.classList.remove('setOptSel');
+      _updateSelectSummary();
+    };
+  }
   _updateSelectSummary();
 }
