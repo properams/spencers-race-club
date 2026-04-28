@@ -61,32 +61,59 @@
   letter-spacing:3px;margin-bottom:8px
 }
 .tierTabs{
-  display:flex;gap:4px;flex-wrap:wrap;
-  font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1px
+  display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;
+  font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1px;
+  scrollbar-width:none;-ms-overflow-style:none
 }
+.tierTabs::-webkit-scrollbar{display:none}
 .tierTab{
-  flex:1 1 auto;min-width:34px;padding:5px 4px;text-align:center;cursor:pointer;
-  color:#6e5a9a;border-bottom:1px solid #2a1f4a;transition:color .15s,border-color .15s;
+  flex:1 0 auto;min-width:34px;padding:5px 6px;text-align:center;cursor:pointer;
+  color:#6e5a9a;border-bottom:1px solid #2a1f4a;transition:color .15s,border-color .15s,text-shadow .15s;
   white-space:nowrap
 }
 .tierTab:hover{color:#c9b9ff}
-.tierTabSel{color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:600}
+.tierTabSel{
+  color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:600;
+  text-shadow:0 0 8px rgba(255,58,140,.5)
+}
+
+/* Garage unlock progress bar — sits under the GARAGE label, gives a
+   one-glance read of catalogue completion. */
+.garageProg{
+  height:3px;background:rgba(255,255,255,.05);border-radius:2px;
+  overflow:hidden;margin-top:8px
+}
+.garageProgFill{
+  height:100%;background:linear-gradient(90deg,#ff3a8c,#c41e6a);
+  border-radius:2px;transition:width .3s ease;
+  box-shadow:0 0 6px rgba(255,58,140,.6)
+}
 
 .carGrid{display:flex;flex-direction:column;gap:0;width:100%}
 .carCard{
+  --team:#6e5a9a;
   background:transparent;border:none;border-bottom:1px solid #1a0f3a;
-  border-left:2px solid transparent;padding:10px 12px;cursor:pointer;
-  transition:background .15s,border-color .15s;overflow:hidden;position:relative;
+  border-left:3px solid var(--team);padding:10px 12px;cursor:pointer;
+  transition:background .15s,border-left-width .15s,box-shadow .2s;
+  overflow:hidden;position:relative;
   display:flex;align-items:center;gap:10px
 }
 .carCard:hover{background:rgba(255,58,140,.06)}
 .carCard.sel{
-  background:rgba(255,58,140,.10);
-  border-left-color:#ff3a8c
+  background:linear-gradient(90deg,rgba(255,58,140,.18),rgba(255,58,140,.04));
+  border-left-width:5px;border-left-color:#ff3a8c;
+  box-shadow:inset 0 0 18px rgba(255,58,140,.12),
+             0 0 12px rgba(255,58,140,.25)
+}
+.carCard.sel::after{
+  content:'▶';position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  color:#ff3a8c;font-size:9px;letter-spacing:1px;
+  text-shadow:0 0 8px rgba(255,58,140,.8);
+  font-family:'Orbitron',sans-serif
 }
 .carSwatch{
   width:24px;height:24px;border-radius:6px;flex-shrink:0;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10)
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.10),0 0 6px var(--team)
 }
 .carInfo{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
 .carBrand{
@@ -97,15 +124,19 @@
   font-family:'Rajdhani',sans-serif;font-size:11px;color:#fff;
   letter-spacing:.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
-.carCard.locked{opacity:.45;cursor:not-allowed}
-.carCard.locked:hover{background:transparent}
+.carCard.locked{opacity:.55;cursor:not-allowed;border-left-color:#2a1f4a}
+.carCard.locked .carSwatch{filter:grayscale(.85);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.carCard.locked:hover{background:rgba(255,255,255,.02)}
+.carCardTrail{
+  display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0
+}
+.carLockMini{font-size:10px;color:#6e5a9a;line-height:1}
 .carPriceLbl{
   font-family:'Rajdhani',sans-serif;font-size:10px;color:#ffcc44;
-  letter-spacing:1px;margin-left:auto
+  letter-spacing:1px;line-height:1
 }
-.carLockIcon{
-  font-size:11px;color:#6e5a9a;margin-left:auto;flex-shrink:0
-}
+.carPriceLbl.afford{color:#7dffb0;text-shadow:0 0 6px rgba(125,255,176,.4)}
+.carLockIcon{font-size:11px;color:#6e5a9a;line-height:1}
 
 /* ── CENTER: hero preview ───────────────────────────────────────────── */
 .selCenter{
@@ -271,6 +302,7 @@
     background:rgba(255,58,140,.15);
     box-shadow:inset 0 0 0 1px #ff3a8c
   }
+  .carCard.sel::after{display:none}
   .selCenter{
     order:2;padding:10px 14px;gap:4px
   }

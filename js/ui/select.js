@@ -374,18 +374,38 @@ const _carPrices={4:0,5:0,6:0,7:0,8:800,9:1200,10:1500,11:2000};
 function _renderGarageList(){
   const grid=document.getElementById('carGrid');if(!grid)return;
   grid.innerHTML='';
+  const coins=window._coins|0;
   CAR_DEFS.forEach(def=>{
     if(_activeTier!=='all'&&def.type!==_activeTier)return;
     const unlocked=_unlockedCars.has(def.id);
     const card=document.createElement('div');
     card.className='carCard'+(def.id===selCarId&&unlocked?' sel':'')+(unlocked?'':' locked');
-    const col=(_carColorOverride[def.id]||def.color).toString(16).padStart(6,'0');
+    const carCol=(_carColorOverride[def.id]||def.color);
+    const teamCol=(def.accent!=null?def.accent:def.color);
+    const carHex='#'+carCol.toString(16).padStart(6,'0');
+    const teamHex='#'+teamCol.toString(16).padStart(6,'0');
+    card.style.setProperty('--team',teamHex);
     let trail='';
     if(!unlocked){
       const price=_carPrices[def.id];
-      trail=price?`<div class="carPriceLbl">${price}c</div>`:`<div class="carLockIcon">🔒</div>`;
+      const hint=_unlockHints[def.id]||'';
+      if(price){
+        const afford=coins>=price?' afford':'';
+        trail='<div class="carCardTrail">'+
+          '<span class="carLockMini">🔒</span>'+
+          '<span class="carPriceLbl'+afford+'">'+price+'c</span>'+
+        '</div>';
+        card.title=(afford?'Unlock for ':'Need ')+price+' coins'+(hint?' · '+hint:'');
+      }else{
+        trail='<div class="carCardTrail"><span class="carLockIcon">🔒</span></div>';
+        card.title='Locked'+(hint?' — '+hint:'');
+      }
     }
-    card.innerHTML=`<div class="carSwatch" style="background:#${col}"></div><div class="carInfo"><div class="carBrand">${def.brand}</div><div class="carName">${def.name}</div></div>${trail}`;
+    card.innerHTML='<div class="carSwatch" style="background:'+carHex+'"></div>'+
+                   '<div class="carInfo">'+
+                     '<div class="carBrand">'+def.brand+'</div>'+
+                     '<div class="carName">'+def.name+'</div>'+
+                   '</div>'+trail;
     if(!unlocked){
       card.onclick=()=>showPopup('🔒 LOCKED — '+(_unlockHints[def.id]||'complete challenges'),'#ff6644',1800);
     }else{
@@ -400,10 +420,11 @@ function _renderGarageList(){
 
 function _renderHeaderSubtitle(){
   const el=document.getElementById('selSubtitle');
-  if(!el)return;
   const u=_unlockedCars.size,t=CAR_DEFS.length;
   const c=window._coins|0;
-  el.textContent=u+' of '+t+' unlocked · '+c.toLocaleString('en')+' coins';
+  if(el)el.textContent=u+' of '+t+' unlocked · '+c.toLocaleString('en')+' coins';
+  const bar=document.getElementById('garageProgFill');
+  if(bar)bar.style.width=(t>0?(u/t)*100:0)+'%';
 }
 
 function buildCarSelectUI(){
