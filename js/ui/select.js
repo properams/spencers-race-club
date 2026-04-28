@@ -245,16 +245,10 @@ function _selectPreviewCar(defId){
     const tk=Math.round(def.topSpd*255);
     sp.textContent=tlabel+' · '+hp+' hp · '+tk+' km/h';
   }
-  // 4-stat card grid: SPEED / ACCEL / HANDLING / NITRO.
-  const statsEl=document.getElementById('prevStats');
-  if(statsEl){
-    const spd=Math.round((def.topSpd/1.38)*100);
-    const acc=Math.round((def.accel/.026)*100);
-    const hdl=Math.round((def.hdlg/.060)*100);
-    const ntr=Math.round(((def.nitro||5)/10)*100);
-    const card=(lbl,v,col)=>`<div class="statCard"><div class="statCardLbl">${lbl}</div><div class="statCardBar"><div class="statCardFill" style="width:${v}%;background:${col};box-shadow:0 0 6px ${col}99"></div></div><div class="statCardVal" style="color:${col}">${v}</div></div>`;
-    statsEl.innerHTML=card('SPEED',spd,'#ff7700')+card('ACCEL',acc,'#00aaff')+card('HANDLING',hdl,'#00ff88')+card('NITRO',ntr,'#ff3a8c');
-  }
+  // 4-stat card stack: SPEED / ACCEL / HANDLING / NITRO with a ghost
+  // bar at the catalog max behind the current car's bar, and a rank-
+  // coloured numeric. Animated via CSS transition on .statCardFill.
+  _renderStatCards(def);
   // Color swatches — overlay on preview canvas (no separate "COLOUR" label).
   const colorEl=document.getElementById('colorRow');
   if(colorEl){
@@ -313,6 +307,63 @@ function applyWorldHUDTint(world){
   // HUD accent tint per world (applied to race-info panel border).
   const hudInfo=document.getElementById('hudRaceInfo');
   if(hudInfo)hudInfo.style.borderColor=isDeepSea?'rgba(0,221,170,.45)':isSpace?'rgba(0,204,255,.45)':isNeonW?'rgba(0,255,238,.45)':'rgba(255,255,255,.10)';
+}
+
+// Stat ranking across the catalog — computed lazily once. Used to show
+// a ghost (max-in-catalog) bar behind the current car's stat bar, and
+// to colour the numeric value by rank (top-3 = green, top half = amber).
+let _statRanks=null;
+const _STAT_DEFS=[
+  {key:'topSpd',lbl:'SPEED',   div:1.38,col:'#ff7700'},
+  {key:'accel', lbl:'ACCEL',   div:.026,col:'#00aaff'},
+  {key:'hdlg',  lbl:'HANDLING',div:.060,col:'#00ff88'},
+  {key:'nitro', lbl:'NITRO',   div:10,  col:'#ff3a8c'}
+];
+function _computeStatRanks(){
+  if(_statRanks)return _statRanks;
+  _statRanks={};
+  _STAT_DEFS.forEach(s=>{
+    const arr=CAR_DEFS.map(c=>({id:c.id,v:Math.round(((c[s.key]||0)/s.div)*100)}));
+    arr.sort((a,b)=>b.v-a.v);
+    const byId={};arr.forEach((x,i)=>{byId[x.id]=i;});
+    _statRanks[s.key]={byId:byId,max:arr.length?arr[0].v:100};
+  });
+  return _statRanks;
+}
+
+function _renderStatCards(def){
+  const statsEl=document.getElementById('prevStats');
+  if(!statsEl)return;
+  const ranks=_computeStatRanks();
+  if(statsEl.dataset.built!=='1'){
+    statsEl.dataset.built='1';
+    statsEl.innerHTML=_STAT_DEFS.map(s=>(
+      '<div class="statCard" data-stat="'+s.key+'">'+
+        '<div class="statCardLbl">'+s.lbl+'</div>'+
+        '<div class="statCardBar">'+
+          '<div class="statCardGhost"></div>'+
+          '<div class="statCardFill" style="background:'+s.col+';box-shadow:0 0 6px '+s.col+'99"></div>'+
+        '</div>'+
+        '<div class="statCardVal"><span class="statCardValNum">0</span><span class="statCardValMax"> / 100</span></div>'+
+      '</div>'
+    )).join('');
+  }
+  const total=CAR_DEFS.length;
+  _STAT_DEFS.forEach(s=>{
+    const v=Math.round(((def[s.key]||0)/s.div)*100);
+    const card=statsEl.querySelector('.statCard[data-stat="'+s.key+'"]');
+    if(!card)return;
+    const ghost=card.querySelector('.statCardGhost');
+    const fill=card.querySelector('.statCardFill');
+    const num=card.querySelector('.statCardValNum');
+    if(ghost)ghost.style.width=Math.min(100,Math.max(0,ranks[s.key].max))+'%';
+    if(fill)fill.style.width=Math.min(100,Math.max(0,v))+'%';
+    if(num){
+      num.textContent=v;
+      const rank=ranks[s.key].byId[def.id]||0;
+      num.style.color = rank<3 ? '#7dffb0' : rank<total/2 ? '#ffcc44' : '#c9b9ff';
+    }
+  });
 }
 
 // Active tier filter for the garage list. 'all' shows everything; otherwise
