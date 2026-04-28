@@ -22,6 +22,20 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
   --z-toast:999;
   --z-modal:9999;
   --z-critical:10000;
+  /* HUD palette — semantic colors used by all in-race panels.
+     Map any new HUD element to one of these four accents, not ad-hoc hex. */
+  --hud-primary:#00d9ff;        /* neutral info: position, leaderboard, minimap track */
+  --hud-accent:#ffb800;         /* active value: current speed, current lap-time, gear */
+  --hud-warning:#ff3b3b;        /* damage, danger, attacker behind, position lost */
+  --hud-success:#2ecc71;        /* faster than PB, position gained, optimal tyre */
+  --hud-text:#e9eef5;
+  --hud-text-dim:rgba(233,238,245,.55);
+  --hud-text-mute:rgba(233,238,245,.32);
+  --hud-bg:rgba(8,12,18,.55);
+  --hud-bg-strong:rgba(8,12,18,.72);
+  --hud-border:rgba(255,255,255,.07);
+  --hud-pad:16px;               /* min spacing between adjacent panels (desktop) */
+  --hud-pad-mobile:8px;
 }
 #glCanvas{position:fixed;top:0;left:0;width:100%;height:100%}
 .screen{position:fixed;inset:0;z-index:var(--z-screen);display:flex;flex-direction:column;align-items:center;justify-content:center}
