@@ -69,6 +69,42 @@ function updateCarPreview(dt){
 // Verwijderd in dead-code cleanup.
 
 
+// Format a lap time as M:SS.t (e.g. 1:39.8).
+function _fmtLapTime(t){
+  if(!isFinite(t)||t<=0)return '—';
+  const m=Math.floor(t/60),s=t-m*60;
+  return m+':'+(s<10?'0':'')+s.toFixed(1);
+}
+
+// Render the RIVAL segment based on _lapRecords[world_difficulty].
+// Compares to the player's bestLapTime if any. Falls back to "set the
+// first record" prompt when no recorded time exists.
+function _renderRival(){
+  const carEl=document.getElementById('rivalCar');
+  const timeEl=document.getElementById('rivalTime');
+  if(!carEl||!timeEl)return;
+  const recs=window._lapRecords||{};
+  const key=activeWorld+'_'+(difficulty|0);
+  const r=recs[key];
+  if(!r||!isFinite(r.time)){
+    carEl.textContent='— set the first record —';
+    carEl.style.color='#6e5a9a';
+    timeEl.textContent='';
+    return;
+  }
+  carEl.textContent=r.brand+' '+r.name;
+  carEl.style.color='#c9b9ff';
+  const pb=window._savedBL;
+  if(isFinite(pb)&&pb>0){
+    const dt=pb-r.time;
+    if(dt>0)timeEl.textContent=_fmtLapTime(r.time)+' — beat by '+dt.toFixed(1)+'s';
+    else if(dt<0)timeEl.textContent=_fmtLapTime(r.time)+' — you lead by '+(-dt).toFixed(1)+'s';
+    else timeEl.textContent=_fmtLapTime(r.time);
+  }else{
+    timeEl.textContent=_fmtLapTime(r.time);
+  }
+}
+
 function _updateSelectSummary(){
   const dNames=['easy','normal','hard'];
   const mode=isDark?'dark':'light';
