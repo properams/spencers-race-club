@@ -378,6 +378,9 @@ function buildScene(){
   }
   // Per-world color grading + vignette in postfx composite.
   if(typeof setWorldGrading==='function')setWorldGrading(activeWorld);
+  // Per-world bloom strength multiplier (Candy/Themepark have many emissives
+  // packed close together — full strength bleeds across the narrow track).
+  if(typeof setBloomWorld==='function')setBloomWorld(activeWorld);
   camera=new THREE.PerspectiveCamera(58,innerWidth/innerHeight,.2,900);
   camera.position.set(0,12,330);camera.lookAt(0,0,280);
   camPos.copy(camera.position);

@@ -99,8 +99,8 @@ function toggleNight(){
       scene.background=makeSkyTex('#1a0028','#280038');scene.fog.density=.0010;
       sunLight.intensity=.10;ambientLight.intensity=.26;hemiLight.intensity=.18;
       trackLightList.forEach(l=>l.intensity=2.2);trackPoles.forEach(p=>p.visible=true);
-      _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=1.4;} });
-      _candyCandles.forEach(l=>l.intensity=1.5);
+      _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=0.8;} });
+      _candyCandles.forEach(l=>l.intensity=1.0);
       if(plHeadL){plHeadL.intensity=1.6;plHeadR.intensity=1.6;}
       if(plTail)plTail.intensity=1.4;
       _aiHeadPool.forEach(l=>l.intensity=1.0);
@@ -108,8 +108,8 @@ function toggleNight(){
       scene.background=makeSkyTex('#ff88cc','#ffe4f0');scene.fog.density=.0019;
       sunLight.intensity=1.5;ambientLight.intensity=.65;hemiLight.intensity=.45;
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
-      _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=.25;} });
-      _candyCandles.forEach(l=>l.intensity=1.0);
+      _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=.20;} });
+      _candyCandles.forEach(l=>l.intensity=.7);
       if(plHeadL){plHeadL.intensity=0;plHeadR.intensity=0;}
       if(plTail)plTail.intensity=0;
       _aiHeadPool.forEach(l=>l.intensity=0);
