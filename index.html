@@ -134,48 +134,76 @@
 
 <div id="sSelect" class="screen hidden">
   <div class="selHeader">
-    <div class="selTitle">SELECT YOUR WEAPON</div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <button id="worldIndicator" onclick="goToWorldSelect()">🌍 CHANGE WORLD</button>
+    <div class="selHeaderLeft">
+      <div class="selTitle">SELECT YOUR WEAPON</div>
+      <div class="selSubtitle" id="selSubtitle">— of 12 unlocked · — coins</div>
+    </div>
+    <div class="selHeaderRight">
+      <button id="worldIndicator" onclick="goToWorldSelect()">⬢ GRAND PRIX</button>
       <button class="selBack" id="btnBackTitle">← BACK</button>
     </div>
   </div>
   <div class="selBody">
-    <!-- LEFT: car list -->
+    <!-- LEFT: garage list with tier tabs -->
     <div class="selLeft">
-      <div style="font-family:'Orbitron',sans-serif;font-size:8px;color:#00ccff;letter-spacing:3px;padding:10px 12px;border-bottom:1px solid rgba(180,80,255,.12);background:rgba(0,0,0,.2)">GARAGE</div>
+      <div class="garageHeader">
+        <div class="garageHeaderLbl">GARAGE</div>
+        <div class="tierTabs">
+          <span class="tierTab tierTabSel" data-tier="all">ALL</span>
+          <span class="tierTab" data-tier="super">SUPER</span>
+          <span class="tierTab" data-tier="f1">F1</span>
+          <span class="tierTab" data-tier="muscle">MUSCLE</span>
+          <span class="tierTab" data-tier="electric">ELECTRIC</span>
+        </div>
+      </div>
       <div class="carGrid" id="carGrid"></div>
     </div>
-    <!-- CENTER: big preview -->
+    <!-- CENTER: hero preview -->
     <div class="selCenter">
-      <canvas id="carPreviewCvs" width="400" height="220"></canvas>
-      <div class="previewName" id="prevName">FERRARI SF90</div>
-      <div class="previewBrand" id="prevBrand">FERRARI</div>
-      <div class="previewType" id="prevType">SUPERCAR</div>
-      <div style="font-family:'Orbitron',sans-serif;font-size:8px;color:#00ccff;letter-spacing:3px;margin-top:10px">COLOUR</div>
-      <div class="colorRow" id="colorRow"></div>
-    </div>
-    <!-- RIGHT: stats + settings -->
-    <div class="selRight">
+      <div class="prevBrandLine" id="prevBrand">FERRARI</div>
+      <div class="prevModelLine" id="prevName">SF90</div>
+      <div class="prevSpecsLine" id="prevSpecs">SUPER · 986 hp</div>
+      <div class="prevCanvasWrap">
+        <canvas id="carPreviewCvs" width="400" height="220"></canvas>
+        <div class="prevHint" id="prevHint">↻ DRAG TO ROTATE</div>
+        <div class="colorRow" id="colorRow"></div>
+      </div>
       <div class="statBars" id="prevStats"></div>
-      <!-- Race settings -->
-      <div class="settingsPanel" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
-        <div><span class="setLabel">LAPS</span><div class="lapRow">
-          <button class="lapBtn">1</button>
-          <button class="lapBtn lapSel">3</button>
-          <button class="lapBtn">5</button></div></div>
-        <div><span class="setLabel">DIFFICULTY</span><div class="diffRow">
-          <button class="diffBtn" id="dEasy">EASY</button>
-          <button class="diffBtn diffSel" id="dNorm">NORMAL</button>
-          <button class="diffBtn" id="dHard">HARD</button></div></div>
-        <div><span class="setLabel">MODE</span><div class="toggleRow">
-          <button class="togBtn" id="togNightOff">LIGHT</button>
-          <button class="togBtn togSel" id="togNightOn">DARK</button></div></div>
+    </div>
+    <!-- RIGHT: settings + rival + start -->
+    <div class="selRight">
+      <div class="setSeg">
+        <div class="setLbl">LAPS</div>
+        <div class="setOpts">
+          <span class="setOpt" id="lap1" data-lap="1">1</span>
+          <span class="setOpt setOptSel" id="lap3" data-lap="3">3</span>
+          <span class="setOpt" id="lap5" data-lap="5">5</span>
+        </div>
+      </div>
+      <div class="setSeg">
+        <div class="setLbl">DIFFICULTY</div>
+        <div class="setOpts">
+          <span class="setOpt diffBtn" id="dEasy">Easy</span>
+          <span class="setOpt setOptSel diffBtn" id="dNorm">Normal</span>
+          <span class="setOpt diffBtn" id="dHard">Hard</span>
+        </div>
+      </div>
+      <div class="setSeg">
+        <div class="setLbl">MODE</div>
+        <div class="setOpts">
+          <span class="setOpt" id="togNightOff">Light</span>
+          <span class="setOpt setOptSel" id="togNightOn">Dark</span>
+        </div>
+      </div>
+      <div class="rivalSeg">
+        <div class="setLbl">RIVAL</div>
+        <div class="rivalCar" id="rivalCar">— set the first record —</div>
+        <div class="rivalTime" id="rivalTime"></div>
       </div>
       <div class="startBtnWrap">
-        <button class="startBtn" id="btnRace">🏁 START RACE</button>
+        <button class="startBtn" id="btnRace">START RACE <span class="startBtnArrow">▶</span></button>
+        <div class="raceSummary" id="lapSummary">3 laps · normal · dark</div>
       </div>
-      <div class="lapSummary" id="lapSummary">3 LAPS · NORMAL · DARK</div>
     </div>
   </div>
 </div>
