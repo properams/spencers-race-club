@@ -203,6 +203,13 @@ function rebuildWorld(newWorld){
   // de stems en engine.js de surface-loop; anders fallback naar procedural.
   if(window.Audio&&window.Audio.preloadWorld)window.Audio.preloadWorld(newWorld);
   if(window._preloadSurfacesForWorld)window._preloadSurfacesForWorld(newWorld);
+  // Visual assets (HDRI / ground / GLTF props) — fire-and-forget. World build
+  // is synchronous and falls back to procedural if cache is empty at race-start.
+  if(window.Assets&&window.Assets.preloadWorld){
+    window.Assets.preloadWorld(newWorld).then(()=>{
+      if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(newWorld);
+    });
+  }
   const _wasDark=isDark;
   buildScene(); // resets isDark=false then calls toggleNight() → sets isDark=true
   if(!_wasDark)toggleNight(); // if was day, flip back to day

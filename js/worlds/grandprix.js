@@ -125,15 +125,65 @@ function buildTyreBarriers(){
 }
 
 
+// Drop a GLTF prototype into the scene at world position. Each call clones
+// the prototype scene because every spawn needs its own transform; the
+// underlying geometry/material stays shared (flagged so disposeScene skips).
+function _spawnGLTFProp(proto, worldX, worldZ, scaleHint){
+  const root = proto.scene.clone(true);
+  // Normalize size: many CC0 props ship 0.5–4× the desired size. Sample
+  // bounding box and scale to roughly the requested hint (in meters).
+  const box = new THREE.Box3().setFromObject(root);
+  const size = new THREE.Vector3(); box.getSize(size);
+  const longest = Math.max(size.x, size.z, 0.01);
+  const sFit = (scaleHint || 1.6) / longest;
+  const sJit = 0.85 + Math.random()*0.30;
+  const s = sFit * sJit;
+  root.scale.setScalar(s);
+  root.position.set(worldX, 0, worldZ);
+  root.rotation.y = Math.random()*Math.PI*2;
+  root.traverse(o=>{
+    if (o.isMesh){
+      // Geometry/material come from the cached GLTF — flag shared.
+      if (o.geometry){ o.geometry.userData = o.geometry.userData||{}; o.geometry.userData._sharedAsset=true; }
+      if (o.material){ o.material.userData = o.material.userData||{}; o.material.userData._sharedAsset=true; }
+    }
+  });
+  scene.add(root);
+}
+
 function buildGPTrackProps(){
-  // Tire-stack barriers at key corners
+  // Tire-stack barriers at key corners — replaced by GLTF haybales/rocks
+  // when those are available in the asset cache, else the original
+  // procedural tire stacks.
   const tireStackTs=[0.15,0.26,0.38,0.52,0.63,0.72,0.85,0.92];
+  // Collect any roadside props that loaded successfully.
+  const gltfProps=[];
+  if (window.Assets){
+    ['haybale','rock_small','rock_medium'].forEach(k=>{
+      const g=Assets.getGLTF('grandprix', k);
+      if (g && g.scene) gltfProps.push({ key:k, proto:g });
+    });
+  }
   const tireM=new THREE.MeshLambertMaterial({color:0x0a0a0a});
   tireStackTs.forEach((tt,i)=>{
     const p=trackCurve.getPoint(tt),tg=trackCurve.getTangent(tt).normalize();
     const nr=new THREE.Vector3(-tg.z,0,tg.x);
     const side=(i%2===0?1:-1)*(BARRIER_OFF+4);
     const cx=p.x+nr.x*side,cz=p.z+nr.z*side;
+    if (gltfProps.length){
+      // Roulette between available GLTF props, with a small cluster of 2-3
+      // siblings for a more organic look.
+      const cluster = 2 + (Math.random()*2|0);
+      for (let k=0;k<cluster;k++){
+        const pick = gltfProps[(Math.random()*gltfProps.length)|0];
+        const sizeHint = pick.key==='rock_medium' ? 2.2 : pick.key==='rock_small' ? 1.4 : 1.8;
+        _spawnGLTFProp(pick.proto,
+          cx + (Math.random()-.5)*2.4,
+          cz + (Math.random()-.5)*2.4,
+          sizeHint);
+      }
+      return;
+    }
     // Stack of 3 tires (torus each)
     for(let k=0;k<3;k++){
       const tire=new THREE.Mesh(new THREE.TorusGeometry(.55,.22,6,16),tireM);

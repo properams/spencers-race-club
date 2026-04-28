@@ -182,10 +182,16 @@ function updateCarLights(){
   if(pCar&&pCar.mesh){
     const ratio=Math.abs(pCar.speed)/Math.max(.01,pCar.def.topSpd);
     const chaseCam=(typeof _camView==='undefined'||_camView===0);
-    const beamOp=(isDark&&chaseCam)?(0.16+ratio*0.18):0;
+    const tNow=(typeof _nowSec!=='undefined')?_nowSec:performance.now()*0.001;
+    const baseOp=(isDark&&chaseCam)?(0.30+ratio*0.10):0;
     pCar.mesh.children.forEach(ch=>{
       if(ch.userData&&ch.userData.isHeadBeam&&ch.material){
-        ch.material.opacity+=(beamOp-ch.material.opacity)*0.15; // smooth fade
+        // Subtle organic flicker (~5%) op een sinus van ~1.25 Hz, individueel
+        // per cone via flickerPhase zodat L/R niet exact synchroon zijn.
+        const phase=ch.userData.flickerPhase||0;
+        const flick=1 + Math.sin(tNow*7.85 + phase)*0.05;
+        const target=baseOp*flick;
+        ch.material.opacity+=(target-ch.material.opacity)*0.15;
       }
     });
   }

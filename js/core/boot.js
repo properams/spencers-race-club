@@ -138,6 +138,15 @@ async function boot(){
       }
       return;
     }
+    // Visual asset preload for default world (HDRI/textures/GLTF). Fire-
+    // and-forget; buildScene below uses procedural fallback if not ready in
+    // time. When preload finishes we re-apply HDRI to the current scene
+    // via maybeUpgradeWorld().
+    if(window.Assets&&window.Assets.preloadWorld&&window.activeWorld){
+      window.Assets.preloadWorld(window.activeWorld).then(()=>{
+        if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(window.activeWorld);
+      });
+    }
     try{buildScene();}
     catch(e){
       if(window.dbg)dbg.error('boot',e,'buildScene crashed');

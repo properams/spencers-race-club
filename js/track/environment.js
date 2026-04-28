@@ -131,12 +131,17 @@ function buildGround(){
   const groundMat=new THREE.MeshLambertMaterial({color:groundCol});
   if(!isSpace&&!isDS)groundMat.map=_grassGroundTex();
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2200,2200,1,1),groundMat);
-  g.rotation.x=-Math.PI/2;g.position.y=-.12;g.receiveShadow=true;scene.add(g);
+  g.rotation.x=-Math.PI/2;g.position.y=-.12;g.receiveShadow=true;
+  // Tag so asset-bridge can swap in PBR maps post-load (Fase E).
+  g.userData._isProcGround=true;
+  scene.add(g);
   if(!isDS){ // Deep sea has its own seafloor built by buildDeepSeaEnvironment
     const infMat=new THREE.MeshLambertMaterial({color:infieldCol});
     if(!isSpace)infMat.map=_grassGroundTex();
     const inf=new THREE.Mesh(new THREE.PlaneGeometry(440,350,1,1),infMat);
-    inf.rotation.x=-Math.PI/2;inf.position.set(-10,-.11,-40);scene.add(inf);
+    inf.rotation.x=-Math.PI/2;inf.position.set(-10,-.11,-40);
+    inf.userData._isProcGround=true;
+    scene.add(inf);
   }
 }
 
@@ -151,6 +156,81 @@ function buildClouds(){
   }
 }
 
+
+// Procedural silhouette canvas: jagged mountain horizon with alpha=0 sky
+// above the ridge. Used as the fallback for parallax background layers.
+function _silhouetteTex(seed, baseColor, accent, jaggedness){
+  const W=2048, H=384;
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const g=c.getContext('2d');
+  // Random walker generates a horizon line. PRNG seeded per-layer so a
+  // far + near pair don't produce identical silhouettes.
+  let s = seed||1;
+  const rnd = () => { s = (s*9301+49297)%233280; return s/233280; };
+  const ys=new Float32Array(W);
+  const baseY = H*0.45;
+  const amp = jaggedness * H * 0.35;
+  // Sum of three octaves of band-limited noise → mountainous shape.
+  for (let octave=0;octave<3;octave++){
+    const wl = 60 / Math.pow(2, octave);
+    const sub = amp / Math.pow(2, octave);
+    let prev = (rnd()-.5)*sub;
+    for (let x=0;x<W;x++){
+      const phase = x / wl;
+      const r = Math.sin(phase + rnd()*0.4) * sub * 0.5 + prev*0.92;
+      prev = r;
+      ys[x] += r;
+    }
+  }
+  // Gradient fill (top: accent, bottom: deepens toward base color).
+  const grad = g.createLinearGradient(0, baseY-amp, 0, H);
+  grad.addColorStop(0, accent);
+  grad.addColorStop(1, baseColor);
+  g.fillStyle = grad;
+  g.beginPath();
+  g.moveTo(0, H);
+  for (let x=0;x<W;x++) g.lineTo(x, baseY + ys[x]);
+  g.lineTo(W, H);
+  g.closePath();
+  g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.ClampToEdgeWrapping;
+  t.needsUpdate = true;
+  if (window.ThreeCompat && ThreeCompat.applyTextureColorSpace) ThreeCompat.applyTextureColorSpace(t);
+  return t;
+}
+
+function buildBackgroundLayers(){
+  // Two parallax silhouette planes ringing the horizon. Far layer sits
+  // farthest, lighter & narrower; near layer is darker & taller. Both
+  // wrap horizontally so panning the camera reveals more landscape.
+  if (activeWorld !== 'grandprix') return;
+
+  // If textured layers exist in the asset cache, prefer them.
+  const farTex  = window.Assets ? Assets.getTexture('grandprix','skybox_layers.mountains_far')  : null;
+  const nearTex = window.Assets ? Assets.getTexture('grandprix','skybox_layers.mountains_near') : null;
+
+  const def = [
+    { tex: farTex  || _silhouetteTex(7, '#3a4960', '#6b7c98', 0.55),
+      radius: 740, height: 110, yBase: 12, color: 0xffffff, opacity: 0.96, repeat: 5 },
+    { tex: nearTex || _silhouetteTex(31, '#222a3d', '#404a64', 0.85),
+      radius: 540, height: 78,  yBase: 5,  color: 0xffffff, opacity: 1.00, repeat: 4 },
+  ];
+  def.forEach(layer=>{
+    layer.tex.wrapS = THREE.RepeatWrapping;
+    layer.tex.repeat.set(layer.repeat, 1);
+    const mat = new THREE.MeshBasicMaterial({
+      map: layer.tex, color: layer.color, transparent:true, opacity: layer.opacity,
+      side: THREE.DoubleSide, depthWrite:false, fog:true,
+    });
+    // CylinderGeometry openEnded with the texture wrapped horizontally.
+    const geo = new THREE.CylinderGeometry(layer.radius, layer.radius, layer.height, 64, 1, true);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.y = layer.yBase + layer.height*0.5;
+    mesh.renderOrder = -10;
+    scene.add(mesh);
+  });
+}
 
 function buildMountains(){
   const mNear=new THREE.MeshLambertMaterial({color:0x3d5878});
@@ -259,44 +339,207 @@ function buildGravelTraps(){
 }
 
 
-function buildEnvironmentTrees(){
-  const trunkGeo=new THREE.CylinderGeometry(.11,.17,1.5,5);
-  const cGeo1=new THREE.ConeGeometry(1,4.5,7);
-  const cGeo2=new THREE.ConeGeometry(.62,3.5,7);
-  const tMat=new THREE.MeshLambertMaterial({color:0x6b4226});
-  const lMats=[0x1d6b32,0x2a8040,0x145a28,0x226b35,0x1a5c2a,0x2d7a3a]
-    .map(c=>new THREE.MeshLambertMaterial({color:c}));
-
-  function placeTree(x,z,s=1){
-    const sc=s*(0.82+Math.random()*.44);
-    const lm=lMats[Math.floor(Math.random()*lMats.length)];
-    const ry=Math.random()*Math.PI*2;
-    const trunk=new THREE.Mesh(trunkGeo,tMat);
-    trunk.position.set(x,.75*sc,z);trunk.scale.setScalar(sc);scene.add(trunk);
-    const c1=new THREE.Mesh(cGeo1,lm);
-    c1.position.set(x,2.5*sc,z);c1.scale.setScalar(sc);c1.rotation.y=ry;scene.add(c1);
-    const c2=new THREE.Mesh(cGeo2,lm);
-    c2.position.set(x,4.2*sc,z);c2.scale.setScalar(sc);c2.rotation.y=ry+.55;scene.add(c2);
-  }
-
-  // Trees just outside the track barriers (55 sample points, both sides)
-  for(let i=0;i<55;i++){
-    const t=i/55;
+// Generate (x,z,scale,rotY) placements once so the GLTF and procedural paths
+// produce the same forest shape — only the tree geometry differs.
+function _buildTreePlacements(){
+  const out=[];
+  // Sample more densely along the track than the original 55 — speler
+  // beschrijft de scene als "leeg". Desktop: 90 sample points × 2 sides
+  // + jitter; mobile capped to 60 to keep total tree count manageable
+  // for vertex throughput and instanceMatrix upload size.
+  const N = window._isMobile ? 60 : 90;
+  for(let i=0;i<N;i++){
+    const t=i/N;
     const p=trackCurve.getPoint(t);
     const tg=trackCurve.getTangent(t).normalize();
     const nr=new THREE.Vector3(-tg.z,0,tg.x);
     [-1,1].forEach(side=>{
-      const d=BARRIER_OFF+20+Math.random()*38;
-      placeTree(
-        p.x+nr.x*side*d+(Math.random()-.5)*7,
-        p.z+nr.z*side*d+(Math.random()-.5)*7
-      );
+      // Two rings: a closer dense band 14-32m from the barrier (so the eye
+      // catches them at racing speed) and a thinner far ring 40-90m out.
+      const inClose = Math.random() < 0.72;
+      const d = inClose
+        ? BARRIER_OFF + 14 + Math.random()*18
+        : BARRIER_OFF + 40 + Math.random()*50;
+      out.push({
+        x: p.x + nr.x*side*d + (Math.random()-.5)*7,
+        z: p.z + nr.z*side*d + (Math.random()-.5)*7,
+        s: 0.7 + Math.random()*0.7,
+        r: Math.random()*Math.PI*2,
+      });
     });
   }
-  // Infield trees (ring around lake, inside circuit)
-  for(let i=0;i<32;i++){
-    const a=Math.random()*Math.PI*2,d=68+Math.random()*85;
-    placeTree(-10+Math.cos(a)*d,-50+Math.sin(a)*d,.85+Math.random()*.3);
+  // Infield trees (ring around the lake, inside the circuit)
+  const infield = window._isMobile ? 28 : 48;
+  for(let i=0;i<infield;i++){
+    const a=Math.random()*Math.PI*2,d=68+Math.random()*95;
+    out.push({
+      x: -10 + Math.cos(a)*d,
+      z: -50 + Math.sin(a)*d,
+      s: 0.85 + Math.random()*0.3,
+      r: Math.random()*Math.PI*2,
+    });
+  }
+  // Small clusters of 3-5 trees so distribution looks organic instead of
+  // perfectly even (~6 cluster origins, each adds 2-4 nearby siblings).
+  const seeds=[];
+  for(let i=0;i<6;i++){
+    const t=Math.random();
+    const p=trackCurve.getPoint(t);
+    const tg=trackCurve.getTangent(t).normalize();
+    const nr=new THREE.Vector3(-tg.z,0,tg.x);
+    const side=(i%2===0?1:-1);
+    const d=BARRIER_OFF+22+Math.random()*30;
+    seeds.push({x:p.x+nr.x*side*d, z:p.z+nr.z*side*d});
+  }
+  seeds.forEach(s=>{
+    const k=2+(Math.random()*3|0);
+    for(let i=0;i<k;i++){
+      out.push({
+        x: s.x + (Math.random()-.5)*9,
+        z: s.z + (Math.random()-.5)*9,
+        s: 0.75 + Math.random()*0.5,
+        r: Math.random()*Math.PI*2,
+      });
+    }
+  });
+  return out;
+}
+
+function _spawnInstancedTreesGLTF(protos, placements){
+  // Group every (geometry, material) pair across every prototype into one
+  // InstancedMesh. Typical Quaternius pine = 2 meshes (trunk + leaves) so
+  // 2 protos × 2 meshes = 4 InstancedMeshes total — well within budget.
+  // Reset every proto root to identity once before sampling, so the
+  // node.matrixWorld values reflect proto-local-coords on every rebuild.
+  protos.forEach(p=>{
+    p.scene.position.set(0,0,0);
+    p.scene.rotation.set(0,0,0);
+    p.scene.scale.setScalar(1);
+    p.scene.updateMatrixWorld(true);
+  });
+  // Compute normalization from the first prototype so wildly different GLTF
+  // scales all fit our ~5m tall canopy.
+  const box=new THREE.Box3().setFromObject(protos[0].scene);
+  const size=new THREE.Vector3(); box.getSize(size);
+  const targetH=4.8;
+  const baseScale=size.y>0.01 ? targetH/size.y : 1;
+
+  const slots=new Map();
+  const tmpQuat=new THREE.Quaternion();
+  const tmpScl=new THREE.Vector3();
+  const tmpPos=new THREE.Vector3();
+
+  placements.forEach(pl=>{
+    const proto=protos[(Math.random()*protos.length)|0];
+    proto.scene.traverse(node=>{
+      if(!node.isMesh) return;
+      const local=node.matrixWorld.clone();
+      const wScale=baseScale*pl.s;
+      tmpQuat.setFromAxisAngle(new THREE.Vector3(0,1,0), pl.r);
+      tmpScl.set(wScale,wScale,wScale);
+      tmpPos.set(pl.x, 0, pl.z);
+      const place=new THREE.Matrix4().compose(tmpPos,tmpQuat,tmpScl);
+      const m=new THREE.Matrix4().multiplyMatrices(place, local);
+
+      const key = node.geometry.uuid + '|' + (node.material.uuid || '');
+      let slot = slots.get(key);
+      if (!slot){
+        slot = { geo: node.geometry, mat: node.material, mats: [] };
+        slots.set(key, slot);
+      }
+      slot.mats.push(m.clone());
+    });
+  });
+
+  slots.forEach(slot=>{
+    // Clone the geometry so the InstancedMesh owns its own GPU buffer for
+    // instanceMatrix; otherwise on the next race rebuild we'd re-attach
+    // instanceMatrix to the cached geometry, which would either collide
+    // with the previous buffer or leak it. The cloned geometry shares
+    // BufferAttribute *references* with the cached one (cheap), but its
+    // instanceMatrix lives only on this mesh.
+    const geoClone = slot.geo.clone();
+    // Material is shared with the GLTF cache (multiple draw calls can
+    // reuse it safely); flag so disposeScene leaves it alive.
+    slot.mat.userData = slot.mat.userData || {}; slot.mat.userData._sharedAsset=true;
+    const im=new THREE.InstancedMesh(geoClone, slot.mat, slot.mats.length);
+    slot.mats.forEach((m,i)=>im.setMatrixAt(i,m));
+    im.instanceMatrix.needsUpdate=true;
+    im.castShadow=false; im.receiveShadow=false;
+    scene.add(im);
+  });
+  if (window.dbg) dbg.log('env','GLTF trees spawned',{instances:placements.length, drawCalls:slots.size});
+}
+
+function _spawnInstancedTreesProcedural(placements){
+  // Procedural fallback rendered as InstancedMesh so the higher tree count
+  // doesn't blow up draw calls. Lambert in r134 doesn't honour
+  // InstancedMesh.instanceColor (no shader hook), so we bucket placements
+  // into 3 leaf-color materials. Total: 1 trunk + 3 lower-cone + 3 upper-cone
+  // = 7 InstancedMeshes (vs the original 3 placements × ~140 = 420 draw calls).
+  const trunkGeo=new THREE.CylinderGeometry(.11,.17,1.5,5);
+  const cGeo1=new THREE.ConeGeometry(1,4.5,7);
+  const cGeo2=new THREE.ConeGeometry(.62,3.5,7);
+  const trunkMat=new THREE.MeshLambertMaterial({color:0x6b4226});
+  const leafCols=[0x1d6b32, 0x2a8040, 0x145a28];
+  const leafMats=leafCols.map(c=>new THREE.MeshLambertMaterial({color:c}));
+  // Bucket placements per leaf color.
+  const buckets=leafCols.map(()=>[]);
+  placements.forEach(pl=>{ buckets[(Math.random()*buckets.length)|0].push(pl); });
+
+  const N=placements.length;
+  const trunk=new THREE.InstancedMesh(trunkGeo, trunkMat, N);
+  const tmpQuat=new THREE.Quaternion();
+  const yAxis=new THREE.Vector3(0,1,0);
+  // All-trunk pass first (single InstancedMesh).
+  placements.forEach((pl,i)=>{
+    const sc=pl.s;
+    tmpQuat.setFromAxisAngle(yAxis, pl.r);
+    const m=new THREE.Matrix4().compose(
+      new THREE.Vector3(pl.x, .75*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
+    trunk.setMatrixAt(i, m);
+  });
+  trunk.instanceMatrix.needsUpdate=true;
+  scene.add(trunk);
+
+  // Per-bucket leaf passes. Each bucket gets its own pair of InstancedMeshes.
+  buckets.forEach((bucket, bi)=>{
+    if (!bucket.length) return;
+    const c1=new THREE.InstancedMesh(cGeo1, leafMats[bi], bucket.length);
+    const c2=new THREE.InstancedMesh(cGeo2, leafMats[bi], bucket.length);
+    bucket.forEach((pl,i)=>{
+      const sc=pl.s;
+      tmpQuat.setFromAxisAngle(yAxis, pl.r);
+      const m1=new THREE.Matrix4().compose(
+        new THREE.Vector3(pl.x, 2.5*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
+      c1.setMatrixAt(i, m1);
+      tmpQuat.setFromAxisAngle(yAxis, pl.r + 0.55);
+      const m2=new THREE.Matrix4().compose(
+        new THREE.Vector3(pl.x, 4.2*sc, pl.z), tmpQuat, new THREE.Vector3(sc,sc,sc));
+      c2.setMatrixAt(i, m2);
+    });
+    c1.instanceMatrix.needsUpdate=true;
+    c2.instanceMatrix.needsUpdate=true;
+    scene.add(c1); scene.add(c2);
+  });
+}
+
+function buildEnvironmentTrees(){
+  const placements=_buildTreePlacements();
+  // Try GLTF prototypes first.
+  const protos=[];
+  if(window.Assets){
+    Assets.listProps('grandprix').forEach(k=>{
+      if(/^tree/.test(k)){
+        const g=Assets.getGLTF('grandprix', k);
+        if(g && g.scene) protos.push(g);
+      }
+    });
+  }
+  if (protos.length > 0){
+    _spawnInstancedTreesGLTF(protos, placements);
+  } else {
+    _spawnInstancedTreesProcedural(placements);
   }
 }
 

@@ -266,6 +266,7 @@
     <button class="pauseBtn pauseBtnGray" id="pcam3" onclick="setCamView(3)" style="font-size:10px;padding:8px 14px;min-width:0">💨 BUMPER</button>
   </div>
   <button class="pauseBtn pauseBtnGray" id="btnFxToggle" onclick="toggleQuality()" style="margin-top:8px;font-size:11px;padding:8px 14px">✨ FX ON</button>
+  <div id="pauseAssetStatus" style="font-family:Rajdhani,sans-serif;font-size:11px;color:#7799bb;letter-spacing:1.5px;margin-top:6px;text-align:center;line-height:1.5;min-height:14px"></div>
   <button class="pauseBtn pauseBtnGray" id="btnQuit" onclick="goToTitle()" style="margin-top:8px">✕ QUIT TO MENU</button>
   <div style="font-family:Rajdhani,sans-serif;font-size:12px;color:#553377;letter-spacing:2px;margin-top:8px;position:relative;z-index:1">H = PIT STOP · N = NITRO · SPACE = DRIFT</div>
 </div>
@@ -390,6 +391,10 @@
 <script src="js/core/debug.js"></script>
 <script src="js/core/perf.js"></script>
 <script src="js/core/three-compat.js"></script>
+
+<!-- Asset loader (HDRI / textures / GLTF) — manifest-driven, fallback-safe -->
+<script src="js/assets/loader.js"></script>
+<script src="js/effects/asset-bridge.js"></script>
 
 <!-- Core (renderer/scene/loop) -->
 <script src="js/effects/postfx.js"></script>
