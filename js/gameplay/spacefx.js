@@ -90,12 +90,6 @@ function playSpaceTractorSound(){
   o2.connect(g2);g2.connect(_dst());o2.start(audioCtx.currentTime+.1);o2.stop(audioCtx.currentTime+2.8);
 }
 
-function playSpaceWormholeSound(){
-  if(!audioCtx)return;
-  beep(220,.12,.2,0,'sine');beep(440,.10,.18,.1,'sine');beep(880,.08,.15,.2,'sine');
-  beep(1760,.06,.12,.3,'sine');
-}
-
 function playSpaceRailgunSound(){
   if(!audioCtx)return;
   beep(120,.06,.35,0,'sawtooth');beep(240,.08,.3,.04,'sawtooth');

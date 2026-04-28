@@ -8,7 +8,6 @@ let _spaceAsteroids=[];
 let _spaceDustGeo=null,_spaceDustParticles=null;
 let _spaceGravityWells=[];
 let _spaceRailguns=[];
-let _spaceWormholes=[];
 let _spaceUFOs=[];
 let _spaceMeteors=[];
 let _spaceMeteorTimer=18;
@@ -154,7 +153,6 @@ function buildSpaceEnvironment(){
   buildSpaceDust();
   buildSpaceGravityWells();
   buildSpaceRailguns();
-  buildSpaceWormholes();
   buildSpaceUFOs();
   buildSpaceMeteorSystem();
   buildSpaceTractorBeam();
@@ -512,68 +510,6 @@ function buildSpaceRailguns(){
   });
 }
 
-function buildSpaceWormholes(){
-  _spaceWormholes.length=0;
-  // Two portal pairs — ONE-WAY: only portal A (entry) teleports you forward to B (exit)
-  // Portal B is a visual-only exit gate — entering from B does nothing
-  const pairs=[{tA:.25,tB:.70,colA:0x8800ff,colB:0x00ff88},{tA:.42,tB:.88,colA:0xff4400,colB:0x0088ff}];
-  pairs.forEach(pair=>{
-    [pair.tA,pair.tB].forEach((t,idx)=>{
-      const p=trackCurve.getPoint(t),tg=trackCurve.getTangent(t).normalize();
-      const isA=idx===0; // A = entry (teleports forward), B = exit only
-      const col=isA?pair.colA:pair.colB;
-      // Entry portal: full size + bright. Exit portal: smaller + dimmer
-      const ringR=isA?TW*.85:TW*.60;
-      const ringEmit=isA?2.8:1.2;
-      const ringOpac=isA?.9:.55;
-      const ring=new THREE.Mesh(
-        new THREE.TorusGeometry(ringR,.6,10,44),
-        new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:ringEmit,transparent:true,opacity:ringOpac}));
-      ring.position.copy(p);ring.position.y=4.5;ring.rotation.y=Math.atan2(tg.x,tg.z);scene.add(ring);
-      // Inner swirl canvas
-      const swCvs=document.createElement('canvas');swCvs.width=128;swCvs.height=128;
-      const swTex=new THREE.CanvasTexture(swCvs);
-      const portalR=isA?TW*.78:TW*.54;
-      const portal=new THREE.Mesh(new THREE.CircleGeometry(portalR,32),
-        new THREE.MeshBasicMaterial({map:swTex,transparent:true,opacity:isA?.85:.45,side:THREE.DoubleSide}));
-      portal.position.copy(p);portal.position.y=4.5;portal.rotation.y=Math.atan2(tg.x,tg.z);scene.add(portal);
-      // Pillar of light (entry only)
-      if(isA){
-        const beam=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,40,8),
-          new THREE.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:1.6,transparent:true,opacity:.25}));
-        beam.position.copy(p);beam.position.y=20;scene.add(beam);
-      }
-      // Entry: floating "SHORTCUT →" label above portal
-      if(isA){
-        const lblCvs=document.createElement('canvas');lblCvs.width=256;lblCvs.height=64;
-        const lc=lblCvs.getContext('2d');
-        lc.fillStyle='rgba(0,0,0,0)';lc.fillRect(0,0,256,64);
-        lc.font='bold 22px Orbitron,sans-serif';lc.fillStyle='#ffffff';lc.textAlign='center';
-        lc.fillText('SHORTCUT ▶',128,38);
-        const lblTex=new THREE.CanvasTexture(lblCvs);
-        const lbl=new THREE.Sprite(new THREE.SpriteMaterial({map:lblTex,transparent:true,opacity:.9}));
-        lbl.position.copy(p);lbl.position.y=10.5;lbl.scale.set(8,2,1);scene.add(lbl);
-      }
-      // Exit: floating "EXIT" label
-      if(!isA){
-        const lblCvs=document.createElement('canvas');lblCvs.width=128;lblCvs.height=48;
-        const lc=lblCvs.getContext('2d');
-        lc.fillStyle='rgba(0,0,0,0)';lc.fillRect(0,0,128,48);
-        lc.font='bold 18px Orbitron,sans-serif';lc.fillStyle='rgba(255,255,255,0.6)';lc.textAlign='center';
-        lc.fillText('EXIT',64,30);
-        const lblTex=new THREE.CanvasTexture(lblCvs);
-        const lbl=new THREE.Sprite(new THREE.SpriteMaterial({map:lblTex,transparent:true,opacity:.6}));
-        lbl.position.copy(p);lbl.position.y=8.5;lbl.scale.set(5,1.5,1);scene.add(lbl);
-      }
-      // Point light (entry brighter than exit)
-      const pl=new THREE.PointLight(col,isA?3.5:1.8,isA?28:18);pl.position.copy(p);pl.position.y=4;scene.add(pl);
-      const swCtx=swCvs.getContext('2d');
-      _spaceWormholes.push({t,linkedT:pair.tB,ring,portal,swCvs,swCtx,swTex,pl,col,
-        phase:isA?0:Math.PI,_drawTimer:0,isEntry:isA});
-    });
-  });
-}
-
 function buildSpaceUFOs(){
   _spaceUFOs.length=0;
   const ufoColors=[0x00ff88,0xaa00ff,0x00ccff,0xff4488,0xffaa00,0x44ffff,0xff2288,0x88ff00];
@@ -680,28 +616,6 @@ function updateSpaceWorld(dt){
   });
   // ── Railgun effect (player physics applied in checkSpaceRailgun) ─
   _spaceRailguns.forEach((r,i)=>{r.pl.intensity=2.5+Math.sin(_nowSec*8+i)*.8;});
-  // ── Wormhole swirl animation — throttled to ~15fps (no need for 60fps canvas redraws) ──
-  _spaceWormholes.forEach(w=>{
-    w.phase+=dt*(w.isEntry?1.8:0.6); // exit portals spin slower
-    w.pl.intensity=(w.isEntry?3.0:1.4)+Math.sin(_nowSec*4+w.phase)*(w.isEntry?.8:.3);
-    w._drawTimer-=dt;
-    if(w._drawTimer>0)return; // skip canvas redraw this frame
-    w._drawTimer=0.067; // ~15fps
-    const ctx=w.swCtx; // cached context — no getContext() call
-    ctx.clearRect(0,0,128,128);
-    const g=ctx.createRadialGradient(64,64,0,64,64,60);
-    const hex='#'+w.col.toString(16).padStart(6,'0');
-    g.addColorStop(0,'rgba(255,255,255,.9)');
-    g.addColorStop(.3,hex+'cc');g.addColorStop(.7,hex+'44');g.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=g;ctx.fillRect(0,0,128,128);
-    ctx.save();ctx.translate(64,64);ctx.rotate(w.phase);
-    for(let s=0;s<4;s++){
-      ctx.beginPath();ctx.rotate(Math.PI*.5);
-      for(let r2=2;r2<58;r2+=2){ctx.lineTo(Math.cos(r2*.22)*r2,Math.sin(r2*.22)*r2);}
-      ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1.5;ctx.stroke();
-    }
-    ctx.restore();w.swTex.needsUpdate=true;
-  });
   // ── UFO orbits + occasional beam ────────────────────────────────
   _spaceUFOs.forEach(u=>{
     u.orbitT+=dt*u.orbitSpd;
@@ -794,28 +708,4 @@ function checkSpaceRailgun(){
   });
 }
 
-
-function checkSpaceWormhole(){
-  if(!_spaceWormholes.length||activeWorld!=='space')return;
-  const car=carObjs[playerIdx];if(!car||recoverActive||car._fallingIntoSpace)return;
-  if(_wormholeCooldown>0){_wormholeCooldown-=1/60;return;}
-  _spaceWormholes.forEach(portal=>{
-    if(!portal.isEntry)return; // exit portals don't teleport — one-way only
-    const pp=portal.ring.position;
-    const dx=car.mesh.position.x-pp.x,dz=car.mesh.position.z-pp.z;
-    if(dx*dx+dz*dz>TW*TW*.42)return; // quick sq distance check before sqrt
-    const destT=portal.linkedT;
-    const dest=trackCurve.getPoint(destT);
-    const tg=trackCurve.getTangent(destT).normalize();
-    car.mesh.position.set(dest.x,0.35,dest.z);
-    car.mesh.rotation.set(0,Math.atan2(-tg.x,-tg.z),0);
-    car.progress=destT;
-    _wormholeCooldown=3.5;
-    camShake=0.5;
-    playSpaceWormholeSound();
-    showPopup('🌀 SHORTCUT!','#aa44ff',1000);
-    floatText('🌀 SHORTCUT','#cc55ff',innerWidth*.5,innerHeight*.45);
-    sparkSystem.emit(dest.x,.5,dest.z,0,.12,0,24,.5,.2,1,.5);
-  });
-}
 

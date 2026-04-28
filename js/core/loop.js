@@ -13,7 +13,7 @@
 // Externe functies (track/cars/effects/gameplay/worlds/ui modules + Audio facade):
 //   updatePlayer, updateAI, checkJumps, checkSpinPads, checkBoostPads,
 //   checkCollectibles, checkCollisions, checkTrackLimits, checkWrongWay,
-//   checkSpaceRailgun, checkSpaceWormhole, checkGravityZones,
+//   checkSpaceRailgun, checkGravityZones,
 //   checkOrbitingAsteroids, checkWarpTunnels, checkCurrentStreams,
 //   checkAbyssCracks, checkTreasureTrail, checkWaterPuddles, checkDRSZone,
 //   updateBoostArrows, updateSlipstreamVisuals, updateSafetyCar,
@@ -72,7 +72,7 @@ function loop(){
     }
     if(gameState==='RACE'){
       checkJumps();checkSpinPads(dt);checkBoostPads();checkCollectibles();checkCollisions(dt);checkTrackLimits(dt);checkWrongWay(dt);
-      if(activeWorld==='space'){checkSpaceRailgun();checkSpaceWormhole();checkGravityZones(dt);checkOrbitingAsteroids(dt);checkWarpTunnels(dt);}
+      if(activeWorld==='space'){checkSpaceRailgun();checkGravityZones(dt);checkOrbitingAsteroids(dt);checkWarpTunnels(dt);}
       else if(activeWorld==='deepsea'){checkCurrentStreams(dt);checkAbyssCracks(dt);checkTreasureTrail(dt);}
       else{checkWaterPuddles(dt);checkDRSZone(dt);}
       updateBoostArrows();updateSlipstreamVisuals();updateSafetyCar(dt);
