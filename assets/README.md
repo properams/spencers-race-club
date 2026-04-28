@@ -68,16 +68,16 @@ assets/
 The pipeline is now active on every world that benefits from realism
 upgrades. Drop matching files in the paths listed in `manifest.json`:
 
-| World      | HDRI | Ground PBR | Skybox layers | Notes |
-|------------|:---:|:---:|:---:|---|
-| grandprix  | ✓ | ✓ | ✓ | Full pilot — also has GLTF tree + prop slots |
-| neoncity   | ✓ | ✓ (wet asphalt) | ✓ (skyline silhouettes) | Procedural silhouettes off; only textured layers render |
-| volcano    | ✓ | ✓ (lava rock) | ✓ (volcano silhouettes) | Same — opt-in via texture |
-| arctic     | ✓ | ✓ (snow/ice) | ✓ (ice peaks) | Same |
-| themepark  | ✓ | ✓ (pavement) | ✓ (silhouettes) | Same |
-| deepsea    | — | ✓ (sand floor) | — | No HDRI — underwater. PBR sand floor only. |
-| space      | — | — | — | No-op; cosmic skybox + abyss are procedural by design |
-| candy      | — | — | — | Skipped — thematic visuals would clash with PBR realism |
+| World      | HDRI | Ground PBR | Procedural silhouettes | Textured silhouettes | GLTF props |
+|------------|:---:|:---:|:---:|:---:|---|
+| grandprix  | ✓ | ✓ | ✓ | ✓ | trees + haybales + rocks |
+| neoncity   | ✓ | ✓ (wet asphalt) | ✓ (deep blue-purple) | ✓ (skyline) | trash bin / bollard / roadblock |
+| volcano    | ✓ | ✓ (lava rock) | ✓ (rust-red) | ✓ | basalt rocks / lava chunk |
+| arctic     | ✓ | ✓ (snow/ice) | ✓ (cold blue) | ✓ (ice peaks) | iceberg s/m / snow rock |
+| themepark  | ✓ | ✓ (pavement) | ✓ (dusk purple) | ✓ | traffic cone / bollard / barrel |
+| deepsea    | — | ✓ (sand floor) | — | — | coral s/m / wreck box |
+| space      | — | — | — | — | n/a — cosmic skybox + abyss procedural by design |
+| candy      | — | — | — | — | n/a — thematic visuals would clash with PBR realism |
 
 ### Recommended HDRI variants per world
 
@@ -92,8 +92,11 @@ upgrades. Drop matching files in the paths listed in `manifest.json`:
 - HDRI fog-color sampling overrides the world's procedural fog tint. For
   thematic worlds (volcano red, neon purple) this is the user's opt-in
   trade — drop a matching HDRI or stick to procedural.
-- Procedural background silhouettes still only render automatically on
-  Grand Prix. For other worlds, silhouettes appear only when textured
-  `mountains_far.png` / `mountains_near.png` are present.
-- GLTF tree + prop slots remain Grand Prix-only this round. Per-world
-  prop dispatchers will follow in later sessies.
+- Procedural background silhouettes are tuned per world to sit *behind*
+  the existing rich horizons (volcano embers, neon skyscrapers, arctic
+  auroras, themepark fireworks). They render automatically on grandprix /
+  neoncity / volcano / arctic / themepark; deepsea / space / candy stay
+  pure procedural.
+- GLTF roadside prop dispatchers run on all worlds with prop slots.
+  Without files dropped in, every spawn loop is a no-op — the existing
+  procedural environment is unchanged.

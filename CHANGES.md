@@ -1,5 +1,72 @@
 # CHANGES
 
+## Track Realism Overhaul (sessie 5b) — Procedurele silhouetten + GLTF props per wereld
+
+> "Beide" — antwoord op of we per-wereld GLTF dispatchers wilden én
+> procedurele silhouetten voor andere werelden dan GP.
+
+### Per-wereld procedurele silhouetten
+`_SILHOUETTE_PALETTES` in `js/track/environment.js` heeft nu 5 entries
+(gp / neoncity / volcano / arctic / themepark) met paletten gestemd om
+*achter* de bestaande rijke horizon-content te zitten:
+- **GP**: blue-grey atmospheric haze (ongewijzigd).
+- **Neon City**: deep blue-purple distant skyline ridge (lagere opacity).
+- **Volcano**: rust-red silhouetten die in de ember haze verdwijnen.
+- **Arctic**: koud blauw-misty mountains, lichter palette zodat ze
+  blenden in de fog ipv eruit te springen.
+- **Themepark**: dusk-purple ridges achter de fireworks.
+- **DeepSea / Space / Candy** blijven uit (onderwater / cosmic /
+  thematisch). Deepsea sand-floor PBR slot blijft beschikbaar.
+
+Palette format uitgebreid met height + opacity per laag zodat per-wereld
+de "verberg in fog of pop boven horizon"-tradeoff fijn af te stemmen is.
+
+### Per-wereld GLTF prop dispatchers
+**`js/effects/asset-bridge.js`** krijgt twee shared helpers:
+- `spawnGLTFProp(proto, x, z, opts)` — clones een GLTF root, normaliseert
+  schaal naar `opts.sizeHint`, plaatst in scene. Flagt geometry, material
+  én alle map slots (`map`/`normalMap`/`roughnessMap`/`metalnessMap`/
+  `emissiveMap`/`aoMap`/`bumpMap`) als `_sharedAsset` zodat disposeScene
+  de cache niet stukmaakt.
+- `spawnRoadsideProps(worldId, opts)` — leest beschikbare prop GLTFs uit
+  cache, plaatst clusters langs de baan via `trackCurve`. Bailt direct
+  als `BARRIER_OFF` ontbreekt of geen GLTF in cache zit.
+
+**Per-wereld manifest slots + dispatch wiring:**
+- volcano: `rock_basalt_small`, `rock_basalt_medium`, `lava_chunk`
+- arctic: `iceberg_small`, `iceberg_medium`, `snow_rock`
+- themepark: `traffic_cone`, `bollard`, `barrel`
+- neoncity: `trashbin`, `bollard_neon`, `roadblock`
+- deepsea: `coral_small`, `coral_medium`, `wreck_box`
+- grandprix: ongewijzigd (`tree_pine` + `tree_birch` + `rock_*` +
+  `haybale`); de oude lokale `_spawnGLTFProp` is verwijderd uit
+  `grandprix.js`, dispatcher gebruikt nu `window.spawnGLTFProp`.
+
+Elke `buildXEnvironment` roept `window.spawnRoadsideProps(world,...)`
+aan aan het einde van zijn build. **Cache leeg → no-op**: zonder
+gedropte assets zijn geen visuele wijzigingen tegenover de procedurele
+omgeving.
+
+### Self-review fix toegepast
+- Eerdere `_spawnGLTFProp` flagde alleen het material als shared, niet
+  de map slots. Op world-rebuild zou disposeScene de cached GLTF maps
+  vernietigen → texturefout in volgende race van dezelfde wereld. Nu
+  worden alle 7 map slots geflagged in zowel `spawnGLTFProp` als de
+  GLTF tree-spawner. Pre-existing risico, blast-radius nu over 6
+  werelden, dus opgelost.
+
+### Veiligheidsanalyse
+- Zonder asset-bestanden:
+  - Procedurele silhouetten verschijnen op gp / neoncity / volcano /
+    arctic / themepark als zachte ridge-line ver achter bestaande
+    content. **Dit is een visuele wijziging** — bewust, want de gebruiker
+    vroeg om realisme-richting voor alle tracks.
+  - GLTF dispatchers zijn no-op (geen GLTFs in cache).
+  - DeepSea / Space / Candy zien er identiek uit aan vóór.
+- Met dropped assets: HDRI / ground PBR / GLTF props alle hookable.
+
+---
+
 ## Track Realism Overhaul (sessie 5) — Roll-out naar alle werelden
 
 > "Ziet er goed uit. Je mag nu verder met alle tracks."

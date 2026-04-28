@@ -24,6 +24,15 @@ function buildNeonCityEnvironment(){
   buildNeonParticles();
   buildNeonSkyGlow();
   buildNeonNightObjects();
+  // GLTF roadside props (trash bins / bollards / road blocks). No-op if
+  // cache is empty — neon's signature look stays untouched until assets
+  // land in the cache.
+  if(window.spawnRoadsideProps){
+    window.spawnRoadsideProps('neoncity',{
+      propKeys:['trashbin','bollard_neon','roadblock'],
+      count:10, sizeHint:1.2, clusterSize:2,
+    });
+  }
 }
 
 

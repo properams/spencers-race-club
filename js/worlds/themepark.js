@@ -259,6 +259,14 @@ function buildThemeparkEnvironment(){
   stars.instanceMatrix.needsUpdate=true;scene.add(stars);
   // Overhead coaster collapse signature moment — strobes lap 2, tilts lap 3.
   if(typeof buildThemeparkCoaster==='function')buildThemeparkCoaster();
+  // GLTF roadside props (traffic cones / barrels / bollards). Procedural
+  // path stays untouched if the cache is empty.
+  if(window.spawnRoadsideProps){
+    window.spawnRoadsideProps('themepark',{
+      propKeys:['traffic_cone','bollard','barrel'],
+      count:8, sizeHint:1.2, clusterSize:2,
+    });
+  }
 }
 
 

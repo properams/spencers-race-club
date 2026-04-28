@@ -139,6 +139,14 @@ function buildVolcanoEnvironment(){
     dm.scale.setScalar(.6+Math.random()*1.2);dm.updateMatrix();stars.setMatrixAt(i,dm.matrix);
   }
   stars.instanceMatrix.needsUpdate=true;scene.add(stars);
+  // GLTF roadside props (rocks / lava chunks). No-op if cache is empty,
+  // i.e. the procedural lava-rock environment above stays fully intact.
+  if(window.spawnRoadsideProps){
+    window.spawnRoadsideProps('volcano',{
+      propKeys:['rock_basalt_small','rock_basalt_medium','lava_chunk'],
+      count:10, sizeHint:1.7, clusterSize:3,
+    });
+  }
 }
 
 

@@ -130,6 +130,13 @@ function buildArcticEnvironment(){
   stars.instanceMatrix.needsUpdate=true;scene.add(stars);
   // Ice shelf signature moment — cracks lap 2, plates dip on lap 3.
   if(typeof buildArcticIceShelf==='function')buildArcticIceShelf();
+  // GLTF roadside props (icebergs / snow rocks). No-op if cache is empty.
+  if(window.spawnRoadsideProps){
+    window.spawnRoadsideProps('arctic',{
+      propKeys:['iceberg_small','iceberg_medium','snow_rock'],
+      count:10, sizeHint:2.0, clusterSize:2,
+    });
+  }
 }
 
 

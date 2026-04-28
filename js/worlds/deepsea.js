@@ -147,6 +147,14 @@ function buildDeepSeaEnvironment(){
   buildDeepSeaBubbles();
   buildDeepSeaLightRays();
   buildDeepSeaNightObjects();
+  // GLTF roadside props (coral chunks / wreck boxes). No-op if cache is
+  // empty; deepsea's procedural kelp + jellyfish setup is unaffected.
+  if(window.spawnRoadsideProps){
+    window.spawnRoadsideProps('deepsea',{
+      propKeys:['coral_small','coral_medium','wreck_box'],
+      count:8, sizeHint:1.6, clusterSize:2,
+    });
+  }
 }
 
 
