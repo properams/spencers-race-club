@@ -141,10 +141,18 @@ function _updateSelectSummary(){
 }
 
 function _selectPreviewCar(defId){
+  const switching=(defId!==_prevDefId);
   selCarId=defId;
   setPreviewCar(defId);
   const def=CAR_DEFS.find(d=>d.id===defId);if(!def)return;
   if(window.Audio&&window.Audio.preloadAll)window.Audio.preloadAll(def.type);
+  // Short rev burst per car-type when actually switching (skip on initial
+  // entry where _prevDefId starts at -1 → first match still counts as a
+  // switch, but at that point audioCtx may not exist yet so the rev is a
+  // silent no-op anyway).
+  if(switching&&window.Audio&&window.Audio.playEngineRev){
+    window.Audio.playEngineRev(def.type);
+  }
   // Brand line + model + specs
   const b=document.getElementById('prevBrand');if(b)b.textContent=def.brand;
   const n=document.getElementById('prevName');
