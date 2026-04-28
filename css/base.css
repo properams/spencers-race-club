@@ -14,11 +14,11 @@ canvas,#glCanvas{touch-action:none !important}
 html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;touch-action:none;-webkit-overflow-scrolling:none;overscroll-behavior:none}
 :root{
   --z-game:0;
-  --z-mirror:11;
   --z-screen:20;
   --z-banner:40;
   --z-popup:45;
   --z-flash:52;
+  --z-mirror:54;
   --z-toast:999;
   --z-modal:9999;
   --z-critical:10000;
