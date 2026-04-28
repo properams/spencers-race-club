@@ -1,5 +1,6 @@
 backups/
-.claude/
+.claude/*
+!.claude/agents/
 
 # Werk-documentatie / planning — lokaal houden, niet publiceren
 CLAUDE.md
@@ -10,3 +11,4 @@ PHASE_2.md
 PHASE_3_4.md
 MUSIC_CHANGES.md
 VOLCANO_PILOT_PROMPT.md
+WORLDS_SIGNATURE_PROMPTS.md
