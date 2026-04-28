@@ -29,6 +29,8 @@ function buildCandyEnvironment(){
   buildCandyBarriers();
   buildIceCreamCones();
   buildCookieSpectators();
+  // Chocolate-fountain bridge signature moment — drips lap 2, melts lap 3.
+  if(typeof buildCandyChocoBridge==='function')buildCandyChocoBridge();
 }
 
 
@@ -469,6 +471,10 @@ function buildCookieSpectators(){
 
 
 function updateCandyWorld(dt){
+  if(typeof updateCandyChocoBridge==='function'){
+    const pl=carObjs[playerIdx];
+    updateCandyChocoBridge(dt, pl?pl.lap:1);
+  }
   updateSprinkles(dt);
   // Cotton candy cloud drift
   _candyLollipops.forEach((h,i)=>{
