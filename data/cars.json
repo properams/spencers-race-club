@@ -8,7 +8,8 @@
     "type": "super",
     "topSpd": 1.22,
     "accel": 0.02,
-    "hdlg": 0.052
+    "hdlg": 0.052,
+    "nitro": 8
   },
   {
     "id": 1,
@@ -19,7 +20,8 @@
     "type": "super",
     "topSpd": 1.16,
     "accel": 0.019,
-    "hdlg": 0.049
+    "hdlg": 0.049,
+    "nitro": 7
   },
   {
     "id": 2,
@@ -30,7 +32,8 @@
     "type": "super",
     "topSpd": 1.1,
     "accel": 0.018,
-    "hdlg": 0.047
+    "hdlg": 0.047,
+    "nitro": 6
   },
   {
     "id": 3,
@@ -41,7 +44,8 @@
     "type": "super",
     "topSpd": 1.19,
     "accel": 0.019,
-    "hdlg": 0.051
+    "hdlg": 0.051,
+    "nitro": 8
   },
   {
     "id": 4,
@@ -52,7 +56,8 @@
     "type": "f1",
     "topSpd": 1.35,
     "accel": 0.025,
-    "hdlg": 0.058
+    "hdlg": 0.058,
+    "nitro": 9
   },
   {
     "id": 5,
@@ -63,7 +68,8 @@
     "type": "muscle",
     "topSpd": 1.05,
     "accel": 0.017,
-    "hdlg": 0.044
+    "hdlg": 0.044,
+    "nitro": 5
   },
   {
     "id": 6,
@@ -74,7 +80,8 @@
     "type": "electric",
     "topSpd": 1.14,
     "accel": 0.024,
-    "hdlg": 0.046
+    "hdlg": 0.046,
+    "nitro": 9
   },
   {
     "id": 7,
@@ -85,7 +92,8 @@
     "type": "super",
     "topSpd": 1.13,
     "accel": 0.018,
-    "hdlg": 0.048
+    "hdlg": 0.048,
+    "nitro": 6
   },
   {
     "id": 8,
@@ -96,7 +104,8 @@
     "type": "super",
     "topSpd": 1.18,
     "accel": 0.019,
-    "hdlg": 0.056
+    "hdlg": 0.056,
+    "nitro": 7
   },
   {
     "id": 9,
@@ -107,7 +116,8 @@
     "type": "super",
     "topSpd": 1.25,
     "accel": 0.022,
-    "hdlg": 0.054
+    "hdlg": 0.054,
+    "nitro": 9
   },
   {
     "id": 10,
@@ -118,7 +128,8 @@
     "type": "f1",
     "topSpd": 1.38,
     "accel": 0.026,
-    "hdlg": 0.06
+    "hdlg": 0.06,
+    "nitro": 10
   },
   {
     "id": 11,
@@ -129,6 +140,7 @@
     "type": "super",
     "topSpd": 1.32,
     "accel": 0.024,
-    "hdlg": 0.055
+    "hdlg": 0.055,
+    "nitro": 10
   }
 ]

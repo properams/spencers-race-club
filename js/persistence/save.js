@@ -20,7 +20,30 @@ function _resetToDefaults(){
   window._coins=0;window._totalCoinsEarned=0;
   // _unlockedCars + _worldsUnlocked Sets bestaan al in main.js (var defaults).
   // _trackRecords blijft als is in main.js.
+  if(!window._lapRecords)window._lapRecords={};
 }
+
+// Record a lap time as the per-(world × difficulty) best, if it beats the
+// existing record. Called from finish.js when a race ends and from
+// tracklimits.js when a lap is completed. Returns true if it beats the
+// existing record.
+function recordLapTime(world, difficulty, time, carDef){
+  if(!window._lapRecords) window._lapRecords = {};
+  if(!world || !carDef || !isFinite(time)) return false;
+  const key = world + '_' + (difficulty|0);
+  const cur = window._lapRecords[key];
+  if(cur && cur.time <= time) return false;
+  window._lapRecords[key] = {
+    time: time,
+    carId: carDef.id,
+    brand: carDef.brand,
+    name: carDef.name,
+    dt: Date.now()
+  };
+  try{ savePersistent(); }catch(e){ /* ignore */ }
+  return true;
+}
+window.recordLapTime = recordLapTime;
 
 // Type-guard helpers voor schema-validatie van localStorage-payload.
 const _num = (v, dflt) => typeof v==='number' && isFinite(v) ? v : dflt;
@@ -60,6 +83,12 @@ function loadPersistent(){
 
   _arr(d.worlds).forEach(w => { if(typeof w==='string') window._worldsUnlocked.add(w); });
   window._trackRecords = _obj(d.records);
+  // Per-(world × difficulty) lap records. Each entry:
+  //   { time:Number, carId:Number, brand:String, name:String, dt:Number }
+  // Used by the selection screen rival-display. Old saves without this field
+  // start with an empty object — no migration needed since the legacy
+  // schema never wrote per-track times.
+  window._lapRecords = _obj(d.lapRecords);
 
   // Progressive unlock — drempels in WORLD_UNLOCK_THRESHOLDS bovenaan.
   for(const [w,n] of Object.entries(WORLD_UNLOCK_THRESHOLDS.byRaces)){
@@ -83,6 +112,7 @@ function savePersistent(){
   d.unlocked=[...window._unlockedCars];
   d.coins=window._coins;d.totalCoins=window._totalCoinsEarned;
   d.worlds=[...window._worldsUnlocked];d.records=window._trackRecords;
+  if(window._lapRecords) d.lapRecords=window._lapRecords;
   let json;
   try{ json=JSON.stringify(d); }
   catch(e){
@@ -100,4 +130,4 @@ window.loadPersistent=loadPersistent;
 window.savePersistent=savePersistent;
 window.WORLD_UNLOCK_THRESHOLDS=WORLD_UNLOCK_THRESHOLDS;
 
-export {loadPersistent,savePersistent,WORLD_UNLOCK_THRESHOLDS};
+export {loadPersistent,savePersistent,recordLapTime,WORLD_UNLOCK_THRESHOLDS};

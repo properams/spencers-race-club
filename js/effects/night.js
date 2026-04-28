@@ -157,6 +157,10 @@ function toggleNight(){
   // Bloom intensifies bij night (lower threshold, higher strength) — neon
   // emissives gloeien dan dramatischer. Day = subtieler.
   if(typeof setBloomDayNight==='function')setBloomDayNight(isDark);
+  // Sync headlight emissive intensity across every brand-built car so the
+  // shared head material brightens at night and dims by day. Brand cars
+  // register their headlight material with the registry in car-parts.js.
+  if(typeof syncHeadlights==='function')syncHeadlights(isDark?1.2:0.4);
   const lbl=isDark?'☀ DAY':'🌙 NIGHT';
   const _tnb=document.getElementById('titleNightBtn');if(_tnb)_tnb.textContent=lbl;
   const _hnb=document.getElementById('hudNightBtn');if(_hnb)_hnb.textContent=lbl;
