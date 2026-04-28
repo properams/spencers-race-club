@@ -89,9 +89,9 @@ function _drawSpeedLines(){
     const a=i/88*Math.PI*2;
     const inner=(.08+Math.random()*.04)*R;
     const outer=inner+(0.07+Math.random()*.22)*R;
-    ctx.lineWidth=.4+Math.random()*2.2;
-    ctx.globalAlpha=.12+Math.random()*.45;
-    ctx.strokeStyle=`hsl(${200+Math.random()*40},80%,90%)`;
+    ctx.lineWidth=.4+Math.random()*1.6;
+    ctx.globalAlpha=.08+Math.random()*.28;
+    ctx.strokeStyle=`hsl(${200+Math.random()*40},75%,82%)`;
     ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*inner,cy+Math.sin(a)*inner);
     ctx.lineTo(cx+Math.cos(a)*outer,cy+Math.sin(a)*outer);ctx.stroke();
   }
@@ -103,18 +103,19 @@ function updateSpeedLines(){
   if(!car||gameState!=='RACE'){_speedLinesCvs.style.opacity='0';_speedLinesFadeT=0;return;}
   const dt2=1/60;
   // Subtle speed-lines verschijnen al bij high-speed (ratio>0.82) — niet alleen
-  // tijdens nitro. Sterker effect bij nitro (0.52 vs 0.22 base).
+  // tijdens nitro. Sterker effect bij nitro maar nog steeds subtiel: peak
+  // opacity laag genoeg dat ze niet door de scene heen "snijden".
   const ratio=Math.abs(car.speed)/Math.max(.01,car.def.topSpd);
   const highSpeed=ratio>0.82;
   if(nitroActive||highSpeed){
     _speedLinesFadeT=0.3;
     _speedLinesRedrawT-=dt2;
     if(_speedLinesRedrawT<=0){_drawSpeedLines();_speedLinesRedrawT=nitroActive?0.45:0.85;}
-    const baseOp=nitroActive?0.55:Math.max(0,(ratio-0.82)/0.18)*0.24;
+    const baseOp=nitroActive?0.30:Math.max(0,(ratio-0.82)/0.18)*0.14;
     _speedLinesCvs.style.opacity=baseOp.toFixed(3);
   }else{
     _speedLinesFadeT=Math.max(0,_speedLinesFadeT-dt2);
-    _speedLinesCvs.style.opacity=(_speedLinesFadeT/0.3*0.52).toFixed(3);
+    _speedLinesCvs.style.opacity=(_speedLinesFadeT/0.3*0.28).toFixed(3);
   }
 }
 

@@ -186,11 +186,11 @@ function initPostFX(){
 function setBloomDayNight(dark){
   if(!_postfx.ready) return;
   if(dark){
-    _postfx.threshold = 0.62;
-    _postfx.strength = 0.92;
-  } else {
     _postfx.threshold = 0.74;
-    _postfx.strength = 0.72;
+    _postfx.strength = 0.78;
+  } else {
+    _postfx.threshold = 0.80;
+    _postfx.strength = 0.66;
   }
   _postfx.matExtract.uniforms.threshold.value = _postfx.threshold;
   _postfx.matComposite.uniforms.strength.value = _postfx.strength;
