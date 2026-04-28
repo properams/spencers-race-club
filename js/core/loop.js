@@ -118,7 +118,10 @@ function loop(){
     updateCollisionFlash(dt);
     updateRain();
   }
-  if(renderer&&scene&&camera)renderer.render(scene,camera);
+  if(renderer&&scene&&camera){
+    if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
+    else renderer.render(scene,camera);
+  }
   updateCarPreview(dt);
   // Mirror pass — second render with backward-facing camera (chase cam + race only, not during victory orbit or intro)
   if(gameState==='RACE'&&_mirrorEnabled&&_camView===0&&!_victoryOrbit&&_introPanTimer<=0){

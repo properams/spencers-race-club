@@ -138,7 +138,7 @@ function showFinish(){
   // Hide mirror on finish
   const mf=document.getElementById('mirrorFrame'),ml=document.getElementById('mirrorLabel');
   if(mf)mf.style.display='none';if(ml)ml.style.display='none';
-  if(p<=3)launchConfetti();
+  if(p<=3){launchConfetti();launchFinishFireworks();}
   if(p===1){
     Audio.playVictory();
     const gc=document.getElementById('goldCelebration');
@@ -155,6 +155,55 @@ function showFinish(){
   }, p===1?2800:900);
 }
 
+
+// 3D fireworks bij podium-finish — staggered spawn van bestaande
+// _tpSpawnFirework (additive Points + light, wereld-onafhankelijk).
+// Eigen rAF-loop voor de particle-update want updateThemeparkWorld
+// wordt buiten themepark niet aangeroepen. Self-cleanup na fade.
+function launchFinishFireworks(){
+  if(typeof _tpSpawnFirework!=='function')return;
+  const finishMark=performance.now();
+  // Stagger 5-7 spawns over 4 seconden
+  const spawns=[0,400,750,1100,1500,2100,2800];
+  spawns.forEach(delay=>{
+    setTimeout(()=>{
+      if(gameState!=='FINISH')return;
+      try{_tpSpawnFirework();}catch(e){}
+    },delay);
+  });
+  // Update-loop — duurt zolang er fireworks "alive" zijn (max ~5s)
+  function tick(now){
+    if(typeof _tpFireworks==='undefined'||!_tpFireworks.length){
+      if(now-finishMark>5000)return; // helemaal klaar
+      requestAnimationFrame(tick);return;
+    }
+    const dt=1/60;
+    for(let i=_tpFireworks.length-1;i>=0;i--){
+      const fw=_tpFireworks[i];
+      fw.age+=dt;
+      const life=fw.age/fw.maxAge;
+      if(life>=1){
+        if(scene){scene.remove(fw.mesh);if(fw.light)scene.remove(fw.light);}
+        fw.mesh.geometry.dispose();fw.mesh.material.dispose();
+        _tpFireworks.splice(i,1);continue;
+      }
+      const pos=fw.geo.attributes.position.array;
+      for(let j=0;j<pos.length;j+=3){
+        pos[j]+=fw.vel[j]*dt;
+        pos[j+1]+=fw.vel[j+1]*dt-dt*dt*7;
+        pos[j+2]+=fw.vel[j+2]*dt;
+        fw.vel[j+1]-=dt*6;
+      }
+      fw.geo.attributes.position.needsUpdate=true;
+      fw.mesh.material.opacity=(1-life)*.9;
+      if(fw.light)fw.light.intensity=(1-life)*2.6;
+    }
+    if(gameState==='FINISH'||_tpFireworks.length>0){
+      requestAnimationFrame(tick);
+    }
+  }
+  requestAnimationFrame(tick);
+}
 
 function launchConfetti(){
   const cvs=document.getElementById('confettiCvs');if(!cvs)return;

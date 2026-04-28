@@ -87,7 +87,7 @@ function buildLollipopTrees(){
     stick.position.set(cx,h*.5,cz);scene.add(stick);
     // Head (flattened sphere)
     const hCol=headColors[i%headColors.length];
-    const headMat=new THREE.MeshLambertMaterial({color:hCol,emissive:new THREE.Color(hCol),emissiveIntensity:.25});
+    const headMat=new THREE.MeshLambertMaterial({color:hCol,emissive:new THREE.Color(hCol),emissiveIntensity:.55});
     const hr=1.8+Math.random()*.9;
     const head=new THREE.Mesh(new THREE.SphereGeometry(hr,10,8),headMat);
     head.scale.y=.72;head.position.set(cx,h+hr*.72,cz);scene.add(head);
@@ -393,7 +393,7 @@ function buildCandyBarriers(){
     [-1,1].forEach((s,si)=>{
       const pp=p.clone().addScaledVector(nr,s*(BARRIER_OFF+1.5));
       const col=headColors[(li*2+si)%headColors.length];
-      const headMat=new THREE.MeshLambertMaterial({color:col,emissive:new THREE.Color(col),emissiveIntensity:.3});
+      const headMat=new THREE.MeshLambertMaterial({color:col,emissive:new THREE.Color(col),emissiveIntensity:.7});
       const pole=new THREE.Mesh(new THREE.CylinderGeometry(.1,.12,3,5),
         new THREE.MeshLambertMaterial({color:0xffffff}));
       pole.position.copy(pp);pole.position.y=1.5;pole.visible=false;scene.add(pole);trackPoles.push(pole);

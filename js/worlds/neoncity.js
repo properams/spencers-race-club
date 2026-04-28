@@ -38,6 +38,37 @@ function buildNeonGround(){
     new THREE.MeshLambertMaterial({color:0x0e0e20,transparent:true,opacity:.38}));
   wet.rotation.x=-Math.PI/2;wet.position.y=-.12;scene.add(wet);
   _neonWater=wet;
+  // Sheen-banden overlay: tileable canvas met horizontale lichte gradients
+  // die magenta+cyan reflectie suggereren. AdditiveBlending + UV-scroll
+  // (zie updateNeonCityWorld) → "dancing reflection" effect onder de bloom.
+  const sheenCv=document.createElement('canvas');sheenCv.width=512;sheenCv.height=512;
+  const sCtx=sheenCv.getContext('2d');
+  sCtx.fillStyle='rgba(0,0,0,0)';sCtx.fillRect(0,0,512,512);
+  // Magenta band
+  let mg=sCtx.createLinearGradient(0,80,0,160);
+  mg.addColorStop(0,'rgba(255,40,180,0)');
+  mg.addColorStop(.5,'rgba(255,40,180,0.42)');
+  mg.addColorStop(1,'rgba(255,40,180,0)');
+  sCtx.fillStyle=mg;sCtx.fillRect(0,80,512,80);
+  // Cyan band
+  let cg=sCtx.createLinearGradient(0,260,0,360);
+  cg.addColorStop(0,'rgba(40,255,220,0)');
+  cg.addColorStop(.5,'rgba(40,255,220,0.40)');
+  cg.addColorStop(1,'rgba(40,255,220,0)');
+  sCtx.fillStyle=cg;sCtx.fillRect(0,260,512,100);
+  // Yellow accent band
+  let yg=sCtx.createLinearGradient(0,420,0,470);
+  yg.addColorStop(0,'rgba(255,240,80,0)');
+  yg.addColorStop(.5,'rgba(255,240,80,0.30)');
+  yg.addColorStop(1,'rgba(255,240,80,0)');
+  sCtx.fillStyle=yg;sCtx.fillRect(0,420,512,50);
+  const sheenTex=new THREE.CanvasTexture(sheenCv);
+  sheenTex.wrapS=sheenTex.wrapT=THREE.RepeatWrapping;
+  sheenTex.repeat.set(2,2);sheenTex.needsUpdate=true;
+  const sheen=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
+    new THREE.MeshBasicMaterial({map:sheenTex,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));
+  sheen.rotation.x=-Math.PI/2;sheen.position.y=-.10;scene.add(sheen);
+  _neonWater.userData.sheen=sheen;
   // Neon puddles — coloured reflective pools scattered off-track
   const puddleColors=[0x00ffee,0xff00aa,0x4488ff,0xeeff00,0x00ffee,0xff2288];
   for(let i=0;i<_mobCount(22);i++){
@@ -48,7 +79,10 @@ function buildNeonGround(){
     const puddle=new THREE.Mesh(
       new THREE.PlaneGeometry(2+Math.random()*6,1+Math.random()*4),
       new THREE.MeshLambertMaterial({
-        color:puddleColors[i%puddleColors.length],transparent:true,opacity:.14+Math.random()*.10,
+        color:puddleColors[i%puddleColors.length],
+        emissive:puddleColors[i%puddleColors.length],
+        emissiveIntensity:.7,
+        transparent:true,opacity:.45+Math.random()*.15,
         blending:THREE.AdditiveBlending,depthWrite:false
 })
     );
@@ -461,15 +495,39 @@ function buildNeonEMPZones(){
 }
 
 
+// Procedurele scanline-texture: dunne horizontale lijnen op zwart. Tileable
+// in T-richting zodat UV-scroll continue naar boven beweegt (zie update).
+function _buildHoloScanlineTex(){
+  const c=document.createElement('canvas');c.width=64;c.height=128;
+  const g=c.getContext('2d');
+  g.fillStyle='#000000';g.fillRect(0,0,64,128);
+  // Bright scanlines every 4 pixels
+  g.fillStyle='#aaffee';
+  for(let y=0;y<128;y+=4){g.fillRect(0,y,64,1);}
+  // A few brighter "data ticks" at random positions
+  g.fillStyle='#ffffff';
+  for(let i=0;i<6;i++){g.fillRect(Math.floor(Math.random()*60),Math.floor(Math.random()*128),4,2);}
+  // Subtle vertical column gradient (gradient brightness left-right)
+  g.globalAlpha=.18;g.fillStyle='#000000';
+  for(let x=0;x<64;x++){g.globalAlpha=.18*(.5-Math.cos(x/32*Math.PI*2)*.5);g.fillRect(x,0,1,128);}
+  g.globalAlpha=1;
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(2,1);
+  t.needsUpdate=true;return t;
+}
+
 function buildNeonHoloWalls(){
   const defs=[{t:.42},{t:.70}];
   defs.forEach((def,wi)=>{
     const p=trackCurve.getPoint(def.t),tg=trackCurve.getTangent(def.t).normalize();
     const nr=new THREE.Vector3(-tg.z,0,tg.x);
     const angle=Math.atan2(tg.x,tg.z);
+    const scanTex=_buildHoloScanlineTex();
     const mat=new THREE.MeshLambertMaterial({
-      color:0x00ffee,emissive:0x00ffee,emissiveIntensity:1.0,transparent:true,opacity:.38,
-      side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false
+      color:0x00ffee,emissive:0x00ffee,emissiveIntensity:1.0,transparent:true,opacity:.55,
+      side:THREE.DoubleSide,blending:THREE.AdditiveBlending,depthWrite:false,
+      map:scanTex,emissiveMap:scanTex
 });
     const wall=new THREE.Mesh(new THREE.BoxGeometry(TW*.7,3.8,.15),mat);
     wall.position.copy(p);wall.position.y=1.9;wall.rotation.y=angle;scene.add(wall);
@@ -487,17 +545,28 @@ function buildNeonHoloWalls(){
 function updateNeonCityWorld(dt){
   if(!scene)return;
   const t=_nowSec;
-  // Building neon stripes pulse — slow organic breathing
+  // Building neon stripes pulse — slow organic breathing + occasional staccato
+  // failing-tube flicker (~0.3% chance/frame per item ⇒ ~1 dropout per 5s).
   _neonEmissives.forEach((item,i)=>{
     if(!item.mesh||!item.mesh.material)return;
     const pulse=item.baseInt*.6+item.baseInt*.7*Math.sin(t*1.6+item.phase);
-    item.mesh.material.emissiveIntensity=Math.max(0,pulse);
+    if(item.flickerEnd===undefined)item.flickerEnd=0;
+    if(t>item.flickerEnd&&Math.random()<.003){
+      item.flickerEnd=t+0.05+Math.random()*0.12;
+    }
+    item.mesh.material.emissiveIntensity=(t<item.flickerEnd)?0:Math.max(0,pulse);
   });
-  // Holo billboards: float + opacity flicker
+  // Holo billboards: float + opacity flicker + occasional glitch blackout
   _holoBillboards.forEach((bb,i)=>{
     bb.mesh.position.y=bb.baseY+Math.sin(t*.65+bb.phase)*.5;
-    bb.mesh.material.opacity=.65+Math.sin(t*1.0+bb.phase*.9)*.24;
-    if(bb.light)bb.light.intensity=.8+Math.sin(t*1.8+bb.phase)*.5;
+    let op=.65+Math.sin(t*1.0+bb.phase*.9)*.24;
+    if(bb.glitchEnd===undefined)bb.glitchEnd=0;
+    if(t>bb.glitchEnd&&Math.random()<.002){
+      bb.glitchEnd=t+0.04+Math.random()*0.08;
+    }
+    if(t<bb.glitchEnd)op=0.04;
+    bb.mesh.material.opacity=op;
+    if(bb.light)bb.light.intensity=(t<bb.glitchEnd)?0:(.8+Math.sin(t*1.8+bb.phase)*.5);
   });
   // Steam vents — particles rise and drift
   if(_neonSteamGeo&&_neonSteamPos&&_neonSteamVents.length>0){
@@ -535,12 +604,16 @@ function updateNeonCityWorld(dt){
     const l=_neonBuildingLights[Math.floor(Math.random()*_neonBuildingLights.length)];
     if(l){const orig=l.intensity;l.intensity=.2+Math.random()*.4;setTimeout(()=>{l.intensity=orig;},60+Math.random()*100);}
   }
-  // Holo walls oscillate left-right
+  // Holo walls: oscillate left-right + scanline UV scroll (scrollt omhoog
+  // doordat we offset.y omlaag schuiven) + opacity flicker.
   _neonHoloWalls.forEach((wall,i)=>{
     const offset=Math.sin(t*.5+i*3)*TW*.32;
     wall.mesh.position.x=wall.basePos.x+wall.normal.x*offset;
     wall.mesh.position.z=wall.basePos.z+wall.normal.z*offset;
-    wall.mesh.material.opacity=.28+Math.sin(t*3.5+i*2)*.18;
+    wall.mesh.material.opacity=.45+Math.sin(t*3.5+i*2)*.20;
+    if(wall.mesh.material.map){
+      wall.mesh.material.map.offset.y=(wall.mesh.material.map.offset.y-dt*0.6+1)%1;
+    }
   });
   // EMP zones pulse
   _neonEmpZones.forEach((emp,i)=>{
@@ -572,10 +645,14 @@ function updateNeonCityWorld(dt){
       showPopup('🔷 HOLO-WALL!','#00ffee',900);wall.cooldown=3;
     }
   });
-  // Water shimmer
+  // Water shimmer — sheen-banden schuiven horizontaal voor "dancing reflections".
   if(_neonWater){
-    _neonWater.material.roughness=.04+Math.sin(t*.38)*.025;
-    _neonWater.material.needsUpdate=true;
+    const sheen=_neonWater.userData.sheen;
+    if(sheen&&sheen.material&&sheen.material.map){
+      sheen.material.map.offset.x=(sheen.material.map.offset.x+dt*.05)%1;
+      sheen.material.map.offset.y=(sheen.material.map.offset.y+dt*.02)%1;
+      sheen.material.opacity=.45+Math.sin(t*.7)*.15;
+    }
   }
 }
 

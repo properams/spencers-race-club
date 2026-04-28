@@ -138,6 +138,48 @@ function makeAllCars(){
     rl.position.set(0,.28,bL*.5+.02);
     mesh.add(rl);
     _reverseLights.push(rl);
+    // Per-world livery underglow — additive disc plane onder elke auto met
+    // een wereld-thematische kleur. Geeft een herkenbare per-circuit feel
+    // zonder de individuele car-colors te overschrijven. Met bloom = subtle
+    // pulse-glow rondom alle racers.
+    if(!isPlayer){
+      const livery={
+        space:0x4488ff,deepsea:0x00ffaa,candy:0xff66cc,
+        neoncity:0xff00cc,volcano:0xff5500,arctic:0x88ccff,
+        themepark:0xff44aa,grandprix:0xffaa44
+      }[activeWorld]||0xffaa44;
+      const ugMat=new THREE.MeshBasicMaterial({
+        color:livery,transparent:true,opacity:.42,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
+      });
+      const ug=new THREE.Mesh(new THREE.CircleGeometry(2.0,16),ugMat);
+      ug.rotation.x=-Math.PI/2;ug.position.y=-.32;
+      mesh.add(ug);
+    }
+    // Player headlight beam-cones (alleen zichtbaar bij night) — ConeGeometry
+    // met fade-gradient material, additive. Auto-parent aan car mesh zodat
+    // ze meedraaien. Visibility wordt in updateCarLights getoggeld.
+    if(isPlayer){
+      const beamMat=new THREE.MeshBasicMaterial({
+        color:0xfff5d0,transparent:true,opacity:0,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
+      });
+      // Cone met top dichtbij headlight, base 12 units voor de auto
+      const coneGeo=new THREE.ConeGeometry(2.4,12,12,1,true);
+      [-0.62,0.62].forEach(s=>{
+        const beam=new THREE.Mesh(coneGeo,beamMat.clone());
+        // Cone default points up (+Y) → roteer 90° rond X zodat top naar achter
+        // wijst en base naar voren (in car-local -Z = forward)
+        beam.rotation.x=-Math.PI/2;
+        // Position: tip (top) bij headlight, base 12 units voor de auto
+        // Voor ConeGeometry zit base op y=-h/2, top op y=+h/2 (na rotation:
+        // base at z=+h/2, top at z=-h/2). We willen top bij headlight (z=-1.9 in
+        // car-local, verboven nose) en base verder naar voor (z=-7.9).
+        beam.position.set(s,0.45,-7.9);
+        beam.userData.isHeadBeam=true;
+        mesh.add(beam);
+      });
+    }
     // Small initial lateral offset so AI don't all drive on the exact center line
     // (kept near zero at start to prevent collision; grows naturally during race)
     const latOff=isPlayer?0:(col===0?-1.2:1.2)+(Math.random()-.5)*.8;

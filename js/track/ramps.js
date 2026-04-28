@@ -270,6 +270,9 @@ function checkBoostPads(){
       totalScore+=10;
       Audio.playBoost();showPopup('BOOST! ⚡','#00ffff',800);
       sparkSystem.emit(car.mesh.position.x,.4,car.mesh.position.z,0,.06,0,18,.3,.9,1,.5);
+      // Punchy camera shake op activation — 0.35 voor "kick" gevoel zonder
+      // disorienterend te zijn (decay rate in updateCamera maakt het kort).
+      camShake=Math.max(camShake,0.35);
       if(Math.random()<.55)Audio.playCrowdCheer();
     }
     // Boost AI cars too
