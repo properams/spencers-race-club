@@ -60,7 +60,9 @@ let _drsEl=null,_sectorPanelEl=null,_speedTrapEl=null;
 function cacheHUDRefs(){
   // On mobile: hide performance-heavy HUD elements
   if(window._isMobile){
-    ['hudLeader','sectorPanel','hudCarStatus',
+    // hudLeader stays a CSS-only hide so the L-hotkey can still un-hide it
+    // via the .lShow override (handy on tablets with external keyboards).
+    ['sectorPanel','hudCarStatus',
      'hudRainBtn','hudNightBtn','hudMuteBtn','ghostLabel','drsIndicator',
      'closeBattleEl','speedTrapEl','mirrorFrame','mirrorLabel','speedLines'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
@@ -262,6 +264,9 @@ function updateHUD(dt){
   // Hotkey L (handled in ui/input.js) flips window._leaderExpanded to show all.
   if(_elLeader&&dt){
     const expanded=!!window._leaderExpanded;
+    // On mobile, .lShow overrides the CSS display:none so the L-hotkey
+    // still works for users with an external keyboard.
+    _elLeader.classList.toggle('lShow',expanded);
     // Include the expanded flag in the cache-key so a toggle forces a rebuild.
     const key=pos.map(c=>c.def.id).join(',')+(expanded?':E':':C');
     if(key!==_leaderPendingKey){

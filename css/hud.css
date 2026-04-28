@@ -130,7 +130,9 @@
     z-index:15!important;
   }
 #nitroLbl{display:none!important}
-#hudLeader,#hudCarStatus,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines{display:none!important}
+#hudLeader:not(.lShow),#hudCarStatus,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines{display:none!important}
+/* When expanded via L-hotkey, the leaderboard returns even on small viewports. */
+#hudLeader.lShow{display:block!important;top:calc(60px + env(safe-area-inset-top,0px))!important;right:calc(12px + env(safe-area-inset-right,0px))!important;font-size:10px!important;max-height:60vh!important;overflow:hidden!important}
 #tcSteer{display:none!important}
 #tcLeft,#tcRight{display:flex!important;width:84px!important;height:72px!important;font-size:40px!important;border-radius:36px!important}
 #tcLeft{bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;left:calc(20px + env(safe-area-inset-left,0px))!important}
