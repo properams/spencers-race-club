@@ -131,12 +131,17 @@ function buildGround(){
   const groundMat=new THREE.MeshLambertMaterial({color:groundCol});
   if(!isSpace&&!isDS)groundMat.map=_grassGroundTex();
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2200,2200,1,1),groundMat);
-  g.rotation.x=-Math.PI/2;g.position.y=-.12;g.receiveShadow=true;scene.add(g);
+  g.rotation.x=-Math.PI/2;g.position.y=-.12;g.receiveShadow=true;
+  // Tag so asset-bridge can swap in PBR maps post-load (Fase E).
+  g.userData._isProcGround=true;
+  scene.add(g);
   if(!isDS){ // Deep sea has its own seafloor built by buildDeepSeaEnvironment
     const infMat=new THREE.MeshLambertMaterial({color:infieldCol});
     if(!isSpace)infMat.map=_grassGroundTex();
     const inf=new THREE.Mesh(new THREE.PlaneGeometry(440,350,1,1),infMat);
-    inf.rotation.x=-Math.PI/2;inf.position.set(-10,-.11,-40);scene.add(inf);
+    inf.rotation.x=-Math.PI/2;inf.position.set(-10,-.11,-40);
+    inf.userData._isProcGround=true;
+    scene.add(inf);
   }
 }
 

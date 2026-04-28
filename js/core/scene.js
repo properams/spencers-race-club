@@ -27,7 +27,36 @@
 
 'use strict';
 
-function disposeScene(){if(!scene)return;scene.traverse(obj=>{if(obj.isMesh||obj.isPoints||obj.isLine||obj.isSprite){if(obj.geometry)obj.geometry.dispose();if(obj.material){if(Array.isArray(obj.material))obj.material.forEach(m=>{if(m.map)m.map.dispose();m.dispose();});else{if(obj.material.map)obj.material.map.dispose();obj.material.dispose();}}}});while(scene.children.length>0)scene.remove(scene.children[0]);if(scene.background&&scene.background.isTexture){scene.background.dispose();scene.background=null;}if(scene.environment&&scene.environment.isTexture){scene.environment.dispose();scene.environment=null;}if(renderer)renderer.renderLists.dispose();}
+// Asset-cached textures (HDRI envMap, PBR ground maps, GLTF instance maps)
+// carry userData._sharedAsset=true; disposeScene must skip these or the
+// next build pulls a disposed handle from window.Assets cache. Geometries
+// inside an InstancedMesh that came from a GLTF prototype are similarly
+// shared — we skip them via mesh.userData._sharedAsset too.
+function _isSharedAsset(obj){
+  return !!(obj && obj.userData && obj.userData._sharedAsset);
+}
+function disposeScene(){
+  if(!scene)return;
+  scene.traverse(obj=>{
+    if(obj.isMesh||obj.isPoints||obj.isLine||obj.isSprite){
+      if(obj.geometry && !_isSharedAsset(obj)) obj.geometry.dispose();
+      if(obj.material){
+        if(Array.isArray(obj.material))obj.material.forEach(m=>{if(m.map&&!_isSharedAsset({userData:{_sharedAsset:m.userData&&m.userData._sharedAsset}}))m.map.dispose();m.dispose();});
+        else{if(obj.material.map && !(obj.material.userData&&obj.material.userData._sharedAsset))obj.material.map.dispose(); if(!_isSharedAsset(obj))obj.material.dispose();}
+      }
+    }
+  });
+  while(scene.children.length>0)scene.remove(scene.children[0]);
+  if(scene.background&&scene.background.isTexture && !(scene.background.userData&&scene.background.userData._sharedAsset)){
+    scene.background.dispose();
+  }
+  scene.background=null;
+  if(scene.environment&&scene.environment.isTexture && !(scene.environment.userData&&scene.environment.userData._sharedAsset)){
+    scene.environment.dispose();
+  }
+  scene.environment=null;
+  if(renderer)renderer.renderLists.dispose();
+}
 
 // Dispose the previous scene.background texture to prevent GPU memory leaks on
 // world/night/rain toggles — every call-site here assigns the result to scene.background.
@@ -443,5 +472,9 @@ function buildScene(){
   _mmBounds={mnX:Math.min(..._xs),mxX:Math.max(..._xs),mnZ:Math.min(..._zs),mxZ:Math.max(..._zs)};
   // Default to dark mode (isDark=false at entry, toggleNight sets it dark)
   isDark=false;toggleNight();
+  // Apply any cached HDRI / PBR ground textures from window.Assets. No-op
+  // if the manifest has no slots filled or preload hasn't completed yet —
+  // boot.js + select.js re-call maybeUpgradeWorld when preload resolves.
+  if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(activeWorld);
   window.dbg&&dbg.snapshot('scene','buildScene done',{world:activeWorld,objects:scene.children.length,camPos:camera.position});
 }
