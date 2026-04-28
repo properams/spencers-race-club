@@ -42,7 +42,7 @@
 
 /* ── BODY 3-col grid ─────────────────────────────────────────────────── */
 .selBody{
-  display:grid;grid-template-columns:230px 1fr 260px;gap:0;
+  display:grid;grid-template-columns:240px 1fr 280px;gap:0;
   flex:1;overflow:hidden;width:100%;
   height:calc(100vh - 54px);height:calc(100dvh - 54px);
   position:relative;z-index:1
@@ -109,8 +109,8 @@
 
 /* ── CENTER: hero preview ───────────────────────────────────────────── */
 .selCenter{
-  display:flex;flex-direction:column;padding:14px 18px 12px;
-  gap:6px;position:relative;overflow:hidden
+  display:flex;flex-direction:column;padding:14px 22px 14px;
+  gap:8px;position:relative;overflow:hidden;min-height:0
 }
 .selCenter::before{
   content:'';position:absolute;inset:0;
@@ -130,8 +130,8 @@
   letter-spacing:1.5px;padding-left:2px;margin-bottom:4px
 }
 .prevCanvasWrap{
-  position:relative;width:100%;max-width:560px;
-  aspect-ratio:400/220;margin:0 auto;
+  position:relative;width:100%;max-width:760px;
+  flex:1 1 auto;min-height:280px;margin:0 auto;
   border:1px solid #2a1f4a;border-radius:12px;
   background:radial-gradient(ellipse at 50% 60%,#2a1a4a,#0d0820);
   overflow:hidden
@@ -159,23 +159,35 @@
 .colorDot:hover{transform:scale(1.12)}
 .colorDot.cSel{border-color:#fff;transform:scale(1.10)}
 
-/* ── STATS BAR (4-card grid) ────────────────────────────────────────── */
+/* ── STATS BAR (vertical stack of 4 horizontal rows) ────────────────── */
 .statBars{
-  display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px
+  display:flex;flex-direction:column;gap:6px;margin-top:4px;flex-shrink:0
 }
 .statCard{
-  background:#1a0f3a;border-radius:6px;padding:7px 9px;
-  display:flex;flex-direction:column;gap:4px
+  background:#1a0f3a;border-radius:6px;padding:7px 12px;
+  display:grid;grid-template-columns:64px 1fr 56px;align-items:center;gap:12px
 }
 .statCardLbl{
-  font-family:'Orbitron',sans-serif;font-size:8px;color:#6e5a9a;
-  letter-spacing:3px
+  font-family:'Orbitron',sans-serif;font-size:9px;color:#6e5a9a;
+  letter-spacing:2.5px
 }
 .statCardBar{
-  height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden
+  position:relative;height:6px;background:rgba(255,255,255,.05);
+  border-radius:3px;overflow:hidden
 }
-.statCardFill{height:100%;border-radius:2px;transition:width .3s ease}
-.statCardVal{font-family:'Rajdhani',sans-serif;font-size:11px;font-weight:500;letter-spacing:.5px}
+.statCardGhost{
+  position:absolute;top:0;left:0;height:100%;
+  background:rgba(255,255,255,.08);border-radius:3px
+}
+.statCardFill{
+  position:relative;height:100%;border-radius:3px;
+  transition:width .22s ease-out
+}
+.statCardVal{
+  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:500;
+  letter-spacing:.5px;text-align:right;white-space:nowrap
+}
+.statCardValMax{font-size:9px;color:#4a3a6a;letter-spacing:.5px}
 
 /* ── RIGHT: settings + rival + start ────────────────────────────────── */
 .selRight{
@@ -259,11 +271,15 @@
   .prevBrandLine{font-size:9px;letter-spacing:3px}
   .prevModelLine{font-size:18px}
   .prevSpecsLine{font-size:10px}
-  .prevCanvasWrap{min-height:200px;max-height:240px}
-  .statBars{grid-template-columns:repeat(4,1fr);gap:4px}
-  .statCard{padding:5px 7px}
+  .prevCanvasWrap{flex:0 0 auto;min-height:200px;max-height:240px;aspect-ratio:16/9}
+  .statBars{display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-direction:initial}
+  .statCard{
+    grid-template-columns:1fr;display:flex;flex-direction:column;
+    gap:4px;padding:5px 8px;align-items:stretch
+  }
   .statCardLbl{font-size:7px;letter-spacing:2px}
-  .statCardVal{font-size:10px}
+  .statCardVal{font-size:10px;text-align:left}
+  .statCardValMax{font-size:8px}
   .selRight{
     order:3;padding:10px 14px 90px;gap:10px;
     border-left:none;border-top:1px solid #2a1f4a
