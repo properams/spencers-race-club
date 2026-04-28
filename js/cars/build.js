@@ -11,6 +11,47 @@
 
 'use strict';
 
+// Cached alpha-mask for soft headlight cones. Painted once, reused across
+// all car beam meshes. Radial gradient: bright on cone-axis (UV center
+// horizontally), fading to zero at radial edges. Vertical (along beam
+// axis) is brightest at the tip and falls off toward the base so a tight
+// throw blends into ambient.
+let _softHeadlightTex = null;
+function _softHeadlightMaskTex(){
+  if (_softHeadlightTex) return _softHeadlightTex;
+  const W=128, H=128;
+  const c=document.createElement('canvas'); c.width=W; c.height=H;
+  const g=c.getContext('2d');
+  // Cone is wrapped: U sweeps around the radial axis (0 → 1 around the
+  // cone), V runs along the cone height. We want soft edges horizontally
+  // (U near 0/1) and a falloff toward the base (V→1).
+  const img = g.createImageData(W,H);
+  const d = img.data;
+  for (let y=0;y<H;y++){
+    const v = y/(H-1);
+    // Vertical falloff: bright at tip (v=0), fades to ~25% at base (v=1).
+    const vF = Math.pow(1-v, 1.4) * 0.85 + 0.15;
+    for (let x=0;x<W;x++){
+      const u = x/(W-1);
+      // Radial seam masking is irrelevant on a wrap; instead use the
+      // cone's native shape: every column is "in beam". Add a soft
+      // azimuthal hot-spot at the center so it feels like a real beam.
+      const azim = Math.cos((u-0.5)*Math.PI*2);   // -1 .. 1
+      const hot  = Math.max(0, 0.5 + 0.5*azim);   // 0 .. 1
+      const a = Math.max(0, Math.min(1, hot * vF));
+      const i = (y*W+x)*4;
+      d[i]=255; d[i+1]=247; d[i+2]=210; d[i+3]=Math.round(a*255);
+    }
+  }
+  g.putImageData(img,0,0);
+  _softHeadlightTex = new THREE.CanvasTexture(c);
+  _softHeadlightTex.needsUpdate = true;
+  // Texture is procedurally generated once and held forever — flag shared
+  // so disposeScene won't kill it when the next race rebuilds cars.
+  _softHeadlightTex.userData = { _sharedAsset:true };
+  return _softHeadlightTex;
+}
+
 function makeCar(def){
   const lod = (typeof carLOD === 'function') ? carLOD() : 'high';
   const brandBuilder = window.BRAND_BUILDERS && window.BRAND_BUILDERS[def.brand];
@@ -98,26 +139,28 @@ function makeAllCars(){
       mesh.add(ug);
     }
     // Player headlight beam-cones (alleen zichtbaar bij night) — ConeGeometry
-    // met fade-gradient material, additive. Auto-parent aan car mesh zodat
-    // ze meedraaien. Visibility wordt in updateCarLights getoggeld.
+    // met radial alpha-mask zodat de buitenrand zacht uitfade't (geen polygon-
+    // edges meer zichtbaar). Additive blend, depth-write off. Animated opacity
+    // in updateCarLights() voegt subtiele flicker toe.
     if(isPlayer){
       const beamMat=new THREE.MeshBasicMaterial({
-        color:0xfff5d0,transparent:true,opacity:0,
+        color:0xfff5d0,
+        map:_softHeadlightMaskTex(),
+        transparent:true,opacity:0,
         blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
       });
-      // Cone met top dichtbij headlight, base 12 units voor de auto
-      const coneGeo=new THREE.ConeGeometry(2.4,12,12,1,true);
+      // 32 radial segments + 8 height segments zodat de UV-gradient soepel
+      // resampelt — geen visible faceting meer onder additive.
+      const coneGeo=new THREE.ConeGeometry(2.6,12,32,8,true);
       [-0.62,0.62].forEach(s=>{
         const beam=new THREE.Mesh(coneGeo,beamMat.clone());
         // Cone default points up (+Y) → roteer 90° rond X zodat top naar achter
         // wijst en base naar voren (in car-local -Z = forward)
         beam.rotation.x=-Math.PI/2;
         // Position: tip (top) bij headlight, base 12 units voor de auto
-        // Voor ConeGeometry zit base op y=-h/2, top op y=+h/2 (na rotation:
-        // base at z=+h/2, top at z=-h/2). We willen top bij headlight (z=-1.9 in
-        // car-local, verboven nose) en base verder naar voor (z=-7.9).
         beam.position.set(s,0.45,-7.9);
         beam.userData.isHeadBeam=true;
+        beam.userData.flickerPhase=Math.random()*Math.PI*2;
         mesh.add(beam);
       });
     }
