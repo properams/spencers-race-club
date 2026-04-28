@@ -99,13 +99,19 @@ function _drawSpeedLines(){
 
 function updateSpeedLines(){
   if(!_speedLinesCvs)return;
-  if(!carObjs[playerIdx]||gameState!=='RACE'){_speedLinesCvs.style.opacity='0';_speedLinesFadeT=0;return;}
+  const car=carObjs[playerIdx];
+  if(!car||gameState!=='RACE'){_speedLinesCvs.style.opacity='0';_speedLinesFadeT=0;return;}
   const dt2=1/60;
-  if(nitroActive){
+  // Subtle speed-lines verschijnen al bij high-speed (ratio>0.82) — niet alleen
+  // tijdens nitro. Sterker effect bij nitro (0.52 vs 0.22 base).
+  const ratio=Math.abs(car.speed)/Math.max(.01,car.def.topSpd);
+  const highSpeed=ratio>0.82;
+  if(nitroActive||highSpeed){
     _speedLinesFadeT=0.3;
     _speedLinesRedrawT-=dt2;
-    if(_speedLinesRedrawT<=0){_drawSpeedLines();_speedLinesRedrawT=0.5;}
-    _speedLinesCvs.style.opacity='0.52';
+    if(_speedLinesRedrawT<=0){_drawSpeedLines();_speedLinesRedrawT=nitroActive?0.45:0.85;}
+    const baseOp=nitroActive?0.55:Math.max(0,(ratio-0.82)/0.18)*0.24;
+    _speedLinesCvs.style.opacity=baseOp.toFixed(3);
   }else{
     _speedLinesFadeT=Math.max(0,_speedLinesFadeT-dt2);
     _speedLinesCvs.style.opacity=(_speedLinesFadeT/0.3*0.52).toFixed(3);
@@ -168,7 +174,86 @@ function updateNitroVisual(){
 
 
 function updateBoostTrail(){
-  // Removed — boost is indicated by nitro/speed bar instead
+  // Continuous speed-trail achter de player op hoge snelheid + extra
+  // dramatische streamers tijdens nitro/boost. Met bloom geven de hot
+  // colors flink wat glow.
+  const car=carObjs[playerIdx];if(!car)return;
+  const top=Math.max(.01,car.def.topSpd);
+  const ratio=Math.abs(car.speed)/top;
+  // Per-world tire dust trail — kleine puffs bij de achterwielen, kleur en
+  // emit-rate afhankelijk van ground-type. Actief bij ratio>0.30 zodat het
+  // voelbaar is zodra je beweegt, en harder bij snelheid + drift.
+  if(ratio>0.30){
+    const tireCfg={
+      arctic:   {r:0.92,g:0.96,b:1.00,size:1.0,life:0.55,rate:0.55}, // wit sneeuwspat
+      deepsea:  {r:0.65,g:0.85,b:0.78,size:0.8,life:0.50,rate:0.40}, // groen silt
+      volcano:  {r:1.00,g:0.55,b:0.20,size:0.9,life:0.45,rate:0.55}, // hete dust
+      candy:    {r:1.00,g:0.70,b:0.90,size:0.85,life:0.50,rate:0.45}, // roze sprinkle
+      themepark:{r:0.45,g:0.40,b:0.50,size:0.7,life:0.40,rate:0.35}, // grijs stof
+      grandprix:{r:0.60,g:0.55,b:0.45,size:0.7,life:0.40,rate:0.40}, // bruin gras-stof
+      neoncity: {r:0.70,g:0.85,b:1.00,size:0.6,life:0.35,rate:0.30}, // water-spray
+      space:    {r:0.60,g:0.75,b:1.00,size:0.6,life:0.40,rate:0.30}  // ion
+    }[activeWorld];
+    if(tireCfg){
+      const emitRate=tireCfg.rate*(0.4+ratio*0.7)*(driftTimer>0.2?1.6:1.0);
+      if(Math.random()<emitRate){
+        _plFwd.set(0,0,-1).applyQuaternion(car.mesh.quaternion);
+        _plRt.set(1,0,0).applyQuaternion(car.mesh.quaternion);
+        [-0.78,0.78].forEach(s=>{
+          const tx=car.mesh.position.x+_plFwd.x*0.9+_plRt.x*s;
+          const ty=car.mesh.position.y+0.10+Math.random()*0.08;
+          const tz=car.mesh.position.z+_plFwd.z*0.9+_plRt.z*s;
+          // Velocity: subtle outward + slightly up
+          const vx=_plRt.x*s*0.04+(Math.random()-.5)*0.03;
+          const vy=0.018+Math.random()*0.022;
+          const vz=_plRt.z*s*0.04+(Math.random()-.5)*0.03;
+          // emit signature: (x,y,z,vx,vy,vz,n,r,g,b,life). n=1 per wheel per call;
+      // size wordt door particle-system zelf afgeleid uit life-remaining.
+      exhaustSystem.emit(tx,ty,tz,vx,vy,vz,1,tireCfg.r,tireCfg.g,tireCfg.b,tireCfg.life);
+        });
+      }
+    }
+  }
+  if(ratio<0.55&&!nitroActive&&!car.boostTimer)return;
+  // Wereld-thematische trail-kleur
+  const tint={
+    space:[.5,.7,1.0],deepsea:[.3,1.0,.85],candy:[1.0,.45,.85],
+    neoncity:[.2,1.0,.95],volcano:[1.0,.45,.15],arctic:[.65,.85,1.0],
+    themepark:[1.0,.50,.85],grandprix:[1.0,.55,.20]
+  }[activeWorld]||[1.0,.65,.30];
+  const fwd=_camV1.set(0,0,-1).applyQuaternion(car.mesh.quaternion);
+  const rt=_camV2.set(1,0,0).applyQuaternion(car.mesh.quaternion);
+  // Base trail rate scales met ratio² (rate explodeert pas bij echte top-speed)
+  const baseRate=ratio*ratio*0.55+(nitroActive?.45:0)+(car.boostTimer?.6:0);
+  if(Math.random()<baseRate){
+    [-0.55,0.55].forEach(s=>{
+      const tx=car.mesh.position.x+fwd.x*1.7+rt.x*s;
+      const ty=car.mesh.position.y+0.18+Math.random()*0.15;
+      const tz=car.mesh.position.z+fwd.z*1.7+rt.z*s;
+      // Kleine velocity NAAR ACHTEREN (tegengesteld aan car-fwd) voor trail-feel
+      const vx=fwd.x*0.06+(Math.random()-.5)*0.04;
+      const vy=0.012+Math.random()*0.018;
+      const vz=fwd.z*0.06+(Math.random()-.5)*0.04;
+      const life=0.55+Math.random()*0.35;
+      // Hot colors tijdens nitro, anders subtler tint
+      const hot=nitroActive||car.boostTimer;
+      const r=hot?Math.min(1,tint[0]+0.25):tint[0]*0.85;
+      const g=hot?Math.min(1,tint[1]+0.10):tint[1]*0.85;
+      const b=hot?Math.min(1,tint[2]+0.05):tint[2]*0.85;
+      // emit signature: (x,y,z,vx,vy,vz,n,r,g,b,life). 1 particle per wheel per frame.
+      sparkSystem.emit(tx,ty,tz,vx,vy,vz,1,r,g,b,life);
+    });
+  }
+  // Center streamer alleen tijdens echte boost (nitro / boost-pad)
+  if((nitroActive||car.boostTimer)&&Math.random()<0.65){
+    sparkSystem.emit(
+      car.mesh.position.x+fwd.x*1.95,
+      car.mesh.position.y+0.32,
+      car.mesh.position.z+fwd.z*1.95,
+      fwd.x*0.10+(Math.random()-.5)*0.02,0.025+Math.random()*0.020,fwd.z*0.10+(Math.random()-.5)*0.02,
+      1,1.0,0.88,0.45,0.65
+    );
+  }
 }
 
 
@@ -364,8 +449,23 @@ function addSkidMark(car,opacityOverride){
   _plRt.set(1,0,0).applyQuaternion(car.mesh.quaternion);
   const fwd=_plFwd,rt=_plRt;
   const baseOp=opacityOverride||0.72;
+  // Per-world skid mark color — past bij ground-type. Sneeuw/zand pakken
+  // donker-bruin-grijze sporen, lava grond geeft hete oranje-rode sporen
+  // (subtiel emissive via additive blending), wet asphalt blijft zwart.
+  const skidCfg={
+    arctic:{color:0x33424f,blend:false},     // donker grijs op sneeuw
+    deepsea:{color:0x4a3a20,blend:false},    // donker zand
+    volcano:{color:0xff4400,blend:true},     // hete sporen op lava-rock
+    candy:{color:0x4a1a30,blend:false},      // donker roze op fondant
+    space:{color:0x2244aa,blend:true},       // ion-trail blauw (additive)
+    neoncity:{color:0x0a0a0a,blend:false},   // zwart natte asfalt (default)
+    themepark:{color:0x1a1020,blend:false},  // donker paars-zwart
+    grandprix:{color:0x0a0a0a,blend:false}   // klassiek zwart
+  }[activeWorld]||{color:0x0a0a0a,blend:false};
   [-0.65,.65].forEach(s=>{
-    const sm=new THREE.Mesh(new THREE.PlaneGeometry(.38,1.7),new THREE.MeshBasicMaterial({color:0x0a0a0a,transparent:true,opacity:baseOp,depthWrite:false}));
+    const matOpts={color:skidCfg.color,transparent:true,opacity:baseOp,depthWrite:false};
+    if(skidCfg.blend){matOpts.blending=THREE.AdditiveBlending;}
+    const sm=new THREE.Mesh(new THREE.PlaneGeometry(.38,1.7),new THREE.MeshBasicMaterial(matOpts));
     sm.rotation.x=-Math.PI/2;sm.position.copy(car.mesh.position).addScaledVector(rt,s).addScaledVector(fwd,1.5);sm.position.y=.013;
     scene.add(sm);skidMarks.push({mesh:sm,born:_nowSec,maxOp:baseOp});while(skidMarks.length>80){const old=skidMarks.shift();old.mesh.geometry.dispose();old.mesh.material.dispose();scene.remove(old.mesh);}
   });

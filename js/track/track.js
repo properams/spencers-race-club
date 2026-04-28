@@ -2,7 +2,54 @@
 
 'use strict';
 
+// Procedurele asfalt-noise texture — werkt multiplicatief over material.color
+// zodat per-world tint (color) behouden blijft. Tileable 256×256 canvas met
+// grain + lichte streep-wear in racing direction. Niet gecached: disposeScene()
+// callt map.dispose() bij elke world-switch, dus we bouwen 'm telkens opnieuw
+// (256² noise gen kost <1ms).
+function _buildTrackSurfaceTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  // Base mid-grey (multiplied with vertex/material color → keeps world tint)
+  g.fillStyle='#9a9a9a';g.fillRect(0,0,S,S);
+  // Per-pixel noise via ImageData — values 130..200 (subtle variance)
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=130+(Math.random()*70)|0;
+    d[i]=n;d[i+1]=n;d[i+2]=n;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Two faint vertical wear-streaks (driving lines) — slightly lighter
+  g.globalAlpha=.18;
+  for(const xc of [S*.30, S*.70]){
+    const grd=g.createLinearGradient(xc-18,0,xc+18,0);
+    grd.addColorStop(0,'rgba(255,255,255,0)');
+    grd.addColorStop(.5,'rgba(255,255,255,1)');
+    grd.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=grd;g.fillRect(xc-18,0,36,S);
+  }
+  g.globalAlpha=1;
+  // A few darker oil/wear blobs scattered
+  for(let i=0;i<22;i++){
+    const x=Math.random()*S,y=Math.random()*S,r=4+Math.random()*9;
+    const grd=g.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0,'rgba(40,40,40,0.55)');
+    grd.addColorStop(1,'rgba(40,40,40,0)');
+    g.fillStyle=grd;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.anisotropy=4;t.needsUpdate=true;
+  return t;
+}
+
 function buildTrack(){
+  // Reset per-frame visual state arrays — sommige builders worden niet voor
+  // alle worlds aangeroepen, dus zonder deze reset houden de arrays stale
+  // (disposed) material-refs vast bij world-switch. Updates op disposed
+  // mats zijn no-op maar verspillen CPU per frame.
+  _pulseBarriers.length=0;
+  if(typeof _crowdMaterials!=='undefined')_crowdMaterials.length=0;
   const pts3=TRACK_WP.map(([x,z])=>new THREE.Vector3(x,0,z));
   trackCurve=new THREE.CatmullRomCurve3(pts3,true,'catmullrom',.5);
   curvePts=trackCurve.getPoints(600);
@@ -10,7 +57,7 @@ function buildTrack(){
   // Main track mat: polygonOffset pushes asphalt *away* from camera in depth so curbs,
   // edge lines and startline overlays win the depth test on low-precision depth buffers (iPad).
   const _baseTrackColor=activeWorld==='space'?0x141420:activeWorld==='deepsea'?0x1a2830:activeWorld==='candy'?0xee3388:activeWorld==='neoncity'?0x0a0a14:activeWorld==='volcano'?0x2a0808:activeWorld==='arctic'?0x667788:activeWorld==='themepark'?0x221030:0x262626;
-  const _trackMat=new THREE.MeshLambertMaterial({color:_baseTrackColor});
+  const _trackMat=new THREE.MeshLambertMaterial({color:_baseTrackColor,map:_buildTrackSurfaceTex()});
   _trackMat.polygonOffset=true;_trackMat.polygonOffsetFactor=1;_trackMat.polygonOffsetUnits=1;
   _trackMat.userData.baseColor=_baseTrackColor; // stashed for rain/day-night tinting
   const rm=ribbon(N,t=>{
@@ -56,9 +103,16 @@ function buildCurbs(N){
     geo.setIndex(idx);
     const cMat=new THREE.MeshLambertMaterial({vertexColors:true});
     cMat.polygonOffset=true;cMat.polygonOffsetFactor=-1;cMat.polygonOffsetUnits=-1;
-    if(activeWorld==='space')cMat.emissive=new THREE.Color(0x220055);
-    else if(activeWorld==='deepsea')cMat.emissive=new THREE.Color(0x003333);
-    else if(activeWorld==='candy'){cMat.emissive=new THREE.Color(0x441122);cMat.emissiveIntensity=.35;}
+    // Per-world emissive accents — vertexColors zijn al gezet per world, maar
+    // emissive geeft daarbovenop een gloed die door bloom oppikt wordt.
+    if(activeWorld==='space'){cMat.emissive=new THREE.Color(0x4422aa);cMat.emissiveIntensity=.7;}
+    else if(activeWorld==='deepsea'){cMat.emissive=new THREE.Color(0x0a4a4a);cMat.emissiveIntensity=.85;}
+    else if(activeWorld==='candy'){cMat.emissive=new THREE.Color(0x661133);cMat.emissiveIntensity=.55;}
+    else if(activeWorld==='neoncity'){cMat.emissive=new THREE.Color(0x00ffaa);cMat.emissiveIntensity=.75;}
+    else if(activeWorld==='volcano'){cMat.emissive=new THREE.Color(0xff3300);cMat.emissiveIntensity=.55;}
+    else if(activeWorld==='arctic'){cMat.emissive=new THREE.Color(0x4488dd);cMat.emissiveIntensity=.45;}
+    else if(activeWorld==='themepark'){cMat.emissive=new THREE.Color(0xff44aa);cMat.emissiveIntensity=.6;}
+    else {cMat.emissive=new THREE.Color(0x661111);cMat.emissiveIntensity=.30;} // GP — subtle red curb glow
     scene.add(new THREE.Mesh(geo,cMat));
   });
 }
@@ -79,6 +133,7 @@ function buildStartLine(){
 
 function buildBarriers(){
   const isSpace=activeWorld==='space',isDS=activeWorld==='deepsea';
+  _pulseBarriers.length=0; // reset bij wereld-switch — oude mats zijn al disposed
   [-1,1].forEach(side=>{
     const N=200,pos=[],nrm=[],idx=[];
     for(let i=0;i<=N;i++){
@@ -98,10 +153,12 @@ function buildBarriers(){
     let mat;
     if(isSpace){
       // Energy shield: translucent electric-blue glow
-      mat=new THREE.MeshLambertMaterial({color:0x2255dd,emissive:0x0a1a88,transparent:true,opacity:.38,side:THREE.DoubleSide});
+      mat=new THREE.MeshLambertMaterial({color:0x2255dd,emissive:0x0a1a88,emissiveIntensity:1.0,transparent:true,opacity:.38,side:THREE.DoubleSide});
+      _pulseBarriers.push({mat,phase:side*1.7,kind:'shield',baseOp:.38,baseInt:1.0});
     } else if(isDS){
       // Coral wall: warm teal-green with soft bio-glow
-      mat=new THREE.MeshLambertMaterial({color:0x1e7766,emissive:0x083322,side:THREE.DoubleSide});
+      mat=new THREE.MeshLambertMaterial({color:0x1e7766,emissive:0x083322,emissiveIntensity:1.0,side:THREE.DoubleSide});
+      _pulseBarriers.push({mat,phase:side*0.9,kind:'coral',baseOp:1,baseInt:1.0});
     } else {
       mat=new THREE.MeshLambertMaterial({color:0xbbbbbb,side:THREE.DoubleSide});
     }
@@ -121,11 +178,38 @@ function buildBarriers(){
       const geo=new THREE.BufferGeometry();
       geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
       geo.setIndex(idx);
-      scene.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:0x66aaff,emissive:0x4488ee,side:THREE.DoubleSide})));
+      const beamMat=new THREE.MeshLambertMaterial({color:0x66aaff,emissive:0x4488ee,emissiveIntensity:1.4,side:THREE.DoubleSide});
+      _pulseBarriers.push({mat:beamMat,phase:side*2.4,kind:'beam',baseOp:1,baseInt:1.4});
+      scene.add(new THREE.Mesh(geo,beamMat));
     });
   }
 }
 
+// Per-frame barrier pulse — gevuld door buildBarriers, geleegd door
+// disposeScene. updateBarrierPulse() wordt vanuit updateFlags aangeroepen.
+let _pulseBarriers=[];
+function updateBarrierPulse(){
+  if(!_pulseBarriers.length)return;
+  const t=_nowSec;
+  _pulseBarriers.forEach(b=>{
+    if(b.kind==='shield'){
+      // Energy-shield: opacity flicker + emissive pulse
+      const v=Math.sin(t*1.4+b.phase);
+      b.mat.opacity=b.baseOp+v*0.08;
+      b.mat.emissiveIntensity=b.baseInt+v*0.4;
+    } else if(b.kind==='coral'){
+      // Coral: subtle slow bio-glow breathing
+      const v=Math.sin(t*0.55+b.phase);
+      b.mat.emissiveIntensity=b.baseInt*0.7+v*0.5;
+    } else if(b.kind==='beam'){
+      // Energy-beam: faster pulse — "humming" power line
+      const v=Math.sin(t*2.2+b.phase);
+      b.mat.emissiveIntensity=b.baseInt*0.6+v*0.55;
+    }
+  });
+}
+
+let _gantryLabel=null;
 function buildGantry(){
   const p=trackCurve.getPoint(0),tg=trackCurve.getTangent(0).normalize();
   const nr=new THREE.Vector3(-tg.z,0,tg.x),hw=TW+3;
@@ -145,19 +229,82 @@ function buildGantry(){
   const accent=new THREE.Mesh(new THREE.BoxGeometry(hw*2-.6,.07,.16),
     new THREE.MeshLambertMaterial({color:accentCol,emissive:accentEmit,emissiveIntensity:1.4}));
   accent.position.copy(p);accent.position.y=9.68;scene.add(accent);
-  // Gantry label — world-specific, subtle sprite
+  // Gantry label — world-specific LED ticker. Sprite met canvas texture die
+  // periodiek herrendered wordt met afwisselend race-info en thematische
+  // teksten (zie updateGantryTicker).
   const glCvs=document.createElement('canvas');glCvs.width=512;glCvs.height=56;
-  const glCtx=glCvs.getContext('2d');glCtx.clearRect(0,0,512,56);
-  glCtx.font='bold 28px Orbitron,Arial';glCtx.textAlign='center';
-  glCtx.fillStyle=activeWorld==='space'?'#8866ff':activeWorld==='deepsea'?'#00ddcc':'#cc66ff';
-  const gLabel=activeWorld==='space'?'COSMIC CIRCUIT':activeWorld==='deepsea'?'DEEP SEA CIRCUIT':activeWorld==='neoncity'?'NEON CITY GP':"SPENCER'S RACE CLUB";
-  glCtx.fillText(gLabel,256,38);
+  const glCtx=glCvs.getContext('2d');
   const glTex=new THREE.CanvasTexture(glCvs);
-  const glLbl=new THREE.Sprite(new THREE.SpriteMaterial({map:glTex,transparent:true,opacity:.75}));
+  const glLbl=new THREE.Sprite(new THREE.SpriteMaterial({map:glTex,transparent:true,opacity:.85}));
   glLbl.position.copy(p);glLbl.position.y=11.8;glLbl.scale.set(24,2.8,1);
   glLbl.name='f1-gantry-label-sprite';scene.add(glLbl);
-  // Also keep hidden .f1-gantry-label for rebuildWorld text update (look it up by name on rebuild)
   glLbl.userData.isGantryLabel=true;
+  glLbl.userData.canvas=glCvs;
+  glLbl.userData.ctx=glCtx;
+  glLbl.userData.tex=glTex;
+  glLbl.userData.frameIdx=0;
+  glLbl.userData.nextSwitch=0;
+  _gantryLabel=glLbl;
+  _drawGantryFrame(0);
+}
+
+// Helper: render één tekst-frame in de gantry canvas. idx wijst frame-type aan.
+function _drawGantryFrame(idx){
+  if(!_gantryLabel)return;
+  const ctx=_gantryLabel.userData.ctx;
+  const W=512,H=56;
+  ctx.clearRect(0,0,W,H);
+  // Donkere achtergrond met scanline-pattern (LED-board look)
+  ctx.fillStyle='#0a0010';ctx.fillRect(0,0,W,H);
+  for(let y=0;y<H;y+=2){
+    ctx.fillStyle='rgba(255,255,255,0.04)';ctx.fillRect(0,y,W,1);
+  }
+  const worldCol={
+    space:'#8866ff',deepsea:'#00ddcc',candy:'#ff66cc',
+    neoncity:'#00ffee',volcano:'#ff6622',arctic:'#88ccff',
+    themepark:'#ff44aa',grandprix:'#ffaa66'
+  }[activeWorld]||'#cc66ff';
+  ctx.font='bold 28px Orbitron,Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle=worldCol;
+  // Subtle text glow via offset shadow
+  ctx.shadowColor=worldCol;ctx.shadowBlur=8;
+  ctx.fillText(_gantryFrameText(idx),W/2,H/2+1);
+  ctx.shadowBlur=0;
+  _gantryLabel.userData.tex.needsUpdate=true;
+}
+function _gantryFrameText(idx){
+  const worldName={
+    space:'COSMIC CIRCUIT',deepsea:'DEEP SEA CIRCUIT',candy:'CANDY KINGDOM',
+    neoncity:'NEON CITY GP',volcano:'VOLCANO RUSH',arctic:'ARCTIC PEAKS',
+    themepark:'THEME PARK BLAST',grandprix:"SPENCER'S RACE CLUB"
+  }[activeWorld]||"SPENCER'S RACE CLUB";
+  const car=carObjs[playerIdx];
+  const lap=car?Math.max(1,Math.min(3,car.lap+1)):1;
+  // Find best lap of any car
+  let fastest=Infinity;
+  for(let i=0;i<carObjs.length;i++){
+    const bl=carObjs[i].bestLap;
+    if(bl&&bl<fastest)fastest=bl;
+  }
+  const fastestStr=isFinite(fastest)?(Math.floor(fastest/60)+':'+(fastest%60).toFixed(2).padStart(5,'0')):'--:--.--';
+  switch(idx%5){
+    case 0:return worldName;
+    case 1:return gameState==='RACE'?`LAP ${lap}/3`:'GET READY';
+    case 2:return gameState==='RACE'?`FASTEST ${fastestStr}`:'WELCOME';
+    case 3:return ['DRIVE SAFE','GO GO GO','PURE SPEED','FULL THROTTLE'][Math.floor(_nowSec/4)%4];
+    case 4:return worldName;
+  }
+  return worldName;
+}
+// Aanroepen vanuit updateFlags() — wisselt frame elke ~3s en herrendert.
+function updateGantryTicker(){
+  // parent==null betekent dat de gantry-sprite is gedispoosed door
+  // disposeScene (world-switch zonder gantry, bv. neoncity, candy).
+  if(!_gantryLabel||!_gantryLabel.parent)return;
+  if(_nowSec<_gantryLabel.userData.nextSwitch)return;
+  _gantryLabel.userData.frameIdx=(_gantryLabel.userData.frameIdx+1)%5;
+  _gantryLabel.userData.nextSwitch=_nowSec+2.8+Math.random()*0.8;
+  _drawGantryFrame(_gantryLabel.userData.frameIdx);
 }
 
 function ribbon(N,segFn,mat){

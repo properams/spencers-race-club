@@ -152,7 +152,7 @@ function buildDeepSeaEnvironment(){
 
 function buildSeaFloor(){
   // Main sandy seafloor
-  const sandMat=new THREE.MeshLambertMaterial({color:0xc8a96a});
+  const sandMat=new THREE.MeshLambertMaterial({color:0xc8a96a,map:_sandGroundTex()});
   const floor=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400,1,1),sandMat);
   floor.rotation.x=-Math.PI/2;floor.position.y=-.18;floor.receiveShadow=true;scene.add(floor);
   // Darker infield — ocean trench / crevice
@@ -401,7 +401,7 @@ function buildBioluminescentTrackEdges(){
       pos[i*3+2]=p.z+nr.z*side*(TW*.5+.8);
     }
     geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-    const mat=new THREE.LineBasicMaterial({color:0x00ffcc,transparent:true,opacity:.7,linewidth:2});
+    const mat=new THREE.LineBasicMaterial({color:0x00ffcc,transparent:true,opacity:.95,linewidth:2,blending:THREE.AdditiveBlending,depthWrite:false});
     const line=new THREE.Line(geo,mat);
     scene.add(line);
     _dsaBioEdges.push({line,mat,phase:side>0?0:Math.PI});
@@ -514,7 +514,7 @@ function buildDeepSeaBubbles(){
     pos[i*3+2]=cz+(Math.random()-.5)*500;
   }
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
-  const mat=new THREE.PointsMaterial({color:0xaaddff,size:.35,transparent:true,opacity:.55,sizeAttenuation:true});
+  const mat=new THREE.PointsMaterial({color:0xaaddff,size:.4,transparent:true,opacity:.7,sizeAttenuation:true,blending:THREE.AdditiveBlending,depthWrite:false});
   const pts=new THREE.Points(geo,mat);scene.add(pts);
   _dsaBubbleGeo=geo;_dsaBubblePos=pos;
 }
@@ -587,10 +587,10 @@ function updateDeepSeaWorld(dt){
     // Tentacle writhe: scale bell slightly
     j.children[0].scale.y=.9+Math.sin(j._bobPhase*2.2)*.15;
   });
-  // Bioluminescent edges pulse
+  // Bioluminescent edges pulse — wider amplitude, drives bloom on bright peaks
   _dsaBioEdges.forEach(e=>{
     e.phase+=dt*.9;
-    e.mat.opacity=.45+Math.sin(e.phase)*.25;
+    e.mat.opacity=.65+Math.sin(e.phase)*.35;
   });
   // Light rays pulsing
   _dsaLightRays.forEach(r=>{

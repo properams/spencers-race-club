@@ -8,7 +8,7 @@ let _arcticIcePatches=[],_arcticAurora=[],_arcticBlizzardGeo=null;
 
 function buildArcticEnvironment(){
   var g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
-    new THREE.MeshLambertMaterial({color:0xccddee}));
+    new THREE.MeshLambertMaterial({color:0xccddee,map:_iceGroundTex()}));
   g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;scene.add(g);
   // Sky + fog set in core/scene.js so updateSky's lerp uses world-matched colors.
   sunLight.color.setHex(0xaaccff);sunLight.intensity=.8;
@@ -136,6 +136,10 @@ function updateArcticWorld(dt){
   if(typeof updateArcticIceShelf==='function'){
     var pl=carObjs[playerIdx];
     updateArcticIceShelf(dt, pl?pl.lap:1);
+  }
+  // Subtle aurora-band drift in sky background
+  if(scene&&scene.background&&scene.background.isTexture){
+    scene.background.offset.x=(scene.background.offset.x+dt*.003)%1;
   }
   _arcticAurora.forEach(function(a,i){
     a.phase+=dt*a.speed;

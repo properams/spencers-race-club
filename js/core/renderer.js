@@ -44,6 +44,8 @@ function initRenderer(){
   renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.1;
   // outputEncoding (r134) / outputColorSpace (r150+) via compat-laag.
   ThreeCompat.applyRendererColorSpace(renderer);
+  // Bloom post-processing — auto-disabled on mobile (see js/effects/postfx.js).
+  if(typeof initPostFX==='function')initPostFX();
   window.dbg&&dbg.log('renderer','init done — '+innerWidth+'×'+innerHeight+' dpr '+renderer.getPixelRatio().toFixed(2)+' shadow='+renderer.shadowMap.enabled+' THREE '+(THREE.REVISION||'?'));
   // Single resize pipeline: one rAF-debounced handler bound to resize, orientationchange and
   // visualViewport.resize. Re-evaluates device flags so portrait↔landscape (and split-view)
@@ -59,6 +61,7 @@ function initRenderer(){
       renderer.setSize(innerWidth,innerHeight);
       camera.aspect=innerWidth/innerHeight;
       camera.updateProjectionMatrix();
+      if(typeof resizePostFX==='function')resizePostFX();
     });
   }
   window.addEventListener('resize',_handleResize);

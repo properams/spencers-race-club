@@ -2,16 +2,140 @@
 
 'use strict';
 
+// ── Ground texture generators ──────────────────────────────────────────────
+// Tileable 256×256 grayscale canvases. Multiplicatief over material.color.
+// Niet gecached: disposeScene() ruimt 'm op bij elke world-switch.
+function _grassGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#9aaa9a';g.fillRect(0,0,S,S);
+  // Pixel noise (yellow-green speckle)
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=120+(Math.random()*80)|0;
+    d[i]=n+8;d[i+1]=n+15;d[i+2]=n;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Darker patches (dirt/wear)
+  for(let i=0;i<14;i++){
+    const x=Math.random()*S,y=Math.random()*S,r=8+Math.random()*16;
+    const grd=g.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0,'rgba(60,70,50,0.45)');grd.addColorStop(1,'rgba(60,70,50,0)');
+    g.fillStyle=grd;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(8,8);t.anisotropy=4;t.needsUpdate=true;return t;
+}
+function _iceGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#ddeef5';g.fillRect(0,0,S,S);
+  // Subtle blue-ish noise
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=200+(Math.random()*55)|0;
+    d[i]=n-5;d[i+1]=n;d[i+2]=n+8;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Crack lines (jagged white-blue)
+  g.strokeStyle='rgba(180,210,230,0.55)';g.lineWidth=1;
+  for(let i=0;i<10;i++){
+    g.beginPath();
+    let x=Math.random()*S,y=Math.random()*S;g.moveTo(x,y);
+    for(let j=0;j<5;j++){
+      x+=(Math.random()-.5)*40;y+=(Math.random()-.5)*40;g.lineTo(x,y);
+    }
+    g.stroke();
+  }
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(6,6);t.anisotropy=4;t.needsUpdate=true;return t;
+}
+function _rockGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#3a2a25';g.fillRect(0,0,S,S);
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=70+(Math.random()*70)|0;
+    d[i]=n+10;d[i+1]=n;d[i+2]=n-8;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Glowing lava fissures (orange specks scattered)
+  for(let i=0;i<45;i++){
+    const x=Math.random()*S,y=Math.random()*S,r=2+Math.random()*5;
+    const grd=g.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0,'rgba(255,140,40,0.8)');grd.addColorStop(1,'rgba(255,80,20,0)');
+    g.fillStyle=grd;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  // Crack lines (dark)
+  g.strokeStyle='rgba(20,10,5,0.7)';g.lineWidth=2;
+  for(let i=0;i<6;i++){
+    g.beginPath();
+    let x=Math.random()*S,y=Math.random()*S;g.moveTo(x,y);
+    for(let j=0;j<6;j++){
+      x+=(Math.random()-.5)*50;y+=(Math.random()-.5)*50;g.lineTo(x,y);
+    }
+    g.stroke();
+  }
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(7,7);t.anisotropy=4;t.needsUpdate=true;return t;
+}
+function _sandGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#c0b08a';g.fillRect(0,0,S,S);
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=170+(Math.random()*55)|0;
+    d[i]=n+5;d[i+1]=n;d[i+2]=n-25;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Horizontal sand ripples (sine bands)
+  for(let y=0;y<S;y+=6){
+    const wob=Math.sin(y*.15)*4;
+    g.fillStyle='rgba(160,140,110,0.30)';
+    g.fillRect(0,y+wob,S,2);
+  }
+  // Scattered shells/pebbles (small darker dots)
+  for(let i=0;i<30;i++){
+    g.fillStyle='rgba(80,60,40,0.45)';
+    g.fillRect(Math.random()*S,Math.random()*S,2,2);
+  }
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(6,6);t.anisotropy=4;t.needsUpdate=true;return t;
+}
+function _pavementGroundTex(){
+  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
+  const g=c.getContext('2d');
+  g.fillStyle='#888888';g.fillRect(0,0,S,S);
+  const id=g.getImageData(0,0,S,S),d=id.data;
+  for(let i=0;i<d.length;i+=4){
+    const n=110+(Math.random()*80)|0;
+    d[i]=d[i+1]=d[i+2]=n;d[i+3]=255;
+  }
+  g.putImageData(id,0,0);
+  // Tile-grout cross pattern
+  g.strokeStyle='rgba(40,40,40,0.45)';g.lineWidth=1;
+  for(let x=0;x<S;x+=64){g.beginPath();g.moveTo(x,0);g.lineTo(x,S);g.stroke();}
+  for(let y=0;y<S;y+=64){g.beginPath();g.moveTo(0,y);g.lineTo(S,y);g.stroke();}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(10,10);t.anisotropy=4;t.needsUpdate=true;return t;
+}
+
 function buildGround(){
   const isSpace=activeWorld==='space',isDS=activeWorld==='deepsea';
   const groundCol=isSpace?0x070710:isDS?0x081820:0x3c7040;
   const infieldCol=isSpace?0x0a0a18:isDS?0x0b2030:0x4a8848;
-  const g=new THREE.Mesh(new THREE.PlaneGeometry(2200,2200,1,1),
-    new THREE.MeshLambertMaterial({color:groundCol}));
+  // Grand Prix gets grass texture; space/deepsea use buildGround as a backdrop
+  // and don't need detail there (their environments overdraw with own ground).
+  const groundMat=new THREE.MeshLambertMaterial({color:groundCol});
+  if(!isSpace&&!isDS)groundMat.map=_grassGroundTex();
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(2200,2200,1,1),groundMat);
   g.rotation.x=-Math.PI/2;g.position.y=-.12;g.receiveShadow=true;scene.add(g);
   if(!isDS){ // Deep sea has its own seafloor built by buildDeepSeaEnvironment
-    const inf=new THREE.Mesh(new THREE.PlaneGeometry(440,350,1,1),
-      new THREE.MeshLambertMaterial({color:infieldCol}));
+    const infMat=new THREE.MeshLambertMaterial({color:infieldCol});
+    if(!isSpace)infMat.map=_grassGroundTex();
+    const inf=new THREE.Mesh(new THREE.PlaneGeometry(440,350,1,1),infMat);
     inf.rotation.x=-Math.PI/2;inf.position.set(-10,-.11,-40);scene.add(inf);
   }
 }
@@ -227,6 +351,10 @@ function updateFlags(){
     f.mesh.rotation.x=wave;
     f.mesh.rotation.z=wave2;
   });
+  // Crowd dual-frame animation hangs op dezelfde update-tick.
+  if(typeof updateCrowd==='function')updateCrowd();
+  if(typeof updateGantryTicker==='function')updateGantryTicker();
+  if(typeof updateBarrierPulse==='function')updateBarrierPulse();
 }
 
 
@@ -248,6 +376,202 @@ function buildSunBillboard(){
   _sunBillboard.scale.set(240,240,1);
   _sunBillboard.visible=!isDark&&!isRain;
   scene.add(_sunBillboard);
+  // Layered sun glow for "lens flare" feel — extra additive sprites stacked
+  // around the sun. With bloom on this gives a pleasing radial bloom plus a
+  // visible cross-rays burst. Sprites are children so they share visibility.
+  // Hot core: tiny intense white/yellow center
+  const coreCv=document.createElement('canvas');coreCv.width=64;coreCv.height=64;
+  const cCtx=coreCv.getContext('2d');
+  const cGr=cCtx.createRadialGradient(32,32,0,32,32,32);
+  cGr.addColorStop(0,'rgba(255,255,255,1)');
+  cGr.addColorStop(.5,'rgba(255,250,200,0.7)');
+  cGr.addColorStop(1,'rgba(255,240,180,0)');
+  cCtx.fillStyle=cGr;cCtx.fillRect(0,0,64,64);
+  const coreSprite=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:new THREE.CanvasTexture(coreCv),blending:THREE.AdditiveBlending,
+    transparent:true,opacity:.95,depthWrite:false
+  }));
+  coreSprite.scale.set(80,80,1);
+  _sunBillboard.add(coreSprite);
+  // Cross rays: 4-point star burst (vertical + horizontal + diagonals)
+  const raysCv=document.createElement('canvas');raysCv.width=256;raysCv.height=256;
+  const rCtx=raysCv.getContext('2d');
+  rCtx.fillStyle='rgba(0,0,0,0)';rCtx.fillRect(0,0,256,256);
+  // Each ray: gradient line from center outward
+  const drawRay=(angle,len,width,alpha)=>{
+    rCtx.save();rCtx.translate(128,128);rCtx.rotate(angle);
+    const g=rCtx.createLinearGradient(0,0,len,0);
+    g.addColorStop(0,`rgba(255,240,200,${alpha})`);
+    g.addColorStop(.5,`rgba(255,220,150,${alpha*.5})`);
+    g.addColorStop(1,'rgba(255,200,120,0)');
+    rCtx.fillStyle=g;rCtx.fillRect(0,-width/2,len,width);
+    rCtx.fillRect(-len,-width/2,len,width);
+    rCtx.restore();
+  };
+  drawRay(0,120,3,.85);              // horizontal
+  drawRay(Math.PI/2,120,3,.85);      // vertical
+  drawRay(Math.PI/4,90,2,.55);       // diagonal /
+  drawRay(-Math.PI/4,90,2,.55);      // diagonal \
+  const raysSprite=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:new THREE.CanvasTexture(raysCv),blending:THREE.AdditiveBlending,
+    transparent:true,opacity:.7,depthWrite:false
+  }));
+  raysSprite.scale.set(360,360,1);
+  _sunBillboard.add(raysSprite);
+  // Outer halo: very soft wide glow (extends bloom further)
+  const haloCv=document.createElement('canvas');haloCv.width=128;haloCv.height=128;
+  const hCtx=haloCv.getContext('2d');
+  const hGr=hCtx.createRadialGradient(64,64,16,64,64,64);
+  hGr.addColorStop(0,'rgba(255,200,140,0.4)');
+  hGr.addColorStop(.6,'rgba(255,180,100,0.12)');
+  hGr.addColorStop(1,'rgba(255,160,80,0)');
+  hCtx.fillStyle=hGr;hCtx.fillRect(0,0,128,128);
+  const haloSprite=new THREE.Sprite(new THREE.SpriteMaterial({
+    map:new THREE.CanvasTexture(haloCv),blending:THREE.AdditiveBlending,
+    transparent:true,opacity:.6,depthWrite:false
+  }));
+  haloSprite.scale.set(520,520,1);
+  _sunBillboard.add(haloSprite);
+  buildLensFlareGhosts();
+  buildGodRays();
+}
+
+// Fake volumetric god-rays — additive vertikale "beam" sprites geplaatst
+// rond de zon. Ze suggereren stof in de lucht waar zonlicht doorheen valt.
+// Sprites blijven auto-billboard (altijd gericht naar camera) → in elke
+// camerahoek levendig effect zonder shader-werk.
+let _godRays=[];
+function _godRayTex(){
+  const W=64,H=512,c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  g.clearRect(0,0,W,H);
+  // Vertikale gradient: bright top, fade naar transparent onder
+  const grd=g.createLinearGradient(0,0,0,H);
+  grd.addColorStop(0,'rgba(255,240,180,0.85)');
+  grd.addColorStop(.25,'rgba(255,220,140,0.35)');
+  grd.addColorStop(.7,'rgba(255,200,120,0.10)');
+  grd.addColorStop(1,'rgba(255,180,90,0)');
+  g.fillStyle=grd;g.fillRect(0,0,W,H);
+  // Soft edges horizontaal (vignette → beam-shape)
+  for(let x=0;x<W;x++){
+    const fade=Math.sin(x/(W-1)*Math.PI); // 0..1..0
+    g.globalCompositeOperation='destination-in';
+    g.fillStyle=`rgba(255,255,255,${fade.toFixed(3)})`;
+    g.fillRect(x,0,1,H);
+  }
+  g.globalCompositeOperation='source-over';
+  const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
+}
+function buildGodRays(){
+  // Cleanup oude rays (sprite materials niet door disposeScene opgeruimd)
+  _godRays.forEach(r=>{
+    if(r.material){if(r.material.map)r.material.map.dispose();r.material.dispose();}
+  });
+  _godRays.length=0;
+  if(!_sunBillboard)return;
+  const tex=_godRayTex();
+  // 4 beams op licht verschillende offsets rond de zon-positie
+  const offsets=[[0,0],[40,12],[-30,-8],[10,-22]];
+  offsets.forEach(([dx,dz])=>{
+    const mat=new THREE.SpriteMaterial({
+      map:tex.clone(),blending:THREE.AdditiveBlending,
+      transparent:true,opacity:.55,depthWrite:false
+    });
+    mat.map.needsUpdate=true;
+    const beam=new THREE.Sprite(mat);
+    beam.position.copy(_sunBillboard.position);
+    beam.position.x+=dx;beam.position.z+=dz;
+    beam.position.y-=120; // beam center hangt onder zon → lijkt naar beneden te schijnen
+    beam.scale.set(80,360,1);
+    beam.renderOrder=998; // vóór ghosts (999) maar na rest
+    scene.add(beam);
+    _godRays.push(beam);
+  });
+}
+
+// Lens flare ghosts — kleinere additive sprites op de lijn zon→scherm-center.
+// Worden geplaatst in scene.world-space en elke frame ge-update via
+// updateLensFlare(). Visibility hangt af of de zon zichtbaar is in NDC.
+let _lensGhosts=[];
+function _ghostTex(rgb){
+  const c=document.createElement('canvas');c.width=64;c.height=64;
+  const g=c.getContext('2d');
+  const grd=g.createRadialGradient(32,32,0,32,32,32);
+  grd.addColorStop(0,`rgba(${rgb},1)`);
+  grd.addColorStop(.4,`rgba(${rgb},0.45)`);
+  grd.addColorStop(1,`rgba(${rgb},0)`);
+  g.fillStyle=grd;g.fillRect(0,0,64,64);
+  const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
+}
+function buildLensFlareGhosts(){
+  // Dispose stale ghost materials/textures from a previous world build —
+  // disposeScene() skips Sprites so we manually clean up.
+  _lensGhosts.forEach(g=>{
+    if(g.material){
+      if(g.material.map)g.material.map.dispose();
+      g.material.dispose();
+    }
+  });
+  _lensGhosts.length=0;
+  // [factor, rgb, scale, baseOpacity]
+  // factor: 0=at sun, 1=at center, 2=opposite of sun
+  const defs=[
+    [0.30,'255,210,150',  6,0.55],
+    [0.55,'180,220,255',  4,0.50],
+    [0.85,'255,180,200',  3,0.45],
+    [1.15,'200,180,255',  5,0.55],
+    [1.45,'255,240,180',  3,0.40],
+    [1.85,'255,200,160',  7,0.50]
+  ];
+  defs.forEach(d=>{
+    const [factor,rgb,scale,baseOp]=d;
+    const sp=new THREE.Sprite(new THREE.SpriteMaterial({
+      map:_ghostTex(rgb),
+      blending:THREE.AdditiveBlending,
+      transparent:true,
+      depthWrite:false,
+      depthTest:false,
+      opacity:0
+    }));
+    sp.scale.set(scale,scale,1);
+    sp.visible=false;
+    sp.userData.factor=factor;
+    sp.userData.baseOpacity=baseOp;
+    sp.renderOrder=999; // draw last
+    scene.add(sp);
+    _lensGhosts.push(sp);
+  });
+}
+const _lfNDC=new THREE.Vector3();
+const _lfFwd=new THREE.Vector3(),_lfUp=new THREE.Vector3(),_lfRight=new THREE.Vector3();
+function updateLensFlare(){
+  if(!_sunBillboard||!camera||!_lensGhosts.length)return;
+  if(!_sunBillboard.visible){
+    _lensGhosts.forEach(g=>{g.visible=false;});return;
+  }
+  _lfNDC.copy(_sunBillboard.position).project(camera);
+  // Achter camera or far off-screen → hide
+  if(_lfNDC.z>1||Math.abs(_lfNDC.x)>1.4||Math.abs(_lfNDC.y)>1.4){
+    _lensGhosts.forEach(g=>{g.visible=false;});return;
+  }
+  camera.getWorldDirection(_lfFwd);
+  _lfRight.set(1,0,0).applyQuaternion(camera.quaternion);
+  _lfUp.set(0,1,0).applyQuaternion(camera.quaternion);
+  const dist=80;
+  const fH=2*dist*Math.tan(camera.fov*Math.PI/360);
+  const fW=fH*camera.aspect;
+  const dEdge=Math.max(Math.abs(_lfNDC.x),Math.abs(_lfNDC.y));
+  const fadeBase=Math.max(0,1-dEdge*0.65);
+  _lensGhosts.forEach(g=>{
+    const f=g.userData.factor;
+    const px=_lfNDC.x*(1-f), py=_lfNDC.y*(1-f);
+    g.position.copy(camera.position)
+      .addScaledVector(_lfFwd,dist)
+      .addScaledVector(_lfRight,px*fW*0.5)
+      .addScaledVector(_lfUp,py*fH*0.5);
+    g.visible=true;
+    g.material.opacity=fadeBase*g.userData.baseOpacity*_sunBillboard.material.opacity;
+  });
 }
 
 
@@ -342,6 +666,16 @@ function updateSky(dt){
   if(stars&&stars.visible&&stars.material){
     const twinkle=0.82+Math.sin(_nowSec*1.7)*0.10+Math.sin(_nowSec*3.1)*0.05;
     stars.material.opacity=twinkle;
+  }
+  updateLensFlare();
+  // God-rays volgen sun visibility + opacity
+  if(_godRays.length&&_sunBillboard){
+    const sunOp=_sunBillboard.visible?_sunBillboard.material.opacity:0;
+    _godRays.forEach((r,i)=>{
+      r.visible=_sunBillboard.visible&&sunOp>.05;
+      const pulse=.45+Math.sin(_nowSec*.4+i*.7)*.15;
+      r.material.opacity=sunOp*pulse;
+    });
   }
 }
 

@@ -450,7 +450,8 @@ function buildSpaceDust(){
   _spaceDustGeo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
   _spaceDustGeo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
   _spaceDustParticles=new THREE.Points(_spaceDustGeo,new THREE.PointsMaterial({
-    vertexColors:true,size:.38,sizeAttenuation:false,transparent:true,opacity:.52
+    vertexColors:true,size:.42,sizeAttenuation:false,transparent:true,opacity:.7,
+    blending:THREE.AdditiveBlending,depthWrite:false
   }));
   scene.add(_spaceDustParticles);
 }
@@ -634,6 +635,10 @@ function buildSpaceTractorBeam(){
 }
 
 function updateSpaceWorld(dt){
+  // ── Slow starfield parallax — sky drifts horizontally, ~1 cycle / 20min ──
+  if(scene&&scene.background&&scene.background.isTexture){
+    scene.background.offset.x=(scene.background.offset.x+dt*.0008)%1;
+  }
   // ── Rotate asteroids + void debris ──────────────────────────────
   _spaceAsteroids.forEach(a=>{
     if(!a._rspd)return;
