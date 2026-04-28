@@ -33,6 +33,7 @@ const Audio = {
   playFanfare()       { return window.playFanfare && window.playFanfare(); },
   playRecovery()      { return window.playRecoverySound && window.playRecoverySound(); },
   playCollect()       { return window.playCollectSound && window.playCollectSound(); },
+  playEngineRev(type) { return window.playEngineRev && window.playEngineRev(type); },
 
   // ── Music ────────────────────────────────────────
   startTitleMusic()   { return window.startTitleMusic && window.startTitleMusic(); },
