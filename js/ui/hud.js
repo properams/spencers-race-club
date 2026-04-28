@@ -45,7 +45,10 @@ window.fmtTime=fmtTime;
 let _elSlip,_elWarn,_mapCvs,_mapCtx,_elGear,_elLeader;
 let _elWrongWay=null;
 let _elScore=null,_elLapDelta=null;
-let _elTire=null;
+// _elTire (oude separate tire-dot text) is opgegaan in _elTireT (4 csTire dots)
+// die nu zowel temp als damage encoden. _elCarStatus is de panel-wrapper voor
+// fade-in/out wanneer wear/temp uit het optimale venster komen.
+let _elCarStatus=null;
 // _elSector was dead code (nergens gevuld of gelezen) — verwijderd.
 let _elGapAhead=null,_elGapBehind=null;
 let _elRpm=null;
@@ -56,7 +59,7 @@ let _drsEl=null,_sectorPanelEl=null,_speedTrapEl=null;
 function cacheHUDRefs(){
   // On mobile: hide performance-heavy HUD elements
   if(window._isMobile){
-    ['hudLeader','sectorPanel','hudGap','hudTire','hudTireTemp',
+    ['hudLeader','sectorPanel','hudGap','hudCarStatus',
      'hudRainBtn','hudNightBtn','hudMuteBtn','ghostLabel','drsIndicator',
      'closeBattleEl','speedTrapEl','mirrorFrame','mirrorLabel','speedLines'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
@@ -78,7 +81,7 @@ function cacheHUDRefs(){
   _elWrongWay=document.getElementById('wrongWayOverlay');
   _elScore=document.getElementById('hdScore');
   _elLapDelta=document.getElementById('hdLapDelta');
-  _elTire=document.getElementById('hdTire');
+  _elCarStatus=document.getElementById('hudCarStatus');
   _elRpm=document.getElementById('rpmFill');
   _elGapAhead=document.getElementById('gapAhead');
   _elGapBehind=document.getElementById('gapBehind');
@@ -160,33 +163,41 @@ function updateHUD(dt){
   }
   // Score is shown only on the finish screen — no longer in race HUD.
   if(_elScore)_elScore.textContent=totalScore.toLocaleString();
-  // Tire wear indicator — 4 dots, only update when value changes
-  if(_elTire){
-    const w=car.tireWear||0;const filled=4-Math.round(w*4);
+  // Car status: 4 tyre dots, dual-encoded (inner=temp, ring=damage).
+  // Panel auto-fades in when wear>=30% or any tyre is outside the optimal
+  // window. Stays hidden during a clean drive so it doesn't add visual noise.
+  if(_elCarStatus&&_elTireT){
+    const w=car.tireWear||0;
     const hits=car.hitCount||0;
-    const tireKey=(filled<<4)|Math.min(hits,7);
+    const dmg=Math.max(w,Math.min(1,hits/9));
+    // Damage ring: green (clean) → amber (worn) → red (critical)
+    const ringCol = dmg<.35 ? 'var(--hud-success)'
+                  : dmg<.7  ? 'var(--hud-accent)'
+                              : 'var(--hud-warning)';
+    // Cold/optimal/hot fill per wheel
+    const tireFill=t=>{
+      if(t<0.28)return'var(--hud-primary)';   // cold
+      if(t<0.65)return'var(--hud-success)';   // optimal
+      if(t<0.85)return'var(--hud-accent)';    // hot
+      return'var(--hud-warning)';              // overheated
+    };
+    const tempBad = _tireTemp.fl<0.28||_tireTemp.fr<0.28||_tireTemp.rl<0.28||_tireTemp.rr<0.28
+                  ||_tireTemp.fl>0.65||_tireTemp.fr>0.65||_tireTemp.rl>0.65||_tireTemp.rr>0.65;
+    const showStatus = dmg>=0.30 || tempBad;
+    _elCarStatus.classList.toggle('csOn',showStatus);
+    const tireKey=(Math.round(w*16)<<8)
+                 |(Math.min(hits,15)<<4)
+                 |(Math.round(_tireTemp.fl*4)<<3)
+                 |(Math.round(_tireTemp.fr*4)<<2)
+                 |(Math.round(_tireTemp.rl*4)<<1)
+                 | Math.round(_tireTemp.rr*4);
     if(tireKey!==_lastTireKey){
       _lastTireKey=tireKey;
-      const col=w<.35?'#00ee66':w<.65?'#ffbb00':'#ff3333';
-      _elTire.style.color=col;
-      const dmgStr=hits>=6?' DMG!':hits>=3?' DMG':'';
-      _elTire.textContent='●'.repeat(filled)+'○'.repeat(4-filled)+dmgStr;
+      if(_elTireT.fl){_elTireT.fl.style.background=tireFill(_tireTemp.fl);_elTireT.fl.style.boxShadow='0 0 0 2px '+ringCol;}
+      if(_elTireT.fr){_elTireT.fr.style.background=tireFill(_tireTemp.fr);_elTireT.fr.style.boxShadow='0 0 0 2px '+ringCol;}
+      if(_elTireT.rl){_elTireT.rl.style.background=tireFill(_tireTemp.rl);_elTireT.rl.style.boxShadow='0 0 0 2px '+ringCol;}
+      if(_elTireT.rr){_elTireT.rr.style.background=tireFill(_tireTemp.rr);_elTireT.rr.style.boxShadow='0 0 0 2px '+ringCol;}
     }
-  }
-  // Tire temperature display
-  const tempColor=t=>{
-    if(t<0.18)return'#4488ff'; // cold — blue
-    if(t<0.28)return'#88aaff'; // warming — light blue
-    if(t<0.55)return'#00ee66'; // optimal — green
-    if(t<0.72)return'#ffdd00'; // hot — yellow
-    if(t<0.85)return'#ff8800'; // very hot — orange
-    return'#ff2200';            // overheated — red
-  };
-  if(_elTireT){
-    if(_elTireT.fl)_elTireT.fl.style.background=tempColor(_tireTemp.fl);
-    if(_elTireT.fr)_elTireT.fr.style.background=tempColor(_tireTemp.fr);
-    if(_elTireT.rl)_elTireT.rl.style.background=tempColor(_tireTemp.rl);
-    if(_elTireT.rr)_elTireT.rr.style.background=tempColor(_tireTemp.rr);
   }
   // Sector panel update
   const secColors=['#cc44ff','#00ee66','#ffbb00','#666'];// purple=best,green=pb,yellow=slow,grey=no data

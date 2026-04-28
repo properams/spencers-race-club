@@ -54,7 +54,15 @@
 #speedOverlay{position:fixed;inset:0;pointer-events:none;z-index:9;
   background:radial-gradient(ellipse 72% 58% at 50% 52%,transparent 0%,transparent 38%,rgba(0,0,0,.18) 62%,rgba(0,0,0,.58) 82%,rgba(0,0,0,.80) 100%);
   opacity:0;transition:opacity .07s}
-#hudTire{position:absolute;top:268px;left:18px;background:rgba(0,0,0,.72);border:1px solid #2a2a2a;border-radius:10px;padding:5px 14px;min-width:90px}
+/* Car status panel: 4 tyre dots in a 2x2 grid, dual-encoded.
+   - Inner color = temperature (cold blue → optimal green → hot red)
+   - Outer ring (box-shadow) = damage (green → amber → red)
+   Hidden by default; fades in when wear>=30% or any tyre out of optimal range. */
+#hudCarStatus{position:absolute;left:18px;bottom:204px;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:12px;padding:8px 12px 9px;backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);font-family:'Orbitron',sans-serif;opacity:0;transition:opacity .35s ease;pointer-events:none;box-shadow:0 6px 22px rgba(0,0,0,.4)}
+#hudCarStatus.csOn{opacity:1}
+#hudCarStatus .csLabel{font-size:8px;color:var(--hud-text-dim);letter-spacing:3px;text-align:center;margin-bottom:6px}
+#hudCarStatus .csGrid{display:grid;grid-template-columns:repeat(2,18px);grid-gap:8px;justify-content:center;padding:2px}
+#hudCarStatus .csTire{width:18px;height:18px;border-radius:50%;background:var(--hud-success);box-shadow:0 0 0 2px var(--hud-success);transition:background .4s,box-shadow .4s}
 #hudRpm{position:absolute;bottom:160px;right:50px;width:6px;height:120px;background:rgba(0,0,0,.7);border:2px solid #333;border-radius:8px;overflow:hidden}
 #rpmFill{position:absolute;bottom:0;width:100%;border-radius:6px;transition:height .06s}
 #hudGap{position:absolute;top:212px;left:18px;pointer-events:none;display:none;text-align:left;min-width:120px;background:rgba(0,0,0,.72);border:1px solid #2a2a2a;border-radius:10px;padding:4px 10px}
@@ -63,7 +71,6 @@
 #drsIndicator{position:absolute;top:34%;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:clamp(14px,2.5vw,28px);font-weight:900;letter-spacing:6px;color:#00ccff;text-shadow:0 0 18px #00ccff;pointer-events:none;display:none}
 #fastestLapFlash{position:fixed;inset:0;pointer-events:none;z-index:var(--z-flash);opacity:0;background:radial-gradient(ellipse 80% 60% at 50% 35%,rgba(160,0,255,.38) 0%,rgba(100,0,200,.15) 55%,transparent 100%);transition:opacity .18s}
 #closeBattleEl{position:absolute;top:5%;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:clamp(10px,1.3vw,13px);color:#ffcc44;letter-spacing:4px;pointer-events:none;display:none;text-shadow:0 0 10px #ffcc44,0 2px 5px rgba(0,0,0,.8)}
-#hudTireTemp{position:absolute;top:320px;left:18px;background:rgba(0,0,0,.72);border:1px solid #2a2a2a;border-radius:10px;padding:5px 10px;pointer-events:none}
 @keyframes screenFadeIn{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:scale(1)}}
 .screen:not(.hidden){animation:screenFadeIn .32s ease forwards}
 @media(max-width:600px),(pointer:coarse) and (max-width:900px){
@@ -114,7 +121,7 @@
   }
 #nitroLbl{display:none!important}
 #hudGear{display:none!important}
-#hudGap,#hudLeader,#hudTire,#hudTireTemp,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines{display:none!important}
+#hudGap,#hudLeader,#hudCarStatus,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines{display:none!important}
 #tcSteer{display:none!important}
 #tcLeft,#tcRight{display:flex!important;width:84px!important;height:72px!important;font-size:40px!important;border-radius:36px!important}
 #tcLeft{bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;left:calc(20px + env(safe-area-inset-left,0px))!important}
