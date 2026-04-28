@@ -56,7 +56,7 @@ let _drsEl=null,_sectorPanelEl=null,_speedTrapEl=null;
 function cacheHUDRefs(){
   // On mobile: hide performance-heavy HUD elements
   if(window._isMobile){
-    ['hudLeader','sectorPanel','hudGap','hudScore','hudTire','hudTireTemp',
+    ['hudLeader','sectorPanel','hudGap','hudTire','hudTireTemp',
      'hudRainBtn','hudNightBtn','hudMuteBtn','ghostLabel','drsIndicator',
      'closeBattleEl','speedTrapEl','mirrorFrame','mirrorLabel','speedLines'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
@@ -138,23 +138,27 @@ function updateHUD(dt){
   const car=carObjs[playerIdx];if(!car)return;
   const pos=getPositions(),pPos=pos.findIndex(c=>c.isPlayer)+1;
   _elPos.textContent='P'+pPos;
-  _elPos.style.color=pPos===1?'#00ee66':pPos<=3?'#ff9900':pPos>=6?'#ff4444':'#ffffff';
-  _elPosOf.textContent='of '+carObjs.length;
+  // Semantic palette: P1 = success, podium = accent, midfield = primary, back = warning.
+  _elPos.style.color = pPos===1 ? 'var(--hud-success)'
+                     : pPos<=3 ? 'var(--hud-accent)'
+                     : pPos>=6 ? 'var(--hud-warning)'
+                     : 'var(--hud-text)';
+  _elPosOf.textContent='/'+carObjs.length;
   _elLap.textContent=Math.max(1,Math.min(car.lap,TOTAL_LAPS))+' / '+TOTAL_LAPS;
   _elSpd.textContent=Math.min(380,Math.round(Math.abs(car.speed)*165)); // 165 → Ferrari≈196 km/h, F1≈223 km/h, max boost cap 380
   if(_elLapTime){
     const elapsed=_nowSec-lapStartTime;
-    _elLapTime.textContent='LAP '+fmtTime(elapsed)+(bestLapTime<Infinity?' · BEST '+fmtTime(bestLapTime):'');
+    _elLapTime.textContent=fmtTime(elapsed)+(bestLapTime<Infinity?' · '+fmtTime(bestLapTime):'');
   }
   // Lap delta vs personal best
   if(_elLapDelta&&car._lapStart&&bestLapTime<Infinity){
     const elapsed2=_nowSec-car._lapStart;
     const delta=elapsed2-bestLapTime;
     const sign=delta>=0?'+':'';
-    _elLapDelta.textContent=' '+sign+delta.toFixed(2)+'s';
-    _elLapDelta.style.color=delta<0?'#00ee66':'#ff4444';
+    _elLapDelta.textContent=sign+delta.toFixed(2);
+    _elLapDelta.style.color=delta<0?'var(--hud-success)':'var(--hud-warning)';
   }
-  // Score display
+  // Score is shown only on the finish screen — no longer in race HUD.
   if(_elScore)_elScore.textContent=totalScore.toLocaleString();
   // Tire wear indicator — 4 dots, only update when value changes
   if(_elTire){
@@ -228,10 +232,10 @@ function updateHUD(dt){
           totalScore+=50;
           Audio.playCrowdCheer();
         }
-        floatText('▲ P'+pPos,'#00ff88',innerWidth*.5,innerHeight*.42);
+        // Floating "▲ P"/"▼ P" label removed — position is permanently shown
+        // in the race-info panel and posPulse already animates the change.
       }else{
         showPopup('▼ P'+pPos,'#ff6644',1200);
-        floatText('▼ P'+pPos,'#ff6644',innerWidth*.5,innerHeight*.42);
       }
       if(_elPos){_elPos.classList.remove('posPulse');void _elPos.offsetWidth;_elPos.classList.add('posPulse');}
       _lastPPos=pPos;

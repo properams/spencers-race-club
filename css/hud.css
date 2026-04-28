@@ -2,16 +2,21 @@
 [id^="hud"]:focus,[id^="hud"]:focus-visible{outline:none}
 .hidden{display:none!important}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:none}
-#hudPos{position:absolute;top:18px;left:18px;background:rgba(0,0,0,.78);border:2px solid #ff7700;border-radius:12px;padding:9px 18px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
-.hLabel{font-family:'Orbitron',sans-serif;font-size:8px;color:#ff7700;letter-spacing:3px}
+/* Race-info panel: consolidated POSITION + LAP + LAPTIME (replaces #hudPos/#hudLap/#hudLapTime/#hudScore). */
+#hudRaceInfo{position:absolute;top:18px;left:18px;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:14px;padding:10px 18px 9px;backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);font-family:'Orbitron',sans-serif;min-width:130px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
+#hudRaceInfo .riPosRow{display:flex;align-items:baseline;gap:6px;line-height:1}
+#hudRaceInfo .riPos{font-size:42px;font-weight:900;color:var(--hud-text);letter-spacing:1px}
+#hudRaceInfo .riPosOf{font-size:13px;color:var(--hud-text-mute);letter-spacing:2px}
+#hudRaceInfo .riLapRow{margin-top:4px;display:flex;gap:8px;align-items:baseline}
+#hudRaceInfo .riLabel{font-size:8px;color:var(--hud-text-dim);letter-spacing:3px}
+#hudRaceInfo .riLap{font-size:14px;font-weight:700;color:var(--hud-text);letter-spacing:2px}
+#hudRaceInfo .riTimeRow{margin-top:4px;font-family:'Orbitron','SFMono-Regular',monospace;font-size:10px;color:var(--hud-text-dim);letter-spacing:.5px;min-height:13px}
+.hLabel{font-family:'Orbitron',sans-serif;font-size:8px;color:var(--hud-text-dim);letter-spacing:3px}
 .hBig{font-family:'Orbitron',sans-serif;font-size:40px;font-weight:900;line-height:1}
 .hSm{font-family:'Rajdhani',sans-serif;font-size:13px;color:#888}
-#hudLap{position:absolute;top:152px;left:18px;background:rgba(0,0,0,.78);border:2px solid #333;border-radius:12px;padding:9px 18px;text-align:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);min-width:90px}
-#hudLap .hBig{font-size:24px;color:#ff7700}
 #hudSpd{position:absolute;bottom:28px;right:28px;background:rgba(0,0,0,.78);border:2px solid #333;border-radius:12px;padding:8px 18px;text-align:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 #hudSpd .hBig{font-size:54px;color:#ff7700}
 #hudMap{position:absolute;bottom:28px;left:28px;width:150px;height:150px;background:rgba(0,0,0,.85);border:2px solid #2a2a2a;border-radius:50%;overflow:hidden}
-#hudLapTime{position:absolute;bottom:192px;left:28px;font-family:'Orbitron',sans-serif;font-size:11px;color:#aaa;letter-spacing:1px;background:rgba(0,0,0,.7);border:1px solid #2a2a2a;border-radius:8px;padding:5px 12px;pointer-events:none}
 .tcBtn{position:fixed;z-index:50;display:flex;align-items:center;justify-content:center;color:#fff;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;user-select:none;-webkit-user-select:none;touch-action:none;-webkit-tap-highlight-color:transparent;transition:transform .09s ease,box-shadow .12s,background .12s,border-color .12s;background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.03) 100%);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.2);box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.25)}
 .tcBtn.active{transform:scale(.92)}
 #tcLeft,#tcRight{width:74px;height:74px;font-size:42px;font-weight:300;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;border-radius:22px;line-height:1;padding-bottom:4px}
@@ -46,8 +51,6 @@
 #hudPauseBtn{top:94px;right:18px}
 #hudMuteBtn{position:absolute;top:132px;right:18px;pointer-events:all;font-family:'Orbitron',sans-serif;font-size:13px;color:#aaa;background:rgba(0,0,0,.7);border:1px solid #444;border-radius:20px;padding:7px 14px;cursor:pointer;letter-spacing:1px}
 .hintBox{font-family:'Rajdhani',sans-serif;font-size:13px;color:rgba(255,255,255,.65);background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 22px;letter-spacing:2px;white-space:nowrap}
-#hudScore{position:absolute;top:100px;left:18px;background:rgba(0,0,0,.72);border:1px solid #2a2a2a;border-radius:10px;padding:5px 14px;min-width:90px}
-#hudScore .hBig{font-size:20px;color:#ffd700}
 #speedOverlay{position:fixed;inset:0;pointer-events:none;z-index:9;
   background:radial-gradient(ellipse 72% 58% at 50% 52%,transparent 0%,transparent 38%,rgba(0,0,0,.18) 62%,rgba(0,0,0,.58) 82%,rgba(0,0,0,.80) 100%);
   opacity:0;transition:opacity .07s}
@@ -64,40 +67,18 @@
 @keyframes screenFadeIn{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:scale(1)}}
 .screen:not(.hidden){animation:screenFadeIn .32s ease forwards}
 @media(max-width:600px),(pointer:coarse) and (max-width:900px){
-#hudPos{
-    position:absolute!important;
-    top:calc(16px + env(safe-area-inset-top,0px))!important;
-    left:calc(16px + env(safe-area-inset-left,0px))!important;
-    transform:none!important;
-    padding:6px 14px!important;
-    border-width:1px!important;border-radius:12px!important;
-    min-width:78px!important;min-height:44px!important;
-    display:flex!important;align-items:center!important;gap:8px!important;
+#hudRaceInfo{
+    top:calc(12px + env(safe-area-inset-top,0px))!important;
+    left:calc(12px + env(safe-area-inset-left,0px))!important;
+    padding:7px 12px 6px!important;
+    border-radius:12px!important;
+    min-width:96px!important;
   }
-#hudPos .hLabel{font-size:8px!important;display:none!important}
-#hudPos .hBig{font-size:22px!important;line-height:1!important}
-#hudPos .hSm,#hudPos #hdPosOf{display:none!important}
-#hudLap{
-    position:absolute!important;
-    top:calc(72px + env(safe-area-inset-top,0px))!important;
-    left:calc(16px + env(safe-area-inset-left,0px))!important;
-    transform:none!important;
-    padding:6px 12px!important;
-    border-width:1px!important;border-radius:10px!important;
-    min-width:78px!important;text-align:left!important;
-  }
-#hudLap .hLabel{font-size:8px!important;letter-spacing:2px!important;opacity:.7}
-#hudLap .hBig{font-size:14px!important;line-height:1.1!important}
-#hudLapTime{
-    position:absolute!important;
-    top:calc(124px + env(safe-area-inset-top,0px))!important;
-    left:calc(16px + env(safe-area-inset-left,0px))!important;
-    bottom:auto!important;
-    font-size:11px!important;
-    padding:5px 10px!important;letter-spacing:0!important;
-    border-radius:8px!important;
-    min-width:78px!important;
-  }
+#hudRaceInfo .riPos{font-size:24px!important}
+#hudRaceInfo .riPosOf{font-size:10px!important}
+#hudRaceInfo .riLapRow{margin-top:2px!important}
+#hudRaceInfo .riLap{font-size:11px!important;letter-spacing:1px!important}
+#hudRaceInfo .riTimeRow{font-size:9px!important;margin-top:2px!important}
 #hudPauseBtn{
     top:calc(16px + env(safe-area-inset-top,0px))!important;
     right:calc(16px + env(safe-area-inset-right,0px))!important;
@@ -133,7 +114,7 @@
   }
 #nitroLbl{display:none!important}
 #hudGear{display:none!important}
-#hudGap,#hudLeader,#hudScore,#hudTire,#hudTireTemp,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines{display:none!important}
+#hudGap,#hudLeader,#hudTire,#hudTireTemp,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines{display:none!important}
 #tcSteer{display:none!important}
 #tcLeft,#tcRight{display:flex!important;width:84px!important;height:72px!important;font-size:40px!important;border-radius:36px!important}
 #tcLeft{bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;left:calc(20px + env(safe-area-inset-left,0px))!important}
@@ -157,9 +138,9 @@
 #tcNitro{width:74px!important;height:74px!important;bottom:calc(140px + env(safe-area-inset-bottom,0px))!important;right:calc(22px + env(safe-area-inset-right,0px))!important;font-size:28px!important;border-radius:22px!important}
 #tcBrake,#tcHbk{display:none!important}
 #hudMap{width:118px!important;height:118px!important;bottom:calc(200px + env(safe-area-inset-bottom,0px))!important;left:calc(22px + env(safe-area-inset-left,0px))!important;border-radius:50%!important;border:1px solid rgba(180,180,200,.55)!important;background:rgba(0,0,0,.78)!important;box-shadow:0 0 12px rgba(0,0,0,.5)!important}
-#hudPos{top:calc(18px + env(safe-area-inset-top,0px))!important;left:calc(18px + env(safe-area-inset-left,0px))!important}
-#hudPos .hBig{font-size:34px!important}
-#hudLap .hBig{font-size:20px!important}
+#hudRaceInfo{top:calc(18px + env(safe-area-inset-top,0px))!important;left:calc(18px + env(safe-area-inset-left,0px))!important}
+#hudRaceInfo .riPos{font-size:34px!important}
+#hudRaceInfo .riLap{font-size:13px!important}
 .tcBtn{background:rgba(0,0,0,.45)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border:1px solid rgba(255,255,255,.18)!important;color:#fff!important}
 #tcGas{background:linear-gradient(135deg,rgba(0,150,80,.55),rgba(0,90,40,.4))!important;border-color:rgba(0,200,110,.5)!important}
 #tcNitro{background:linear-gradient(135deg,rgba(200,150,0,.55),rgba(160,100,0,.4))!important;border-color:rgba(255,200,40,.5)!important}
@@ -168,18 +149,16 @@
 #hudPauseBtn{top:calc(16px + env(safe-area-inset-top,0px))!important;right:calc(16px + env(safe-area-inset-right,0px))!important;padding:10px 18px!important;font-size:13px!important}
 #hudLeader{top:calc(108px + env(safe-area-inset-top,0px))!important;right:calc(18px + env(safe-area-inset-right,0px))!important;max-height:calc(100vh - 280px)!important;overflow:hidden!important}
 #nitroBar{bottom:calc(245px + env(safe-area-inset-bottom,0px))!important;right:calc(30px + env(safe-area-inset-right,0px))!important;width:14px!important;height:110px!important}
-#hudLapTime{bottom:calc(245px + env(safe-area-inset-bottom,0px))!important;left:calc(150px + env(safe-area-inset-left,0px))!important;font-size:11px!important;background:rgba(0,0,0,.72)!important;border:1px solid #2a2a2a!important;border-radius:8px!important;padding:4px 10px!important}
 }
 @media(max-height:500px) and (orientation:landscape){
-#hudPos{top:calc(6px + env(safe-area-inset-top,0px))!important;left:calc(8px + env(safe-area-inset-left,0px))!important;padding:3px 10px!important}
-#hudPos .hBig{font-size:22px!important}
-#hudLap{top:calc(6px + env(safe-area-inset-top,0px))!important;padding:3px 10px!important}
-#hudLap .hBig{font-size:14px!important}
+#hudRaceInfo{top:calc(6px + env(safe-area-inset-top,0px))!important;left:calc(8px + env(safe-area-inset-left,0px))!important;padding:5px 10px!important;min-width:90px!important}
+#hudRaceInfo .riPos{font-size:22px!important}
+#hudRaceInfo .riLap{font-size:11px!important}
+#hudRaceInfo .riTimeRow{font-size:9px!important}
 #hudSpd{bottom:auto!important;top:calc(6px + env(safe-area-inset-top,0px))!important;right:calc(8px + env(safe-area-inset-right,0px))!important;padding:3px 10px!important}
 #hudSpd .hBig{font-size:24px!important}
 #hudGear{display:none!important}
 #hudMap{width:72px!important;height:72px!important;top:calc(52px + env(safe-area-inset-top,0px))!important;left:calc(8px + env(safe-area-inset-left,0px))!important;bottom:auto!important}
-#hudLapTime{bottom:auto!important;top:calc(52px + env(safe-area-inset-top,0px))!important;left:calc(88px + env(safe-area-inset-left,0px))!important;font-size:9px!important;padding:3px 8px!important}
 #hudPauseBtn{top:auto!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;right:auto!important;left:50%!important;transform:translateX(-50%)!important;padding:7px 14px!important;font-size:11px!important}
 #nitroBar{display:none!important}
 #tcSteer{display:none!important}
