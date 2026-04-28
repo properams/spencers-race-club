@@ -1,5 +1,81 @@
 # CHANGES
 
+## Track far-plane pop-in fix v2 (props laden zichtbaar in de verte tijdens rijden)
+
+### Symptoom (na vorige fog-color fix)
+"Structuur en kleuren zijn nu duidelijk beter, maar in de verte worden tracks
+nog steeds 'geladen' tijdens het rijden — bij hoge snelheid erger, en op elke
+ronde even erg." Bij stilstand geen probleem.
+
+### Diagnose
+- Stilstand OK + lap 1 == lap 2 == lap 3 sluit shader-compile (Hyp C) en
+  per-frame mesh-build (Hyp A) uit.
+- "Erger bij hoge snelheid" wijst op camera die sneller objecten passeert die
+  de `camera.far=900` plane oversteken — klassiek frustum-culling pop-in dat
+  niet door fog gemaskeerd wordt.
+
+### Root cause
+`updateWeather()` (loop call elke frame tijdens RACE) zette
+`scene.fog.density = (isDark?.0035:.0011) + rainIntensity*rainAdd` met
+GP-hardcoded waarden, **voor alle werelden**. Daardoor:
+
+1. De per-world day/night densities die `toggleNight()` zet (bv. 0.0014 voor
+   deepsea, 0.0012 voor neoncity) werden élke frame teruggezet naar GP-waarden.
+2. De GP day-density 0.0011 geeft op `camera.far=900` slechts 62% fog factor
+   (FogExp2: 1−exp(−d²·z²)). Voor goede maskering is ~95% nodig → density
+   ≥ 0.0021. Hierdoor zijn props die net binnen de far-plane komen helder
+   zichtbaar bij eerste binnenkomst — visible pop-in.
+3. De vorige fog-fix had de **initiële** densities in `scene.js` opgehoogd,
+   maar `toggleNight()` overschrijft die en `updateWeather()` overschrijft
+   `toggleNight()` weer. Dus de hogere waarden bereikten de race-loop nooit.
+
+### Fix
+**`js/effects/night.js`**:
+- Day-mode densities opgehoogd zodat fog factor op far-plane ≥90%:
+  - GP day: 0.0011 → 0.0021
+  - Neon day: 0.0012 → 0.0021
+  - Themepark day: 0.00095 → 0.0019
+  - Candy day: 0.0009 → 0.0019
+  - Deepsea day: 0.0014 → 0.0019
+  - Space day: 0.0005 → 0.0014 (conservatief — dark sky maskeert al deels)
+- Nieuwe global `_fogBaseDensity` toegevoegd (next to `_fogColorDay/Night`),
+  geüpdatet aan eind van `toggleNight()` met `scene.fog.density`.
+
+**`js/effects/weather.js`**:
+- `updateWeather()` gebruikt nu `_fogBaseDensity` als baseline ipv hardcoded
+  GP-waarden. Rain-add bovenop blijft `(isDark?.0025:.0009)*rainIntensity`.
+- `setWeather()` cachet `_fogBaseDensity = scene.fog.density` voor non-storm
+  modes (zowel space-tak als GP-tak). Storm bevat al rain dus geen base-update.
+- `toggleRain()` op TITLE/SELECT scherm: GP-clear density 0.0011 → 0.0021,
+  GP-clear weather density 0.0011 → 0.0021, GP-sunset 0.0015 → 0.0021,
+  Space-clear 0.0008 → 0.0014.
+
+### Per-wereld density tabel (nieuwe waarden)
+
+| Wereld | Day | Night | Day fog @ z=900 |
+|---|---:|---:|---:|
+| GP | 0.0021 | 0.0035 | 95% |
+| Neon City | 0.0021 | 0.0018 | 95% |
+| Themepark | 0.0019 | 0.0018 | 92% |
+| Candy | 0.0019 | 0.0012 | 92% |
+| Deepsea | 0.0019 | 0.0022 | 92% |
+| Space | 0.0014 | 0.0008 | 80% |
+| Arctic | 0.0035 | 0.005 | 99.99% |
+| Volcano | 0.002 | 0.002 | 96% |
+
+### Niet aangeraakt
+- `_trackMesh.material.needsUpdate=true` per frame in `updateWeather` — wel
+  inefficient (Hyp D) maar niet de pop-in oorzaak. Aparte efficiency-fix later.
+- Camera.far=900 ongewijzigd — fog hidert nu, geen view-distance loss.
+- Geen mesh-/geometrie-/material-creatie aangeraakt → geen draw-call regressie.
+
+### Verificatie
+- `node --check` OK op night.js + weather.js.
+- Geen nieuwe textures/materialen/meshes → geen FPS-impact verwacht.
+- Visual overhaul features (bloom, skybox, lens flare, postfx) ongeraakt.
+
+---
+
 ## Track render pop-in fix (kleurverschil aan de horizon)
 
 ### Symptoom
