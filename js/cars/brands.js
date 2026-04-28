@@ -112,12 +112,14 @@ function buildBugattiChiron(g, def, mats, lod){
     addPart(g, new THREE.BoxGeometry(.42, .14, .04), mats.accent, 0, .30, -2.06); // gold horseshoe rim
   }
   buildHeadlights(g, mats, {spread:.78, y:.46, z:-1.92, w:.34, h:.10, d:.07});
-  // Cabin — slightly raised dome
-  addPart(g, new THREE.BoxGeometry(1.66, .40, 1.50), mats.paint, 0, .76, .00);
+  // Cabin — slightly raised dome. Tonal split livery: cabin shell in
+  // accent color (gold) instead of paint to evoke the iconic Chiron
+  // two-tone look. Roof also uses accent for the same reason.
+  addPart(g, new THREE.BoxGeometry(1.66, .40, 1.50), mats.accent, 0, .76, .00);
   addPart(g, new THREE.BoxGeometry(1.54, .48, .08), mats.glass, 0, .82, -.78, -.35);
   [-.83, .83].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .30, 1.30), mats.glass, s, .82, .00));
   addPart(g, new THREE.BoxGeometry(1.46, .30, .08), mats.glassDark, 0, .82, .80, .38);
-  addPart(g, new THREE.BoxGeometry(1.40, .04, 1.20), mats.paint, 0, 1.00, -.10);
+  addPart(g, new THREE.BoxGeometry(1.40, .04, 1.20), mats.accent, 0, 1.00, -.10);
   // Engine cover (rear paint section)
   addPart(g, new THREE.BoxGeometry(1.65, .20, 1.10), mats.paint, 0, .68, .92);
   // C-shape side accent — Chiron signature: dark inset arc on the door
@@ -704,10 +706,19 @@ function buildFordMustang(g, def, mats, lod){
   }
   // Wide-stance dual exhausts (muscle car signature)
   buildExhausts(g, mats, {spread:.78, y:.22, z:2.20, radius:.085, length:.34});
-  // Subtle accent stripes (Mustang heritage)
+  // ICONIC dual centre racing stripes (Mustang heritage). Three segments
+  // per stripe so they ride the body shape — over the hood, over the roof,
+  // over the trunk — instead of clipping inside the bodywork. Two parallel
+  // stripes spaced ±.20 from centre. Width .22 makes them clearly visible
+  // (the previous .10-wide stripes were lost on the white paint).
   if(!lo){
     [-.20, .20].forEach(s=>{
-      addPart(g, new THREE.BoxGeometry(.10, .02, 4.30), mats.accent, s, .60, 0);
+      // Hood segment — sits on top of the hood scoop area
+      addPart(g, new THREE.BoxGeometry(.22, .04, 1.60), mats.accent, s, .73, -1.10);
+      // Roof segment — over the cabin peak
+      addPart(g, new THREE.BoxGeometry(.22, .04, 1.50), mats.accent, s, 1.18, .25);
+      // Trunk segment — across the rear deck
+      addPart(g, new THREE.BoxGeometry(.22, .04, 1.05), mats.accent, s, .76, 1.55);
     });
   }
   buildSideSkirts(g, mats, {spread:1.04, y:.16, z:0, length:2.8});
