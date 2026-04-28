@@ -79,13 +79,10 @@ function showUnlocks(ids,idx=0){
 
 function updateTitleHighScore(){
   loadPersistent();
-  const el=document.getElementById('titleHighScore');if(!el)return;
-  const lines=[];
-  if(window._savedHS>0)lines.push('HIGH SCORE: '+window._savedHS.toLocaleString());
-  if(window._savedBL<Infinity)lines.push('BEST LAP: '+window.fmtTime(window._savedBL));
-  if(window._speedTrapAllTime>0)lines.push('⚡ SPEED TRAP: '+window._speedTrapAllTime+' km/h');
-  if(window._raceCount>0)lines.push('RACES: '+window._raceCount+' · PODIUMS: '+window._podiumCount);
-  el.innerHTML=lines.join('<br>');
+  // Title screen kept clean — best-lap / speed-trap / races / podiums all
+  // surface elsewhere (selection screen rival display, finish screen, HUD).
+  // We still load persistent state here for daily-challenge unlock checks.
+  const el=document.getElementById('titleHighScore');if(el)el.innerHTML='';
   const coinEl=document.getElementById('titleCoins');
   if(coinEl&&window._coins>0)coinEl.textContent='💰 '+window._coins.toLocaleString()+' COINS';
 }
