@@ -36,6 +36,10 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
   initDriftVisuals();
   gameState='COUNTDOWN';_raceStartGrace=99;
   setTouchControlsVisible(true);
+  // Pre-warm ambient audio during countdown so the WebAudio node graph is
+  // already alive by GO. Both functions are idempotent and ramp gain from 0,
+  // so calling them early is silent until the race actually starts.
+  if(audioCtx){Audio.startWind();Audio.initCrowd();}
   runCountdown(()=>{
     gameState='RACE';
     _raceStartGrace=0; // GO means GO — no delay
@@ -59,6 +63,7 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
           }
         }
       },380);
+      // Wind/crowd were pre-warmed at countdown start; calls below are idempotent no-ops.
       Audio.startWind();Audio.initCrowd();
     }
     // Show touch controls during race if on a touch device — but not if a hardware keyboard was detected

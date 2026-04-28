@@ -27,8 +27,8 @@ var _postfx = {
   quad: null,
   fsScene: null,
   fsCam: null,
-  threshold: 0.62,
-  strength: 0.95,
+  threshold: 0.72,
+  strength: 0.78,
   // Cached size to detect resize without redundant setSize calls
   w: 0,
   h: 0
@@ -186,11 +186,11 @@ function initPostFX(){
 function setBloomDayNight(dark){
   if(!_postfx.ready) return;
   if(dark){
-    _postfx.threshold = 0.50;
-    _postfx.strength = 1.10;
+    _postfx.threshold = 0.62;
+    _postfx.strength = 0.92;
   } else {
-    _postfx.threshold = 0.66;
-    _postfx.strength = 0.80;
+    _postfx.threshold = 0.74;
+    _postfx.strength = 0.72;
   }
   _postfx.matExtract.uniforms.threshold.value = _postfx.threshold;
   _postfx.matComposite.uniforms.strength.value = _postfx.strength;

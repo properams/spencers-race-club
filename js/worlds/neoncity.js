@@ -44,29 +44,29 @@ function buildNeonGround(){
   const sheenCv=document.createElement('canvas');sheenCv.width=512;sheenCv.height=512;
   const sCtx=sheenCv.getContext('2d');
   sCtx.fillStyle='rgba(0,0,0,0)';sCtx.fillRect(0,0,512,512);
-  // Magenta band
+  // Magenta band — toned down from 0.42 alpha to 0.22 to keep luminance below bloom threshold.
   let mg=sCtx.createLinearGradient(0,80,0,160);
   mg.addColorStop(0,'rgba(255,40,180,0)');
-  mg.addColorStop(.5,'rgba(255,40,180,0.42)');
+  mg.addColorStop(.5,'rgba(255,40,180,0.22)');
   mg.addColorStop(1,'rgba(255,40,180,0)');
   sCtx.fillStyle=mg;sCtx.fillRect(0,80,512,80);
   // Cyan band
   let cg=sCtx.createLinearGradient(0,260,0,360);
   cg.addColorStop(0,'rgba(40,255,220,0)');
-  cg.addColorStop(.5,'rgba(40,255,220,0.40)');
+  cg.addColorStop(.5,'rgba(40,255,220,0.22)');
   cg.addColorStop(1,'rgba(40,255,220,0)');
   sCtx.fillStyle=cg;sCtx.fillRect(0,260,512,100);
   // Yellow accent band
   let yg=sCtx.createLinearGradient(0,420,0,470);
   yg.addColorStop(0,'rgba(255,240,80,0)');
-  yg.addColorStop(.5,'rgba(255,240,80,0.30)');
+  yg.addColorStop(.5,'rgba(255,240,80,0.16)');
   yg.addColorStop(1,'rgba(255,240,80,0)');
   sCtx.fillStyle=yg;sCtx.fillRect(0,420,512,50);
   const sheenTex=new THREE.CanvasTexture(sheenCv);
   sheenTex.wrapS=sheenTex.wrapT=THREE.RepeatWrapping;
   sheenTex.repeat.set(2,2);sheenTex.needsUpdate=true;
   const sheen=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
-    new THREE.MeshBasicMaterial({map:sheenTex,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));
+    new THREE.MeshBasicMaterial({map:sheenTex,transparent:true,opacity:.32,blending:THREE.AdditiveBlending,depthWrite:false}));
   sheen.rotation.x=-Math.PI/2;sheen.position.y=-.10;scene.add(sheen);
   _neonWater.userData.sheen=sheen;
   // Neon puddles — coloured reflective pools scattered off-track
@@ -651,7 +651,7 @@ function updateNeonCityWorld(dt){
     if(sheen&&sheen.material&&sheen.material.map){
       sheen.material.map.offset.x=(sheen.material.map.offset.x+dt*.05)%1;
       sheen.material.map.offset.y=(sheen.material.map.offset.y+dt*.02)%1;
-      sheen.material.opacity=.45+Math.sin(t*.7)*.15;
+      sheen.material.opacity=.26+Math.sin(t*.7)*.08;
     }
   }
 }

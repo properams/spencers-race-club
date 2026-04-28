@@ -54,17 +54,42 @@ function buildVolcanoEnvironment(){
     s.position.set(Math.cos(ang)*30,25,-350+Math.sin(ang)*30);s.rotation.z=ang+Math.PI;
     scene.add(s);_volcanoLavaRivers.push({mesh:s,baseInt:1.0});
   }
-  // Secondary volcanoes
+  // Secondary volcanoes — reject placements that overlap track. Threshold = trackHalfWidth + cone radius + safety margin.
+  function _distToTrack(px,pz){
+    var m=Infinity;
+    for(var ti=0;ti<1;ti+=.02){
+      var tp=trackCurve.getPoint(ti);
+      var d=Math.hypot(px-tp.x,pz-tp.z);
+      if(d<m)m=d;
+    }
+    return m;
+  }
   [[220,-200,60,80],[-280,-180,55,70],[-180,200,45,60],[250,150,40,55]].forEach(function(d){
-    var m=new THREE.Mesh(new THREE.ConeGeometry(d[2],d[3],7),vm);m.position.set(d[0],-8,d[1]);scene.add(m);
-    var k=new THREE.Mesh(new THREE.CylinderGeometry(d[2]*.15,d[2]*.2,6,6),lm);k.position.set(d[0],d[3]/2-2,d[1]);scene.add(k);
+    var safe=TW+d[2]+18; // half-track + cone radius + margin
+    var px=d[0],pz=d[1];
+    if(_distToTrack(px,pz)<safe){
+      // Push the volcano outward away from the closest track point until it clears the safety zone.
+      var bestT=0,bestD=Infinity,bestP=null;
+      for(var ti=0;ti<1;ti+=.01){
+        var tp=trackCurve.getPoint(ti);
+        var dd=Math.hypot(px-tp.x,pz-tp.z);
+        if(dd<bestD){bestD=dd;bestT=ti;bestP=tp;}
+      }
+      var dx=px-bestP.x,dz=pz-bestP.z,len=Math.hypot(dx,dz)||1;
+      var push=(safe-bestD)+4;
+      px=bestP.x+(dx/len)*(bestD+push);
+      pz=bestP.z+(dz/len)*(bestD+push);
+    }
+    var m=new THREE.Mesh(new THREE.ConeGeometry(d[2],d[3],7),vm);m.position.set(px,-8,pz);scene.add(m);
+    var k=new THREE.Mesh(new THREE.CylinderGeometry(d[2]*.15,d[2]*.2,6,6),lm);k.position.set(px,d[3]/2-2,pz);scene.add(k);
   });
-  // Lava rivers alongside track
+  // Lava rivers alongside track — keep clear of asphalt with a wider lateral offset.
   var lm2=new THREE.MeshLambertMaterial({color:0xff5500,emissive:0xff2200,emissiveIntensity:.9,transparent:true,opacity:.88});
   for(var i=0;i<_mobCount(12);i++){
     var t=i/12,p=trackCurve.getPoint(t),tg=trackCurve.getTangent(t).normalize();
     var nr=new THREE.Vector3(-tg.z,0,tg.x);
-    var side=(i%2===0?1:-1)*(BARRIER_OFF+12+Math.random()*10);
+    // Lava plane half-length is ~max 15; push it well past the barrier so it never overlaps asphalt.
+    var side=(i%2===0?1:-1)*(BARRIER_OFF+22+Math.random()*10);
     var lava=new THREE.Mesh(new THREE.PlaneGeometry(5+Math.random()*4,18+Math.random()*12),lm2.clone());
     lava.rotation.x=-Math.PI/2;lava.rotation.z=Math.atan2(tg.x,tg.z);
     lava.position.set(p.x+nr.x*side,-.08,p.z+nr.z*side);

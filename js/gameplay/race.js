@@ -39,7 +39,8 @@ function _resetRaceState(){
   _musicDuck=1.0;_applyMusicGain(0);
   Audio.stopWind();Audio.stopCrowd();
   carObjs.forEach(c=>scene.remove(c.mesh));carObjs=[];
-  skidMarks.forEach(s=>{const m=s.mesh||s;if(m.geometry)m.geometry.dispose();if(m.material)m.material.dispose();scene.remove(m);});
+  // Skid-mark geometry is shared across all marks; only dispose materials per mark.
+  skidMarks.forEach(s=>{const m=s.mesh||s;if(m.material)m.material.dispose();scene.remove(m);});
   skidMarks.length=0;
   nitroLevel=100;nitroActive=false;driftScore=0;driftTimer=0;
   lapStartTime=0;lastLapTime=0;bestLapTime=Infinity;

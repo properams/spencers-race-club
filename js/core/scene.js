@@ -294,6 +294,8 @@ function buildScene(){
   // ── Reset global arrays populated during scene build ──────────
   trackLightList.length=0;trackPoles.length=0;_trackFlags.length=0;_aiHeadPool.length=0;
   jumpRamps.length=0;spinPads.length=0;boostPads.length=0;collectibles.length=0;skidMarks.length=0;
+  // Shared skid geometry was disposed by the traversal above — drop our reference so the next race builds a fresh one.
+  if(typeof _skidGeo!=='undefined')_skidGeo=null;
   _wpWaterPuddles.length=0;_wpDrsZones.length=0;
   _wpGravityZones.length=0;_wpOrbitAsteroids.length=0;_wpWarpTunnels.length=0;
   _wpCurrentStreams.length=0;_wpAbyssCracks.length=0;_wpTreasureTrail.length=0;
