@@ -642,8 +642,144 @@ function buildMercedesW14F1(g, def, mats, lod){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// REGISTRY — maps def.brand to its builder. Brands not in the registry fall
-// back to the legacy makeCar logic in build.js (for incremental rollout).
+// FORD MUSTANG — American muscle: rectangular front, long hood, short rear,
+// hood scoop, square headlights, dual exhausts, beefy stance.
+// Default white with blue accent.
+// ─────────────────────────────────────────────────────────────────────────────
+function buildFordMustang(g, def, mats, lod){
+  const lo = lod === 'low';
+  // Wider, taller chassis (muscle stance)
+  addPart(g, new THREE.BoxGeometry(2.06, .56, 4.40), mats.paint, 0, .32, 0);
+  // Squared front bumper
+  addPart(g, new THREE.BoxGeometry(2.04, .42, .60), mats.paint, 0, .35, -2.10);
+  addPart(g, new THREE.BoxGeometry(2.00, .08, .26), mats.matBlk, 0, .12, -2.30);
+  // Big rectangular grille (Mustang signature)
+  addPart(g, new THREE.BoxGeometry(1.40, .26, .12), mats.grille, 0, .42, -2.20);
+  if(!lo){
+    // Pony badge suggestion (small accent block on grille)
+    addPart(g, new THREE.BoxGeometry(.20, .14, .04), mats.accent, 0, .42, -2.26);
+    // Grille horizontal slats
+    [-.40, 0, .40].forEach(s=>addPart(g, new THREE.BoxGeometry(.36, .03, .04), mats.matBlk, s, .42, -2.26));
+  }
+  // Square headlights (pairs)
+  buildHeadlights(g, mats, {spread:.78, y:.50, z:-2.18, w:.32, h:.16, d:.08});
+  if(!lo){
+    // Inner secondary lights (Mustang triple-bar DRL)
+    [-.78, .78].forEach(s=>{
+      [.40, .50, .60].forEach(y=>addPart(g, new THREE.BoxGeometry(.30, .02, .04), mats.head, s, y, -2.22));
+    });
+  }
+  // LONG hood with prominent scoop (muscle signature)
+  addPart(g, new THREE.BoxGeometry(1.92, .12, 1.60), mats.paint, 0, .66, -1.10);
+  if(!lo){
+    // Hood scoop (centre raised bump)
+    addPart(g, new THREE.BoxGeometry(.55, .14, .80), mats.paint, 0, .76, -1.10);
+    addPart(g, new THREE.BoxGeometry(.50, .04, .12), mats.matBlk, 0, .82, -1.40); // scoop opening
+  }
+  // Cabin — boxier than super, shorter
+  addPart(g, new THREE.BoxGeometry(1.86, .50, 1.70), mats.paint, 0, .85, .25);
+  addPart(g, new THREE.BoxGeometry(1.70, .56, .08), mats.glass, 0, .92, -.62, -.36);
+  [-.93, .93].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .40, 1.50), mats.glass, s, .92, .25));
+  // Rear glass — more vertical (fastback but less aggressive than super)
+  addPart(g, new THREE.BoxGeometry(1.62, .50, .08), mats.glass, 0, .92, 1.06, .30);
+  addPart(g, new THREE.BoxGeometry(1.60, .04, 1.40), mats.paint, 0, 1.16, .25);
+  // Trunk lid
+  addPart(g, new THREE.BoxGeometry(1.84, .14, 1.05), mats.paint, 0, .68, 1.55);
+  // Wheel arches (muscle: bigger flares)
+  buildWheelArches(g, mats.paint, {positions:[
+    [-1.06, .50, -1.50], [1.06, .50, -1.50], [-1.06, .50, 1.50], [1.06, .50, 1.50]
+  ]});
+  // Rear bumper
+  addPart(g, new THREE.BoxGeometry(2.00, .30, .30), mats.paint, 0, .38, 2.10);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.85, .10, .28), mats.matBlk, 0, .14, 2.16);
+  }
+  // Three-bar tail lights (Mustang signature) — three vertical segments per side
+  if(!lo){
+    [-.78, .78].forEach(s=>{
+      [-.18, 0, .18].forEach(zo=>addPart(g, new THREE.BoxGeometry(.22, .14, .05), mats.tail, s + zo*.0, .50, 2.16));
+    });
+  } else {
+    buildTaillights(g, mats, {spread:.80, y:.50, z:2.16, w:.36, h:.14, d:.05});
+  }
+  // Wide-stance dual exhausts (muscle car signature)
+  buildExhausts(g, mats, {spread:.78, y:.22, z:2.20, radius:.085, length:.34});
+  // Subtle accent stripes (Mustang heritage)
+  if(!lo){
+    [-.20, .20].forEach(s=>{
+      addPart(g, new THREE.BoxGeometry(.10, .02, 4.30), mats.accent, s, .60, 0);
+    });
+  }
+  buildSideSkirts(g, mats, {spread:1.04, y:.16, z:0, length:2.8});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TESLA MODEL S — smooth fastback sedan, NO grille (solid front plate),
+// glass roof suggestion, flush wheel arches, minimal taillights.
+// Default silver.
+// ─────────────────────────────────────────────────────────────────────────────
+function buildTeslaModelS(g, def, mats, lod){
+  const lo = lod === 'low';
+  // Smooth chassis — slightly higher than super (sedan stance)
+  addPart(g, new THREE.BoxGeometry(2.00, .46, 4.40), mats.paint, 0, .28, 0);
+  // SMOOTH front (no grille — Tesla signature)
+  addPart(g, new THREE.BoxGeometry(1.86, .32, .80), mats.paint, 0, .32, -2.05);
+  // Lower air intake (subtle, no grille slats)
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.20, .08, .14), mats.matBlk, 0, .18, -2.20);
+  }
+  // Smooth front splitter
+  addPart(g, new THREE.BoxGeometry(1.94, .04, .20), mats.matBlk, 0, .08, -2.22);
+  // Slim modern headlights (LED bar style)
+  buildHeadlights(g, mats, {spread:.78, y:.44, z:-2.10, w:.36, h:.06, d:.06});
+  if(!lo){
+    // Inner LED light strip (Tesla signature)
+    [-.78, .78].forEach(s=>addPart(g, new THREE.BoxGeometry(.36, .02, .04), mats.head, s, .50, -2.16));
+  }
+  // Long sloping hood (no scoop, smooth)
+  addPart(g, new THREE.BoxGeometry(1.86, .06, 1.45), mats.paint, 0, .54, -1.10);
+  // Cabin — fastback teardrop with LARGE glass area (Tesla glass roof)
+  addPart(g, new THREE.BoxGeometry(1.78, .44, 1.80), mats.paint, 0, .76, .15);
+  addPart(g, new THREE.BoxGeometry(1.66, .50, .08), mats.glass, 0, .82, -.78, -.40);
+  [-.89, .89].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .36, 1.60), mats.glass, s, .84, .15));
+  // Glass roof (Model S signature — almost the entire roof is glass)
+  addPart(g, new THREE.BoxGeometry(1.50, .04, 1.40), mats.glassDark, 0, 1.00, .15);
+  addPart(g, new THREE.BoxGeometry(1.66, .04, .20), mats.paint, 0, 1.00, -.55); // front roof rail
+  addPart(g, new THREE.BoxGeometry(1.66, .04, .20), mats.paint, 0, 1.00, .85); // rear roof rail
+  // Sloping fastback rear glass
+  addPart(g, new THREE.BoxGeometry(1.60, .42, .08), mats.glassDark, 0, .80, 1.05, .50);
+  // Trunk lid
+  addPart(g, new THREE.BoxGeometry(1.88, .18, .90), mats.paint, 0, .58, 1.65);
+  // Smooth wheel arches (less bulgy than super)
+  buildWheelArches(g, mats.paint, {positions:[
+    [-1.02, .42, -1.50], [1.02, .42, -1.50], [-1.02, .42, 1.50], [1.02, .42, 1.50]
+  ]});
+  // Flush door handles (Tesla signature) — thin chrome lines
+  if(!lo){
+    [-1.01, 1.01].forEach(s=>{
+      addPart(g, new THREE.BoxGeometry(.04, .04, .25), mats.chrome, s, .56, -.30);
+      addPart(g, new THREE.BoxGeometry(.04, .04, .25), mats.chrome, s, .56, .50);
+    });
+  }
+  // Smooth rear bumper
+  addPart(g, new THREE.BoxGeometry(1.94, .22, .28), mats.paint, 0, .34, 2.10);
+  if(!lo){
+    addPart(g, new THREE.BoxGeometry(1.74, .08, .26), mats.matBlk, 0, .16, 2.16);
+  }
+  // Subtle slim tail lights (Tesla style — single thin bar)
+  buildTaillights(g, mats, {spread:.66, y:.52, z:2.14, w:.34, h:.06, d:.04});
+  if(!lo){
+    // Connecting light bar between tails (modern Tesla signature)
+    addPart(g, new THREE.BoxGeometry(1.30, .04, .04), mats.tail, 0, .52, 2.16);
+  }
+  // NO exhaust (electric vehicle)
+  buildSideSkirts(g, mats, {spread:1.00, y:.12, z:0, length:2.8});
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGISTRY — maps def.brand to its builder. All 12 brands now have explicit
+// builders; the legacy parametric fallback in build.js is dead code and
+// removed in this PR.
 // ─────────────────────────────────────────────────────────────────────────────
 const BRAND_BUILDERS = {
   'FERRARI':     buildFerrariSF90,
@@ -655,8 +791,9 @@ const BRAND_BUILDERS = {
   'MCLAREN':     buildMcLarenP1,
   'KOENIGSEGG':  buildKoenigseggJesko,
   'RED BULL':    buildRedBullRBF1,
-  'MERCEDES':    buildMercedesW14F1
-  // 2 more brands added in final batch: Ford Mustang + Tesla Model S
+  'MERCEDES':    buildMercedesW14F1,
+  'FORD':        buildFordMustang,
+  'TESLA':       buildTeslaModelS
 };
 
 window.BRAND_BUILDERS = BRAND_BUILDERS;
@@ -670,3 +807,5 @@ window.buildMcLarenP1 = buildMcLarenP1;
 window.buildKoenigseggJesko = buildKoenigseggJesko;
 window.buildRedBullRBF1 = buildRedBullRBF1;
 window.buildMercedesW14F1 = buildMercedesW14F1;
+window.buildFordMustang = buildFordMustang;
+window.buildTeslaModelS = buildTeslaModelS;
