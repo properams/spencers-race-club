@@ -169,29 +169,35 @@
 
 /* ── CENTER: hero preview ───────────────────────────────────────────── */
 .selCenter{
-  display:flex;flex-direction:column;padding:14px 22px 14px;
-  gap:8px;position:relative;overflow:hidden;min-height:0
+  display:flex;flex-direction:column;padding:18px 24px 16px;
+  gap:10px;position:relative;overflow:hidden;min-height:0;
+  align-items:center
 }
 .selCenter::before{
   content:'';position:absolute;inset:0;
   background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(140,60,255,.06) 0%,transparent 70%);
   pointer-events:none
 }
+.prevHeader{
+  width:100%;max-width:720px;display:flex;flex-direction:column;gap:1px;
+  align-items:center;text-align:center
+}
 .prevBrandLine{
   font-family:'Orbitron',sans-serif;font-size:10px;color:#6e5a9a;
-  letter-spacing:4px;text-transform:uppercase;padding-left:2px
+  letter-spacing:4px;text-transform:uppercase
 }
 .prevModelLine{
-  font-family:'Rajdhani',sans-serif;font-size:22px;color:#fff;
-  font-weight:500;letter-spacing:1px;line-height:1.05;padding-left:2px
+  font-family:'Rajdhani',sans-serif;font-size:24px;color:#fff;
+  font-weight:600;letter-spacing:1.5px;line-height:1.1
 }
 .prevSpecsLine{
-  font-family:'Rajdhani',sans-serif;font-size:11px;color:#6e5a9a;
-  letter-spacing:1.5px;padding-left:2px;margin-bottom:4px
+  font-family:'Rajdhani',sans-serif;font-size:11px;color:#8a78b8;
+  letter-spacing:2px;margin-top:1px
 }
 .prevCanvasWrap{
-  position:relative;width:100%;max-width:760px;
-  flex:1 1 auto;min-height:280px;margin:0 auto;
+  position:relative;width:100%;max-width:720px;
+  flex:0 1 auto;aspect-ratio:16/10;min-height:0;
+  margin:0 auto;
   border:1px solid #2a1f4a;border-radius:12px;
   background:radial-gradient(ellipse at 50% 60%,#2a1a4a,#0d0820);
   overflow:hidden
@@ -235,20 +241,25 @@
              inset 0 0 0 1px rgba(255,255,255,.2)
 }
 
-/* ── STATS BAR (vertical stack of 4 horizontal rows) ────────────────── */
+/* ── STATS BAR (horizontal 4-column grid of compact stat cards) ─────── */
 .statBars{
-  display:flex;flex-direction:column;gap:6px;margin-top:4px;flex-shrink:0
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  width:100%;max-width:720px;margin:2px auto 0;flex-shrink:0
 }
 .statCard{
-  background:#1a0f3a;border-radius:6px;padding:7px 12px;
-  display:grid;grid-template-columns:64px 1fr 56px;align-items:center;gap:12px
+  background:rgba(26,15,58,.7);border:1px solid rgba(255,255,255,.05);
+  border-radius:8px;padding:8px 10px 9px;
+  display:flex;flex-direction:column;gap:5px;align-items:stretch
+}
+.statCardHead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:6px
 }
 .statCardLbl{
-  font-family:'Orbitron',sans-serif;font-size:9px;color:#6e5a9a;
-  letter-spacing:2.5px
+  font-family:'Orbitron',sans-serif;font-size:8.5px;color:#8a78b8;
+  letter-spacing:2px
 }
 .statCardBar{
-  position:relative;height:6px;background:rgba(255,255,255,.05);
+  position:relative;height:5px;background:rgba(255,255,255,.05);
   border-radius:3px;overflow:hidden
 }
 .statCardGhost{
@@ -260,10 +271,10 @@
   transition:width .22s ease-out
 }
 .statCardVal{
-  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:500;
-  letter-spacing:.5px;text-align:right;white-space:nowrap
+  font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;
+  letter-spacing:.3px;text-align:right;white-space:nowrap;line-height:1
 }
-.statCardValMax{font-size:9px;color:#4a3a6a;letter-spacing:.5px}
+.statCardValMax{font-size:9px;color:#4a3a6a;letter-spacing:.3px;font-weight:400}
 
 /* ── RIGHT: settings + rival + start ────────────────────────────────── */
 .selRight{
@@ -401,13 +412,10 @@
     aspect-ratio:16/9;min-height:0;max-height:240px
   }
   .prevHint{font-size:7.5px;letter-spacing:1.8px;top:8px;right:10px}
-  .statBars{display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-direction:initial}
-  .statCard{
-    grid-template-columns:1fr;display:flex;flex-direction:column;
-    gap:4px;padding:5px 8px;align-items:stretch
-  }
-  .statCardLbl{font-size:7px;letter-spacing:2px}
-  .statCardVal{font-size:10px;text-align:left}
+  .statBars{grid-template-columns:1fr 1fr;gap:6px}
+  .statCard{padding:6px 9px 7px;gap:4px}
+  .statCardLbl{font-size:7.5px;letter-spacing:1.8px}
+  .statCardVal{font-size:12px}
   .statCardValMax{font-size:8px}
   .selRight{
     order:3;padding:10px 14px;gap:10px;

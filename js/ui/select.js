@@ -36,8 +36,8 @@ function initCarPreview(){
   _prevRen.toneMapping=THREE.ACESFilmicToneMapping;_prevRen.toneMappingExposure=1.35;
   ThreeCompat.applyRendererColorSpace(_prevRen);_prevRen.setClearColor(0x050812,1);
   _prevScene=new THREE.Scene();
-  _prevCam=new THREE.PerspectiveCamera(34,(_prevSizeW||400)/(_prevSizeH||220),.1,100);
-  _prevCam.position.set(4.8,1.5,5.6);_prevCam.lookAt(0,.55,0);
+  _prevCam=new THREE.PerspectiveCamera(32,(_prevSizeW||400)/(_prevSizeH||220),.1,100);
+  _prevCam.position.set(4.2,1.55,5.8);_prevCam.lookAt(0,.42,0);
   // Cinematic 3-point lighting: warm key from front-left, cool fill from
   // right, magenta rim from behind for cyberpunk silhouette.
   var key=new THREE.DirectionalLight(0xfff0e0,2.3);key.position.set(-3,5,5);_prevScene.add(key);
@@ -364,12 +364,14 @@ function _renderStatCards(def){
     statsEl.dataset.built='1';
     statsEl.innerHTML=_STAT_DEFS.map(s=>(
       '<div class="statCard" data-stat="'+s.key+'">'+
-        '<div class="statCardLbl">'+s.lbl+'</div>'+
+        '<div class="statCardHead">'+
+          '<div class="statCardLbl">'+s.lbl+'</div>'+
+          '<div class="statCardVal"><span class="statCardValNum">0</span><span class="statCardValMax"> / 100</span></div>'+
+        '</div>'+
         '<div class="statCardBar">'+
           '<div class="statCardGhost"></div>'+
           '<div class="statCardFill" style="background:'+s.col+';box-shadow:0 0 6px '+s.col+'99"></div>'+
         '</div>'+
-        '<div class="statCardVal"><span class="statCardValNum">0</span><span class="statCardValMax"> / 100</span></div>'+
       '</div>'
     )).join('');
   }
