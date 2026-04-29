@@ -107,45 +107,75 @@ upgrades. Drop matching files in the paths listed in `manifest.json`:
 - **arctic**: Poly Haven `snowy_park_01` 2K
 - **themepark**: Poly Haven `evening_road_01_puresky` 2K
 
-### GLTF models — manual extraction from Quaternius / KayKit packs
+### GLTF models — manual extraction from Quaternius / KayKit / Kenney packs
 
-The download script does NOT fetch GLTF models because Quaternius and
-KayKit ship them as zip packs. Per world:
+The download script does NOT fetch GLTF models because most pack
+distributors ship them as zips. **Easiest source for individual GLBs:**
+[poly.pizza](https://poly.pizza) — free CC0 / CC-BY model browser
+where every model has a one-click GLB download (no zip extraction).
 
-**Grand Prix** — Quaternius "[Stylized Nature MegaKit](https://quaternius.com/packs/stylizednaturemegakit.html)":
-- Extract `Pine_Tree_Low.glb`   → `assets/models/vegetation/pine_low.glb`
-- Extract `Tree_Birch.glb`        → `assets/models/vegetation/birch_low.glb`
-- Extract `Rock_Small_4.glb`      → `assets/models/props/rock_small.glb`
-- Extract `Rock_Medium_2.glb`     → `assets/models/props/rock_medium.glb`
+#### Per-world recommendations (verified URLs)
 
-For haybales, Quaternius "[Survival MegaKit](https://quaternius.com/packs/survival.html)":
-- Extract `Haystack.glb`          → `assets/models/props/haybale.glb`
+**Grand Prix** — [Quaternius "Stylized Nature MegaKit"](https://quaternius.itch.io/stylized-nature-megakit)
+(110+ models, CC0, "Pay what you want" → free download):
+- Pine tree variant   → `assets/models/vegetation/pine_low.glb`
+- Birch / oak variant → `assets/models/vegetation/birch_low.glb`
+- Small rock          → `assets/models/props/rock_small.glb`
+- Medium rock         → `assets/models/props/rock_medium.glb`
 
-**Volcano** — Quaternius "Stylized Nature MegaKit":
-- Rocks/Boulder variants          → `assets/models/volcano/rock_basalt_*.glb`
-- Any reddish chunky rock         → `assets/models/volcano/lava_chunk.glb`
+For haybales, search [poly.pizza](https://poly.pizza/search/haystack)
+for "haystack" or "haybale" → `assets/models/props/haybale.glb`.
 
-**Arctic** — Quaternius "[Ultimate Snow Kit](https://quaternius.com/packs/ultimatesnowkit.html)":
-- Iceberg variants                → `assets/models/arctic/iceberg_*.glb`
-- Snow rock                       → `assets/models/arctic/snow_rock.glb`
+**Volcano** — [Quaternius "Stylized Nature MegaKit"](https://quaternius.itch.io/stylized-nature-megakit)
+(same pack, different rocks); or
+[poly.pizza search "rock"](https://poly.pizza/search/rock) for darker
+basalt-looking variants:
+- Small jagged rock   → `assets/models/volcano/rock_basalt_small.glb`
+- Medium dark rock    → `assets/models/volcano/rock_basalt_medium.glb`
+- Any glowing/red chunk → `assets/models/volcano/lava_chunk.glb`
 
-**Themepark** — Quaternius "[Survival MegaKit](https://quaternius.com/packs/survival.html)" or KayKit:
-- Traffic cone, bollard, barrel   → `assets/models/themepark/*.glb`
+**Arctic** — Quaternius doesn't ship a dedicated snow pack;
+[poly.pizza search "iceberg"](https://poly.pizza/search/iceberg) and
+[poly.pizza search "snow"](https://poly.pizza/search/snow) have several
+CC0 options including Kenney variants:
+- Iceberg small / large → `assets/models/arctic/iceberg_small.glb` / `iceberg_medium.glb`
+- Snow rock             → `assets/models/arctic/snow_rock.glb`
 
-**Neon City** — KayKit "[Modern Apartment Interior](https://kaylousberg.itch.io/kaykit-mini-game-pack)" or any sci-fi pack:
-- Trash bin, bollard, road block  → `assets/models/neoncity/*.glb`
+**Themepark** — [KayKit "City Builder Bits"](https://kaylousberg.itch.io/city-builder-bits)
+(32+ city props, CC0, free). Pack contains traffic cones, barrels, and
+bollards in `.glb` format alongside `.fbx` / `.obj`:
+- TrafficCone.glb → `assets/models/themepark/traffic_cone.glb`
+- Bollard.glb     → `assets/models/themepark/bollard.glb`
+- Barrel.glb      → `assets/models/themepark/barrel.glb`
 
-**Space** — Any low-poly asteroid pack (Quaternius "Space Kit", or [Kenney "Space Kit"](https://kenney.nl/assets/space-kit)):
-- Asteroid small / large          → `assets/models/space/asteroid_*.glb`
+**Neon City** — [KayKit "City Builder Bits"](https://kaylousberg.itch.io/city-builder-bits)
+again (same pack as themepark — re-extract under different filenames):
+- TrashBin.glb / Dumpster.glb → `assets/models/neoncity/trashbin.glb`
+- Bollard.glb (or Pylon)      → `assets/models/neoncity/bollard_neon.glb`
+- Roadblock.glb / Barrier.glb → `assets/models/neoncity/roadblock.glb`
 
-**Candy** — Quaternius "[Stylized Survival Kit](https://quaternius.com/packs/stylizedsurvivalkit.html)" or any cute-prop pack:
-- Lollipop, candy cane, gumdrop   → `assets/models/candy/*.glb`
+**Space** — [Kenney "Space Kit"](https://kenney.nl/assets/space-kit)
+(150+ assets, CC0, free). Direct GLB downloads on Kenney's site or
+[poly.pizza/u/Kenney](https://poly.pizza/u/Kenney):
+- Asteroid (small variant) → `assets/models/space/asteroid_small.glb`
+- Asteroid (large variant) → `assets/models/space/asteroid_large.glb`
 
-**DeepSea** — Any underwater / pirate pack:
-- Coral chunks, wreck box         → `assets/models/deepsea/*.glb`
+**Candy** — no dedicated CC0 candy pack exists; use
+[poly.pizza search "lollipop"](https://poly.pizza/search/lollipop) and
+similar for one-off candy GLBs:
+- Lollipop  → `assets/models/candy/candy_lollipop.glb`
+- Candy cane → `assets/models/candy/candy_cane.glb`
+- Gumdrop / gummy → `assets/models/candy/gumdrop.glb`
+
+**DeepSea** —
+[poly.pizza search "coral"](https://poly.pizza/search/coral) and
+[poly.pizza search "wreck"](https://poly.pizza/search/wreck) /
+[poly.pizza search "treasure chest"](https://poly.pizza/search/treasure):
+- Coral chunks    → `assets/models/deepsea/coral_small.glb` / `coral_medium.glb`
+- Treasure chest / sunken crate → `assets/models/deepsea/wreck_box.glb`
 
 > Skip any prop you don't have — every slot is independent. The
-> dispatcher uses whatever subset of GLTFs is in the cache.
+> dispatcher uses whatever subset of GLTFs is actually in the cache.
 
 ### Skybox layer art
 
