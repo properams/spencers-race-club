@@ -469,7 +469,7 @@ function buildScene(){
     buildGravelTraps();buildEnvironmentTrees();
     buildNightObjects();buildSpectators();buildSunBillboard();
     buildAdvertisingBoards();buildCornerBoards();buildTrackFlags();
-    buildGPTrackProps();
+    buildGPTrackProps();buildPitBuilding();
     // Bushes track-side + ground clutter (mushrooms / flowers / ferns)
     // in the infield. spawnRoadsideProps walks the track curve;
     // spawnGroundClutter scatters more freely. Both no-op if cache
