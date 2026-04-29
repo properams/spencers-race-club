@@ -79,6 +79,7 @@ function _resetRaceState(){
   if(typeof disposeThemeparkCoaster==='function')disposeThemeparkCoaster();
   if(typeof disposeNeonCityEMP==='function')disposeNeonCityEMP();
   if(typeof disposeGrandPrixStorm==='function')disposeGrandPrixStorm();
+  if(typeof disposeSpaceAnomaly==='function')disposeSpaceAnomaly();
   _arcticIcePatches.length=0;_arcticAurora.length=0;_arcticBlizzardGeo=null;
   _lastGear=1;_currentGear=1;_lastPPos=0;_lastLeaderOrder='';
   _leaderPendingKey='';_leaderStableT=0;_posStableValue=0;_posStableT=0;

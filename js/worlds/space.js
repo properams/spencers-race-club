@@ -642,6 +642,12 @@ function updateSpaceWorld(dt){
     // Pulse glow
     w.pl.intensity=2.0+Math.sin(_nowSec*3+i)*.8;
   });
+  // Lap-progressive anomaly expansion runs AFTER the wells' baseline visuals
+  // so it can override radius/strength for this frame's checkGravityZones.
+  if(typeof updateSpaceAnomaly==='function'){
+    const _pl=carObjs[playerIdx];
+    updateSpaceAnomaly(dt, _pl?_pl.lap:1);
+  }
   // ── Railgun effect (player physics applied in checkSpaceRailgun) ─
   _spaceRailguns.forEach((r,i)=>{r.pl.intensity=2.5+Math.sin(_nowSec*8+i)*.8;});
   // ── UFO orbits + occasional beam ────────────────────────────────
