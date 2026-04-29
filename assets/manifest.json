@@ -4,6 +4,7 @@
   "worlds": {
     "grandprix": {
       "hdri": "assets/hdri/grandprix_dusk_2k.hdr",
+      "hdri_mobile": "assets/hdri/grandprix_dusk_1k.hdr",
       "ground": {
         "color":     "assets/textures/grandprix/ground_color.jpg",
         "normal":    "assets/textures/grandprix/ground_normal.jpg",
@@ -23,6 +24,7 @@
     },
     "neoncity": {
       "hdri": "assets/hdri/neoncity_night_2k.hdr",
+      "hdri_mobile": "assets/hdri/neoncity_night_1k.hdr",
       "ground": {
         "color":     "assets/textures/neoncity/asphalt_wet_color.jpg",
         "normal":    "assets/textures/neoncity/asphalt_wet_normal.jpg",
@@ -40,6 +42,7 @@
     },
     "volcano": {
       "hdri": "assets/hdri/volcano_dusk_2k.hdr",
+      "hdri_mobile": "assets/hdri/volcano_dusk_1k.hdr",
       "ground": {
         "color":     "assets/textures/volcano/lavarock_color.jpg",
         "normal":    "assets/textures/volcano/lavarock_normal.jpg",
@@ -57,6 +60,7 @@
     },
     "arctic": {
       "hdri": "assets/hdri/arctic_overcast_2k.hdr",
+      "hdri_mobile": "assets/hdri/arctic_overcast_1k.hdr",
       "ground": {
         "color":     "assets/textures/arctic/snowice_color.jpg",
         "normal":    "assets/textures/arctic/snowice_normal.jpg",
@@ -74,6 +78,7 @@
     },
     "themepark": {
       "hdri": "assets/hdri/themepark_evening_2k.hdr",
+      "hdri_mobile": "assets/hdri/themepark_evening_1k.hdr",
       "ground": {
         "color":     "assets/textures/themepark/pavement_color.jpg",
         "normal":    "assets/textures/themepark/pavement_normal.jpg",

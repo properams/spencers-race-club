@@ -44,11 +44,15 @@
     }
 
     // Boost reflectivity so PBR materials (if any) actually sample the env.
-    // Lambert materials ignore envMap entirely — no harm done.
+    // Lambert materials ignore envMap entirely — no harm done. Materials
+    // that have already been tuned per-component (cars, ground PBR) carry
+    // userData._carPBR / _sharedAsset so we don't clobber their balance.
     scene.traverse(obj => {
-      if (obj.isMesh && obj.material && 'envMapIntensity' in obj.material){
-        obj.material.envMapIntensity = 0.6;
-      }
+      if (!obj.isMesh || !obj.material) return;
+      const m = obj.material;
+      if (!('envMapIntensity' in m)) return;
+      if (m.userData && (m.userData._carPBR || m.userData._sharedAsset)) return;
+      m.envMapIntensity = 0.6;
     });
     if (window.dbg) dbg.log('asset-bridge', 'HDRI applied', { world: worldId });
     return true;

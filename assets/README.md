@@ -87,6 +87,16 @@ upgrades. Drop matching files in the paths listed in `manifest.json`:
 - **arctic**: Poly Haven `snowy_park_01` 2K
 - **themepark**: Poly Haven `evening_road_01_puresky` 2K
 
+### Mobile HDRI variants (optional but recommended)
+
+The manifest has an `hdri_mobile` slot per world. Drop a 1K-resolution
+HDRI alongside the 2K version — name it `*_1k.hdr` instead of `*_2k.hdr`
+in the `assets/hdri/` folder. On mobile devices the loader automatically
+prefers the 1K variant; if absent it falls back to the 2K file. 2K is
+~6MB on disk; 1K is ~1.5MB — significantly faster download + decode on
+slower mobile networks. Final envMap output is identical after PMREM
+prefiltering, so visual quality on mobile is barely affected.
+
 ### Notes on world-specific behaviour
 
 - HDRI fog-color sampling overrides the world's procedural fog tint. For

@@ -1,5 +1,65 @@
 # CHANGES
 
+## Track Realism Overhaul (sessie 5c) — Auto-materialen PBR + mobile HDRI variant
+
+### Lambert → Standard voor auto-materialen (desktop only)
+**`js/cars/car-parts.js`** — alle 13 gedeelde auto-materialen + per-auto
+paint en accent gaan nu via een nieuwe `_carMat()` helper die op desktop
+`MeshStandardMaterial` retourneert en op mobile `MeshLambertMaterial`
+(paint blijft Phong op mobile). Per-materiaal metalness/roughness/
+envMapIntensity getuned:
+
+| Material | metalness | roughness | envMapIntensity |
+|---|---:|---:|---:|
+| paint    | 0.65 | 0.22 | 0.85 |
+| accent   | 0.50 | 0.35 | 0.65 |
+| glass    | 0.00 | 0.05 | 0.85 |
+| chrome   | 1.00 | 0.18 | 1.00 |
+| rim      | 0.85 | 0.30 | 0.85 |
+| brakeDisc| 0.70 | 0.40 | 0.65 |
+| grille   | 0.40 | 0.55 | 0.40 |
+| matBlk   | 0.00 | 0.85 | 0.25 |
+| tire     | 0.00 | 0.95 | 0.10 |
+
+Effect: zodra een HDRI op `scene.environment` staat zien we crisp
+spiegelende reflectie op glas + chrome, mat-metallic gloss op de paint,
+en vrijwel niets op rubber/matzwart. Zonder HDRI valt envMapIntensity
+op een null-environment terug op een no-op — auto's renderen prima maar
+zonder IBL-bijdrage.
+
+### Self-review fix: shared car-mat cache survival
+Pre-existing risico (sterker geworden door PBR-shaders): `_carShared`
+materialen werden bij elke world-rebuild gedisposed maar de cache hield
+de disposed references vast. Op desktop met Standard zou dat een
+shader-recompile-hitch geven bij elk track-switch. Fix:
+- Alle `_carShared.*` materialen worden nu geflagged met
+  `userData._sharedAsset=true` zodat disposeScene ze overslaat.
+- `getSharedCarMats()` reset `_headlightMats` array bij rebuild zodat
+  duplicaten zich niet opstapelen.
+- Nieuwe `disposeSharedCarMats()` aangeroepen voor full session reset
+  (niet voor per-race rebuild) — header-comment was al oud, nu echt
+  geïmplementeerd.
+
+### `applyHDRI` envMapIntensity-loop respecteert per-component tuning
+Het globale `envMapIntensity = 0.6` in `js/effects/asset-bridge.js` slaat
+nu materialen over die `userData._carPBR=true` of
+`userData._sharedAsset=true` dragen, zodat de zorgvuldig getunede waarden
+voor chrome (1.0) en rim (0.85) niet teruggezet worden naar 0.6.
+
+### Mobile 1K HDRI variant
+**`assets/manifest.json`** — `hdri_mobile` slot toegevoegd voor 5
+werelden (gp / neoncity / volcano / arctic / themepark) verwijzend naar
+`*_1k.hdr`-paden. **`js/assets/loader.js` `_slot()`** — bij `dotPath ===
+'hdri'` en `window._isMobile===true` retourneert de loader het
+`hdri_mobile`-pad indien aanwezig, valt anders door naar het 2K-pad
+zodat oudere manifests niets breken.
+
+Mobiel geheugengebruik: 2K HDR ≈ 6MB textuur, 1K ≈ 1.5MB. Beide na
+PMREM ≈ same envMap-omvang dus voornaamste winst zit in download +
+decode-tijd op trage netwerken.
+
+---
+
 ## Track Realism Overhaul (sessie 5b) — Procedurele silhouetten + GLTF props per wereld
 
 > "Beide" — antwoord op of we per-wereld GLTF dispatchers wilden én
