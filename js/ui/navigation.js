@@ -42,6 +42,7 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
   if(audioCtx){Audio.startWind();Audio.initCrowd();}
   runCountdown(()=>{
     gameState='RACE';
+    if(typeof window._resetFirstRaceFrameMarker==='function')window._resetFirstRaceFrameMarker();
     _raceStartGrace=0; // GO means GO — no delay
     // Reset lap + sector timers to NOW so first lap/sector duration is correct
     lapStartTime=_nowSec;
@@ -56,11 +57,14 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
     if(audioCtx){
       setTimeout(()=>{
         if(gameState==='RACE'&&!musicSched){
-          musicSched=_safeStartMusic(()=>_createRaceMusicForWorld());
+          if(window.dbg)dbg.markRaceEvent('MUSIC-DISPATCH-START');
+          const _start=()=>{musicSched=_safeStartMusic(()=>_createRaceMusicForWorld());};
+          if(window.dbg)dbg.measure('perf','raceMusic.start',_start);else _start();
           if(musicSched){
             if(musicSched.setNitro)musicSched.setNitro(false);
             if(musicSched.setIntensity)musicSched.setIntensity(0);
           }
+          if(window.dbg)dbg.markRaceEvent('MUSIC-DISPATCH-DONE');
         }
       },380);
       // Wind/crowd were pre-warmed at countdown start; calls below are idempotent no-ops.

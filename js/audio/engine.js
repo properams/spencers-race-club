@@ -110,7 +110,9 @@ function initEngine(){
 
 function updateEngine(spd){
   if(!audioCtx)return;
-  if(!engineOsc)initEngine();
+  if(!engineOsc){
+    if(window.dbg)dbg.measure('perf','initEngine',initEngine);else initEngine();
+  }
   const abs=Math.abs(spd);
   const car=carObjs[playerIdx];
   const max=car?car.def.topSpd:1.8;
