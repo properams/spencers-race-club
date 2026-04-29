@@ -242,5 +242,47 @@ Zie ook de Race Start Inventory uit Gate 0.
 - [ ] 5 desktop runs gedaan (verschillende werelden)
 - [ ] Minstens 1 echte mobile run (iPad of Android)
 - [ ] Mid-game spike-ringbuffer dump verzameld
-- [ ] `audit-runs/*.json` files in repo of gedeeld met Claude
 - [ ] Beperkingen die optreden expliciet vermeld
+- [ ] A/B precompile experiment gedraaid (zie hieronder, optioneel)
+
+---
+
+## A/B experiment — pre-compile op rebuildWorld (optioneel maar krachtig)
+
+Verifieert hypothese #1 (wereld-specifieke shader-compile op 1e race-frame)
+zonder dat je 5 runs hoeft te draaien.
+
+**Toggle aan:**
+```js
+localStorage.setItem('src_perfexp_precompile','1'); location.reload();
+```
+
+**Toggle uit:**
+```js
+localStorage.removeItem('src_perfexp_precompile'); location.reload();
+```
+
+Met de flag aan roept `rebuildWorld()` na `buildScene()`:
+1. `renderer.compile(scene, camera)` (Three.js r134 native).
+2. Eén render-pass naar een 16×16 off-screen `WebGLRenderTarget` zodat
+   shader-link én attribute/texture-uploads daadwerkelijk getriggerd worden.
+
+Logt `PRECOMPILE-DONE` race-event met `durMs` + `progDelta` + `texDelta`.
+
+**Procedure:**
+
+1. Toggle uit → wereld kiezen (bv. Volcano) → "Race" → eerste run.
+   Noteer FIRST-RACE-FRAME `progDelta` + duration van `firstRaceFrame.render`
+   measure.
+2. Quit naar menu, toggle aan, herhaal.
+3. Vergelijk:
+   - Als `progDelta` van FIRST-RACE-FRAME naar 0 zakt → hypothese bevestigd.
+   - Als `firstRaceFrame.render` duur flink lager wordt → hypothese bevestigd.
+   - Als `PRECOMPILE-DONE.durMs` >250ms → de fix verschuift de freeze, de
+     gebruiker ziet 'm tijdens wereld-select i.p.v. op GO. Acceptabel mits
+     er een visuele "loading"-cue is.
+
+| Run | Wereld | Precompile | First-frame ms | progDelta | Notes |
+|---|---|---|---|---|---|
+|  | _tbd_ | OFF | _tbd_ | _tbd_ |  |
+|  | _tbd_ | ON  | _tbd_ | _tbd_ |  |
