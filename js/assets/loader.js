@@ -1,6 +1,6 @@
-// js/assets/loader.js — Asset facade (HDRI / textures / GLTF) with manifest +
-// graceful fallback. Non-module so the rest of the worlds (also non-module)
-// can call window.Assets synchronously after preloadWorld().
+// js/assets/loader.js — Asset facade (HDRI / textures / GLTF / OBJ / FBX)
+// with manifest + graceful fallback. Non-module so the rest of the worlds
+// (also non-module) can call window.Assets synchronously after preloadWorld().
 //
 // MENTAL MODEL (mirrors js/audio/samples.js):
 //   1. Boot reads assets/manifest.json once into _manifest. Missing file or
@@ -10,10 +10,17 @@
 //   3. Build code (worlds/*.js, track/environment.js) calls synchronous
 //      get*() helpers; null = fallback naar procedural.
 //
-// External Three.js loaders (RGBELoader, GLTFLoader) come from CDN, lazy
-// loaded only as soon as the corresponding asset-type is requested. If CDN
-// is down or offline → loaders blijven null, alle slots vallen terug op
-// procedural. Game blijft speelbaar zonder enige network-asset.
+// MODEL FORMATS:
+//   - .glb / .gltf  → THREE.GLTFLoader (preferred — single-file binary)
+//   - .obj          → THREE.OBJLoader (+ optional sibling .mtl via MTLLoader)
+//   - .fbx          → THREE.FBXLoader (+ fflate dep for zip-fbx)
+//   Routing happens by extension in loadModel(); spawn helpers consume the
+//   uniform { scene, animations } shape regardless of source format.
+//
+// External Three.js loaders come from CDN, lazy-loaded only when the first
+// matching asset is requested. If CDN is down or offline → loaders blijven
+// null, alle slots vallen terug op procedural. Game blijft speelbaar zonder
+// enige network-asset.
 
 'use strict';
 
@@ -22,8 +29,19 @@
   const MANIFEST_PATH = 'assets/manifest.json';
   const CDN_BASE = 'https://cdn.jsdelivr.net/npm/three@0.134.0/examples/js';
   const LOADER_URLS = {
-    rgbe: CDN_BASE + '/loaders/RGBELoader.js',
-    gltf: CDN_BASE + '/loaders/GLTFLoader.js',
+    rgbe:    CDN_BASE + '/loaders/RGBELoader.js',
+    gltf:    CDN_BASE + '/loaders/GLTFLoader.js',
+    obj:     CDN_BASE + '/loaders/OBJLoader.js',
+    mtl:     CDN_BASE + '/loaders/MTLLoader.js',
+    // FBXLoader requires fflate (for zip-fbx) and the NURBS curve helpers.
+    // We load fflate first; NURBSCurve is only needed for spline geometry
+    // which low-poly props don't use, so we skip it to keep payload small.
+    fflate:  CDN_BASE + '/libs/fflate.min.js',
+    fbx:     CDN_BASE + '/loaders/FBXLoader.js',
+  };
+  // Loader load-order dependencies (key → array of prerequisite keys).
+  const LOADER_DEPS = {
+    fbx: ['fflate'],
   };
 
   // ── State ────────────────────────────────────────────────────────────
@@ -32,7 +50,7 @@
   const _loaderPromises = {}; // cdn-script per type (lazy)
   const _hdriCache = new Map();      // path → THREE.Texture (PMREM-processed) | null
   const _textureCache = new Map();   // path → THREE.Texture | null
-  const _gltfCache = new Map();      // path → { scene, animations } | null
+  const _modelCache = new Map();     // path → { scene, animations } | null  (any format)
   const _worldPreloaded = new Set();
   let _pmremGen = null;
 
@@ -76,13 +94,21 @@
     if (_loaderPromises[type]) return _loaderPromises[type];
     const url = LOADER_URLS[type];
     if (!url) return Promise.resolve(false);
-    _loaderPromises[type] = new Promise(resolve => {
-      const s = document.createElement('script');
-      s.src = url;
-      s.async = true;
-      s.onload  = () => { _log('cdn loader ready', type); resolve(true); };
-      s.onerror = () => { _warn('cdn loader failed', type+' '+url); resolve(false); };
-      document.head.appendChild(s);
+    // Resolve any prerequisite scripts first (e.g. fbx depends on fflate).
+    const deps = LOADER_DEPS[type] || [];
+    const prereq = deps.length
+      ? Promise.all(deps.map(d => _ensureLoader(d))).then(results => results.every(Boolean))
+      : Promise.resolve(true);
+    _loaderPromises[type] = prereq.then(prereqOk => {
+      if (!prereqOk){ _warn('cdn loader prereq failed', type); return false; }
+      return new Promise(resolve => {
+        const s = document.createElement('script');
+        s.src = url;
+        s.async = true;
+        s.onload  = () => { _log('cdn loader ready', type); resolve(true); };
+        s.onerror = () => { _warn('cdn loader failed', type+' '+url); resolve(false); };
+        document.head.appendChild(s);
+      });
     });
     return _loaderPromises[type];
   }
@@ -203,13 +229,39 @@
     return { color, normal, roughness };
   }
 
-  // ── GLTF ────────────────────────────────────────────────────────────
-  async function loadGLTF(path){
-    if (!path) return null;
-    if (_gltfCache.has(path)) return _gltfCache.get(path);
+  // ── Models (GLTF / OBJ / FBX) ───────────────────────────────────────
+  // All three formats normalise to the same shape: { scene, animations }.
+  // Caller code (spawn helpers, prop dispatch) treats them uniformly.
+  function _ext(path){ return (String(path).split('.').pop()||'').toLowerCase(); }
+
+  function _postProcessModelScene(scene){
+    if (!scene) return;
+    scene.traverse(obj => {
+      if (obj.isMesh){
+        obj.castShadow = false;
+        obj.receiveShadow = false;
+        const mats = Array.isArray(obj.material) ? obj.material : (obj.material ? [obj.material] : []);
+        mats.forEach(m=>{
+          ['map','normalMap','roughnessMap','metalnessMap','emissiveMap','aoMap','bumpMap'].forEach(slot=>{
+            const t = m[slot];
+            if (t && window.ThreeCompat && ThreeCompat.applyTextureColorSpace){
+              // Only the diffuse-style maps need sRGB; normal/rough/metal/AO/bump
+              // are linear and three.js defaults already match. The shim is a
+              // no-op when the texture is already correct.
+              if (slot === 'map' || slot === 'emissiveMap'){
+                ThreeCompat.applyTextureColorSpace(t);
+              }
+            }
+          });
+        });
+      }
+    });
+  }
+
+  async function _loadGLTFInternal(path){
     const ok = await _ensureLoader('gltf');
-    if (!ok || !THREE.GLTFLoader){ _gltfCache.set(path, null); return null; }
-    const result = await new Promise(resolve => {
+    if (!ok || !THREE.GLTFLoader) return null;
+    return await new Promise(resolve => {
       try {
         new THREE.GLTFLoader().load(path,
           gltf => resolve({ scene: gltf.scene, animations: gltf.animations||[] }),
@@ -217,21 +269,76 @@
           err => { _warn('gltf load failed', path+' '+(err&&err.message||err)); resolve(null); });
       } catch (e) { _warn('gltf throw', String(e)); resolve(null); }
     });
-    if (result && result.scene){
-      // Ensure materials are sRGB-aware on r150+ (ThreeCompat handles encoding shim)
-      result.scene.traverse(obj => {
-        if (obj.isMesh){
-          obj.castShadow = false;
-          obj.receiveShadow = false;
-          if (obj.material && obj.material.map && window.ThreeCompat && ThreeCompat.applyTextureColorSpace){
-            ThreeCompat.applyTextureColorSpace(obj.material.map);
-          }
-        }
-      });
+  }
+
+  // OBJ: optionally load sibling .mtl first so OBJLoader picks up materials.
+  // Manifest path 'foo.obj' → try 'foo.mtl' (same dirname, swapped ext). If
+  // MTL is absent / fails, OBJLoader still parses geometry with default mat.
+  async function _loadOBJInternal(path){
+    const okObj = await _ensureLoader('obj');
+    if (!okObj || !THREE.OBJLoader) return null;
+    const mtlPath = path.replace(/\.obj$/i, '.mtl');
+    let materials = null;
+    if (mtlPath !== path){
+      const okMtl = await _ensureLoader('mtl');
+      if (okMtl && THREE.MTLLoader){
+        materials = await new Promise(resolve => {
+          try {
+            const mtlLoader = new THREE.MTLLoader();
+            // Set resourcePath so referenced textures resolve relative to
+            // the .mtl's folder, not the document root.
+            const dir = path.substring(0, path.lastIndexOf('/')+1);
+            mtlLoader.setResourcePath(dir);
+            mtlLoader.load(mtlPath,
+              m => { try { m.preload(); } catch(_){} resolve(m); },
+              undefined,
+              () => resolve(null));   // 404 on .mtl is fine — proceed without
+          } catch (e) { resolve(null); }
+        });
+      }
     }
-    _gltfCache.set(path, result);
+    return await new Promise(resolve => {
+      try {
+        const loader = new THREE.OBJLoader();
+        if (materials && loader.setMaterials) loader.setMaterials(materials);
+        loader.load(path,
+          obj => resolve({ scene: obj, animations: [] }),
+          undefined,
+          err => { _warn('obj load failed', path+' '+(err&&err.message||err)); resolve(null); });
+      } catch (e) { _warn('obj throw', String(e)); resolve(null); }
+    });
+  }
+
+  async function _loadFBXInternal(path){
+    const ok = await _ensureLoader('fbx');
+    if (!ok || !THREE.FBXLoader) return null;
+    return await new Promise(resolve => {
+      try {
+        new THREE.FBXLoader().load(path,
+          obj => resolve({ scene: obj, animations: obj.animations || [] }),
+          undefined,
+          err => { _warn('fbx load failed', path+' '+(err&&err.message||err)); resolve(null); });
+      } catch (e) { _warn('fbx throw', String(e)); resolve(null); }
+    });
+  }
+
+  async function loadModel(path){
+    if (!path) return null;
+    if (_modelCache.has(path)) return _modelCache.get(path);
+    const ext = _ext(path);
+    let result = null;
+    if (ext === 'glb' || ext === 'gltf')      result = await _loadGLTFInternal(path);
+    else if (ext === 'obj')                    result = await _loadOBJInternal(path);
+    else if (ext === 'fbx')                    result = await _loadFBXInternal(path);
+    else { _warn('unsupported model ext', ext+' '+path); }
+    if (result && result.scene) _postProcessModelScene(result.scene);
+    _modelCache.set(path, result);
     return result;
   }
+
+  // Backwards-compat alias — older calls expected loadGLTF/getGLTF naming
+  // but the underlying implementation routes any extension. Keep as alias.
+  const loadGLTF = loadModel;
 
   // ── Per-world preload ───────────────────────────────────────────────
   async function preloadWorld(worldId){
@@ -289,12 +396,12 @@
     if (!slot) return null;
     if (Array.isArray(slot)){
       const loaded = slot
-        .map(p => (p && _gltfCache.has(p)) ? _gltfCache.get(p) : null)
+        .map(p => (p && _modelCache.has(p)) ? _modelCache.get(p) : null)
         .filter(Boolean);
       if (!loaded.length) return null;
       return loaded[(Math.random()*loaded.length)|0];
     }
-    return _gltfCache.has(slot) ? _gltfCache.get(slot) : null;
+    return _modelCache.has(slot) ? _modelCache.get(slot) : null;
   }
   // Returns ALL loaded variants for a slot — used by callers (e.g. the
   // GP instanced-tree spawner) that want to balance across variants
@@ -306,7 +413,7 @@
     if (!slot) return [];
     const arr = Array.isArray(slot) ? slot : [slot];
     return arr
-      .map(p => (p && _gltfCache.has(p)) ? _gltfCache.get(p) : null)
+      .map(p => (p && _modelCache.has(p)) ? _modelCache.get(p) : null)
       .filter(Boolean);
   }
   function listProps(worldId){
@@ -331,8 +438,8 @@
         ks.filter(k => {
           const v = w.props[k];
           if (!v) return false;
-          if (Array.isArray(v)) return v.some(p => p && _gltfCache.get(p));
-          return !!_gltfCache.get(v);
+          if (Array.isArray(v)) return v.some(p => p && _modelCache.get(p));
+          return !!_modelCache.get(v);
         }).length,
         ks.length,
       ];
@@ -350,7 +457,10 @@
   window.Assets = {
     init,
     preloadWorld,
-    loadHDRI, loadTexture, loadGLTF, loadGroundSet,
+    loadHDRI, loadTexture, loadGroundSet,
+    // Models (route by extension). loadGLTF kept as alias so existing
+    // callers don't break; loadModel is the new canonical name.
+    loadModel, loadGLTF,
     getHDRI, getTexture, getGroundSet, getGLTF, getGLTFVariants, listProps,
     status,
   };
