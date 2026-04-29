@@ -194,40 +194,58 @@
   font-family:'Rajdhani',sans-serif;font-size:11px;color:#8a78b8;
   letter-spacing:2px;margin-top:1px;text-align:center
 }
-.prevCanvasWrap{
+/* Hero card — vervangt de live 3D preview. SVG car-silhouet die meekleurt
+   met de gekozen auto via --carColor / --carGlow custom properties.
+   Geen WebGL = geen iOS context-budget issues. */
+.prevHeroCard{
+  --carColor:#ff3a8c;
+  --carAccent:#ff7700;
+  --carGlow:rgba(255,58,140,.35);
   position:relative;width:100%;max-width:720px;
-  flex:0 1 auto;aspect-ratio:16/10;min-height:0;
-  margin:0 auto;
-  border:1px solid #2a1f4a;border-radius:12px;
-  background:radial-gradient(ellipse at 50% 60%,#2a1a4a,#0d0820);
-  overflow:hidden
+  margin:0 auto;flex:0 1 auto;
+  display:flex;align-items:center;justify-content:center;
+  aspect-ratio:16/9;min-height:160px;max-height:280px;
+  padding:14px 20px;
+  border-radius:14px;border:1px solid rgba(255,255,255,.08);
+  background:
+    radial-gradient(ellipse 75% 70% at 50% 50%,var(--carGlow) 0%,transparent 65%),
+    linear-gradient(135deg,#1a0d3a 0%,#0a0420 100%);
+  box-shadow:0 0 40px var(--carGlow) inset,
+             0 6px 24px rgba(0,0,0,.5);
+  overflow:hidden;
+  transition:--carGlow .25s ease
 }
-/* Magenta L-shaped corner brackets — anchors the preview as a viewport. */
-.prevCorner{
-  position:absolute;width:18px;height:18px;pointer-events:none;
-  border:0 solid #ff2d6f;
-  filter:drop-shadow(0 0 5px rgba(255,45,111,.7))
+.prevHeroBg{
+  position:absolute;inset:0;pointer-events:none;
+  background:
+    repeating-linear-gradient(0deg,transparent 0,transparent 9px,rgba(255,255,255,.025) 9px,rgba(255,255,255,.025) 10px),
+    radial-gradient(circle at 50% 110%,var(--carGlow) 0%,transparent 60%);
+  opacity:.7
 }
-.prevCornerTL{top:7px;left:7px;border-top-width:2px;border-left-width:2px;border-top-left-radius:5px}
-.prevCornerTR{top:7px;right:7px;border-top-width:2px;border-right-width:2px;border-top-right-radius:5px}
-.prevCornerBL{bottom:7px;left:7px;border-bottom-width:2px;border-left-width:2px;border-bottom-left-radius:5px}
-.prevCornerBR{bottom:7px;right:7px;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:5px}
-#carPreviewCvs{
-  width:100%;height:100%;display:block;cursor:grab
+.prevCarSvg{
+  position:relative;z-index:1;
+  width:100%;max-width:560px;height:auto;
+  color:var(--carColor);
+  filter:drop-shadow(0 8px 18px var(--carGlow));
+  transition:color .25s ease,filter .25s ease
 }
-#carPreviewCvs:active{cursor:grabbing}
-.prevHint{
-  position:absolute;top:10px;right:12px;
-  font-family:'Orbitron',sans-serif;font-size:8.5px;color:rgba(255,255,255,.6);
-  letter-spacing:2.5px;pointer-events:none;opacity:1;
-  text-shadow:0 0 6px rgba(255,45,111,.4);
-  transition:opacity .8s ease
+.prevTypeBadge{
+  position:absolute;top:12px;right:14px;z-index:2;
+  font-family:'Orbitron',sans-serif;font-size:9px;color:#fff;
+  letter-spacing:3px;font-weight:700;
+  padding:4px 10px;border-radius:14px;
+  background:rgba(0,0,0,.55);
+  border:1px solid var(--carAccent);
+  text-shadow:0 0 8px var(--carGlow);
+  box-shadow:0 0 12px var(--carGlow)
 }
 .colorRow{
-  position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
   display:flex;gap:8px;padding:6px 10px;
-  background:rgba(0,0,0,.45);border-radius:14px;backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px)
+  margin:0 auto;
+  width:fit-content;max-width:100%;
+  background:rgba(0,0,0,.4);border-radius:14px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.05)
 }
 .colorDot{
   width:18px;height:18px;border-radius:50%;cursor:pointer;
@@ -409,12 +427,12 @@
   .prevBrandLine{font-size:9px;letter-spacing:3px}
   .prevModelLine{font-size:18px}
   .prevSpecsLine{font-size:10px;margin-bottom:2px}
-  .prevCanvasWrap{
+  .prevHeroCard{
     flex:0 0 auto;width:100%;max-width:none;
     height:48vw;max-height:240px;min-height:160px;
-    aspect-ratio:auto
+    aspect-ratio:auto;padding:10px 14px
   }
-  .prevHint{font-size:7.5px;letter-spacing:1.8px;top:8px;right:10px}
+  .prevTypeBadge{font-size:8px;letter-spacing:2px;padding:3px 8px;top:10px;right:10px}
   .statBars{max-width:none;grid-template-columns:1fr 1fr;gap:6px}
   .statCard{padding:6px 9px 7px;gap:4px}
   .statCardLbl{font-size:7.5px;letter-spacing:1.8px}

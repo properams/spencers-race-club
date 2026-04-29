@@ -27,7 +27,7 @@
 //   updateRpmBar, updateRevLimiter, updateDriftVisuals,
 //   updateNitroVisual, updateBoostTrail, updateGhost, updateSpeedLines,
 //   updatePitStop, updateFastestLapFlash, updateCloseBattle,
-//   updateCollisionFlash, updateRain, updateCarPreview, updateMirror,
+//   updateCollisionFlash, updateRain, updateMirror,
 //   Audio.updateThunder, Audio.updateCrowd.
 
 'use strict';
@@ -151,7 +151,6 @@ function loop(){
       else renderer.render(scene,camera);
     }
   }
-  updateCarPreview(dt);
   // Mirror pass — second render with backward-facing camera (chase cam + race only, not during victory orbit or intro)
   if(gameState==='RACE'&&_mirrorEnabled&&_camView===0&&!_victoryOrbit&&_introPanTimer<=0){
     // Skip mirror on low quality to save a full render pass
