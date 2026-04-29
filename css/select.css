@@ -179,20 +179,20 @@
   pointer-events:none
 }
 .prevHeader{
-  width:100%;max-width:720px;display:flex;flex-direction:column;gap:1px;
-  align-items:center;text-align:center
+  width:100%;max-width:720px;margin:0 auto;
+  text-align:center
 }
 .prevBrandLine{
   font-family:'Orbitron',sans-serif;font-size:10px;color:#6e5a9a;
-  letter-spacing:4px;text-transform:uppercase
+  letter-spacing:4px;text-transform:uppercase;text-align:center
 }
 .prevModelLine{
   font-family:'Rajdhani',sans-serif;font-size:24px;color:#fff;
-  font-weight:600;letter-spacing:1.5px;line-height:1.1
+  font-weight:600;letter-spacing:1.5px;line-height:1.1;text-align:center
 }
 .prevSpecsLine{
   font-family:'Rajdhani',sans-serif;font-size:11px;color:#8a78b8;
-  letter-spacing:2px;margin-top:1px
+  letter-spacing:2px;margin-top:1px;text-align:center
 }
 .prevCanvasWrap{
   position:relative;width:100%;max-width:720px;
