@@ -492,5 +492,56 @@ function buildScene(){
   // if the manifest has no slots filled or preload hasn't completed yet —
   // boot.js + select.js re-call maybeUpgradeWorld when preload resolves.
   if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(activeWorld);
+  // Pre-compile materials voor de nieuwe wereld + force texture/attribute
+  // uploads via een 16x16 off-screen render. Voorheen was dit een dbg-only
+  // experiment in select.js; nu default-aan in buildScene zodat ELKE scene-
+  // build (inclusief eerste boot-world en rebuildWorld) shader-link en
+  // GPU-upload spikes uit de hot path haalt. Dit is hét voorkomen van de
+  // start-freeze op iPad voor wereld-specifieke material sets — boot doet
+  // al een warm-up render, maar pakte alleen de default GP wereld.
+  _precompileScene();
   window.dbg&&dbg.snapshot('scene','buildScene done',{world:activeWorld,objects:scene.children.length,camPos:camera.position});
+}
+
+// Pre-compile + 16x16 off-screen render. renderer.compile() linkt shaders
+// maar triggert niet altijd attribute/texture uploads — daarom een echte
+// (off-screen) render erachter. Cost is zichtbaar via PRECOMPILE-DONE
+// race-event wanneer dbg.enabled.
+//
+// NB: deze render triggert ook de shadow-pass van sunLight (1024×1024 shadow
+// map). Op iPad kost dat 8–25ms — bewust hier omdat we die cost willen
+// verschuiven van race-start naar select-screen. Shadow-uniforms moeten
+// gecompiled worden mét shadow-variant zodat de eerste race-frame géén
+// program-link spike heeft; daarom shadowMap.enabled NIET tijdelijk uitzetten.
+function _precompileScene(){
+  if(!renderer||!scene||!camera)return;
+  const _t0=performance.now();
+  const _progBefore=(renderer.info.programs&&renderer.info.programs.length)||0;
+  const _texBefore=renderer.info.memory.textures;
+  let _rt=null;
+  try{
+    if(typeof renderer.compile==='function')renderer.compile(scene,camera);
+    if(window.THREE&&THREE.WebGLRenderTarget){
+      _rt=new THREE.WebGLRenderTarget(16,16);
+      const _prevTarget=renderer.getRenderTarget();
+      renderer.setRenderTarget(_rt);
+      renderer.render(scene,camera);
+      renderer.setRenderTarget(_prevTarget);
+    }
+  }catch(e){
+    if(window.dbg)dbg.error('scene',e,'precompile failed');
+  }finally{
+    if(_rt)try{_rt.dispose();}catch(_){}
+  }
+  if(window.dbg){
+    const _dur=performance.now()-_t0;
+    const _progAfter=(renderer.info.programs&&renderer.info.programs.length)||0;
+    const _texAfter=renderer.info.memory.textures;
+    dbg.markRaceEvent('PRECOMPILE-DONE',{
+      durMs:+_dur.toFixed(2),
+      progDelta:_progAfter-_progBefore,
+      texDelta:_texAfter-_texBefore,
+      world:activeWorld
+    });
+  }
 }

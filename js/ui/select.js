@@ -285,45 +285,6 @@ function _selectPreviewCar(defId){
   _renderRival();
 }
 
-// EXPERIMENT (perf audit phase 1): when localStorage src_perfexp_precompile='1'
-// is set, every world rebuild + buildScene cycle ends with renderer.compile()
-// against the active camera AND a single off-screen render-into-target so the
-// new world's full material set is fully primed before the user can hit RACE.
-// If FIRST-RACE-FRAME progDelta drops to 0 with this flag enabled, we have
-// confirmed Suspect #1 (world-specific shader compile) without 5 race runs.
-// Toggle via:
-//   localStorage.setItem('src_perfexp_precompile','1'); location.reload();
-//   localStorage.removeItem('src_perfexp_precompile');  location.reload();
-function _perfExpPrecompileWorld(){
-  if(!renderer||!scene||!camera)return;
-  let on=false;try{on=localStorage.getItem('src_perfexp_precompile')==='1';}catch(_){}
-  if(!on)return;
-  const _t0=performance.now();
-  const _progBefore=(renderer.info.programs&&renderer.info.programs.length)||0;
-  const _texBefore=renderer.info.memory.textures;
-  try{
-    if(typeof renderer.compile==='function')renderer.compile(scene,camera);
-    // Force a real render-pass so attribute uploads + texture uploads happen
-    // now, not on the first race frame. Render to an off-screen target so the
-    // user doesn't see a flash; the 16×16 size is enough to trigger uploads.
-    if(window.THREE&&THREE.WebGLRenderTarget){
-      const _rt=new THREE.WebGLRenderTarget(16,16);
-      const _prevTarget=renderer.getRenderTarget();
-      renderer.setRenderTarget(_rt);renderer.render(scene,camera);
-      renderer.setRenderTarget(_prevTarget);
-      _rt.dispose();
-    }
-  }catch(e){if(window.dbg)dbg.error('perfexp',e,'precompile failed');}
-  const _dur=performance.now()-_t0;
-  const _progAfter=(renderer.info.programs&&renderer.info.programs.length)||0;
-  const _texAfter=renderer.info.memory.textures;
-  if(window.dbg)dbg.markRaceEvent('PRECOMPILE-DONE',{
-    durMs:+_dur.toFixed(2),
-    progDelta:_progAfter-_progBefore,
-    texDelta:_texAfter-_texBefore
-  });
-}
-
 function rebuildWorld(newWorld){
   if(newWorld===activeWorld)return;
   activeWorld=newWorld;
@@ -352,9 +313,8 @@ function rebuildWorld(newWorld){
   applyWorldHUDTint(newWorld);
   // Refresh car preview (force re-render)
   _prevDefId=-1;_selectPreviewCar(selCarId);
-  // Perf-audit phase 1 experiment: pre-compile materials voor de nieuwe wereld.
-  // Default uit; alleen actief met localStorage.src_perfexp_precompile='1'.
-  _perfExpPrecompileWorld();
+  // (Pre-compile + GPU upload prime gebeurt nu standaard aan het eind van
+  // buildScene() via _precompileScene — zie js/core/scene.js.)
 }
 
 function applyWorldHUDTint(world){
