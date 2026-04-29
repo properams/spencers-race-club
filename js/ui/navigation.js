@@ -11,6 +11,12 @@ function goToSelect(){
 }
 
 function goToRace(){
+  // Re-entry guard: blokkeert dubbele invocations (rapid double-click of
+  // touch-stutter op de Race-knop). Zonder deze guard start een tweede
+  // runCountdown parallel, krijg je twee onGo callbacks en eindigen we
+  // met twee parallel music-schedulers (eerste consumeert pendingRaceMusic,
+  // tweede valt door naar de fallback factory).
+  if(gameState!=='SELECT')return;
   if(titleMusic){titleMusic.stop();titleMusic=null;}
 document.getElementById('sSelect').classList.add('hidden');document.getElementById('hud').style.display='block';
   makeAllCars();cacheHUDRefs();applyWorldHUDTint(activeWorld);
@@ -39,9 +45,31 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
   // Pre-warm ambient audio during countdown so the WebAudio node graph is
   // already alive by GO. Both functions are idempotent and ramp gain from 0,
   // so calling them early is silent until the race actually starts.
-  if(audioCtx){Audio.startWind();Audio.initCrowd();}
+  // Engine audio (4-osc + tire-noise loop) wordt ook hier ge-init zodat de
+  // 88200-sample noise-buffer fill + filter chain niet op het 1e race-frame
+  // landt. engineGain start op 0 → stilte tot updateEngine de gain ramped.
+  if(audioCtx){
+    Audio.startWind();
+    Audio.initCrowd();
+    if(typeof initEngine==='function'&&!engineGain){
+      if(window.dbg)dbg.measure('perf','initEngine.preWarm',initEngine);
+      else initEngine();
+    }
+    // Pre-construct race music scheduler tijdens countdown. Constructor doet
+    // _ensureMusicMaster (eerste keer ~kostbaar GainNode setup), filter chain,
+    // bass/lead/stab arrays. Door dit naar countdown te verschuiven blijft
+    // er op T+380ms enkel een goedkope .start() over (RaceMusic._s self-
+    // schedule chain of StemRaceMusic 3x bufferSource.start). Quit-during-
+    // countdown wordt opgevangen door _resetRaceState.
+    if(!window._pendingRaceMusic&&typeof _createRaceMusicForWorld==='function'){
+      const _ctor=()=>{try{window._pendingRaceMusic=_createRaceMusicForWorld();}
+        catch(e){if(window.dbg)dbg.error('perf',e,'pre-construct race music');}};
+      if(window.dbg)dbg.measure('perf','raceMusic.preConstruct',_ctor);else _ctor();
+    }
+  }
   runCountdown(()=>{
     gameState='RACE';
+    if(typeof window._resetFirstRaceFrameMarker==='function')window._resetFirstRaceFrameMarker();
     _raceStartGrace=0; // GO means GO — no delay
     // Reset lap + sector timers to NOW so first lap/sector duration is correct
     lapStartTime=_nowSec;
@@ -56,11 +84,26 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
     if(audioCtx){
       setTimeout(()=>{
         if(gameState==='RACE'&&!musicSched){
-          musicSched=_safeStartMusic(()=>_createRaceMusicForWorld());
+          if(window.dbg)dbg.markRaceEvent('MUSIC-DISPATCH-START');
+          const _start=()=>{
+            let inst=window._pendingRaceMusic;window._pendingRaceMusic=null;
+            if(inst){
+              // Pre-built tijdens countdown — alleen .start() hier.
+              try{if(inst.start)inst.start();}
+              catch(e){if(window.dbg)dbg.warn('music','pre-built start failed: '+e.message);inst=null;}
+            }
+            if(!inst){
+              // Fallback: pre-construct path overgeslagen of gefaald.
+              inst=_safeStartMusic(()=>_createRaceMusicForWorld());
+            }
+            musicSched=inst;
+          };
+          if(window.dbg)dbg.measure('perf','raceMusic.start',_start);else _start();
           if(musicSched){
             if(musicSched.setNitro)musicSched.setNitro(false);
             if(musicSched.setIntensity)musicSched.setIntensity(0);
           }
+          if(window.dbg)dbg.markRaceEvent('MUSIC-DISPATCH-DONE');
         }
       },380);
       // Wind/crowd were pre-warmed at countdown start; calls below are idempotent no-ops.

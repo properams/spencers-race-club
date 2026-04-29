@@ -18,6 +18,9 @@
   const _frameTimes = []; // ringbuffer laatste 60 frames
   let _lastFrame = 0;
   let _rafId = null;
+  let _lastHeapMB = 0;       // voor heap-delta indicator
+  // Buckets voor frame-time histogram (8 bins): <17, 17-25, 25-33, 33-50, 50-83, 83-150, 150-300, 300+ ms
+  const _HIST_EDGES = [17, 25, 33, 50, 83, 150, 300];
 
   // Frame-time tracking draait ALLEEN wanneer de overlay zichtbaar is —
   // anders zou perf.js zelf 60× per seconde wakker zijn voor niets.
@@ -50,6 +53,28 @@
     const sorted = [..._frameTimes].sort((a,b)=>a-b);
     return sorted[sorted.length-1] - sorted[0]; // jitter ms
   }
+  function _frameHistogram(){
+    const bins = new Array(_HIST_EDGES.length + 1).fill(0);
+    for (const dt of _frameTimes) {
+      let placed = false;
+      for (let i = 0; i < _HIST_EDGES.length; i++) {
+        if (dt < _HIST_EDGES[i]) { bins[i]++; placed = true; break; }
+      }
+      if (!placed) bins[bins.length-1]++;
+    }
+    return bins;
+  }
+  function _renderHist(bins){
+    // Compact ascii bar: ▁▂▃▄▅▆▇█ scaled to max bucket
+    const max = Math.max(1, ...bins);
+    const blocks = ['▁','▂','▃','▄','▅','▆','▇','█'];
+    return bins.map(n => n === 0 ? '·' : blocks[Math.min(7, Math.floor(n/max*7))]).join('');
+  }
+  function _spikeCount(thresholdMs){
+    let n = 0;
+    for (const dt of _frameTimes) if (dt > thresholdMs) n++;
+    return n;
+  }
 
   function _build(){
     const el = document.createElement('div');
@@ -68,22 +93,52 @@
     const fpsCol = fps >= 55 ? '#0f0' : fps >= 30 ? '#fc0' : '#f64';
     lines.push(`<span style="color:#888">FPS</span>  <span style="color:${fpsCol};font-weight:bold">${fps.toFixed(1)}</span>  <span style="color:#666">(jitter ${spread.toFixed(1)}ms)</span>`);
 
-    // Heap (Chrome-only)
+    // Frame-time histogram + spike counts
+    const bins = _frameHistogram();
+    const sp33 = _spikeCount(33);
+    const sp50 = _spikeCount(50);
+    const sp33col = sp33 === 0 ? '#0f0' : sp33 < 3 ? '#fc0' : '#f64';
+    const sp50col = sp50 === 0 ? '#0f0' : '#f64';
+    lines.push(`<span style="color:#888">HIST</span> <span style="font-family:monospace;color:#9cf">${_renderHist(bins)}</span> <span style="color:#666">[<17,25,33,50,83,150,300,+]</span>`);
+    lines.push(`<span style="color:#888">>33ms</span> <span style="color:${sp33col}">${sp33}</span>  <span style="color:#888">>50ms</span> <span style="color:${sp50col}">${sp50}</span>`);
+
+    // Heap (Chrome-only) + delta vs vorige refresh
     if (performance.memory) {
       const m = performance.memory;
-      const used = (m.usedJSHeapSize/1048576).toFixed(1);
+      const used = m.usedJSHeapSize/1048576;
       const lim = (m.jsHeapSizeLimit/1048576).toFixed(0);
-      lines.push(`<span style="color:#888">HEAP</span> ${used}M / ${lim}M`);
+      const delta = used - _lastHeapMB;
+      _lastHeapMB = used;
+      const dCol = delta > 1 ? '#f64' : delta > 0.2 ? '#fc0' : '#888';
+      const dStr = delta >= 0 ? '+' + delta.toFixed(2) : delta.toFixed(2);
+      lines.push(`<span style="color:#888">HEAP</span> ${used.toFixed(1)}M / ${lim}M  <span style="color:${dCol}">Δ${dStr}M/0.5s</span>`);
     }
 
     // Renderer info
     if (window.renderer && window.renderer.info) {
       const r = window.renderer.info;
       const rd = r.render, mem = r.memory;
+      const programs = (r.programs && r.programs.length) || 0;
       lines.push(`<span style="color:#888">DRAW</span> ${rd.calls} calls · ${rd.triangles.toLocaleString()} tris`);
-      lines.push(`<span style="color:#888">GEOM</span> ${mem.geometries} · <span style="color:#888">TEX</span> ${mem.textures}`);
+      lines.push(`<span style="color:#888">GEOM</span> ${mem.geometries} · <span style="color:#888">TEX</span> ${mem.textures} · <span style="color:#888">PROG</span> ${programs}`);
     } else {
       lines.push('<span style="color:#666">renderer not ready</span>');
+    }
+
+    // Audio state — voor freeze-attribution rond GO
+    if (window.audioCtx) {
+      const aState = window.audioCtx.state;
+      const oscC = window.MusicLib ? window.MusicLib._oscCount : '?';
+      const liveSrc = window._dbgAudioSrc ? window._dbgAudioSrc.live : null;
+      const totalStarted = window._dbgAudioSrc ? window._dbgAudioSrc.startedTotal : null;
+      const sched = window.musicSched
+        ? (window.musicSched.constructor.name + (window.musicSched.style ? ':' + window.musicSched.style : ''))
+        : '—';
+      const aCol = aState === 'running' ? '#0f0' : '#fc0';
+      let audioLine = `<span style="color:#888">AUDIO</span> <span style="color:${aCol}">${aState}</span> · osc ${oscC}`;
+      if (liveSrc !== null) audioLine += ` · live ${liveSrc} · total ${totalStarted}`;
+      audioLine += ` · <span style="color:#888">SCHED</span> ${sched}`;
+      lines.push(audioLine);
     }
 
     // Scene-stats
@@ -103,6 +158,24 @@
     // Cars
     if (window.carObjs) {
       lines.push(`<span style="color:#888">CARS</span> ${window.carObjs.length} (player idx ${window.playerIdx})`);
+    }
+
+    // Recent race events + spikes (laatste 3 + count) — alleen wanneer dbg.enabled
+    if (window.dbg && window.dbg.enabled) {
+      const ev = window.dbg.raceEvents();
+      const sp = window.dbg.spikes();
+      if (ev.length) {
+        const last3 = ev.slice(-3).map(e =>
+          `${e.t}s ${e.name}${e.heapMB?(' '+e.heapMB+'M'):''}${e.programs!==undefined?(' p'+e.programs):''}`
+        ).join('<br>');
+        lines.push(`<span style="color:#888">EVENTS</span><br><span style="color:#9cf;font-size:10px">${last3}</span>`);
+      }
+      if (sp.length) {
+        const top3 = sp.slice().sort((a,b)=>b.dt-a.dt).slice(0,3).map(s =>
+          `${s.t}s ${s.dt}ms ${s.gameState||'?'} ${s.activeWorld||'?'}`
+        ).join('<br>');
+        lines.push(`<span style="color:#888">SPIKES (${sp.length})</span><br><span style="color:#fc6;font-size:10px">${top3}</span>`);
+      }
     }
 
     _perfEl.innerHTML = lines.join('<br>');

@@ -4,6 +4,7 @@
 
 function runCountdown(onGo){
   try{
+    if(window.dbg)dbg.markRaceEvent('CD-START');
     const lights=['fl1','fl2','fl3','fl4','fl5'];
     const f1El=document.getElementById('f1Lights');
     const num=document.getElementById('cdNum');
@@ -42,7 +43,12 @@ function runCountdown(onGo){
               if(f1El)f1El.style.display='none';
             }catch(e){window.dbg?dbg.error('countdown',e,'GO error'):console.error('Countdown GO error:',e);}
             // ALWAYS fire onGo — even if visuals fail
+            if(window.dbg)dbg.markRaceEvent('GO');
             onGo();
+            if(window.dbg){
+              setTimeout(()=>{try{dbg.markRaceEvent('GO+1s');}catch(_){}},1000);
+              setTimeout(()=>{try{dbg.markRaceEvent('GO+3s');}catch(_){}},3000);
+            }
             if(num)fadePop(num,550,function(){if(cdOv)cdOv.style.display='none';});
           },150+Math.random()*130);
         }

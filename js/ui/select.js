@@ -313,6 +313,8 @@ function rebuildWorld(newWorld){
   applyWorldHUDTint(newWorld);
   // Refresh car preview (force re-render)
   _prevDefId=-1;_selectPreviewCar(selCarId);
+  // (Pre-compile + GPU upload prime gebeurt nu standaard aan het eind van
+  // buildScene() via _precompileScene — zie js/core/scene.js.)
 }
 
 function applyWorldHUDTint(world){

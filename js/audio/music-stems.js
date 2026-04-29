@@ -95,6 +95,14 @@ class StemRaceMusic {
       try{ s.stop(); }catch(_){}
     }
     this._sources = [];
+    // Disconnect chain zodat _gBase/_gMid/_gLead/_out/_filt loskomen van
+    // _musicMaster — voorkomt accumulatie van dangling nodes bij snelle
+    // Race→Quit→Race herhalingen.
+    try{ if(this._gBase) this._gBase.disconnect(); }catch(_){}
+    try{ if(this._gMid)  this._gMid.disconnect();  }catch(_){}
+    try{ if(this._gLead) this._gLead.disconnect(); }catch(_){}
+    try{ if(this._out)   this._out.disconnect();   }catch(_){}
+    try{ if(this._filt)  this._filt.disconnect();  }catch(_){}
   }
 
   // Highpass-sweep voor nitro-feel + optionele FX-burst.

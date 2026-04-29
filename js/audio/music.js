@@ -514,7 +514,15 @@ class RaceMusic{
   }
 
   start(){this.running=true;this._gen=(this._gen||0)+1;this.nextBeat=this.ctx.currentTime+.05;this._s(this._gen);}
-  stop(){this.running=false;this._gen=(this._gen||0)+1;}
+  stop(){
+    this.running=false;this._gen=(this._gen||0)+1;
+    // Disconnect output chain zodat de Gain/Filter nodes loskomen van
+    // _musicMaster — voorkomt dangling nodes in de WebAudio graph bij
+    // snelle Race→Quit→Race herhalingen (anders accumuleren ze tot GC).
+    try{if(this._out)this._out.disconnect();}catch(_){}
+    try{if(this._filt)this._filt.disconnect();}catch(_){}
+    try{if(this._filtLow)this._filtLow.disconnect();}catch(_){}
+  }
 
   // Nitro: highpass filter opent → lichter, meer "opwinding"
   setNitro(active){

@@ -38,6 +38,11 @@ let _nowSec=0;
 
 let _aiFrameCounter=0,_fpsShow=false,_fpsFrames=0,_fpsLast=performance.now(),_fpsVal=60;
 let _perfBadFrames=0,_perfChecked=false,_lowQuality=!!window._isMobile;
+// First-frame-after-GO tracker — used to attribute the initial shader-compile
+// /texture-upload spike to a measurable window. Reset by navigation.js when
+// gameState transitions COUNTDOWN→RACE.
+let _firstRaceFrameLogged=false;
+window._resetFirstRaceFrameMarker=()=>{_firstRaceFrameLogged=false;};
 // Auto-quality detection thresholds: during frames [START..END], count frames slower than BAD_MS.
 // If the count exceeds BAD_THRESHOLD within that window, downgrade to low quality.
 const QUALITY_CHECK_FRAME_START=30,QUALITY_CHECK_FRAME_END=180;
@@ -118,8 +123,28 @@ function loop(){
     updateRain();
   }
   if(renderer&&scene&&camera){
-    if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
-    else renderer.render(scene,camera);
+    // First-frame-after-GO measure: catches shader compile / texture upload
+    // spike on the first race render with this world's full material set.
+    if(window.dbg&&!_firstRaceFrameLogged&&gameState==='RACE'){
+      _firstRaceFrameLogged=true;
+      const _progBefore=(renderer.info.programs&&renderer.info.programs.length)||0;
+      const _texBefore=renderer.info.memory.textures;
+      dbg.measure('perf','firstRaceFrame.render',()=>{
+        if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
+        else renderer.render(scene,camera);
+      });
+      const _progAfter=(renderer.info.programs&&renderer.info.programs.length)||0;
+      const _texAfter=renderer.info.memory.textures;
+      dbg.markRaceEvent('FIRST-RACE-FRAME',{
+        progDelta:_progAfter-_progBefore,
+        texDelta:_texAfter-_texBefore,
+        progAfter:_progAfter,
+        texAfter:_texAfter
+      });
+    }else{
+      if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
+      else renderer.render(scene,camera);
+    }
   }
   updateCarPreview(dt);
   // Mirror pass — second render with backward-facing camera (chase cam + race only, not during victory orbit or intro)

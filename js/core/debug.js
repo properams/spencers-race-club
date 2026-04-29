@@ -99,7 +99,142 @@
 
     showErrors() { _ensureViewer(); _viewerEl.style.display = 'flex'; _viewerRefresh(); },
     hideErrors() { if (_viewerEl) _viewerEl.style.display = 'none'; },
+
+    // ── Performance audit primitives (alleen actief als dbg.enabled) ─────
+    // measure(channel,label,fn): roept fn aan, meet wallclock-tijd, push naar
+    // measureRing. measureAsync idem voor async functies. Geen overhead als
+    // dbg.enabled false is — dan gewoon fn() pass-through.
+    measure(channel, label, fn) {
+      if (!ENABLED) return fn();
+      const t0 = performance.now();
+      try { return fn(); }
+      finally {
+        const dur = performance.now() - t0;
+        _measureRing.push({ t: ts(), ch: channel, label, dur });
+        if (_measureRing.length > MEASURE_RING_MAX) _measureRing.shift();
+        if (dur > 16) console.log('[' + ts() + '][' + channel + '] ' + label + ' = ' + dur.toFixed(2) + 'ms');
+      }
+    },
+    measureAsync(channel, label, fn) {
+      if (!ENABLED) return fn();
+      const t0 = performance.now();
+      return Promise.resolve().then(fn).finally(() => {
+        const dur = performance.now() - t0;
+        _measureRing.push({ t: ts(), ch: channel, label, dur });
+        if (_measureRing.length > MEASURE_RING_MAX) _measureRing.shift();
+        if (dur > 16) console.log('[' + ts() + '][' + channel + '] ' + label + ' = ' + dur.toFixed(2) + 'ms');
+      });
+    },
+    measures() { return _measureRing.slice(); },
+    clearMeasures() { _measureRing.length = 0; },
+
+    // markRaceEvent(name): snapshot van heap, renderer.info, audio-state op
+    // exact dit moment. Bedoeld voor de 4 race-start punten (CD-START, GO,
+    // GO+1s, GO+3s). Pusht naar _raceEventRing (max 32). Console-log altijd
+    // als dbg.enabled.
+    markRaceEvent(name, extras) {
+      if (!ENABLED) return null;
+      const e = _captureRaceEventSnapshot(name, extras || {});
+      _raceEventRing.push(e);
+      if (_raceEventRing.length > RACE_EVENT_RING_MAX) _raceEventRing.shift();
+      console.log('[' + ts() + '][raceEvent] ' + name, e);
+      return e;
+    },
+    raceEvents() { return _raceEventRing.slice(); },
+    clearRaceEvents() { _raceEventRing.length = 0; },
+
+    // spikes(): returns the last 20 frame-time spikes >50ms with context.
+    // Spike detector wordt automatisch gestart in production-loop wanneer
+    // dbg.enabled true is (zie _startSpikeDetector hieronder).
+    spikes() { return _spikeRing.slice(); },
+    clearSpikes() { _spikeRing.length = 0; },
   };
+
+  // ── Performance audit ringbuffers + snapshot helper ──────────────────
+  const MEASURE_RING_MAX = 100;
+  const RACE_EVENT_RING_MAX = 32;
+  const SPIKE_RING_MAX = 20;
+  const _measureRing = [];
+  const _raceEventRing = [];
+  const _spikeRing = [];
+
+  function _captureRaceEventSnapshot(name, extras) {
+    const snap = {
+      t: ts(),
+      name: name,
+      now: performance.now(),
+      gameState: window.gameState,
+      activeWorld: window.activeWorld,
+    };
+    if (performance.memory) {
+      snap.heapMB = +(performance.memory.usedJSHeapSize / 1048576).toFixed(2);
+      snap.heapLimitMB = +(performance.memory.jsHeapSizeLimit / 1048576).toFixed(0);
+    }
+    if (window.renderer && window.renderer.info) {
+      const r = window.renderer.info;
+      snap.drawCalls = r.render.calls;
+      snap.triangles = r.render.triangles;
+      snap.programs = (r.programs && r.programs.length) || 0;
+      snap.geometries = r.memory.geometries;
+      snap.textures = r.memory.textures;
+    }
+    if (window.audioCtx) {
+      snap.audioState = window.audioCtx.state;
+      snap.audioTime = +window.audioCtx.currentTime.toFixed(3);
+    }
+    if (window.MusicLib) snap.oscCount = window.MusicLib._oscCount;
+    if (window._dbgAudioSrc) {
+      snap.liveAudioSrc = window._dbgAudioSrc.live;
+      snap.startedTotal = window._dbgAudioSrc.startedTotal;
+    }
+    snap.engineInit = !!window.engineGain;
+    snap.musicSchedKind = window.musicSched
+      ? (window.musicSched.constructor.name + '(' + (window.musicSched.style || '') + ')')
+      : 'none';
+    snap.weatherMode = window._weatherMode;
+    snap.fxEnabled = !!(window._postfx && window._postfx.enabled);
+    Object.assign(snap, extras);
+    return snap;
+  }
+
+  // ── Spike detector: permanent rAF chain wanneer dbg.enabled ──────────
+  // Detecteert frame-times >50ms en logt met context (gameState, world,
+  // music-sched class, weather mode, recent SFX). Onafhankelijk van de
+  // perf.js overlay zodat-ie altijd meet zolang dbg aanstaat.
+  let _spikeLast = 0, _spikeRafId = null;
+  function _spikeTick(now) {
+    if (_spikeLast > 0) {
+      const dt = now - _spikeLast;
+      if (dt > 50) {
+        const ctx = {
+          t: ts(),
+          dt: +dt.toFixed(2),
+          gameState: window.gameState,
+          activeWorld: window.activeWorld,
+          finalLap: !!(window.musicSched && window.musicSched.finalLap),
+          weatherMode: window._weatherMode,
+        };
+        if (window.renderer && window.renderer.info) {
+          ctx.drawCalls = window.renderer.info.render.calls;
+          ctx.programs = (window.renderer.info.programs && window.renderer.info.programs.length) || 0;
+          ctx.textures = window.renderer.info.memory.textures;
+        }
+        if (window.MusicLib) ctx.oscCount = window.MusicLib._oscCount;
+        if (window._dbgAudioSrc) ctx.liveAudioSrc = window._dbgAudioSrc.live;
+        _spikeRing.push(ctx);
+        if (_spikeRing.length > SPIKE_RING_MAX) _spikeRing.shift();
+        console.warn('[' + ts() + '][spike] ' + dt.toFixed(1) + 'ms', ctx);
+      }
+    }
+    _spikeLast = now;
+    _spikeRafId = requestAnimationFrame(_spikeTick);
+  }
+  function _startSpikeDetector() {
+    if (_spikeRafId !== null) return;
+    _spikeLast = 0;
+    _spikeRafId = requestAnimationFrame(_spikeTick);
+  }
+  if (ENABLED) _startSpikeDetector();
 
   // ── Error-viewer overlay (lazy-built op eerste open) ─────────────────
   let _viewerEl = null, _viewerList = null, _viewerToast = null;
