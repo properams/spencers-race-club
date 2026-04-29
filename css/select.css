@@ -213,21 +213,14 @@
 .prevCornerBL{bottom:7px;left:7px;border-bottom-width:2px;border-left-width:2px;border-bottom-left-radius:5px}
 .prevCornerBR{bottom:7px;right:7px;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:5px}
 #carPreviewCvs{
-  width:100%;height:100%;display:block;cursor:grab
-}
-#carPreviewCvs:active{cursor:grabbing}
-.prevHint{
-  position:absolute;top:10px;right:12px;
-  font-family:'Orbitron',sans-serif;font-size:8.5px;color:rgba(255,255,255,.6);
-  letter-spacing:2.5px;pointer-events:none;opacity:1;
-  text-shadow:0 0 6px rgba(255,45,111,.4);
-  transition:opacity .8s ease
+  width:100%;height:100%;display:block
 }
 .colorRow{
-  position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
-  display:flex;gap:8px;padding:6px 10px;
-  background:rgba(0,0,0,.45);border-radius:14px;backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px)
+  display:flex;gap:8px;padding:6px 10px;margin:6px auto 0;
+  width:fit-content;max-width:100%;
+  background:rgba(0,0,0,.4);border-radius:14px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.05)
 }
 .colorDot{
   width:18px;height:18px;border-radius:50%;cursor:pointer;
@@ -414,7 +407,6 @@
     height:48vw;max-height:240px;min-height:160px;
     aspect-ratio:auto
   }
-  .prevHint{font-size:7.5px;letter-spacing:1.8px;top:8px;right:10px}
   .statBars{max-width:none;grid-template-columns:1fr 1fr;gap:6px}
   .statCard{padding:6px 9px 7px;gap:4px}
   .statCardLbl{font-size:7.5px;letter-spacing:1.8px}
