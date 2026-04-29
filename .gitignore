@@ -11,6 +11,12 @@ assets/textures/**/*.png
 assets/models/**/*.glb
 assets/models/**/*.gltf
 
+# Asset inbox — temp drop zone, contents never committed (only the
+# README + .gitkeep stay tracked so the folder exists in fresh clones).
+assets/_inbox/*
+!assets/_inbox/README.md
+!assets/_inbox/.gitkeep
+
 # Werk-documentatie / planning — lokaal houden, niet publiceren
 CLAUDE.md
 CLAUDE_CODE_PROMPTS.md
