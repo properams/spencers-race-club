@@ -33,6 +33,12 @@ let _nitroUseCount=0,_airborneAccum=0,_cleanLapFlag=true;
 function _resetRaceState(){
   if(musicSched){musicSched.stop();musicSched=null;}
   setTimeout(()=>{if(musicSched){musicSched.stop();musicSched=null;}},100);
+  // Pre-built RaceMusic instance uit countdown opruimen als gebruiker quit
+  // tijdens countdown (instance was geconstrueerd, .start() niet aangeroepen).
+  if(window._pendingRaceMusic){
+    try{window._pendingRaceMusic.stop&&window._pendingRaceMusic.stop();}catch(_){}
+    window._pendingRaceMusic=null;
+  }
   if(titleMusic){titleMusic.stop();titleMusic=null;}
   if(selectMusic){selectMusic.stop();selectMusic=null;}
   // Reset dynamic music state for clean slate
