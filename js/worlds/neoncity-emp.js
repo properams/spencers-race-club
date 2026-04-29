@@ -70,7 +70,12 @@ function updateNeonCityEMP(dt,currentLap){
   const t=(typeof _nowSec==='number')?_nowSec:0;
   // Lap-edge: clear one-shot trigger flags when lap drops back below the
   // threshold (race-restart edge case mirrors volcano-bridge's pattern).
-  if(currentLap<2){for(let i=0;i<3;i++)rt.triggeredLap2[i]=false;}
+  if(currentLap<2){
+    for(let i=0;i<3;i++)rt.triggeredLap2[i]=false;
+    // Cancel any in-flight blackout if the player rewinds out of lap 2/3
+    // (ends the dim immediately, restores music duck below).
+    if(rt.blackoutEnd>t)rt.blackoutEnd=t;
+  }
   if(currentLap<3){for(let i=0;i<3;i++)rt.triggeredLap3[i]=false;}
   // Detect player entering an active zone.
   const car=(typeof carObjs!=='undefined'&&typeof playerIdx!=='undefined')?carObjs[playerIdx]:null;

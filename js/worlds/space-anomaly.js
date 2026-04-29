@@ -44,22 +44,29 @@ function buildSpaceAnomaly(){
   }
   // One warp halo per well — torus scaled-down to invisible until lap 2.
   // Shared geometry, per-well cloned material so individual phases differ.
-  const haloGeo=new THREE.TorusGeometry(_SPACE_ANOM_HALO_BASE_R,.18,8,40);
-  const haloMatProto=new THREE.MeshLambertMaterial({
-    color:0x6600ff,emissive:0xaa00ff,emissiveIntensity:1.6,
-    transparent:true,opacity:0,depthWrite:false,
-  });
+  // Skip on mobile: halos are pure visual telegraphing, the radius/strength
+  // ramp still gives the lap-progressive gameplay feel without the alpha-blend
+  // fillrate cost.
   const halos=[];
-  for(let i=0;i<wellBase.length;i++){
-    const w=wellBase[i].well;
-    const halo=new THREE.Mesh(haloGeo,haloMatProto.clone());
-    halo.rotation.x=Math.PI/2;
-    halo.position.copy(w.pos);halo.position.y=.04;
-    halo.scale.setScalar(0.001); // start invisible (avoid initial pop)
-    scene.add(halo);
-    halos.push(halo);
+  const mobile=(typeof _isMobile!=='undefined'&&_isMobile);
+  if(!mobile){
+    const haloGeo=new THREE.TorusGeometry(_SPACE_ANOM_HALO_BASE_R,.18,8,40);
+    const haloMatProto=new THREE.MeshLambertMaterial({
+      color:0x6600ff,emissive:0xaa00ff,emissiveIntensity:1.6,
+      transparent:true,opacity:0,depthWrite:false,
+    });
+    for(let i=0;i<wellBase.length;i++){
+      const w=wellBase[i].well;
+      const halo=new THREE.Mesh(haloGeo,haloMatProto.clone());
+      halo.rotation.x=Math.PI/2;
+      halo.position.copy(w.pos);halo.position.y=.04;
+      halo.scale.setScalar(0.001); // start invisible (avoid initial pop)
+      halo.visible=false;          // skip render submission until lap-edge
+      scene.add(halo);
+      halos.push(halo);
+    }
+    haloMatProto.dispose();
   }
-  haloMatProto.dispose();
   _spaceAnomalyState={
     lap2StartT:-1,lap3StartT:-1,
     wellBase:wellBase,
@@ -97,9 +104,10 @@ function updateSpaceAnomaly(dt,currentLap){
     const halo=st.halos[i];
     if(!halo)continue;
     if(!haloVisible){
-      if(halo.material&&halo.material.opacity!==0)halo.material.opacity=0;
+      if(halo.visible)halo.visible=false;
       continue;
     }
+    if(!halo.visible)halo.visible=true;
     // Scale the torus to roughly match the well's growing radius (~22→46).
     const wellRadius=st.wellBase[i].radius*desiredScale;
     const haloScale=wellRadius/_SPACE_ANOM_HALO_BASE_R;
