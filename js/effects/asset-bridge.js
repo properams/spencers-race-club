@@ -121,6 +121,14 @@
     // Trees + props: handled inside the world builder (sync getters at
     // build time). Only HDRI/ground need post-hoc patching because they
     // attach to objects already created.
+    // Re-precompile als er materialen zijn vervangen of envMap is
+    // toegewezen — anders krijgt de eerste race-frame alsnog een shader-
+    // compile spike (PBR ground = Standard ipv Lambert; HDRI envMap voegt
+    // USE_ENVMAP define toe → fresh shader-permutatie). _precompileScene
+    // is geëxposed door scene.js.
+    if (any && typeof window._precompileScene === 'function'){
+      window._precompileScene();
+    }
     return any;
   }
 

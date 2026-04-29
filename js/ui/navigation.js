@@ -11,6 +11,12 @@ function goToSelect(){
 }
 
 function goToRace(){
+  // Re-entry guard: blokkeert dubbele invocations (rapid double-click of
+  // touch-stutter op de Race-knop). Zonder deze guard start een tweede
+  // runCountdown parallel, krijg je twee onGo callbacks en eindigen we
+  // met twee parallel music-schedulers (eerste consumeert pendingRaceMusic,
+  // tweede valt door naar de fallback factory).
+  if(gameState!=='SELECT')return;
   if(titleMusic){titleMusic.stop();titleMusic=null;}
 document.getElementById('sSelect').classList.add('hidden');document.getElementById('hud').style.display='block';
   makeAllCars();cacheHUDRefs();applyWorldHUDTint(activeWorld);

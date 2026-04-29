@@ -545,3 +545,8 @@ function _precompileScene(){
     });
   }
 }
+// Exposed zodat asset-bridge.js (HDRI/PBR async upgrade) opnieuw kan
+// pre-compilen nadat maybeUpgradeWorld materialen vervangt of envMap
+// toevoegt. Zonder deze re-precompile zou Phase 3.1.a geen effect hebben
+// op werelden waar PBR ground/HDRI later async resolveert.
+window._precompileScene=_precompileScene;
