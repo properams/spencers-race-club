@@ -44,8 +44,8 @@ const Audio = {
   // als preload klaar is voor race-start gebruikt _createRaceMusicForWorld
   // automatisch de samples, anders fallback naar procedurele synth.
   preloadWorld(worldId){
-    if(typeof window._preloadWorld !== 'function') return Promise.resolve({kind:'procedural'});
-    return window._preloadWorld(worldId);
+    if(typeof window._preloadWorldAudio !== 'function') return Promise.resolve({kind:'procedural'});
+    return window._preloadWorldAudio(worldId);
   },
   // Preload alle dispatch-categorieën voor de huidige race-config:
   // SFX (globaal), surface voor de actieve wereld, engine voor het geselecteerde

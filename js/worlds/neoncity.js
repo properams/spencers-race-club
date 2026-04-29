@@ -24,6 +24,8 @@ function buildNeonCityEnvironment(){
   buildNeonParticles();
   buildNeonSkyGlow();
   buildNeonNightObjects();
+  buildNeonEMPZones();
+  buildNeonHoloWalls();
   // GLTF roadside props — three layers of detail at varying offsets.
   // Each call no-ops cleanly if the cache is empty for that group, so
   // neon's signature procedural look stays untouched until assets load.
@@ -496,10 +498,6 @@ function buildNeonNightObjects(){
 }
 
 
-// TODO niet ge-wired: deze EMP-zones (3 stuks) en buildNeonHoloWalls
-// hieronder worden niet aangeroepen door buildNeonCityEnvironment(). De
-// _neonEmpZones / _neonHoloWalls arrays in updateNeonCityWorld() zijn dus
-// no-ops. Activeer in buildNeonCityEnvironment() na _neonBuildings setup.
 function buildNeonEMPZones(){
   const defs=[{t:.22},{t:.52},{t:.78}];
   defs.forEach((def,di)=>{

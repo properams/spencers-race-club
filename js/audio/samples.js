@@ -283,7 +283,7 @@ window.SURFACE_MANIFEST = SURFACE_MANIFEST;
 window.AMBIENT_MANIFEST = AMBIENT_MANIFEST;
 window.WORLD_DEFAULT_SURFACE = WORLD_DEFAULT_SURFACE;
 
-window._preloadWorld = preloadWorld;
+window._preloadWorldAudio = preloadWorld;
 window._hasMusicStems = hasMusicStems;
 window._getReadyBuffers = getReadyBuffers;
 

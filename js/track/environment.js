@@ -326,9 +326,6 @@ function buildLake(){
 }
 
 
-// TODO niet ge-wired: pit-gebouw builder (~45 regels) is gedefinieerd maar
-// wordt nooit aangeroepen door buildGround/buildBarriers/etc. Activeer door
-// 'm in core/scene.js buildScene() voor world==='grandprix' te roepen.
 function buildPitBuilding(){
   const wMat=new THREE.MeshLambertMaterial({color:0xe4e4e4});
   const rMat=new THREE.MeshLambertMaterial({color:0x383848});
