@@ -1043,9 +1043,18 @@ function buildParticles(){
 
 
 function buildWorldElements(){
-  if(activeWorld==='grandprix'){ buildWaterPuddles(); buildDRSZone(); buildTyreBarriers(); }
-  else if(activeWorld==='space'){ buildGravityZones(); buildOrbitingAsteroids(); buildWarpTunnels(); }
-  else if(activeWorld==='deepsea'){ buildCurrentStreams(); buildAbyssCracks(); buildTreasureTrail(); }
+  if(activeWorld==='grandprix'){
+    buildWaterPuddles(); buildDRSZone(); buildTyreBarriers();
+    if(typeof buildGrandPrixStorm==='function')buildGrandPrixStorm();
+  }
+  else if(activeWorld==='space'){
+    buildGravityZones(); buildOrbitingAsteroids(); buildWarpTunnels();
+    if(typeof buildSpaceAnomaly==='function')buildSpaceAnomaly();
+  }
+  else if(activeWorld==='deepsea'){
+    buildCurrentStreams(); buildAbyssCracks(); buildTreasureTrail();
+    if(typeof buildDeepSeaCurrent==='function')buildDeepSeaCurrent();
+  }
   // Neon City world elements handled in buildNeonCityEnvironment if present
 }
 

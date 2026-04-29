@@ -26,6 +26,7 @@ function buildNeonCityEnvironment(){
   buildNeonNightObjects();
   buildNeonEMPZones();
   buildNeonHoloWalls();
+  if(typeof buildNeonCityEMP==='function')buildNeonCityEMP();
   // GLTF roadside props — three layers of detail at varying offsets.
   // Each call no-ops cleanly if the cache is empty for that group, so
   // neon's signature procedural look stays untouched until assets load.
@@ -681,6 +682,12 @@ function updateNeonCityWorld(dt){
       sheen.material.map.offset.y=(sheen.material.map.offset.y+dt*.02)%1;
       sheen.material.opacity=.26+Math.sin(t*.7)*.08;
     }
+  }
+  // Lap-progressive EMP blackout — runs LAST so it modulates emissives that
+  // were just set above this frame.
+  if(typeof updateNeonCityEMP==='function'){
+    const pl=(typeof carObjs!=='undefined'&&typeof playerIdx!=='undefined')?carObjs[playerIdx]:null;
+    updateNeonCityEMP(dt, pl?pl.lap:1);
   }
 }
 
