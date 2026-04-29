@@ -407,14 +407,13 @@ b0418cb Merge pull request #30 from properams/claude/improve-track-visuals-9f5pm
 
 Letterlijk uit grep `TODO|FIXME|HACK|XXX` over `js/`, `index.html`, `css/`:
 
-- `js/worlds/neoncity.js:499` — `// TODO niet ge-wired: deze EMP-zones (3 stuks) en buildNeonHoloWalls`
-- `js/track/environment.js:329` — `// TODO niet ge-wired: pit-gebouw builder (~45 regels) is gedefinieerd maar`
+- (geen open TODOs — Foundation Cleanup sessie 2026-04-29 heeft alle bekende TODOs gewired)
 
 (Geen FIXME / HACK / XXX gevonden.)
 
 ## 12. Bekende afwijkingen van CLAUDE.md
 
-> **Observatie:** er is **geen `CLAUDE.md`** in repo-root. De prompt verwijst er wel naar maar het bestand bestaat niet. De volgende observaties zijn dus afgemeten tegen conventies die in andere bestanden (header-comments) als "the way" worden beschreven.
+> **Update 2026-04-29:** `CLAUDE.md` is toegevoegd in repo-root tijdens Foundation Cleanup. De observaties hieronder zijn afgemeten tegen die conventies + de "the way"-headers in andere bestanden.
 
 ### Bestanden zonder `'use strict'`
 70 .js bestanden in `js/`, **63** hebben `'use strict'`, **7** niet — allemaal de ES-modules:
@@ -429,16 +428,16 @@ Letterlijk uit grep `TODO|FIXME|HACK|XXX` over `js/`, `index.html`, `css/`:
 (ES modules zijn al impliciet strict, dus dit is geen bug — alleen een observatie.)
 
 ### Plekken waar errors via `console.error` / `console.warn` lopen i.p.v. `dbg`
-11 hits in totaal, waarvan een aantal in fallback-paden (when `window.dbg` not yet ready):
+Alle hits gebruiken een dbg-fallback patroon (geverifieerd 2026-04-29):
 
-- `js/assets/loader.js:40` — `_warn(...)` heeft fallback naar `console.warn` als `window.dbg` ontbreekt
-- `js/audio/api.js:130` — `console.warn('[Audio.play3D] niet geïmplementeerd (fallback)')` (geen dbg-fallback)
-- `js/audio/music.js:52` — `console.warn('[music] start failed:',e.message)` (geen dbg-fallback)
-- `js/gameplay/countdown.js:43,49,54` — bevat dbg-fallback patroon (`window.dbg ? dbg.error(...) : console.error(...)`)
-- `js/core/boot.js:125,136,155` — idem dbg-fallback patroon
-- `js/core/debug.js:66,71` — interne implementatie van `dbg.warn` / `dbg.error`, dus correct
+- `js/assets/loader.js:58` — `_warn(...)` heeft fallback naar `console.warn` als `window.dbg` ontbreekt
+- `js/audio/api.js:129-130` — `if(window.dbg)dbg.warn('audio',...) else console.warn(...)`
+- `js/audio/music.js:51-52` — `if(window.dbg)dbg.warn('music',...) else console.warn(...)`
+- `js/gameplay/countdown.js:43,49,54` — dbg-fallback patroon
+- `js/core/boot.js:125,136,155` — dbg-fallback patroon
+- `js/core/debug.js:66,71,226` — interne implementatie van `dbg.warn` / `dbg.error`, dus correct
 
-Pure `console.error/warn` zonder dbg-fallback: `audio/api.js:130`, `audio/music.js:52`. Deze bypassen de error-ringbuffer.
+Pure `console.error/warn` zonder dbg-fallback: **geen**.
 
 ### Externe assets vs. canvas-procedureel
 De codebase mengt:
@@ -454,8 +453,8 @@ Alleen `assets/models/` bevat daadwerkelijk files. Het manifest verwijst naar HD
 - `js/effects/visuals.js` (504 regels, drift/nitro/boost/rev-limiter) — geen `_isMobile` references gevonden in dit bestand.
 
 ### Overige observaties
-- Two distinct `_preloadWorld` functies bestaan: één in `js/audio/samples.js` (audio preloader) en één in `js/assets/loader.js` exposed via `window.Assets.preloadWorld(...)`. De call site in `core/boot.js` regel 147 gebruikt `window.Assets.preloadWorld`. De audio-versie zet `window._preloadWorld` direct. Niet zelfde naam maar wel naamsoverlap die verwarrend kan zijn.
-- `index.html` regel 366 vermeldt nog "Three.js r134" in een commentaarblok, terwijl de inline Three blob volgens de andere comments r160 is.
+- De audio-preloader in `js/audio/samples.js` exposeert nu `window._preloadWorldAudio` (hernoemd 2026-04-29) om naamsoverlap met `window.Assets.preloadWorld` (GLTF preloader in `js/assets/loader.js`) te voorkomen. De call site in `core/boot.js` regel 147 gebruikt `window.Assets.preloadWorld`.
+- `index.html` regel 366 vermeldt sinds 2026-04-29 correct "Three.js r160" in het commentaarblok.
 - `js/main.js` heeft veel "ge-extracteerd naar X" comments die historische refactor-stappen documenteren (Fase 2.x). Dit is informatief, niet abnormaal.
 - `index.html` heeft een eigen `console.error` interceptor (regel 35-43) die errors in een rode overlay toont — los van het `dbg`-systeem.
 
