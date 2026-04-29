@@ -245,54 +245,7 @@ function updateCrowd(){
 }
 
 function buildSpectators(){
-  // Skip on space/deepsea — niet thematisch passend
-  if(activeWorld==='space'||activeWorld==='deepsea')return;
+  // Grandstand removed — no crowd plane, no flag banners at start/finish.
   _crowdMaterials.length=0;
-  const crowdTex=_buildCrowdTex();
-  // Two grandstand sections aan weerszijden van het start/finish-stuk.
-  // Plane van 80×4 m, met UV-repeat zodat de crowd herhaalt.
-  const t0=0;
-  const p=trackCurve.getPoint(t0),tg=trackCurve.getTangent(t0).normalize();
-  const nr=new THREE.Vector3(-tg.z,0,tg.x);
-  const offset=BARRIER_OFF+5;
-  [-1,1].forEach(side=>{
-    const tex=crowdTex.clone();tex.needsUpdate=true;
-    tex.repeat.set(8,0.5);tex.offset.y=0;
-    const mat=new THREE.MeshBasicMaterial({map:tex,transparent:true,alphaTest:.05,side:THREE.DoubleSide});
-    _crowdMaterials.push(mat);
-    const stand=new THREE.Mesh(new THREE.PlaneGeometry(80,4),mat);
-    // Position parallel to track direction at start/finish
-    stand.position.copy(p).addScaledVector(nr,side*offset);
-    stand.position.y=2;
-    stand.rotation.y=Math.atan2(tg.x,tg.z);
-    // Face inward (rotate 180° if on right side)
-    if(side>0)stand.rotation.y+=Math.PI;
-    scene.add(stand);
-    // Flag banners along the grandstand top — 16 stuks, kleurrijk team-style.
-    // Pushed in _trackFlags array zodat updateFlags() ze automatisch animeert.
-    const bannerCols=[0xff2233,0xffcc11,0x2266ff,0x22cc55,0xff66aa,0xff8822,0xaa44ff,0x44ddcc];
-    const along=tg.clone();
-    for(let bi=0;bi<16;bi++){
-      const dx=(bi-7.5)*5;
-      // Pole
-      const pole=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,1.6,4),
-        new THREE.MeshLambertMaterial({color:0x444444}));
-      pole.position.copy(stand.position);
-      pole.position.y=4.6;
-      pole.position.addScaledVector(along,dx);
-      pole.position.addScaledVector(nr,side*0.2);
-      scene.add(pole);
-      // Flag (small plane that pivots on pole)
-      const fCol=bannerCols[bi%bannerCols.length];
-      const fMat=new THREE.MeshBasicMaterial({color:fCol,side:THREE.DoubleSide,transparent:true,opacity:.95});
-      const flag=new THREE.Mesh(new THREE.PlaneGeometry(1.2,.7),fMat);
-      flag.position.copy(pole.position);
-      flag.position.y=5.1;
-      flag.position.addScaledVector(along,.7);
-      flag.rotation.y=Math.atan2(tg.x,tg.z)+(side<0?0:Math.PI);
-      scene.add(flag);
-      _trackFlags.push({mesh:flag,base:flag.position.clone(),side,idx:bi});
-    }
-  });
 }
 
