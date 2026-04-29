@@ -162,11 +162,13 @@ function updateEngine(spd){
   if(_rollGain){
     // SAMPLES DISPATCH POINT: surface-sample buffer kan _rollGain vervangen
     // door een looping AudioBufferSourceNode op assets/audio/surface/<x>.ogg.
+    // Clamp via ratio (0..1) — anders blaast nitro+boost de gain en filter
+    // frequentie op (3x topSpd → tonale "suis" rond 900Hz op metal Q=4.5).
     const surface=(window._getCurrentSurface?window._getCurrentSurface():'asphalt');
     const sp=SURFACE_PARAMS[surface]||SURFACE_PARAMS.asphalt;
-    _rollGain.gain.setTargetAtTime(abs*sp.gain,t,.1);
+    _rollGain.gain.setTargetAtTime(ratio*sp.gain,t,.1);
     if(_rollFilt){
-      _rollFilt.frequency.setTargetAtTime(sp.freqBase+abs*sp.freqScale,t,.1);
+      _rollFilt.frequency.setTargetAtTime(sp.freqBase+ratio*sp.freqScale,t,.1);
       _rollFilt.Q.setTargetAtTime(sp.Q,t,.15);
     }
   }
