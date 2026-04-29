@@ -381,23 +381,23 @@ function buildScene(){
   if(isSpace){
     scene.background=makeSpaceSkyTex();
     scene.fog=new THREE.FogExp2(0x010018,.0014);
-    _fogColorDay.setHex(0x080045);_fogColorNight.setHex(0x010018);
+    _fogColorDay.setHex(0x10085a);_fogColorNight.setHex(0x0a0a30);
   }else if(isDeepSea){
     scene.background=makeDeepSeaSkyTex();
     scene.fog=new THREE.FogExp2(0x003355,.0017);
-    _fogColorDay.setHex(0x003355);_fogColorNight.setHex(0x00101a);
+    _fogColorDay.setHex(0x003355);_fogColorNight.setHex(0x03202e);
   }else if(isCandy){
     scene.background=makeCandySkyTex();
     scene.fog=new THREE.FogExp2(0xffe4f0,.0015);
-    _fogColorDay.setHex(0xffe4f0);_fogColorNight.setHex(0x280038);
+    _fogColorDay.setHex(0xffe4f0);_fogColorNight.setHex(0x3e0c52);
   }else if(isNeon){
     scene.background=makeNeonCitySkyTex();
     scene.fog=new THREE.FogExp2(0x030012,.0017);
-    _fogColorDay.setHex(0x080025);_fogColorNight.setHex(0x030012);
+    _fogColorDay.setHex(0x080025);_fogColorNight.setHex(0x0a0828);
   }else if(isThemepark){
     scene.background=makeThemeparkSkyTex();
     scene.fog=new THREE.FogExp2(0xff8844,.0015);
-    _fogColorDay.setHex(0xff8844);_fogColorNight.setHex(0x3a0e22);
+    _fogColorDay.setHex(0xff8844);_fogColorNight.setHex(0x4e1734);
   }else if(isVolcano){
     // Volcano keeps its procedural ember-haze sky in both modes — fog matches
     // the rusty horizon glow at the bottom of the canvas (~rgba(180,40,0)
@@ -408,11 +408,11 @@ function buildScene(){
   }else if(isArctic){
     scene.background=makeArcticSkyTex();
     scene.fog=new THREE.FogExp2(0x1a3050,.0035);
-    _fogColorDay.setHex(0x1a3050);_fogColorNight.setHex(0x0a1828);
+    _fogColorDay.setHex(0x1a3050);_fogColorNight.setHex(0x162e48);
   }else{
     scene.background=makeGPSkyTex();
     scene.fog=new THREE.FogExp2(0xb8d8ee,.0017);
-    _fogColorDay.setHex(0xb8d8ee);_fogColorNight.setHex(0x030d1e);
+    _fogColorDay.setHex(0xb8d8ee);_fogColorNight.setHex(0x162842);
   }
   // Per-world color grading + vignette in postfx composite.
   if(typeof setWorldGrading==='function')setWorldGrading(activeWorld);
