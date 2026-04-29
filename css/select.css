@@ -402,17 +402,20 @@
   .carCardTrail{margin-left:0;gap:3px}
   .carPriceLbl,.carLockMini,.carLockIcon{font-size:9px}
   .selCenter{
-    order:2;padding:10px 14px;gap:4px
+    order:2;padding:10px 14px;gap:8px;
+    align-items:stretch
   }
+  .prevHeader{max-width:none}
   .prevBrandLine{font-size:9px;letter-spacing:3px}
   .prevModelLine{font-size:18px}
   .prevSpecsLine{font-size:10px;margin-bottom:2px}
   .prevCanvasWrap{
-    flex:0 0 auto;width:100%;height:auto;
-    aspect-ratio:16/9;min-height:0;max-height:240px
+    flex:0 0 auto;width:100%;max-width:none;
+    height:48vw;max-height:240px;min-height:160px;
+    aspect-ratio:auto
   }
   .prevHint{font-size:7.5px;letter-spacing:1.8px;top:8px;right:10px}
-  .statBars{grid-template-columns:1fr 1fr;gap:6px}
+  .statBars{max-width:none;grid-template-columns:1fr 1fr;gap:6px}
   .statCard{padding:6px 9px 7px;gap:4px}
   .statCardLbl{font-size:7.5px;letter-spacing:1.8px}
   .statCardVal{font-size:12px}
