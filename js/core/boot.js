@@ -26,8 +26,10 @@ function _installIOSGestureBlocks(){
   document.addEventListener('touchstart',e=>{
     const t=e.target;
     if(t&&t.closest&&t.closest('canvas, .tcBtn, [id^="hud"], [id^="tc"], #glCanvas, #nitroBar')){
-      // Inputs houden focus — preventDefault op buttons/canvas only.
-      if(t.tagName!=='INPUT'&&t.tagName!=='TEXTAREA')e.preventDefault();
+      // Inputs houden focus — preventDefault op canvas/divs only.
+      // BUTTONs uitsluiten: preventDefault op touchstart killt de synthetische
+      // click op iOS, waardoor onclick-handlers (#hudPauseBtn, #hudMuteBtn) niet vuren.
+      if(t.tagName!=='INPUT'&&t.tagName!=='TEXTAREA'&&t.tagName!=='BUTTON')e.preventDefault();
     }
   },{passive:false,capture:true});
   // Block the gesture iOS uses to open system selection menus.
