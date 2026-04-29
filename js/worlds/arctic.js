@@ -130,12 +130,22 @@ function buildArcticEnvironment(){
   stars.instanceMatrix.needsUpdate=true;scene.add(stars);
   // Ice shelf signature moment — cracks lap 2, plates dip on lap 3.
   if(typeof buildArcticIceShelf==='function')buildArcticIceShelf();
-  // GLTF roadside props (icebergs / snow rocks). No-op if cache is empty.
+  // GLTF roadside props — icebergs + snow rocks + frosted dead trees.
   if(window.spawnRoadsideProps){
+    // Icebergs + snow rocks track-side.
     window.spawnRoadsideProps('arctic',{
       propKeys:['iceberg_small','iceberg_medium','snow_rock'],
       count:10, sizeHint:2.0, clusterSize:2,
+      offsetMin: BARRIER_OFF + 4, offsetMax: BARRIER_OFF + 18,
     });
+    // Bare frozen trees scattered further out (desktop only).
+    if (!window._isMobile){
+      window.spawnRoadsideProps('arctic',{
+        propKeys:['tree_frosted'],
+        count:7, sizeHint:4.5, clusterSize:2,
+        offsetMin: BARRIER_OFF + 14, offsetMax: BARRIER_OFF + 32,
+      });
+    }
   }
 }
 

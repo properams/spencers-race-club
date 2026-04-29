@@ -23,22 +23,42 @@ assets/
 ├── textures/
 │   └── grandprix/ ground_color.jpg, ground_normal.jpg, ground_rough.jpg,
 │                  mountains_far.png, mountains_near.png
-└── models/
-    ├── vegetation/ pine_low.glb, birch_low.glb
-    └── props/      rock_small.glb, rock_medium.glb, haybale.glb
+├── models/
+│   ├── nature/    Quaternius Stylized Nature MegaKit — trees, plants,
+│   │              rocks, mushrooms, flowers, grass. Shared bark / leaf
+│   │              .png textures live next to the .gltf files so multiple
+│   │              worlds can pull from the same folder.
+│   ├── city/      Quaternius City Bits — buildings, dumpsters, traffic
+│   │              lights, streetlights, fire hydrants, benches, water
+│   │              tower. citybits_texture.png shared across all .gltf.
+│   ├── space/     Kenney Space Kit — meteors, rocks, crystal formations,
+│   │              craters, satellite dishes.
+│   ├── arctic/    iceberg_small.glb (standalone CC0)
+│   └── landmarks/ mountain_cabin.glb (held for a future GP track-side
+│                  landmark slot)
+└── CREDITS.md     (per-pack attribution + licence stamps)
 ```
 
-## Spencer Grand Prix slots (pilot world)
+## Bundled GLTF / GLB assets (already in repo)
 
-| Slot                  | Manifest path                               | Suggested CC0 source |
-|-----------------------|---------------------------------------------|----------------------|
-| HDRI sky              | `hdri/grandprix_dusk_2k.hdr`                | Poly Haven `kloofendal_48d_partly_cloudy_puresky` 2K, or `meadow_2` 2K |
-| Ground color/normal/rough | `textures/grandprix/ground_*.jpg`       | Poly Haven `aerial_grass_rock` or `forest_ground_04` 2K |
-| Pine tree             | `models/vegetation/pine_low.glb`            | Quaternius "Stylized Nature" pack — `Pine_Tree_Low.glb` |
-| Birch tree            | `models/vegetation/birch_low.glb`           | Quaternius "Stylized Nature" pack — `Tree_Birch.glb` |
-| Small / medium rocks  | `models/props/rock_*.glb`                   | Quaternius "Rocks" pack |
-| Haybale               | `models/props/haybale.glb`                  | KayKit "Farmer Pack" or any CC0 model |
-| Mountain layers (far/near) | `textures/grandprix/mountains_*.png`   | Skybox AI export, or hand-painted PNG with alpha |
+The 3D model slots in `manifest.json` are **already populated** with
+~120 CC0 GLTF/GLB files spread across Quaternius Nature, Quaternius
+City Bits, and Kenney Space Kit. See `assets/CREDITS.md` for per-pack
+attribution and the exact slot mapping.
+
+### Multi-variant slots
+
+Each prop slot in the manifest can be either a **single string** (one
+asset) or **an array of strings** (multiple variants). When the slot is
+an array, the loader fetches every variant in parallel during
+`preloadWorld`, and `getGLTF` random-picks among the loaded ones at
+each spawn. So a single `tree_pine` slot pointing at `[Pine_1.gltf,
+Pine_2.gltf, …, Pine_5.gltf]` produces a forest where every tree is
+randomly one of five variants — natural visual variety from a single
+manifest entry.
+
+HDRIs + ground PBR + skybox layer art are still optional drops via
+`bash assets/download_assets.sh` or manual upload.
 
 ### Recommended sources (all permissive licences)
 
@@ -208,6 +228,29 @@ horizon transparent png` prompts) or hand-painted PNGs with alpha. The
 pipeline auto-falls-back to procedural canvas silhouettes (palette
 tuned per world) so this slot is fully optional — only drop in if you
 want a specific landscape.
+
+### Still missing (what to hunt for next)
+
+Slots that are intentionally empty because no fitting CC0 model came in
+the current packs. Drop a fitting GLB at the path below or update the
+manifest if you find a better source:
+
+| Slot | What we want | Suggested search |
+|---|---|---|
+| `grandprix.haybale` | Single haystack/haybale model | [poly.pizza/search/haystack](https://poly.pizza/search/haystack), Quaternius Farm pack |
+| `grandprix.ground_*` extras | Additional groundcover types (twigs, sticks, logs) | poly.pizza CC0 |
+| `arctic.iceberg_medium` | Larger iceberg variant — current has only one size | [poly.pizza/search/iceberg](https://poly.pizza/search/iceberg) |
+| `themepark.traffic_cone` | Orange traffic cone | [poly.pizza/search/traffic+cone](https://poly.pizza/search/traffic+cone) |
+| `volcano.real_lava_chunk` | Glowing lava rock (current uses crystal substitute) | Stylized fire/lava packs on itch.io |
+| `deepsea.real_coral_*` | Branching coral (current uses Plant_* substitute) | poly.pizza CC0 underwater pack |
+| `deepsea.fish` / `deepsea.shipwreck` | Underwater life + dramatic background | [Kenney Pirate Pack](https://kenney.nl) |
+| `candy.*` (3 slots) | Lollipop / candy cane / gumdrop | poly.pizza search per item, none fitting in current packs |
+| `space.alien_signal_buoy` etc. | More space variety | Kenney Space Kit has more we skipped |
+
+Also still missing across all worlds:
+- **HDRI sky environments** — run `bash assets/download_assets.sh hdri`
+- **PBR ground textures** — run `bash assets/download_assets.sh ground`
+- **Skybox layer art** (`mountains_far.png`, `mountains_near.png`) — AI-generated silhouettes per world
 
 ### Mobile HDRI variants (optional but recommended)
 

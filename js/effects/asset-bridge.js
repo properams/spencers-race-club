@@ -176,8 +176,11 @@
     const propKeys = (opts.propKeys || []).filter(k => !!Assets.getGLTF(worldId, k));
     if (!propKeys.length) return 0;
     const count = opts.count || 8;
-    const minOff = (opts.offsetMin || (BARRIER_OFF + 3));
-    const offRange = Math.max(2, (opts.offsetMax || (BARRIER_OFF + 12)) - minOff);
+    // != null so an explicit 0 from a caller is honoured (|| would coerce
+    // 0 to the default and silently wrong-place props at the barrier).
+    const minOff = (opts.offsetMin != null) ? opts.offsetMin : (BARRIER_OFF + 3);
+    const maxOff = (opts.offsetMax != null) ? opts.offsetMax : (BARRIER_OFF + 12);
+    const offRange = Math.max(2, maxOff - minOff);
     const sizeHint = opts.sizeHint || 1.8;
     const cluster = opts.clusterSize || 2;
     // Optional per-spawn vertical jitter — used by space (asteroids should
@@ -209,7 +212,45 @@
     return placed;
   }
 
+  // Spawn small ground-clutter props (mushrooms / flowers / ferns / grass)
+  // densely in the infield/outfield, NOT track-aligned. Different from
+  // spawnRoadsideProps which walks the track curve. Picks random angles
+  // around two annular bands away from the racing line.
+  function spawnGroundClutter(worldId, opts){
+    if (!window.scene || !window.Assets || !window.trackCurve) return 0;
+    if (typeof BARRIER_OFF === 'undefined') return 0;
+    opts = opts || {};
+    const propKeys = (opts.propKeys || []).filter(k => !!Assets.getGLTF(worldId, k));
+    if (!propKeys.length) return 0;
+    const count = opts.count || 30;
+    const sizeHint = opts.sizeHint || 0.8;
+    // Sample random points along the track curve, then offset perpendicular
+    // by a randomized distance — same shape as roadside but with much
+    // bigger lateral range and no clustering.
+    // Same != null pattern as spawnRoadsideProps so explicit 0 is honoured.
+    const minOff = (opts.offsetMin != null) ? opts.offsetMin : (BARRIER_OFF + 6);
+    const maxOff = (opts.offsetMax != null) ? opts.offsetMax : (BARRIER_OFF + 35);
+    const offRange = Math.max(2, maxOff - minOff);
+    let placed = 0;
+    for (let i=0;i<count;i++){
+      const t = Math.random();
+      const p = trackCurve.getPoint(t);
+      const tg = trackCurve.getTangent(t).normalize();
+      const nr = new THREE.Vector3(-tg.z,0,tg.x);
+      const side = (Math.random() < 0.5 ? -1 : 1);
+      const off = minOff + Math.random()*offRange;
+      const cx = p.x + nr.x*side*off + (Math.random()-.5)*4;
+      const cz = p.z + nr.z*side*off + (Math.random()-.5)*4;
+      const propKey = propKeys[(Math.random()*propKeys.length)|0];
+      const proto = Assets.getGLTF(worldId, propKey);
+      spawnGLTFProp(proto, cx, cz, { sizeHint, yOffset: 0 });
+      placed++;
+    }
+    return placed;
+  }
+
   window.maybeUpgradeWorld = maybeUpgradeWorld;
+  window.spawnGroundClutter = spawnGroundClutter;
   window.spawnGLTFProp = spawnGLTFProp;
   window.spawnRoadsideProps = spawnRoadsideProps;
   window._assetBridge = { applyHDRI, applyGround, maybeUpgradeWorld, spawnGLTFProp, spawnRoadsideProps };

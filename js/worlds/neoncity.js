@@ -24,14 +24,34 @@ function buildNeonCityEnvironment(){
   buildNeonParticles();
   buildNeonSkyGlow();
   buildNeonNightObjects();
-  // GLTF roadside props (trash bins / bollards / road blocks). No-op if
-  // cache is empty — neon's signature look stays untouched until assets
-  // land in the cache.
+  // GLTF roadside props — three layers of detail at varying offsets.
+  // Each call no-ops cleanly if the cache is empty for that group, so
+  // neon's signature procedural look stays untouched until assets load.
   if(window.spawnRoadsideProps){
+    // Layer 1: low street furniture right next to barriers (~3-8m out).
     window.spawnRoadsideProps('neoncity',{
       propKeys:['trashbin','bollard_neon','roadblock'],
-      count:10, sizeHint:1.2, clusterSize:2,
+      count:10, sizeHint:1.4, clusterSize:2,
+      offsetMin: BARRIER_OFF + 3, offsetMax: BARRIER_OFF + 8,
     });
+    // Layer 2: streetlights + traffic lights — taller silhouettes.
+    // Skip on mobile to keep fillrate budget.
+    if (!window._isMobile){
+      window.spawnRoadsideProps('neoncity',{
+        propKeys:['streetlight','traffic_light','watertower'],
+        count:10, sizeHint:5.5, clusterSize:1,
+        offsetMin: BARRIER_OFF + 4, offsetMax: BARRIER_OFF + 9,
+      });
+    }
+    // Layer 3: background buildings far out (35-80m beyond barrier).
+    // Big, scarce, desktop-only — fills the skyline without crushing FPS.
+    if (!window._isMobile){
+      window.spawnRoadsideProps('neoncity',{
+        propKeys:['building_bg'],
+        count:14, sizeHint:18, clusterSize:1,
+        offsetMin: BARRIER_OFF + 35, offsetMax: BARRIER_OFF + 80,
+      });
+    }
   }
 }
 
