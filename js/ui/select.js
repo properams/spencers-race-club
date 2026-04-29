@@ -97,7 +97,19 @@ function disposeCarPreview(){
   }
   if(_prevPodiumGridTex){_prevPodiumGridTex.dispose();_prevPodiumGridTex=null;}
   if(_prevGlowTex){_prevGlowTex.dispose();_prevGlowTex=null;}
+  // Een canvas waarvan de WebGL context geforceerd verloren is, kan geen
+  // nieuwe context meer krijgen. Vervang het element dus met een verse clone
+  // zodat een volgende initCarPreview opnieuw een schone WebGL-context kan
+  // aanvragen — anders crasht het op iOS bij het tweede bezoek aan SELECT.
+  const oldCvs=_prevRen.domElement;
   try{_prevRen.dispose();_prevRen.forceContextLoss();}catch(e){}
+  if(oldCvs&&oldCvs.parentNode){
+    const newCvs=document.createElement('canvas');
+    newCvs.id=oldCvs.id;
+    newCvs.width=oldCvs.width||400;
+    newCvs.height=oldCvs.height||220;
+    oldCvs.parentNode.replaceChild(newCvs,oldCvs);
+  }
   _prevRen=null;_prevScene=null;_prevCam=null;_prevCarMesh=null;
   _prevPodiumGrid=null;_prevRimRing=null;
   _prevDefId=-1;_prevSizeW=0;_prevSizeH=0;
@@ -278,10 +290,18 @@ function _selectPreviewCar(defId){
   const n=document.getElementById('prevName');
   if(n){
     if(n._fadeT){clearTimeout(n._fadeT);n._fadeT=null;}
-    n.style.cssText+='transition:none;opacity:0;transform:translateY(6px)';
+    // Properties één-voor-één zetten ipv `style.cssText +=` (dat
+    // concatenateert strings zonder ; en levert na de 2e aanroep een
+    // malformed cssText op — iOS Safari verwerpt 'm dan helemaal,
+    // waardoor opacity stuck op 0 blijft en de naam onzichtbaar wordt).
+    n.style.transition='none';
+    n.style.opacity='0';
+    n.style.transform='translateY(6px)';
     n._fadeT=setTimeout(()=>{
       n.textContent=def.name;
-      n.style.cssText+='transition:all .22s ease;opacity:1;transform:translateY(0)';
+      n.style.transition='all .22s ease';
+      n.style.opacity='1';
+      n.style.transform='translateY(0)';
       n._fadeT=null;
     },60);
   }
