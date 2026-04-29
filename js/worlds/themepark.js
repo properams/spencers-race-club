@@ -259,13 +259,30 @@ function buildThemeparkEnvironment(){
   stars.instanceMatrix.needsUpdate=true;scene.add(stars);
   // Overhead coaster collapse signature moment — strobes lap 2, tilts lap 3.
   if(typeof buildThemeparkCoaster==='function')buildThemeparkCoaster();
-  // GLTF roadside props (traffic cones / barrels / bollards). Procedural
-  // path stays untouched if the cache is empty.
+  // GLTF roadside props — three layers of detail.
   if(window.spawnRoadsideProps){
+    // Layer 1: low park furniture (cones / barrels / bollards / benches).
     window.spawnRoadsideProps('themepark',{
-      propKeys:['traffic_cone','bollard','barrel'],
-      count:8, sizeHint:1.2, clusterSize:2,
+      propKeys:['traffic_cone','bollard','barrel','bench'],
+      count:9, sizeHint:1.3, clusterSize:2,
+      offsetMin: BARRIER_OFF + 3, offsetMax: BARRIER_OFF + 8,
     });
+    // Layer 2: streetlights — taller silhouettes (desktop only).
+    if (!window._isMobile){
+      window.spawnRoadsideProps('themepark',{
+        propKeys:['streetlight'],
+        count:10, sizeHint:5.0, clusterSize:1,
+        offsetMin: BARRIER_OFF + 4, offsetMax: BARRIER_OFF + 7,
+      });
+    }
+    // Layer 3: background buildings as park-edge skyline (desktop only).
+    if (!window._isMobile){
+      window.spawnRoadsideProps('themepark',{
+        propKeys:['building_bg'],
+        count:10, sizeHint:14, clusterSize:1,
+        offsetMin: BARRIER_OFF + 30, offsetMax: BARRIER_OFF + 65,
+      });
+    }
   }
 }
 

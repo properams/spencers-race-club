@@ -245,7 +245,13 @@
     if (w.hdri) tasks.push(loadHDRI(w.hdri));
     if (w.ground) tasks.push(loadGroundSet(worldId));
     if (w.props){
-      for (const k in w.props) tasks.push(loadGLTF(w.props[k]));
+      // Each prop slot may be a string (single variant) or an array
+      // (multiple variants for natural per-cluster variety).
+      for (const k in w.props){
+        const v = w.props[k];
+        if (Array.isArray(v)) v.forEach(p => { if (p) tasks.push(loadGLTF(p)); });
+        else if (v) tasks.push(loadGLTF(v));
+      }
     }
     if (w.skybox_layers){
       for (const k in w.skybox_layers) tasks.push(loadTexture(w.skybox_layers[k], { colorSpace:'srgb' }));
@@ -273,10 +279,35 @@
     if (!c && !n && !r) return null;
     return { color:c, normal:n, roughness:r };
   }
+  // getGLTF returns ONE prototype per call. If the manifest slot is an
+  // array of variants, a fresh random pick is returned each time so the
+  // dispatcher's per-spawn variety happens transparently.
   function getGLTF(worldId, propKey){
-    const path = _slot(worldId, 'props.'+propKey);
-    if (!path) return null;
-    return _gltfCache.has(path) ? _gltfCache.get(path) : null;
+    const w = _manifest.worlds && _manifest.worlds[worldId];
+    if (!w || !w.props) return null;
+    const slot = w.props[propKey];
+    if (!slot) return null;
+    if (Array.isArray(slot)){
+      const loaded = slot
+        .map(p => (p && _gltfCache.has(p)) ? _gltfCache.get(p) : null)
+        .filter(Boolean);
+      if (!loaded.length) return null;
+      return loaded[(Math.random()*loaded.length)|0];
+    }
+    return _gltfCache.has(slot) ? _gltfCache.get(slot) : null;
+  }
+  // Returns ALL loaded variants for a slot — used by callers (e.g. the
+  // GP instanced-tree spawner) that want to balance across variants
+  // instead of relying on per-call randomness.
+  function getGLTFVariants(worldId, propKey){
+    const w = _manifest.worlds && _manifest.worlds[worldId];
+    if (!w || !w.props) return [];
+    const slot = w.props[propKey];
+    if (!slot) return [];
+    const arr = Array.isArray(slot) ? slot : [slot];
+    return arr
+      .map(p => (p && _gltfCache.has(p)) ? _gltfCache.get(p) : null)
+      .filter(Boolean);
   }
   function listProps(worldId){
     const w = _manifest.worlds && _manifest.worlds[worldId];
@@ -295,7 +326,16 @@
     }
     if (w.props){
       const ks = Object.keys(w.props);
-      out.props = [ ks.filter(k=>!!_gltfCache.get(w.props[k])).length, ks.length ];
+      // A slot is "loaded" if at least one of its variants resolved.
+      out.props = [
+        ks.filter(k => {
+          const v = w.props[k];
+          if (!v) return false;
+          if (Array.isArray(v)) return v.some(p => p && _gltfCache.get(p));
+          return !!_gltfCache.get(v);
+        }).length,
+        ks.length,
+      ];
     }
     if (w.skybox_layers){
       const ks = Object.keys(w.skybox_layers);
@@ -311,7 +351,7 @@
     init,
     preloadWorld,
     loadHDRI, loadTexture, loadGLTF, loadGroundSet,
-    getHDRI, getTexture, getGroundSet, getGLTF, listProps,
+    getHDRI, getTexture, getGroundSet, getGLTF, getGLTFVariants, listProps,
     status,
   };
 

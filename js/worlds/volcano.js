@@ -139,13 +139,23 @@ function buildVolcanoEnvironment(){
     dm.scale.setScalar(.6+Math.random()*1.2);dm.updateMatrix();stars.setMatrixAt(i,dm.matrix);
   }
   stars.instanceMatrix.needsUpdate=true;scene.add(stars);
-  // GLTF roadside props (rocks / lava chunks). No-op if cache is empty,
-  // i.e. the procedural lava-rock environment above stays fully intact.
+  // GLTF roadside props — rocks + burnt trees in the volcanic landscape.
   if(window.spawnRoadsideProps){
+    // Rocks + lava-crystal chunks track-side.
     window.spawnRoadsideProps('volcano',{
       propKeys:['rock_basalt_small','rock_basalt_medium','lava_chunk'],
-      count:10, sizeHint:1.7, clusterSize:3,
+      count:11, sizeHint:1.7, clusterSize:3,
+      offsetMin: BARRIER_OFF + 3, offsetMax: BARRIER_OFF + 14,
     });
+    // Burnt + twisted trees scattered further out (desktop only — they
+    // double the per-side mesh count which mobile can't afford).
+    if (!window._isMobile){
+      window.spawnRoadsideProps('volcano',{
+        propKeys:['tree_burnt'],
+        count:9, sizeHint:5.0, clusterSize:2,
+        offsetMin: BARRIER_OFF + 12, offsetMax: BARRIER_OFF + 30,
+      });
+    }
   }
 }
 

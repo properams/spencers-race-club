@@ -470,7 +470,13 @@ function _spawnInstancedTreesGLTF(protos, placements){
     p.scene.updateMatrixWorld(true);
   });
   // Compute normalization from the first prototype so wildly different GLTF
-  // scales all fit our ~5m tall canopy.
+  // scales all fit our ~5m tall canopy. Note: when multiple variants are
+  // present (Pine_1..5, CommonTree_1..5, DeadTree_1..5) their natural
+  // heights vary — applying proto[0]'s normalization to all variants
+  // produces a forest of slightly different heights, which reads as
+  // natural growth variety rather than a bug. If we ever need uniform
+  // canopy height, switch to per-proto baseScale via a Map keyed on
+  // proto.scene.uuid.
   const box=new THREE.Box3().setFromObject(protos[0].scene);
   const size=new THREE.Vector3(); box.getSize(size);
   const targetH=4.8;
@@ -584,13 +590,18 @@ function _spawnInstancedTreesProcedural(placements){
 
 function buildEnvironmentTrees(){
   const placements=_buildTreePlacements();
-  // Try GLTF prototypes first.
+  // Try GLTF prototypes first. getGLTFVariants returns ALL loaded
+  // variants per slot (vs getGLTF which random-picks one), so the
+  // instanced spawner can balance tree variants across the forest
+  // instead of seeing only one Pine + one Birch type.
   const protos=[];
   if(window.Assets){
     Assets.listProps('grandprix').forEach(k=>{
       if(/^tree/.test(k)){
-        const g=Assets.getGLTF('grandprix', k);
-        if(g && g.scene) protos.push(g);
+        const variants = Assets.getGLTFVariants
+          ? Assets.getGLTFVariants('grandprix', k)
+          : (Assets.getGLTF('grandprix', k) ? [Assets.getGLTF('grandprix', k)] : []);
+        variants.forEach(g => { if (g && g.scene) protos.push(g); });
       }
     });
   }
