@@ -54,9 +54,29 @@ assets/
 > `assets/CREDITS.md`), or other permissive licences are allowed.
 > Anything ambiguous → don't use.
 
+## Quick start — automatic downloads
+
+For HDRIs and PBR ground textures (everything except GLTF models), there's
+a one-shot script that fetches all recommended Poly Haven CC0 assets into
+the right paths:
+
+```bash
+bash assets/download_assets.sh           # everything (~140MB)
+bash assets/download_assets.sh hdri      # only HDRIs (2K + 1K)
+bash assets/download_assets.sh ground    # only PBR ground sets
+bash assets/download_assets.sh grandprix # one specific world
+```
+
+The script is idempotent: existing files are skipped, individual failures
+don't abort the run. Re-run after a missing asset to retry.
+
+GLTF models (trees, props) come from Quaternius / KayKit packs which ship
+as zips. Manual extraction steps below.
+
 ## Activation
 
-1. Place the file at the path listed in `manifest.json`.
+1. Run `bash assets/download_assets.sh` (recommended), or place files manually
+   at the paths listed in `manifest.json`.
 2. Hard refresh the browser (Ctrl+Shift+R / Cmd+Shift+R).
 3. Open pause overlay during a race. The line below "FX ON" should read:
    `ASSETS [GRANDPRIX]   HDRI ✓   GROUND 3/3   PROPS 5/5   LAYERS 2/2`
@@ -86,6 +106,85 @@ upgrades. Drop matching files in the paths listed in `manifest.json`:
 - **volcano**: Poly Haven `lonely_road_afternoon_puresky` (warm), or any dusk HDRI
 - **arctic**: Poly Haven `snowy_park_01` 2K
 - **themepark**: Poly Haven `evening_road_01_puresky` 2K
+
+### GLTF models — manual extraction from Quaternius / KayKit / Kenney packs
+
+The download script does NOT fetch GLTF models because most pack
+distributors ship them as zips. **Easiest source for individual GLBs:**
+[poly.pizza](https://poly.pizza) — free CC0 / CC-BY model browser
+where every model has a one-click GLB download (no zip extraction).
+
+#### Per-world recommendations (verified URLs)
+
+**Grand Prix** — [Quaternius "Stylized Nature MegaKit"](https://quaternius.itch.io/stylized-nature-megakit)
+(110+ models, CC0, "Pay what you want" → free download):
+- Pine tree variant   → `assets/models/vegetation/pine_low.glb`
+- Birch / oak variant → `assets/models/vegetation/birch_low.glb`
+- Small rock          → `assets/models/props/rock_small.glb`
+- Medium rock         → `assets/models/props/rock_medium.glb`
+
+For haybales, search [poly.pizza](https://poly.pizza/search/haystack)
+for "haystack" or "haybale" → `assets/models/props/haybale.glb`.
+
+**Volcano** — [Quaternius "Stylized Nature MegaKit"](https://quaternius.itch.io/stylized-nature-megakit)
+(same pack, different rocks); or
+[poly.pizza search "rock"](https://poly.pizza/search/rock) for darker
+basalt-looking variants:
+- Small jagged rock   → `assets/models/volcano/rock_basalt_small.glb`
+- Medium dark rock    → `assets/models/volcano/rock_basalt_medium.glb`
+- Any glowing/red chunk → `assets/models/volcano/lava_chunk.glb`
+
+**Arctic** — Quaternius doesn't ship a dedicated snow pack;
+[poly.pizza search "iceberg"](https://poly.pizza/search/iceberg) and
+[poly.pizza search "snow"](https://poly.pizza/search/snow) have several
+CC0 options including Kenney variants:
+- Iceberg small / large → `assets/models/arctic/iceberg_small.glb` / `iceberg_medium.glb`
+- Snow rock             → `assets/models/arctic/snow_rock.glb`
+
+**Themepark** — [KayKit "City Builder Bits"](https://kaylousberg.itch.io/city-builder-bits)
+(32+ city props, CC0, free). Pack contains traffic cones, barrels, and
+bollards in `.glb` format alongside `.fbx` / `.obj`:
+- TrafficCone.glb → `assets/models/themepark/traffic_cone.glb`
+- Bollard.glb     → `assets/models/themepark/bollard.glb`
+- Barrel.glb      → `assets/models/themepark/barrel.glb`
+
+**Neon City** — [KayKit "City Builder Bits"](https://kaylousberg.itch.io/city-builder-bits)
+again (same pack as themepark — re-extract under different filenames):
+- TrashBin.glb / Dumpster.glb → `assets/models/neoncity/trashbin.glb`
+- Bollard.glb (or Pylon)      → `assets/models/neoncity/bollard_neon.glb`
+- Roadblock.glb / Barrier.glb → `assets/models/neoncity/roadblock.glb`
+
+**Space** — [Kenney "Space Kit"](https://kenney.nl/assets/space-kit)
+(150+ assets, CC0, free). Direct GLB downloads on Kenney's site or
+[poly.pizza/u/Kenney](https://poly.pizza/u/Kenney):
+- Asteroid (small variant) → `assets/models/space/asteroid_small.glb`
+- Asteroid (large variant) → `assets/models/space/asteroid_large.glb`
+
+**Candy** — no dedicated CC0 candy pack exists; use
+[poly.pizza search "lollipop"](https://poly.pizza/search/lollipop) and
+similar for one-off candy GLBs:
+- Lollipop  → `assets/models/candy/candy_lollipop.glb`
+- Candy cane → `assets/models/candy/candy_cane.glb`
+- Gumdrop / gummy → `assets/models/candy/gumdrop.glb`
+
+**DeepSea** —
+[poly.pizza search "coral"](https://poly.pizza/search/coral) and
+[poly.pizza search "wreck"](https://poly.pizza/search/wreck) /
+[poly.pizza search "treasure chest"](https://poly.pizza/search/treasure):
+- Coral chunks    → `assets/models/deepsea/coral_small.glb` / `coral_medium.glb`
+- Treasure chest / sunken crate → `assets/models/deepsea/wreck_box.glb`
+
+> Skip any prop you don't have — every slot is independent. The
+> dispatcher uses whatever subset of GLTFs is actually in the cache.
+
+### Skybox layer art
+
+`mountains_far.png` / `mountains_near.png` are typically AI-generated
+silhouettes (Skybox AI, Stable Diffusion with `silhouette mountain
+horizon transparent png` prompts) or hand-painted PNGs with alpha. The
+pipeline auto-falls-back to procedural canvas silhouettes (palette
+tuned per world) so this slot is fully optional — only drop in if you
+want a specific landscape.
 
 ### Mobile HDRI variants (optional but recommended)
 
