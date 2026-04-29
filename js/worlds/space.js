@@ -161,18 +161,33 @@ function buildSpaceEnvironment(){
   plHeadR=new THREE.SpotLight(0xffffff,0,50,Math.PI*.16,.5);
   scene.add(plHeadL);scene.add(plHeadL.target);scene.add(plHeadR);scene.add(plHeadR.target);
   plTail=new THREE.PointLight(0xff2200,0,10);scene.add(plTail);
-  // GLTF asteroid props — opt-in extra detail next to the existing
-  // procedural asteroid field. No-op when cache is empty.
+  // GLTF space props — three layers: floating asteroids, surface
+  // craters, and dramatic satellite dishes high above the track.
   if(window.spawnRoadsideProps){
+    // Floating asteroids — varied y-heights so they don't glue to y=0.
     window.spawnRoadsideProps('space',{
       propKeys:['asteroid_small','asteroid_large'],
-      count:8, sizeHint:2.4, clusterSize:2,
+      count:9, sizeHint:2.4, clusterSize:2,
       offsetMin: BARRIER_OFF + 6, offsetMax: BARRIER_OFF + 25,
-      // Float between 1m and 6m above the track plane so the GLTF
-      // asteroids match the existing buildAsteroids() layered look
-      // instead of glueing to the y=0 surface.
       yOffsetMin: 1, yOffsetMax: 6,
     });
+    // Craters embedded near surface level — like the track is on a
+    // pitted lunar/asteroid surface. Skip on mobile.
+    if (!window._isMobile){
+      window.spawnRoadsideProps('space',{
+        propKeys:['crater'],
+        count:6, sizeHint:5.0, clusterSize:1,
+        offsetMin: BARRIER_OFF + 4, offsetMax: BARRIER_OFF + 18,
+        yOffsetMin: -0.3, yOffsetMax: 0,
+      });
+      // Satellite dishes set further back, elevated like signal towers.
+      window.spawnRoadsideProps('space',{
+        propKeys:['satellite'],
+        count:4, sizeHint:6.5, clusterSize:1,
+        offsetMin: BARRIER_OFF + 18, offsetMax: BARRIER_OFF + 38,
+        yOffsetMin: 4, yOffsetMax: 12,
+      });
+    }
   }
 }
 

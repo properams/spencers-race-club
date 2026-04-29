@@ -470,6 +470,24 @@ function buildScene(){
     buildNightObjects();buildSpectators();buildSunBillboard();
     buildAdvertisingBoards();buildCornerBoards();buildTrackFlags();
     buildGPTrackProps();
+    // Bushes track-side + ground clutter (mushrooms / flowers / ferns)
+    // in the infield. spawnRoadsideProps walks the track curve;
+    // spawnGroundClutter scatters more freely. Both no-op if cache
+    // is empty so the procedural look is preserved.
+    if (window.spawnRoadsideProps){
+      window.spawnRoadsideProps('grandprix',{
+        propKeys:['bush'],
+        count:8, sizeHint:1.4, clusterSize:2,
+        offsetMin: BARRIER_OFF + 4, offsetMax: BARRIER_OFF + 10,
+      });
+    }
+    if (window.spawnGroundClutter && !window._isMobile){
+      window.spawnGroundClutter('grandprix',{
+        propKeys:['ground_mushroom','ground_flower','ground_fern'],
+        count:38, sizeHint:0.6,
+        offsetMin: BARRIER_OFF + 8, offsetMax: BARRIER_OFF + 38,
+      });
+    }
   }
   buildJumpRamps();
   buildCenterlineArrows();
