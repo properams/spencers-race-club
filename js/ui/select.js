@@ -5,7 +5,7 @@
 // Car-preview state — gebruikt in initCarPreview/updateCarPreview.
 // (carPreviews dict verwijderd samen met buildCarPreviews — was de enige populator.)
 let _prevRen=null,_prevScene=null,_prevCam=null,_prevCarMesh=null,_prevDefId=-1;
-let _prevPodiumGrid=null,_prevPodiumGridTex=null,_prevRimRing=null,_prevHintFaded=false,_prevHasInteracted=false;
+let _prevPodiumGrid=null,_prevPodiumGridTex=null,_prevRimRing=null,_prevGlowTex=null,_prevHintFaded=false,_prevHasInteracted=false;
 let _prevSizeW=0,_prevSizeH=0;
 const _unlockHints=[
   '','','','',
@@ -23,7 +23,13 @@ function initCarPreview(){
   if(_prevRen&&_prevScene)return;
   var cvs=document.getElementById('carPreviewCvs');if(!cvs)return;
   if(!_prevRen){
-    var opts=[{antialias:true,alpha:true},{antialias:false,alpha:true},{antialias:false,alpha:false}];
+    // Mobile: skip antialias volledig. iOS Safari heeft hard limit op WebGL
+    // contexts (~4-8) en MSAA reserveert agressiever GPU memory; deze preview
+    // staat naast de hoofd-game renderer dus elke besparing telt voor crash-
+    // weerbaarheid bij lage batterij.
+    var opts=window._isMobile
+      ? [{antialias:false,alpha:true},{antialias:false,alpha:false}]
+      : [{antialias:true,alpha:true},{antialias:false,alpha:true},{antialias:false,alpha:false}];
     for(var i=0;i<opts.length;i++){try{_prevRen=new THREE.WebGLRenderer({canvas:cvs,...opts[i]});break;}catch(e){_prevRen=null;}}
   }
   if(!_prevRen){
@@ -63,16 +69,41 @@ function initCarPreview(){
   _prevPodiumGrid.rotation.x=-Math.PI/2;_prevPodiumGrid.position.y=.011;
   _prevScene.add(_prevPodiumGrid);
   // Soft rim glow disc underneath — gives the podium a halo on the floor.
-  var glowTex=_makeRadialGlowTexture('#ff2d6f');
+  _prevGlowTex=_makeRadialGlowTexture('#ff2d6f');
   _prevRimRing=new THREE.Mesh(
     new THREE.PlaneGeometry(11,11),
-    new THREE.MeshBasicMaterial({map:glowTex,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending})
+    new THREE.MeshBasicMaterial({map:_prevGlowTex,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending})
   );
   _prevRimRing.rotation.x=-Math.PI/2;_prevRimRing.position.y=-.07;
   _prevScene.add(_prevRimRing);
   _initPreviewDrag(cvs);
   _initPreviewResize(cvs);
 }
+
+// Tear down de car-preview WebGLRenderer + Scene. Aangeroepen bij screen-
+// transities weg van SELECT (race-start, terug naar title) zodat iOS Safari
+// niet vastloopt op zijn hard WebGL-context limit met de hoofd-game renderer.
+// Volgende bezoek aan SELECT roept initCarPreview opnieuw aan vanaf scratch.
+function disposeCarPreview(){
+  if(!_prevRen)return;
+  if(_prevScene){
+    _prevScene.traverse(o=>{
+      if(o.geometry)o.geometry.dispose();
+      if(o.material){
+        if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());
+        else o.material.dispose();
+      }
+    });
+  }
+  if(_prevPodiumGridTex){_prevPodiumGridTex.dispose();_prevPodiumGridTex=null;}
+  if(_prevGlowTex){_prevGlowTex.dispose();_prevGlowTex=null;}
+  try{_prevRen.dispose();_prevRen.forceContextLoss();}catch(e){}
+  _prevRen=null;_prevScene=null;_prevCam=null;_prevCarMesh=null;
+  _prevPodiumGrid=null;_prevRimRing=null;
+  _prevDefId=-1;_prevSizeW=0;_prevSizeH=0;
+  _prevHintFaded=false;_prevHasInteracted=false;
+}
+window.disposeCarPreview=disposeCarPreview;
 
 function _makePodiumGridTexture(){
   const c=document.createElement('canvas');c.width=256;c.height=256;
