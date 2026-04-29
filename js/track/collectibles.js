@@ -268,14 +268,6 @@ function buildSpectators(){
     // Face inward (rotate 180° if on right side)
     if(side>0)stand.rotation.y+=Math.PI;
     scene.add(stand);
-    // Simple grandstand structure behind (dark trapezoid plane)
-    const baseMat=new THREE.MeshLambertMaterial({color:0x222233});
-    const base=new THREE.Mesh(new THREE.BoxGeometry(80,4.2,3),baseMat);
-    base.position.copy(stand.position);
-    base.position.y=2.1;
-    base.position.addScaledVector(nr,side*1.6);
-    base.rotation.y=Math.atan2(tg.x,tg.z);
-    scene.add(base);
     // Flag banners along the grandstand top — 16 stuks, kleurrijk team-style.
     // Pushed in _trackFlags array zodat updateFlags() ze automatisch animeert.
     const bannerCols=[0xff2233,0xffcc11,0x2266ff,0x22cc55,0xff66aa,0xff8822,0xaa44ff,0x44ddcc];
