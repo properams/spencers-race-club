@@ -105,9 +105,28 @@
         "coral_small":  "assets/models/deepsea/coral_small.glb",
         "coral_medium": "assets/models/deepsea/coral_medium.glb",
         "wreck_box":    "assets/models/deepsea/wreck_box.glb"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/deepsea/rockwall_far.png",
+        "mountains_near": "assets/textures/deepsea/rockwall_near.png"
       }
     },
-    "space":     {},
-    "candy":     {}
+    "space": {
+      "props": {
+        "asteroid_small": "assets/models/space/asteroid_small.glb",
+        "asteroid_large": "assets/models/space/asteroid_large.glb"
+      }
+    },
+    "candy": {
+      "props": {
+        "candy_lollipop": "assets/models/candy/lollipop.glb",
+        "candy_cane":     "assets/models/candy/candy_cane.glb",
+        "gumdrop":        "assets/models/candy/gumdrop.glb"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/candy/sweethills_far.png",
+        "mountains_near": "assets/textures/candy/sweethills_near.png"
+      }
+    }
   }
 }

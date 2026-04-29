@@ -180,6 +180,11 @@
     const offRange = Math.max(2, (opts.offsetMax || (BARRIER_OFF + 12)) - minOff);
     const sizeHint = opts.sizeHint || 1.8;
     const cluster = opts.clusterSize || 2;
+    // Optional per-spawn vertical jitter — used by space (asteroids should
+    // float at varied heights y=1..6) so GLTF props don't all stick to the
+    // y=0 track surface.
+    const yMin = opts.yOffsetMin != null ? opts.yOffsetMin : 0;
+    const yRange = Math.max(0, (opts.yOffsetMax != null ? opts.yOffsetMax : yMin) - yMin);
     let placed = 0;
     for (let i=0;i<count;i++){
       const t = (i + 0.5)/count;
@@ -196,7 +201,8 @@
         const proto = Assets.getGLTF(worldId, propKey);
         const dx = (Math.random()-.5)*2.6;
         const dz = (Math.random()-.5)*2.6;
-        spawnGLTFProp(proto, cx+dx, cz+dz, { sizeHint });
+        const yOff = yMin + Math.random()*yRange;
+        spawnGLTFProp(proto, cx+dx, cz+dz, { sizeHint, yOffset: yOff });
         placed++;
       }
     }

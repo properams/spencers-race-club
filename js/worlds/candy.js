@@ -31,6 +31,14 @@ function buildCandyEnvironment(){
   buildCookieSpectators();
   // Chocolate-fountain bridge signature moment — drips lap 2, melts lap 3.
   if(typeof buildCandyChocoBridge==='function')buildCandyChocoBridge();
+  // GLTF candy props — opt-in extra detail next to procedural ice-cream
+  // cones / lollipops / gummy bears. No-op when cache is empty.
+  if(window.spawnRoadsideProps){
+    window.spawnRoadsideProps('candy',{
+      propKeys:['candy_lollipop','candy_cane','gumdrop'],
+      count:8, sizeHint:1.8, clusterSize:2,
+    });
+  }
 }
 
 

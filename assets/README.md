@@ -75,9 +75,9 @@ upgrades. Drop matching files in the paths listed in `manifest.json`:
 | volcano    | ✓ | ✓ (lava rock) | ✓ (rust-red) | ✓ | basalt rocks / lava chunk |
 | arctic     | ✓ | ✓ (snow/ice) | ✓ (cold blue) | ✓ (ice peaks) | iceberg s/m / snow rock |
 | themepark  | ✓ | ✓ (pavement) | ✓ (dusk purple) | ✓ | traffic cone / bollard / barrel |
-| deepsea    | — | ✓ (sand floor) | — | — | coral s/m / wreck box |
-| space      | — | — | — | — | n/a — cosmic skybox + abyss procedural by design |
-| candy      | — | — | — | — | n/a — thematic visuals would clash with PBR realism |
+| deepsea    | — (underwater) | ✓ (sand floor) | ✓ (dark teal rockwalls) | ✓ | coral s/m / wreck box |
+| space      | — (cosmic) | — | — | — | asteroid s/l |
+| candy      | — (thematic) | — | ✓ (pastel sweet hills) | ✓ | lollipop / candy cane / gumdrop |
 
 ### Recommended HDRI variants per world
 

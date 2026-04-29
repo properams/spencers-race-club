@@ -447,8 +447,10 @@ function buildScene(){
     buildSpaceEnvironment();
   }else if(isDeepSea){
     buildDeepSeaEnvironment();
+    buildBackgroundLayers();
   }else if(isCandy){
     buildCandyEnvironment();
+    buildBackgroundLayers();
   }else if(isNeon){
     buildNeonCityEnvironment();
     buildBackgroundLayers();

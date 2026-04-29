@@ -1,5 +1,48 @@
 # CHANGES
 
+## Track Realism Overhaul (sessie 5d) — DeepSea / Space / Candy ook in pipeline
+
+> "Is er toch niet een andere manier waarop je die op een veilige manier
+> ook kan verwerken?"
+
+Voor de drie werelden die in 5b/5c overgeslagen waren — DeepSea, Space,
+Candy — alsnog gepaste, veilige integraties toegevoegd:
+
+### Space — GLTF asteroid props (opt-in, no-op zonder cache)
+- Manifest gain: `props.asteroid_small`, `props.asteroid_large`
+- `js/worlds/space.js` roept `spawnRoadsideProps('space',...)` aan met
+  ruimere offset-range (`BARRIER_OFF + 6..25`) zodat asteroids ruimtelijk
+  voelen.
+- Geen HDRI / silhouettes — cosmic skybox blijft procedureel by design.
+
+### Candy — GLTF candy props + subtiele pastel silhouetten
+- Manifest gain: `props.candy_lollipop`, `candy_cane`, `gumdrop` +
+  `skybox_layers.mountains_far/_near`.
+- `js/worlds/candy.js` dispatcht GLTF props (no-op zonder cache).
+- Procedural pastel silhouet-palette (`#ffb3d4` far, `#cc6699` near) met
+  zeer lage opacity (0.55-0.70) zodat ze als zachte sweet-mountain ridge
+  achter de lollipops/gummies leggen, niet ervoor.
+
+### DeepSea — subtiele dark-teal seafloor silhouetten
+- Manifest gain: `skybox_layers.mountains_far/_near` voor textured
+  override van rockwall art.
+- Procedural palette (`#001a2a` far, `#000812` near) met low opacity
+  (0.55-0.72). Combineert met deepsea fog density 0.0017 → ~21% blijft
+  zichtbaar op straal 740m → leest als "rotsformaties die net door de
+  stroming vaag worden". Bestaande sand-floor / kelp / jellyfish setup
+  blijft intact.
+
+### Veiligheidsanalyse
+- Zonder asset-bestanden:
+  - Space en Candy GLTF dispatchers no-op (geen cache).
+  - DeepSea + Candy silhouet-cylinders verschijnen als zachte verre
+    horizon-rand. Op deepsea bijna onzichtbaar door fog; op candy een
+    pastel-suggestie achter de zoete props.
+- Met dropped assets: GLTF asteroids / candy props / textured
+  rockwalls + sweethills allemaal hookable via dezelfde shared helpers.
+
+---
+
 ## Track Realism Overhaul (sessie 5c) — Auto-materialen PBR + mobile HDRI variant
 
 ### Lambert → Standard voor auto-materialen (desktop only)

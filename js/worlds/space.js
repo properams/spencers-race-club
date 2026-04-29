@@ -161,6 +161,19 @@ function buildSpaceEnvironment(){
   plHeadR=new THREE.SpotLight(0xffffff,0,50,Math.PI*.16,.5);
   scene.add(plHeadL);scene.add(plHeadL.target);scene.add(plHeadR);scene.add(plHeadR.target);
   plTail=new THREE.PointLight(0xff2200,0,10);scene.add(plTail);
+  // GLTF asteroid props — opt-in extra detail next to the existing
+  // procedural asteroid field. No-op when cache is empty.
+  if(window.spawnRoadsideProps){
+    window.spawnRoadsideProps('space',{
+      propKeys:['asteroid_small','asteroid_large'],
+      count:8, sizeHint:2.4, clusterSize:2,
+      offsetMin: BARRIER_OFF + 6, offsetMax: BARRIER_OFF + 25,
+      // Float between 1m and 6m above the track plane so the GLTF
+      // asteroids match the existing buildAsteroids() layered look
+      // instead of glueing to the y=0 surface.
+      yOffsetMin: 1, yOffsetMax: 6,
+    });
+  }
 }
 
 function buildSpaceVoid(){

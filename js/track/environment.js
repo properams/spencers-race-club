@@ -235,6 +235,21 @@ const _SILHOUETTE_PALETTES = {
     far:  ['#2a1840','#5a3870',0.55, 0.80, 110],
     near: ['#180828','#3a1850',0.85, 0.92,  82],
   },
+  // DeepSea: distant seafloor rock walls fading into murky water. Very
+  // dark teal so they read as "you can almost see something far in the
+  // current", not as solid mountains. Low opacity + strong fog density
+  // (0.0017 day, 0.0022 night) does most of the work.
+  deepsea: {
+    far:  ['#001a2a','#003a55',0.45, 0.55,  90],
+    near: ['#000812','#001a2a',0.65, 0.72,  72],
+  },
+  // Candy: distant pastel candy mountains. Very low opacity so they
+  // read as a soft sweet-pink horizon ridge, not as a competing layer
+  // with the foreground lollipops/gummies.
+  candy: {
+    far:  ['#ffb3d4','#ffd9e8',0.40, 0.40, 100],
+    near: ['#cc6699','#ee8fb8',0.55, 0.50,  76],
+  },
 };
 
 function buildBackgroundLayers(){
