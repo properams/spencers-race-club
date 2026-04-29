@@ -107,7 +107,30 @@ upgrades. Drop matching files in the paths listed in `manifest.json`:
 - **arctic**: Poly Haven `snowy_park_01` 2K
 - **themepark**: Poly Haven `evening_road_01_puresky` 2K
 
-### GLTF models — manual extraction from Quaternius / KayKit / Kenney packs
+### 3D models — supported formats
+
+The asset loader auto-detects the file extension and routes to the right
+Three.js loader:
+
+| Extension | Loader | Notes |
+|---|---|---|
+| `.glb` / `.gltf` | GLTFLoader | Preferred — single-file binary, smallest payload |
+| `.obj` (+ optional `.mtl`) | OBJLoader (+ MTLLoader) | Static geometry only; sibling `.mtl` auto-detected |
+| `.fbx` | FBXLoader | Static + skinned geometry; pulls in fflate dependency |
+
+Just put any of these in the manifest path. The dispatcher in
+`spawn*Props` doesn't care which format the file is — it consumes the
+uniform `{ scene, animations }` shape that the loader returns.
+
+> **Tip for OBJ:** if the file references `.png` / `.jpg` textures via
+> `.mtl`, the loader resolves them relative to the `.obj`'s folder. So
+> drop `model.obj` + `model.mtl` + any `.png` textures into the same
+> folder under `assets/models/<world>/`.
+
+> **Tip for FBX:** zip-FBX is supported via fflate (auto-loaded). Most
+> KayKit / Quaternius FBX exports are uncompressed and load fine.
+
+### Where to get models
 
 The download script does NOT fetch GLTF models because most pack
 distributors ship them as zips. **Easiest source for individual GLBs:**

@@ -10,6 +10,15 @@ assets/textures/**/*.jpeg
 assets/textures/**/*.png
 assets/models/**/*.glb
 assets/models/**/*.gltf
+assets/models/**/*.obj
+assets/models/**/*.mtl
+assets/models/**/*.fbx
+# Texture files inside models/ folders (referenced via .mtl from .obj
+# loaders, or embedded textures alongside .fbx).
+assets/models/**/*.jpg
+assets/models/**/*.jpeg
+assets/models/**/*.png
+assets/models/**/*.tga
 
 # Asset inbox — temp drop zone, contents never committed (only the
 # README + .gitkeep stay tracked so the folder exists in fresh clones).
