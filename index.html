@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/worlds.css">
-<link rel="stylesheet" href="css/select.css?v=5">
+<link rel="stylesheet" href="css/select.css?v=4">
 <link rel="stylesheet" href="css/hud.css">
 <link rel="stylesheet" href="css/screens.css">
 </head>
@@ -165,25 +165,15 @@
         <div class="prevModelLine" id="prevName">SF90</div>
         <div class="prevSpecsLine" id="prevSpecs">SUPER · 986 hp</div>
       </div>
-      <div class="prevHeroCard" id="prevHeroCard">
-        <div class="prevHeroBg"></div>
-        <svg class="prevCarSvg" viewBox="0 0 320 120" aria-hidden="true">
-          <ellipse cx="160" cy="106" rx="135" ry="5" fill="rgba(0,0,0,.55)"/>
-          <path d="M 30 88 C 32 70, 42 64, 56 62 L 88 50 Q 110 40, 145 38 L 200 38 Q 230 40, 255 50 L 280 62 C 295 65, 305 72, 305 85 L 305 95 L 30 95 Z" fill="currentColor"/>
-          <path d="M 100 50 Q 122 42, 150 41 L 195 41 Q 218 43, 235 50 L 235 60 L 100 60 Z" fill="rgba(0,0,0,.55)" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
-          <path d="M 35 78 L 305 78 L 305 80 L 35 80 Z" fill="rgba(255,255,255,.18)"/>
-          <circle cx="248" cy="92" r="16" fill="#0a0a0a"/>
-          <circle cx="248" cy="92" r="9" fill="#1a1a1a"/>
-          <circle cx="248" cy="92" r="3" fill="#444"/>
-          <circle cx="80" cy="92" r="16" fill="#0a0a0a"/>
-          <circle cx="80" cy="92" r="9" fill="#1a1a1a"/>
-          <circle cx="80" cy="92" r="3" fill="#444"/>
-          <ellipse cx="298" cy="74" rx="6" ry="4" fill="rgba(255,255,200,.85)"/>
-          <rect x="30" y="70" width="8" height="6" rx="2" fill="rgba(255,80,80,.85)"/>
-        </svg>
-        <div class="prevTypeBadge" id="prevTypeBadge">SUPER</div>
+      <div class="prevCanvasWrap">
+        <canvas id="carPreviewCvs" width="400" height="220"></canvas>
+        <span class="prevCorner prevCornerTL"></span>
+        <span class="prevCorner prevCornerTR"></span>
+        <span class="prevCorner prevCornerBL"></span>
+        <span class="prevCorner prevCornerBR"></span>
+        <div class="prevHint" id="prevHint">↻ DRAG TO ROTATE</div>
+        <div class="colorRow" id="colorRow"></div>
       </div>
-      <div class="colorRow" id="colorRow"></div>
       <div class="statBars" id="prevStats"></div>
     </div>
     <!-- RIGHT: settings + rival + start -->
@@ -425,7 +415,7 @@
 <script src="js/effects/postfx.js"></script>
 <script src="js/core/renderer.js"></script>
 <script src="js/core/scene.js"></script>
-<script src="js/core/loop.js?v=2"></script>
+<script src="js/core/loop.js"></script>
 
 <!-- Audio implementatie (geregistreerd voor api-facade deferred evalueert) -->
 <script src="js/audio/engine.js"></script>
@@ -485,9 +475,9 @@
 <!-- UI -->
 <script src="js/ui/hud.js"></script>
 <script src="js/ui/touch.js"></script>
-<script src="js/ui/select.js?v=6"></script>
+<script src="js/ui/select.js?v=5"></script>
 <script src="js/ui/pause.js"></script>
-<script src="js/ui/navigation.js?v=5"></script>
+<script src="js/ui/navigation.js?v=4"></script>
 <script src="js/ui/input.js"></script>
 <script src="js/ui/help.js"></script>
 <script src="js/core/boot.js"></script>

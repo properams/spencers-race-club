@@ -2,12 +2,11 @@
 
 'use strict';
 
-// Car-preview state — voorheen draaide hier een tweede THREE.WebGLRenderer
-// voor een live 3D auto-preview. Op iOS Safari liep dat steevast vast op
-// het hard WebGL-context budget (max ~4-8 contexts), vooral bij lage
-// batterij. Vervangen door een statische SVG hero-card die meekleurt met
-// de gekozen auto — geen extra WebGL context, geen render loop.
-let _prevDefId=-1;
+// Car-preview state — gebruikt in initCarPreview/updateCarPreview.
+// (carPreviews dict verwijderd samen met buildCarPreviews — was de enige populator.)
+let _prevRen=null,_prevScene=null,_prevCam=null,_prevCarMesh=null,_prevDefId=-1;
+let _prevPodiumGrid=null,_prevPodiumGridTex=null,_prevRimRing=null,_prevGlowTex=null,_prevHintFaded=false,_prevHasInteracted=false;
+let _prevSizeW=0,_prevSizeH=0;
 const _unlockHints=[
   '','','','',
   '🏆 Finish P1',       // 4 Red Bull
@@ -20,22 +19,214 @@ const _unlockHints=[
   '💰 2000 coins',   // 11
 ];
 
-// Apply de auto-kleur op de SVG hero-card via CSS custom properties. Werkt
-// op alle browsers (incl. iOS Safari), geen WebGL nodig.
-function _applyCarColor(carHex,accentHex){
-  const card=document.getElementById('prevHeroCard');
-  if(!card)return;
-  const c='#'+(carHex>>>0).toString(16).padStart(6,'0');
-  const a='#'+((accentHex!=null?accentHex:carHex)>>>0).toString(16).padStart(6,'0');
-  // Glow-kleur = accent in rgba met 35% alpha. Eenvoudig string composition
-  // ipv color manipulation library.
-  const r=(accentHex!=null?accentHex:carHex)>>16&0xff;
-  const g=(accentHex!=null?accentHex:carHex)>>8&0xff;
-  const b=(accentHex!=null?accentHex:carHex)&0xff;
-  card.style.setProperty('--carColor',c);
-  card.style.setProperty('--carAccent',a);
-  card.style.setProperty('--carGlow','rgba('+r+','+g+','+b+',.35)');
+function initCarPreview(){
+  if(_prevRen&&_prevScene)return;
+  var cvs=document.getElementById('carPreviewCvs');if(!cvs)return;
+  if(!_prevRen){
+    // Mobile: skip antialias volledig. iOS Safari heeft hard limit op WebGL
+    // contexts (~4-8) en MSAA reserveert agressiever GPU memory; deze preview
+    // staat naast de hoofd-game renderer dus elke besparing telt voor crash-
+    // weerbaarheid bij lage batterij.
+    var opts=window._isMobile
+      ? [{antialias:false,alpha:true},{antialias:false,alpha:false}]
+      : [{antialias:true,alpha:true},{antialias:false,alpha:true},{antialias:false,alpha:false}];
+    for(var i=0;i<opts.length;i++){try{_prevRen=new THREE.WebGLRenderer({canvas:cvs,...opts[i]});break;}catch(e){_prevRen=null;}}
+  }
+  if(!_prevRen){
+    var ctx=cvs.getContext('2d');
+    if(ctx){ctx.fillStyle='#080818';ctx.fillRect(0,0,cvs.width,cvs.height);ctx.fillStyle='rgba(180,80,255,0.3)';ctx.font='bold 13px Orbitron,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('3D PREVIEW',cvs.width/2,cvs.height/2);}
+    return;
+  }
+  _prevRen.setPixelRatio(Math.min(devicePixelRatio,2));
+  _resizePreviewRenderer(cvs);
+  _prevRen.toneMapping=THREE.ACESFilmicToneMapping;_prevRen.toneMappingExposure=1.35;
+  ThreeCompat.applyRendererColorSpace(_prevRen);_prevRen.setClearColor(0x050812,1);
+  _prevScene=new THREE.Scene();
+  _prevCam=new THREE.PerspectiveCamera(32,(_prevSizeW||400)/(_prevSizeH||220),.1,100);
+  _prevCam.position.set(4.2,1.55,5.8);_prevCam.lookAt(0,.42,0);
+  // Cinematic 3-point lighting: warm key from front-left, cool fill from
+  // right, magenta rim from behind for cyberpunk silhouette.
+  var key=new THREE.DirectionalLight(0xfff0e0,2.3);key.position.set(-3,5,5);_prevScene.add(key);
+  var fill=new THREE.DirectionalLight(0x88aaff,.9);fill.position.set(4,2,3);_prevScene.add(fill);
+  var rim=new THREE.DirectionalLight(0xff44aa,2.0);rim.position.set(0,3,-6);_prevScene.add(rim);
+  _prevScene.add(new THREE.AmbientLight(0x223344,.7));
+  _prevScene.fog=new THREE.FogExp2(0x060010,.06);
+  // Hexagonal podium: top deck (slim slab) + emissive neon ring at the rim.
+  var hexGeo=new THREE.CylinderGeometry(3.4,3.6,.16,6);
+  var hexMat=new THREE.MeshStandardMaterial({color:0x0c0820,metalness:.4,roughness:.6,emissive:0x1a0033,emissiveIntensity:.3});
+  var hex=new THREE.Mesh(hexGeo,hexMat);hex.position.y=-.08;_prevScene.add(hex);
+  // Neon edge ring sitting on top of the deck — emissive magenta.
+  var ring=new THREE.Mesh(
+    new THREE.TorusGeometry(3.35,.025,8,64),
+    new THREE.MeshBasicMaterial({color:0xff2d6f})
+  );
+  ring.rotation.x=Math.PI/2;ring.position.y=.012;_prevScene.add(ring);
+  // Scrolling grid texture sitting flush on the deck — procedural canvas.
+  _prevPodiumGridTex=_makePodiumGridTexture();
+  var gridMat=new THREE.MeshBasicMaterial({map:_prevPodiumGridTex,transparent:true,opacity:.55,depthWrite:false});
+  var gridGeo=new THREE.CircleGeometry(3.25,32);
+  _prevPodiumGrid=new THREE.Mesh(gridGeo,gridMat);
+  _prevPodiumGrid.rotation.x=-Math.PI/2;_prevPodiumGrid.position.y=.011;
+  _prevScene.add(_prevPodiumGrid);
+  // Soft rim glow disc underneath — gives the podium a halo on the floor.
+  _prevGlowTex=_makeRadialGlowTexture('#ff2d6f');
+  _prevRimRing=new THREE.Mesh(
+    new THREE.PlaneGeometry(11,11),
+    new THREE.MeshBasicMaterial({map:_prevGlowTex,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending})
+  );
+  _prevRimRing.rotation.x=-Math.PI/2;_prevRimRing.position.y=-.07;
+  _prevScene.add(_prevRimRing);
+  _initPreviewDrag(cvs);
+  _initPreviewResize(cvs);
 }
+
+// Tear down de car-preview WebGLRenderer + Scene. Aangeroepen bij screen-
+// transities weg van SELECT (race-start, terug naar title) zodat iOS Safari
+// niet vastloopt op zijn hard WebGL-context limit met de hoofd-game renderer.
+// Volgende bezoek aan SELECT roept initCarPreview opnieuw aan vanaf scratch.
+function disposeCarPreview(){
+  if(!_prevRen)return;
+  if(_prevScene){
+    _prevScene.traverse(o=>{
+      if(o.geometry)o.geometry.dispose();
+      if(o.material){
+        if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());
+        else o.material.dispose();
+      }
+    });
+  }
+  if(_prevPodiumGridTex){_prevPodiumGridTex.dispose();_prevPodiumGridTex=null;}
+  if(_prevGlowTex){_prevGlowTex.dispose();_prevGlowTex=null;}
+  // Een canvas waarvan de WebGL context geforceerd verloren is, kan geen
+  // nieuwe context meer krijgen. Vervang het element dus met een verse clone
+  // zodat een volgende initCarPreview opnieuw een schone WebGL-context kan
+  // aanvragen — anders crasht het op iOS bij het tweede bezoek aan SELECT.
+  const oldCvs=_prevRen.domElement;
+  try{_prevRen.dispose();_prevRen.forceContextLoss();}catch(e){}
+  if(oldCvs&&oldCvs.parentNode){
+    const newCvs=document.createElement('canvas');
+    newCvs.id=oldCvs.id;
+    newCvs.width=oldCvs.width||400;
+    newCvs.height=oldCvs.height||220;
+    oldCvs.parentNode.replaceChild(newCvs,oldCvs);
+  }
+  _prevRen=null;_prevScene=null;_prevCam=null;_prevCarMesh=null;
+  _prevPodiumGrid=null;_prevRimRing=null;
+  _prevDefId=-1;_prevSizeW=0;_prevSizeH=0;
+  _prevHintFaded=false;_prevHasInteracted=false;
+}
+window.disposeCarPreview=disposeCarPreview;
+
+function _makePodiumGridTexture(){
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const g=c.getContext('2d');
+  g.fillStyle='rgba(8,4,24,0)';g.fillRect(0,0,256,256);
+  g.strokeStyle='rgba(255,45,111,.55)';g.lineWidth=1;
+  for(let i=0;i<=8;i++){
+    const p=Math.round((i/8)*256)+.5;
+    g.beginPath();g.moveTo(p,0);g.lineTo(p,256);g.stroke();
+    g.beginPath();g.moveTo(0,p);g.lineTo(256,p);g.stroke();
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(2,2);
+  return t;
+}
+
+function _makeRadialGlowTexture(hex){
+  const c=document.createElement('canvas');c.width=256;c.height=256;
+  const g=c.getContext('2d');
+  const grd=g.createRadialGradient(128,128,8,128,128,128);
+  grd.addColorStop(0,hex);grd.addColorStop(.35,'rgba(255,45,111,.45)');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=grd;g.fillRect(0,0,256,256);
+  return new THREE.CanvasTexture(c);
+}
+
+function _resizePreviewRenderer(cvs){
+  if(!_prevRen||!cvs)return;
+  const w=Math.max(2,cvs.clientWidth|0),h=Math.max(2,cvs.clientHeight|0);
+  if(w===_prevSizeW&&h===_prevSizeH)return;
+  _prevSizeW=w;_prevSizeH=h;
+  _prevRen.setSize(w,h,false);
+  if(_prevCam){_prevCam.aspect=w/h;_prevCam.updateProjectionMatrix();}
+}
+
+function _initPreviewResize(cvs){
+  if(!cvs||cvs.dataset.resizeWired==='1')return;
+  cvs.dataset.resizeWired='1';
+  if(typeof ResizeObserver!=='undefined'){
+    new ResizeObserver(()=>_resizePreviewRenderer(cvs)).observe(cvs);
+  }else{
+    window.addEventListener('resize',()=>_resizePreviewRenderer(cvs));
+  }
+}
+
+// Drag-to-rotate: while dragging the user controls the rotation. After
+// release we keep their offset for ~2s, then resume the auto-rotate idle
+// loop. updateCarPreview reads _prevDragHoldT to skip auto-rotate.
+let _prevDragging=false,_prevDragLastX=0,_prevDragHoldT=0;
+function _initPreviewDrag(cvs){
+  if(!cvs||cvs.dataset.dragWired==='1')return;
+  cvs.dataset.dragWired='1';
+  const onDown=(x)=>{_prevDragging=true;_prevDragLastX=x;_prevHasInteracted=true;};
+  const onMove=(x)=>{
+    if(!_prevDragging||!_prevCarMesh)return;
+    const dx=x-_prevDragLastX;
+    _prevCarMesh.rotation.y+=dx*0.012;
+    _prevDragLastX=x;
+  };
+  const onUp=()=>{_prevDragging=false;_prevDragHoldT=2.0;};
+  cvs.addEventListener('mousedown',e=>onDown(e.clientX));
+  window.addEventListener('mousemove',e=>onMove(e.clientX));
+  window.addEventListener('mouseup',onUp);
+  cvs.addEventListener('touchstart',e=>{if(e.touches[0])onDown(e.touches[0].clientX);},{passive:true});
+  window.addEventListener('touchmove',e=>{if(e.touches[0])onMove(e.touches[0].clientX);},{passive:true});
+  window.addEventListener('touchend',onUp);
+}
+
+function setPreviewCar(defId){
+  if(!_prevScene||defId===_prevDefId)return;
+  _prevDefId=defId;
+  if(_prevCarMesh){
+    _prevScene.remove(_prevCarMesh);
+    _prevCarMesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});
+    _prevCarMesh=null;
+  }
+  const def=CAR_DEFS.find(d=>d.id===defId);if(!def)return;
+  _prevCarMesh=makeCar(def);_prevScene.add(_prevCarMesh);
+}
+
+function updateCarPreview(dt){
+  if(gameState!=='SELECT')return;
+  if(!_prevScene)initCarPreview();
+  if(!_prevRen||!_prevScene||!_prevCam)return;
+  // initCarPreview may have run while #sSelect was still display:none
+  // (clientWidth=0). Once layout is real, re-size before rendering so
+  // the first visible frame uses the correct framebuffer + aspect.
+  if(_prevSizeW<=2){
+    const cvs=_prevRen.domElement;
+    if(cvs&&cvs.clientWidth>2)_resizePreviewRenderer(cvs);
+    if(_prevSizeW<=2)return;
+  }
+  if(_prevDragHoldT>0)_prevDragHoldT=Math.max(0,_prevDragHoldT-dt);
+  if(_prevCarMesh&&!_prevDragging&&_prevDragHoldT<=0)_prevCarMesh.rotation.y+=dt*0.3;
+  if(_prevPodiumGridTex){
+    _prevPodiumGridTex.offset.x=(_prevPodiumGridTex.offset.x+dt*0.04)%1;
+    _prevPodiumGridTex.offset.y=(_prevPodiumGridTex.offset.y+dt*0.02)%1;
+  }
+  // Fade the DRAG TO ROTATE hint once the user has interacted.
+  if(_prevHasInteracted&&!_prevHintFaded){
+    const h=document.getElementById('prevHint');
+    if(h){h.style.transition='opacity .8s ease';h.style.opacity='0';}
+    _prevHintFaded=true;
+  }
+  _prevRen.render(_prevScene,_prevCam);
+}
+
+// buildCarPreviews was dead — render-to-texture pre-render van 12 cars naar
+// PNG (bedoeld voor select-screen thumbnails). Vervangen door live 3D
+// preview (initCarPreview/setPreviewCar/updateCarPreview hierboven).
+// Verwijderd in dead-code cleanup.
 
 
 // Format a lap time as M:SS.t (e.g. 1:39.8).
@@ -83,7 +274,8 @@ function _updateSelectSummary(){
 
 function _selectPreviewCar(defId){
   const switching=(defId!==_prevDefId);
-  selCarId=defId;_prevDefId=defId;
+  selCarId=defId;
+  setPreviewCar(defId);
   const def=CAR_DEFS.find(d=>d.id===defId);if(!def)return;
   if(window.Audio&&window.Audio.preloadAll)window.Audio.preloadAll(def.type);
   // Short rev burst per car-type when actually switching (skip on initial
@@ -95,22 +287,36 @@ function _selectPreviewCar(defId){
   }
   // Brand line + model + specs
   const b=document.getElementById('prevBrand');if(b)b.textContent=def.brand;
-  const n=document.getElementById('prevName');if(n)n.textContent=def.name;
-  const tlabel=def.type==='f1'?'F1':def.type==='muscle'?'MUSCLE':def.type==='electric'?'ELECTRIC':'SUPER';
+  const n=document.getElementById('prevName');
+  if(n){
+    if(n._fadeT){clearTimeout(n._fadeT);n._fadeT=null;}
+    // Properties één-voor-één zetten ipv `style.cssText +=` (dat
+    // concatenateert strings zonder ; en levert na de 2e aanroep een
+    // malformed cssText op — iOS Safari verwerpt 'm dan helemaal,
+    // waardoor opacity stuck op 0 blijft en de naam onzichtbaar wordt).
+    n.style.transition='none';
+    n.style.opacity='0';
+    n.style.transform='translateY(6px)';
+    n._fadeT=setTimeout(()=>{
+      n.textContent=def.name;
+      n.style.transition='all .22s ease';
+      n.style.opacity='1';
+      n.style.transform='translateY(0)';
+      n._fadeT=null;
+    },60);
+  }
   const sp=document.getElementById('prevSpecs');
   if(sp){
+    const tlabel=def.type==='f1'?'F1':def.type==='muscle'?'MUSCLE':def.type==='electric'?'ELECTRIC':'SUPER';
     const hp=Math.round(def.topSpd*820);
     const tk=Math.round(def.topSpd*255);
     sp.textContent=tlabel+' · '+hp+' hp · '+tk+' km/h';
   }
-  const tb=document.getElementById('prevTypeBadge');if(tb)tb.textContent=tlabel;
-  // Apply de gekozen kleur op de SVG hero card.
-  _applyCarColor(_carColorOverride[defId]||def.color,def.accent);
   // 4-stat card stack: SPEED / ACCEL / HANDLING / NITRO with a ghost
   // bar at the catalog max behind the current car's bar, and a rank-
   // coloured numeric. Animated via CSS transition on .statCardFill.
   _renderStatCards(def);
-  // Color swatches — onder de hero card als eigen rij.
+  // Color swatches — overlay on preview canvas (no separate "COLOUR" label).
   const colorEl=document.getElementById('colorRow');
   if(colorEl){
     colorEl.innerHTML='';
@@ -120,7 +326,7 @@ function _selectPreviewCar(defId){
       dot.style.background='#'+hex.toString(16).padStart(6,'0');
       dot.onclick=()=>{
         _carColorOverride[defId]=hex;
-        _applyCarColor(hex,def.accent);
+        if(_prevCarMesh){_prevCarMesh.traverse(o=>{if(o.isMesh&&o.material&&o.material.color){const m=o.material;if(m.color.getHex()===def.color||m.color.getHex()===(_carColorOverride[defId]||def.color)){m.color.setHex(hex);}}});}
         colorEl.querySelectorAll('.colorDot').forEach(d=>d.classList.remove('cSel'));
         dot.classList.add('cSel');
       };
@@ -302,7 +508,7 @@ function _renderHeaderSubtitle(){
 function buildCarSelectUI(){
   loadPersistent();
   _prevDefId=-1;
-  _selectPreviewCar(selCarId);
+  initCarPreview();_selectPreviewCar(selCarId);
   _renderHeaderSubtitle();
   _renderGarageList();
   _renderRival();
