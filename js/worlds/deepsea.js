@@ -662,15 +662,23 @@ function updateDeepSeaWorld(dt){
     }
     fs.mesh.instanceMatrix.needsUpdate=true;
   });
-  // Underwater current effect on player car — gentle drift
+  // Underwater current effect on player car — gentle drift, scaled by the
+  // lap-progressive current signature (window._dsaCurrentDriftMult, default 1).
   if(activeWorld==='deepsea'){
     const car=carObjs[playerIdx];
     if(car&&!recoverActive){
-      _dsaCurrentDir+=dt*.04;
-      const drift=.0008;
+      const driftMult=(typeof window._dsaCurrentDriftMult==='number')?window._dsaCurrentDriftMult:1;
+      _dsaCurrentDir+=dt*.04*driftMult;
+      const drift=.0008*driftMult;
       car.mesh.position.x+=Math.cos(_dsaCurrentDir)*drift*car.speed*60*dt;
       car.mesh.position.z+=Math.sin(_dsaCurrentDir)*drift*car.speed*60*dt;
     }
+  }
+  // Lap-progressive current intensification — runs LAST so it overrides
+  // _wpCurrentStreams strength for the next checkCurrentStreams call.
+  if(typeof updateDeepSeaCurrent==='function'){
+    const _pl=carObjs[playerIdx];
+    updateDeepSeaCurrent(dt, _pl?_pl.lap:1);
   }
 }
 
