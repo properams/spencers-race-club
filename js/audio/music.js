@@ -893,8 +893,8 @@ function startSelectMusic(){
   // Preload muziek-stems + globale SFX + surface voor de huidige wereld
   // (idempotent). Als user een andere wereld kiest triggert select.js
   // rebuildWorld een nieuwe preload-cyclus.
-  if(window.activeWorld&&typeof window._preloadWorld==='function'){
-    window._preloadWorld(window.activeWorld);
+  if(window.activeWorld&&typeof window._preloadWorldAudio==='function'){
+    window._preloadWorldAudio(window.activeWorld);
   }
   if(typeof window._preloadSFX==='function')window._preloadSFX();
   if(typeof window._preloadAmbient==='function')window._preloadAmbient();
