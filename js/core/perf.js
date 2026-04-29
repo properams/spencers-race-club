@@ -129,11 +129,16 @@
     if (window.audioCtx) {
       const aState = window.audioCtx.state;
       const oscC = window.MusicLib ? window.MusicLib._oscCount : '?';
+      const liveSrc = window._dbgAudioSrc ? window._dbgAudioSrc.live : null;
+      const totalStarted = window._dbgAudioSrc ? window._dbgAudioSrc.startedTotal : null;
       const sched = window.musicSched
         ? (window.musicSched.constructor.name + (window.musicSched.style ? ':' + window.musicSched.style : ''))
         : '—';
       const aCol = aState === 'running' ? '#0f0' : '#fc0';
-      lines.push(`<span style="color:#888">AUDIO</span> <span style="color:${aCol}">${aState}</span> · osc ${oscC} · <span style="color:#888">SCHED</span> ${sched}`);
+      let audioLine = `<span style="color:#888">AUDIO</span> <span style="color:${aCol}">${aState}</span> · osc ${oscC}`;
+      if (liveSrc !== null) audioLine += ` · live ${liveSrc} · total ${totalStarted}`;
+      audioLine += ` · <span style="color:#888">SCHED</span> ${sched}`;
+      lines.push(audioLine);
     }
 
     // Scene-stats

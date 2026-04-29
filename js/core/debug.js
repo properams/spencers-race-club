@@ -183,6 +183,10 @@
       snap.audioTime = +window.audioCtx.currentTime.toFixed(3);
     }
     if (window.MusicLib) snap.oscCount = window.MusicLib._oscCount;
+    if (window._dbgAudioSrc) {
+      snap.liveAudioSrc = window._dbgAudioSrc.live;
+      snap.startedTotal = window._dbgAudioSrc.startedTotal;
+    }
     snap.engineInit = !!window.engineGain;
     snap.musicSchedKind = window.musicSched
       ? (window.musicSched.constructor.name + '(' + (window.musicSched.style || '') + ')')
@@ -216,6 +220,7 @@
           ctx.textures = window.renderer.info.memory.textures;
         }
         if (window.MusicLib) ctx.oscCount = window.MusicLib._oscCount;
+        if (window._dbgAudioSrc) ctx.liveAudioSrc = window._dbgAudioSrc.live;
         _spikeRing.push(ctx);
         if (_spikeRing.length > SPIKE_RING_MAX) _spikeRing.shift();
         console.warn('[' + ts() + '][spike] ' + dt.toFixed(1) + 'ms', ctx);

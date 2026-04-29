@@ -47,6 +47,29 @@ let _lastGear=1;
 function initAudio(){
   if(audioCtx)return;
   audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  // Dbg-only proxy: track live AudioBufferSourceNode + OscillatorNode counts
+  // so the perf overlay can show real audio-source pressure (incl. sample-
+  // based StemRaceMusic which doesn't register in MusicLib._oscCount).
+  if(window.dbg&&window.dbg.enabled){
+    const _audioSrc={live:0,startedTotal:0,endedTotal:0};
+    const _wrap=(orig)=>function(){
+      const node=orig.apply(this,arguments);
+      if(!node)return node;
+      const _origStart=node.start;
+      node.start=function(){
+        try{
+          _audioSrc.live++;_audioSrc.startedTotal++;
+          node.addEventListener('ended',()=>{_audioSrc.live=Math.max(0,_audioSrc.live-1);_audioSrc.endedTotal++;},{once:true});
+        }catch(_){}
+        return _origStart.apply(this,arguments);
+      };
+      return node;
+    };
+    audioCtx.createBufferSource=_wrap(audioCtx.createBufferSource.bind(audioCtx));
+    audioCtx.createOscillator=_wrap(audioCtx.createOscillator.bind(audioCtx));
+    window._dbgAudioSrc=_audioSrc;
+    window.dbg.audioSources=()=>({...window._dbgAudioSrc});
+  }
   _master=audioCtx.createDynamicsCompressor();
   _master.threshold.value=-16;_master.knee.value=10;
   _master.ratio.value=4;_master.attack.value=0.003;_master.release.value=0.12;
