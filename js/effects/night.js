@@ -24,8 +24,8 @@ function toggleNight(){
   if(activeWorld==='deepsea'){
     // Underwater — toggle is shallow water (day) vs deep abyss (night)
     if(isDark){
-      scene.background=makeSkyTex('#000810','#00101a');scene.fog.density=.0018;
-      sunLight.intensity=.08;ambientLight.intensity=.20;hemiLight.intensity=.14;
+      scene.background=makeSkyTex('#021420','#03202e');scene.fog.density=.0018;
+      sunLight.intensity=.18;ambientLight.intensity=.36;hemiLight.intensity=.24;
       trackLightList.forEach(l=>l.intensity=1.6);trackPoles.forEach(p=>p.visible=true);
       if(stars)stars.visible=true; // biolum particles
       _dsaBioEdges.forEach(e=>e.mat.opacity=.85);
@@ -45,8 +45,8 @@ function toggleNight(){
   }else if(activeWorld==='neoncity'){
     // Neon City — always night, toggle adjusts neon intensity
     if(isDark){
-      scene.background=makeSkyTex('#000008','#030012');scene.fog.density=.0014;
-      sunLight.intensity=.04;ambientLight.intensity=.24;hemiLight.intensity=.16;
+      scene.background=makeSkyTex('#04031e','#0a0828');scene.fog.density=.0014;
+      sunLight.intensity=.12;ambientLight.intensity=.40;hemiLight.intensity=.26;
       trackLightList.forEach(l=>{if(l.intensity>0)l.intensity=Math.min(l.intensity*1.3,4.5);});
     }else{
       scene.background=makeSkyTex('#040015','#080025');scene.fog.density=.0021;
@@ -59,8 +59,8 @@ function toggleNight(){
     _aiHeadPool.forEach(l=>l.intensity=1.2);
     if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='arctic'){
-    if(isDark){scene.background=makeSkyTex('#040c18','#0a1828');scene.fog.density=.0035;
-      sunLight.intensity=.10;ambientLight.intensity=.22;trackLightList.forEach(function(l){l.intensity=1.4;});
+    if(isDark){scene.background=makeSkyTex('#0c1e36','#162e48');scene.fog.density=.0030;
+      sunLight.intensity=.22;ambientLight.intensity=.40;hemiLight.intensity=.32;trackLightList.forEach(function(l){l.intensity=1.4;});
     }else{scene.background=makeSkyTex('#0a1525','#1a3050');scene.fog.density=.0035;
       sunLight.color.setHex(0xaaccff);sunLight.intensity=.8;ambientLight.intensity=.45;trackLightList.forEach(function(l){l.intensity=0;});
     }
@@ -70,7 +70,7 @@ function toggleNight(){
     _aiHeadPool.forEach(function(l){l.intensity=isDark?1.0:0;});
     if(_sunBillboard)_sunBillboard.visible=!isDark;
   }else if(activeWorld==='volcano'){
-    sunLight.intensity=isDark?.10:.7;ambientLight.intensity=isDark?.22:.35;hemiLight.intensity=isDark?.15:.25;
+    sunLight.intensity=isDark?.22:.7;ambientLight.intensity=isDark?.38:.35;hemiLight.intensity=isDark?.26:.25;
     if(stars)stars.visible=true;
     trackLightList.forEach(function(l){l.intensity=isDark?1.8:0;});
     if(plHeadL){plHeadL.intensity=isDark?1.9:0;plHeadR.intensity=isDark?1.9:0;}
@@ -80,8 +80,8 @@ function toggleNight(){
   }else if(activeWorld==='themepark'){
     // Sunset park stays sunset-toned; toggle dims/lights it without swapping the skybox to GP blue.
     if(isDark){
-      scene.background=makeSkyTex('#150022','#3a0e22');scene.fog.density=.0014;
-      sunLight.intensity=.12;ambientLight.intensity=.25;hemiLight.intensity=.20;
+      scene.background=makeSkyTex('#260340','#4e1734');scene.fog.density=.0014;
+      sunLight.intensity=.25;ambientLight.intensity=.42;hemiLight.intensity=.32;
       trackLightList.forEach(l=>l.intensity=2.2);trackPoles.forEach(p=>p.visible=true);
     }else{
       scene.background=makeSkyTex('#2a0844','#ff8844');scene.fog.density=.0019;
@@ -96,8 +96,8 @@ function toggleNight(){
   }else if(activeWorld==='candy'){
     // Candy — Day=bright pastel paradise, Night=glow-in-the-dark wonderland
     if(isDark){
-      scene.background=makeSkyTex('#1a0028','#280038');scene.fog.density=.0010;
-      sunLight.intensity=.10;ambientLight.intensity=.26;hemiLight.intensity=.18;
+      scene.background=makeSkyTex('#2c0844','#3e0c52');scene.fog.density=.0010;
+      sunLight.intensity=.22;ambientLight.intensity=.44;hemiLight.intensity=.30;
       trackLightList.forEach(l=>l.intensity=2.2);trackPoles.forEach(p=>p.visible=true);
       _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=0.8;} });
       _candyCandles.forEach(l=>l.intensity=1.0);
@@ -118,11 +118,11 @@ function toggleNight(){
   }else if(activeWorld==='space'){
     // Space is always dark — toggle only affects ambient brightness ("solar flare day" vs "deep night")
     if(isDark){
-      scene.background=makeSkyTex('#000005','#010018');scene.fog.density=.0006;
-      sunLight.intensity=.08;ambientLight.intensity=.22;hemiLight.intensity=.16;
+      scene.background=makeSkyTex('#020216','#0a0a30');scene.fog.density=.0006;
+      sunLight.intensity=.16;ambientLight.intensity=.34;hemiLight.intensity=.24;
     }else{
-      scene.background=makeSkyTex('#040025','#080045');scene.fog.density=.0014;
-      sunLight.intensity=.10;ambientLight.intensity=.28;hemiLight.intensity=.18;
+      scene.background=makeSkyTex('#06033a','#10085a');scene.fog.density=.0014;
+      sunLight.intensity=.18;ambientLight.intensity=.40;hemiLight.intensity=.28;
     }
     if(stars)stars.visible=true; // always on in space
     trackLightList.forEach(l=>l.intensity=isDark?2.0:1.4);
@@ -132,8 +132,8 @@ function toggleNight(){
     _aiHeadPool.forEach(l=>l.intensity=1.1);
   }else{
     if(isDark){
-      scene.background=makeSkyTex('#010408','#030d1e');scene.fog.density=.0024;
-      sunLight.intensity=.10;ambientLight.intensity=.20;hemiLight.intensity=.14;
+      scene.background=makeSkyTex('#0a1426','#162842');scene.fog.density=.0022;
+      sunLight.intensity=.22;ambientLight.intensity=.40;hemiLight.intensity=.28;
       trackLightList.forEach(l=>l.intensity=2.4);trackPoles.forEach(p=>p.visible=true);if(stars)stars.visible=true;
       if(plHeadL){plHeadL.intensity=1.8;plHeadR.intensity=1.8;}if(plTail)plTail.intensity=1.5;
       _aiHeadPool.forEach(l=>l.intensity=1.1);
