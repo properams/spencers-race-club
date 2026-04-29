@@ -2,16 +2,30 @@ backups/
 .claude/*
 !.claude/agents/
 
-# Visual asset binaries — downloaded via assets/download_assets.sh.
-# Never commit; redistributable from source on demand.
+# Visual asset binaries — only ignored for fresh drops; files already
+# committed (via web upload or explicit `git add -f`) stay tracked. The
+# game expects manifest paths to resolve to files on disk, so binaries
+# DO live in git for the production game; the ignore rules just keep
+# random local downloads from being added by accident.
 assets/hdri/*.hdr
 assets/textures/**/*.jpg
 assets/textures/**/*.jpeg
 assets/textures/**/*.png
 assets/models/**/*.glb
 assets/models/**/*.gltf
+assets/models/**/*.bin
+assets/models/**/*.obj
+assets/models/**/*.mtl
+assets/models/**/*.fbx
+# Texture files inside models/ folders (referenced via .mtl from .obj
+# loaders, or embedded textures alongside .fbx, or shared bark/leaf .png
+# next to .gltf nature props).
+assets/models/**/*.jpg
+assets/models/**/*.jpeg
+assets/models/**/*.png
+assets/models/**/*.tga
 
-# Asset inbox — temp drop zone, contents never committed (only the
+# Asset inbox — temp drop zone, contents never auto-committed (only the
 # README + .gitkeep stay tracked so the folder exists in fresh clones).
 assets/_inbox/*
 !assets/_inbox/README.md

@@ -23,22 +23,29 @@ assets/
 ├── textures/
 │   └── grandprix/ ground_color.jpg, ground_normal.jpg, ground_rough.jpg,
 │                  mountains_far.png, mountains_near.png
-└── models/
-    ├── vegetation/ pine_low.glb, birch_low.glb
-    └── props/      rock_small.glb, rock_medium.glb, haybale.glb
+├── models/
+│   ├── nature/    Quaternius Stylized Nature MegaKit — trees, plants,
+│   │              rocks, mushrooms, flowers, grass. Shared bark / leaf
+│   │              .png textures live next to the .gltf files so multiple
+│   │              worlds can pull from the same folder.
+│   ├── city/      Quaternius City Bits — buildings, dumpsters, traffic
+│   │              lights, streetlights, fire hydrants, benches, water
+│   │              tower. citybits_texture.png shared across all .gltf.
+│   ├── space/     Kenney Space Kit — meteors, rocks, crystal formations,
+│   │              craters, satellite dishes.
+│   ├── arctic/    iceberg_small.glb (standalone CC0)
+│   └── landmarks/ mountain_cabin.glb (held for a future GP track-side
+│                  landmark slot)
+└── CREDITS.md     (per-pack attribution + licence stamps)
 ```
 
-## Spencer Grand Prix slots (pilot world)
+## Bundled GLTF / GLB assets (already in repo)
 
-| Slot                  | Manifest path                               | Suggested CC0 source |
-|-----------------------|---------------------------------------------|----------------------|
-| HDRI sky              | `hdri/grandprix_dusk_2k.hdr`                | Poly Haven `kloofendal_48d_partly_cloudy_puresky` 2K, or `meadow_2` 2K |
-| Ground color/normal/rough | `textures/grandprix/ground_*.jpg`       | Poly Haven `aerial_grass_rock` or `forest_ground_04` 2K |
-| Pine tree             | `models/vegetation/pine_low.glb`            | Quaternius "Stylized Nature" pack — `Pine_Tree_Low.glb` |
-| Birch tree            | `models/vegetation/birch_low.glb`           | Quaternius "Stylized Nature" pack — `Tree_Birch.glb` |
-| Small / medium rocks  | `models/props/rock_*.glb`                   | Quaternius "Rocks" pack |
-| Haybale               | `models/props/haybale.glb`                  | KayKit "Farmer Pack" or any CC0 model |
-| Mountain layers (far/near) | `textures/grandprix/mountains_*.png`   | Skybox AI export, or hand-painted PNG with alpha |
+The 3D model slots in `manifest.json` are **already populated** with
+CC0 GLTF/GLB files (Quaternius Nature, Quaternius City Bits, Kenney
+Space Kit). See `assets/CREDITS.md` for per-pack attribution and the
+exact slot mapping. HDRIs + ground PBR + skybox layer art are still
+optional drops via `bash assets/download_assets.sh` or manual upload.
 
 ### Recommended sources (all permissive licences)
 
