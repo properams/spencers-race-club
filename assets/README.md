@@ -54,9 +54,29 @@ assets/
 > `assets/CREDITS.md`), or other permissive licences are allowed.
 > Anything ambiguous → don't use.
 
+## Quick start — automatic downloads
+
+For HDRIs and PBR ground textures (everything except GLTF models), there's
+a one-shot script that fetches all recommended Poly Haven CC0 assets into
+the right paths:
+
+```bash
+bash assets/download_assets.sh           # everything (~140MB)
+bash assets/download_assets.sh hdri      # only HDRIs (2K + 1K)
+bash assets/download_assets.sh ground    # only PBR ground sets
+bash assets/download_assets.sh grandprix # one specific world
+```
+
+The script is idempotent: existing files are skipped, individual failures
+don't abort the run. Re-run after a missing asset to retry.
+
+GLTF models (trees, props) come from Quaternius / KayKit packs which ship
+as zips. Manual extraction steps below.
+
 ## Activation
 
-1. Place the file at the path listed in `manifest.json`.
+1. Run `bash assets/download_assets.sh` (recommended), or place files manually
+   at the paths listed in `manifest.json`.
 2. Hard refresh the browser (Ctrl+Shift+R / Cmd+Shift+R).
 3. Open pause overlay during a race. The line below "FX ON" should read:
    `ASSETS [GRANDPRIX]   HDRI ✓   GROUND 3/3   PROPS 5/5   LAYERS 2/2`
@@ -86,6 +106,55 @@ upgrades. Drop matching files in the paths listed in `manifest.json`:
 - **volcano**: Poly Haven `lonely_road_afternoon_puresky` (warm), or any dusk HDRI
 - **arctic**: Poly Haven `snowy_park_01` 2K
 - **themepark**: Poly Haven `evening_road_01_puresky` 2K
+
+### GLTF models — manual extraction from Quaternius / KayKit packs
+
+The download script does NOT fetch GLTF models because Quaternius and
+KayKit ship them as zip packs. Per world:
+
+**Grand Prix** — Quaternius "[Stylized Nature MegaKit](https://quaternius.com/packs/stylizednaturemegakit.html)":
+- Extract `Pine_Tree_Low.glb`   → `assets/models/vegetation/pine_low.glb`
+- Extract `Tree_Birch.glb`        → `assets/models/vegetation/birch_low.glb`
+- Extract `Rock_Small_4.glb`      → `assets/models/props/rock_small.glb`
+- Extract `Rock_Medium_2.glb`     → `assets/models/props/rock_medium.glb`
+
+For haybales, Quaternius "[Survival MegaKit](https://quaternius.com/packs/survival.html)":
+- Extract `Haystack.glb`          → `assets/models/props/haybale.glb`
+
+**Volcano** — Quaternius "Stylized Nature MegaKit":
+- Rocks/Boulder variants          → `assets/models/volcano/rock_basalt_*.glb`
+- Any reddish chunky rock         → `assets/models/volcano/lava_chunk.glb`
+
+**Arctic** — Quaternius "[Ultimate Snow Kit](https://quaternius.com/packs/ultimatesnowkit.html)":
+- Iceberg variants                → `assets/models/arctic/iceberg_*.glb`
+- Snow rock                       → `assets/models/arctic/snow_rock.glb`
+
+**Themepark** — Quaternius "[Survival MegaKit](https://quaternius.com/packs/survival.html)" or KayKit:
+- Traffic cone, bollard, barrel   → `assets/models/themepark/*.glb`
+
+**Neon City** — KayKit "[Modern Apartment Interior](https://kaylousberg.itch.io/kaykit-mini-game-pack)" or any sci-fi pack:
+- Trash bin, bollard, road block  → `assets/models/neoncity/*.glb`
+
+**Space** — Any low-poly asteroid pack (Quaternius "Space Kit", or [Kenney "Space Kit"](https://kenney.nl/assets/space-kit)):
+- Asteroid small / large          → `assets/models/space/asteroid_*.glb`
+
+**Candy** — Quaternius "[Stylized Survival Kit](https://quaternius.com/packs/stylizedsurvivalkit.html)" or any cute-prop pack:
+- Lollipop, candy cane, gumdrop   → `assets/models/candy/*.glb`
+
+**DeepSea** — Any underwater / pirate pack:
+- Coral chunks, wreck box         → `assets/models/deepsea/*.glb`
+
+> Skip any prop you don't have — every slot is independent. The
+> dispatcher uses whatever subset of GLTFs is in the cache.
+
+### Skybox layer art
+
+`mountains_far.png` / `mountains_near.png` are typically AI-generated
+silhouettes (Skybox AI, Stable Diffusion with `silhouette mountain
+horizon transparent png` prompts) or hand-painted PNGs with alpha. The
+pipeline auto-falls-back to procedural canvas silhouettes (palette
+tuned per world) so this slot is fully optional — only drop in if you
+want a specific landscape.
 
 ### Mobile HDRI variants (optional but recommended)
 
