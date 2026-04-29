@@ -18,10 +18,6 @@ function goToRace(){
   // tweede valt door naar de fallback factory).
   if(gameState!=='SELECT')return;
   if(titleMusic){titleMusic.stop();titleMusic=null;}
-  // Tear down de car-preview WebGL context — die wordt niet meer getoond
-  // tijdens de race en houdt anders een tweede WebGL context bezet, waardoor
-  // iOS Safari de tab kan killen onder GPU-memory pressure.
-  if(typeof disposeCarPreview==='function')disposeCarPreview();
 document.getElementById('sSelect').classList.add('hidden');document.getElementById('hud').style.display='block';
   makeAllCars();cacheHUDRefs();applyWorldHUDTint(activeWorld);
   // Start camera directly behind car at ground level — no overhead swoop
@@ -130,9 +126,6 @@ function goToTitle(){
   _resetRaceState();
   gameState='TITLE';
   setTouchControlsVisible(false);
-  // Title heeft geen car-preview nodig — gooi de WebGL context weg zodat iOS
-  // niet onnodig twee contexten in cache houdt.
-  if(typeof disposeCarPreview==='function')disposeCarPreview();
   document.getElementById('sSelect').classList.add('hidden');
   document.getElementById('sWorld').classList.add('hidden');
   document.getElementById('sTitle').classList.remove('hidden');
