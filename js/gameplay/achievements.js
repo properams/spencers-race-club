@@ -129,7 +129,7 @@ let _achievePopupHideTimer=null;
 function showAchievementToast(ach){
   if(!_achievePopupEl){
     _achievePopupEl=document.createElement('div');
-    _achievePopupEl.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,#1a0035,#2d0050);border:1px solid rgba(180,80,255,.5);border-radius:14px;padding:14px 24px;display:flex;align-items:center;gap:14px;font-family:Orbitron,sans-serif;z-index:var(--z-toast);box-shadow:0 0 30px rgba(180,80,255,.4);opacity:0;transition:all .4s cubic-bezier(.34,1.3,.64,1);pointer-events:none';
+    _achievePopupEl.style.cssText='position:fixed;bottom:200px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,#1a0035,#2d0050);border:1px solid rgba(180,80,255,.5);border-radius:14px;padding:14px 24px;display:flex;align-items:center;gap:14px;font-family:Orbitron,sans-serif;z-index:var(--z-toast);box-shadow:0 0 30px rgba(180,80,255,.4);opacity:0;transition:all .4s cubic-bezier(.34,1.3,.64,1);pointer-events:none';
     document.body.appendChild(_achievePopupEl);
   }
   const t=_achievePopupEl;
