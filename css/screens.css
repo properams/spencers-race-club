@@ -1,7 +1,7 @@
 /* screens.css — auto-split from index.html */
 [id^="hud"],.tcBtn,.banner,#mirrorFrame,#bannerOverlay,#popupMsg{outline:none}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.12}}
-#popupMsg{position:absolute;top:9%;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:clamp(16px,2.6vw,28px);font-weight:900;pointer-events:none;opacity:0;text-align:center;text-shadow:0 0 12px rgba(0,0,0,.85),0 2px 6px rgba(0,0,0,.7);z-index:var(--z-popup)}
+#popupMsg{position:absolute;top:15%;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:clamp(16px,2.6vw,28px);font-weight:900;pointer-events:none;opacity:0;text-align:center;text-shadow:0 0 12px rgba(0,0,0,.85),0 2px 6px rgba(0,0,0,.7);z-index:var(--z-popup)}
 #bannerOverlay{position:fixed;top:7%;left:50%;transform:translateX(-50%);z-index:var(--z-banner);pointer-events:none;display:none;text-align:center}
 .banner{font-family:'Orbitron',sans-serif;font-size:clamp(14px,2vw,22px);font-weight:900;padding:7px 18px;border-radius:10px;letter-spacing:3px}
 #cdOverlay{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;pointer-events:none}
@@ -46,6 +46,7 @@
 @media(min-width:769px) and (max-width:1200px){
 #controlHints{display:none!important}
 #bannerOverlay{top:calc(108px + env(safe-area-inset-top,0px))!important}
+#popupMsg{top:calc(180px + env(safe-area-inset-top,0px))!important}
 }
 @media(max-width:600px){
 #sFinish{padding:14px 12px 80px!important;overflow-y:auto!important}
