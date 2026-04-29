@@ -58,6 +58,13 @@
   function _slot(worldId, dotPath){
     const w = _manifest.worlds && _manifest.worlds[worldId];
     if (!w) return null;
+    // HDRI has an optional mobile 1K variant. On mobile, prefer
+    // hdri_mobile if present. Falls through to the desktop hdri slot
+    // if mobile variant is missing or empty — so the desktop path still
+    // works on mobile, just with a heavier HDRI.
+    if (dotPath === 'hdri' && window._isMobile){
+      if (typeof w.hdri_mobile === 'string' && w.hdri_mobile.length) return w.hdri_mobile;
+    }
     const parts = dotPath.split('.');
     let cur = w;
     for (const p of parts){ if (!cur || typeof cur !== 'object') return null; cur = cur[p]; }

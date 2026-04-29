@@ -200,22 +200,74 @@ function _silhouetteTex(seed, baseColor, accent, jaggedness){
   return t;
 }
 
+// Per-world procedural silhouette palettes. Tuned to sit *behind* the
+// existing rich horizon content (volcano embers, neon skyscrapers, arctic
+// auroras, themepark fireworks). Far layer = atmospheric haze ridge.
+// Near layer = darker mid-distance silhouettes. Worlds without a palette
+// entry render only when textured mountains_*.png are loaded.
+//
+// Each entry: { far:[lowColor, highColor, jaggedness, opacity, height],
+//               near:[lowColor, highColor, jaggedness, opacity, height] }
+const _SILHOUETTE_PALETTES = {
+  grandprix: {
+    far:  ['#3a4960','#6b7c98',0.55, 0.96, 110],
+    near: ['#222a3d','#404a64',0.85, 1.00,  78],
+  },
+  // Neon city: very dark blue-purple distant skyline ridge, low opacity so
+  // it reads as far-back atmospheric mass behind the existing buildings.
+  neoncity: {
+    far:  ['#0a0820','#1a1a3a',0.75, 0.78, 130],
+    near: ['#020210','#0a0820',1.10, 0.92, 100],
+  },
+  // Volcano: deep rust silhouettes far behind the lava rivers — should
+  // read like distant ridges almost lost in ember haze.
+  volcano: {
+    far:  ['#1a0608','#3a1010',0.65, 0.72, 100],
+    near: ['#080202','#1a0408',0.95, 0.86,  78],
+  },
+  // Arctic: cold misty mountains. Both layers light to blend with snow.
+  arctic: {
+    far:  ['#7a8aa6','#b4c2d8',0.50, 0.85, 110],
+    near: ['#3a4a64','#6678a0',0.75, 0.94,  82],
+  },
+  // Themepark: dusk-purple horizon ridges sitting behind the fireworks.
+  themepark: {
+    far:  ['#2a1840','#5a3870',0.55, 0.80, 110],
+    near: ['#180828','#3a1850',0.85, 0.92,  82],
+  },
+  // DeepSea: distant seafloor rock walls fading into murky water. Very
+  // dark teal so they read as "you can almost see something far in the
+  // current", not as solid mountains. Low opacity + strong fog density
+  // (0.0017 day, 0.0022 night) does most of the work.
+  deepsea: {
+    far:  ['#001a2a','#003a55',0.45, 0.55,  90],
+    near: ['#000812','#001a2a',0.65, 0.72,  72],
+  },
+  // Candy: distant pastel candy mountains. Very low opacity so they
+  // read as a soft sweet-pink horizon ridge, not as a competing layer
+  // with the foreground lollipops/gummies.
+  candy: {
+    far:  ['#ffb3d4','#ffd9e8',0.40, 0.40, 100],
+    near: ['#cc6699','#ee8fb8',0.55, 0.50,  76],
+  },
+};
+
 function buildBackgroundLayers(){
-  // Two parallax silhouette planes ringing the horizon. Far layer sits
-  // farthest, lighter & narrower; near layer is darker & taller. Both
-  // wrap horizontally so panning the camera reveals more landscape.
-  if (activeWorld !== 'grandprix') return;
+  const farTex  = window.Assets ? Assets.getTexture(activeWorld,'skybox_layers.mountains_far')  : null;
+  const nearTex = window.Assets ? Assets.getTexture(activeWorld,'skybox_layers.mountains_near') : null;
+  const palette = _SILHOUETTE_PALETTES[activeWorld];
+  if (!palette && !farTex && !nearTex) return;
 
-  // If textured layers exist in the asset cache, prefer them.
-  const farTex  = window.Assets ? Assets.getTexture('grandprix','skybox_layers.mountains_far')  : null;
-  const nearTex = window.Assets ? Assets.getTexture('grandprix','skybox_layers.mountains_near') : null;
-
+  const farPal  = palette ? palette.far  : ['#3a4960','#6b7c98',0.55, 0.96, 110];
+  const nearPal = palette ? palette.near : ['#222a3d','#404a64',0.85, 1.00,  78];
   const def = [
-    { tex: farTex  || _silhouetteTex(7, '#3a4960', '#6b7c98', 0.55),
-      radius: 740, height: 110, yBase: 12, color: 0xffffff, opacity: 0.96, repeat: 5 },
-    { tex: nearTex || _silhouetteTex(31, '#222a3d', '#404a64', 0.85),
-      radius: 540, height: 78,  yBase: 5,  color: 0xffffff, opacity: 1.00, repeat: 4 },
-  ];
+    { tex: farTex  || (palette ? _silhouetteTex(7,  farPal[0],  farPal[1],  farPal[2])  : null),
+      radius: 740, height: farPal[4],  yBase: 12, color: 0xffffff,
+      opacity: farTex  ? 0.96 : farPal[3],  repeat: 5 },
+    { tex: nearTex || (palette ? _silhouetteTex(31, nearPal[0], nearPal[1], nearPal[2]) : null),
+      radius: 540, height: nearPal[4], yBase: 5,  color: 0xffffff,
+      opacity: nearTex ? 1.00 : nearPal[3], repeat: 4 },
+  ].filter(d => d.tex);
   def.forEach(layer=>{
     layer.tex.wrapS = THREE.RepeatWrapping;
     layer.tex.repeat.set(layer.repeat, 1);
@@ -460,8 +512,14 @@ function _spawnInstancedTreesGLTF(protos, placements){
     // instanceMatrix lives only on this mesh.
     const geoClone = slot.geo.clone();
     // Material is shared with the GLTF cache (multiple draw calls can
-    // reuse it safely); flag so disposeScene leaves it alive.
+    // reuse it safely); flag the material AND all of its map slots so
+    // disposeScene's per-layer texture check leaves them alive across
+    // world rebuilds.
     slot.mat.userData = slot.mat.userData || {}; slot.mat.userData._sharedAsset=true;
+    ['map','normalMap','roughnessMap','metalnessMap','emissiveMap','aoMap','bumpMap'].forEach(s=>{
+      const t = slot.mat[s];
+      if (t){ t.userData = t.userData || {}; t.userData._sharedAsset = true; }
+    });
     const im=new THREE.InstancedMesh(geoClone, slot.mat, slot.mats.length);
     slot.mats.forEach((m,i)=>im.setMatrixAt(i,m));
     im.instanceMatrix.needsUpdate=true;

@@ -447,16 +447,22 @@ function buildScene(){
     buildSpaceEnvironment();
   }else if(isDeepSea){
     buildDeepSeaEnvironment();
+    buildBackgroundLayers();
   }else if(isCandy){
     buildCandyEnvironment();
+    buildBackgroundLayers();
   }else if(isNeon){
     buildNeonCityEnvironment();
+    buildBackgroundLayers();
   }else if(activeWorld==='volcano'){
     buildVolcanoEnvironment();
+    buildBackgroundLayers();
   }else if(activeWorld==='arctic'){
     buildArcticEnvironment();
+    buildBackgroundLayers();
   }else if(isThemepark){
     buildThemeparkEnvironment();
+    buildBackgroundLayers();
   }else{
     buildGround();buildClouds();buildBarriers();buildGantry();
     buildMountains();buildBackgroundLayers();buildLake();

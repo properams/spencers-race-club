@@ -4,6 +4,7 @@
   "worlds": {
     "grandprix": {
       "hdri": "assets/hdri/grandprix_dusk_2k.hdr",
+      "hdri_mobile": "assets/hdri/grandprix_dusk_1k.hdr",
       "ground": {
         "color":     "assets/textures/grandprix/ground_color.jpg",
         "normal":    "assets/textures/grandprix/ground_normal.jpg",
@@ -21,12 +22,111 @@
         "mountains_near": "assets/textures/grandprix/mountains_near.png"
       }
     },
-    "neoncity":  {},
-    "space":     {},
-    "deepsea":   {},
-    "candy":     {},
-    "volcano":   {},
-    "arctic":    {},
-    "themepark": {}
+    "neoncity": {
+      "hdri": "assets/hdri/neoncity_night_2k.hdr",
+      "hdri_mobile": "assets/hdri/neoncity_night_1k.hdr",
+      "ground": {
+        "color":     "assets/textures/neoncity/asphalt_wet_color.jpg",
+        "normal":    "assets/textures/neoncity/asphalt_wet_normal.jpg",
+        "roughness": "assets/textures/neoncity/asphalt_wet_rough.jpg"
+      },
+      "props": {
+        "trashbin":     "assets/models/neoncity/trashbin.glb",
+        "bollard_neon": "assets/models/neoncity/bollard_neon.glb",
+        "roadblock":    "assets/models/neoncity/roadblock.glb"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/neoncity/skyline_far.png",
+        "mountains_near": "assets/textures/neoncity/skyline_near.png"
+      }
+    },
+    "volcano": {
+      "hdri": "assets/hdri/volcano_dusk_2k.hdr",
+      "hdri_mobile": "assets/hdri/volcano_dusk_1k.hdr",
+      "ground": {
+        "color":     "assets/textures/volcano/lavarock_color.jpg",
+        "normal":    "assets/textures/volcano/lavarock_normal.jpg",
+        "roughness": "assets/textures/volcano/lavarock_rough.jpg"
+      },
+      "props": {
+        "rock_basalt_small":  "assets/models/volcano/rock_basalt_small.glb",
+        "rock_basalt_medium": "assets/models/volcano/rock_basalt_medium.glb",
+        "lava_chunk":         "assets/models/volcano/lava_chunk.glb"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/volcano/silhouette_far.png",
+        "mountains_near": "assets/textures/volcano/silhouette_near.png"
+      }
+    },
+    "arctic": {
+      "hdri": "assets/hdri/arctic_overcast_2k.hdr",
+      "hdri_mobile": "assets/hdri/arctic_overcast_1k.hdr",
+      "ground": {
+        "color":     "assets/textures/arctic/snowice_color.jpg",
+        "normal":    "assets/textures/arctic/snowice_normal.jpg",
+        "roughness": "assets/textures/arctic/snowice_rough.jpg"
+      },
+      "props": {
+        "iceberg_small":  "assets/models/arctic/iceberg_small.glb",
+        "iceberg_medium": "assets/models/arctic/iceberg_medium.glb",
+        "snow_rock":      "assets/models/arctic/snow_rock.glb"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/arctic/icepeaks_far.png",
+        "mountains_near": "assets/textures/arctic/icepeaks_near.png"
+      }
+    },
+    "themepark": {
+      "hdri": "assets/hdri/themepark_evening_2k.hdr",
+      "hdri_mobile": "assets/hdri/themepark_evening_1k.hdr",
+      "ground": {
+        "color":     "assets/textures/themepark/pavement_color.jpg",
+        "normal":    "assets/textures/themepark/pavement_normal.jpg",
+        "roughness": "assets/textures/themepark/pavement_rough.jpg"
+      },
+      "props": {
+        "traffic_cone": "assets/models/themepark/traffic_cone.glb",
+        "bollard":      "assets/models/themepark/bollard.glb",
+        "barrel":       "assets/models/themepark/barrel.glb"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/themepark/silhouette_far.png",
+        "mountains_near": "assets/textures/themepark/silhouette_near.png"
+      }
+    },
+    "deepsea": {
+      "hdri": "",
+      "ground": {
+        "color":     "assets/textures/deepsea/sand_color.jpg",
+        "normal":    "assets/textures/deepsea/sand_normal.jpg",
+        "roughness": "assets/textures/deepsea/sand_rough.jpg"
+      },
+      "props": {
+        "coral_small":  "assets/models/deepsea/coral_small.glb",
+        "coral_medium": "assets/models/deepsea/coral_medium.glb",
+        "wreck_box":    "assets/models/deepsea/wreck_box.glb"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/deepsea/rockwall_far.png",
+        "mountains_near": "assets/textures/deepsea/rockwall_near.png"
+      }
+    },
+    "space": {
+      "props": {
+        "asteroid_small": "assets/models/space/asteroid_small.glb",
+        "asteroid_large": "assets/models/space/asteroid_large.glb"
+      }
+    },
+    "candy": {
+      "props": {
+        "candy_lollipop": "assets/models/candy/lollipop.glb",
+        "candy_cane":     "assets/models/candy/candy_cane.glb",
+        "gumdrop":        "assets/models/candy/gumdrop.glb"
+      },
+      "skybox_layers": {
+        "mountains_far":  "assets/textures/candy/sweethills_far.png",
+        "mountains_near": "assets/textures/candy/sweethills_near.png"
+      }
+    }
   }
 }

@@ -1,5 +1,236 @@
 # CHANGES
 
+## Track Realism Overhaul (sessie 5d) — DeepSea / Space / Candy ook in pipeline
+
+> "Is er toch niet een andere manier waarop je die op een veilige manier
+> ook kan verwerken?"
+
+Voor de drie werelden die in 5b/5c overgeslagen waren — DeepSea, Space,
+Candy — alsnog gepaste, veilige integraties toegevoegd:
+
+### Space — GLTF asteroid props (opt-in, no-op zonder cache)
+- Manifest gain: `props.asteroid_small`, `props.asteroid_large`
+- `js/worlds/space.js` roept `spawnRoadsideProps('space',...)` aan met
+  ruimere offset-range (`BARRIER_OFF + 6..25`) zodat asteroids ruimtelijk
+  voelen.
+- Geen HDRI / silhouettes — cosmic skybox blijft procedureel by design.
+
+### Candy — GLTF candy props + subtiele pastel silhouetten
+- Manifest gain: `props.candy_lollipop`, `candy_cane`, `gumdrop` +
+  `skybox_layers.mountains_far/_near`.
+- `js/worlds/candy.js` dispatcht GLTF props (no-op zonder cache).
+- Procedural pastel silhouet-palette (`#ffb3d4` far, `#cc6699` near) met
+  zeer lage opacity (0.55-0.70) zodat ze als zachte sweet-mountain ridge
+  achter de lollipops/gummies leggen, niet ervoor.
+
+### DeepSea — subtiele dark-teal seafloor silhouetten
+- Manifest gain: `skybox_layers.mountains_far/_near` voor textured
+  override van rockwall art.
+- Procedural palette (`#001a2a` far, `#000812` near) met low opacity
+  (0.55-0.72). Combineert met deepsea fog density 0.0017 → ~21% blijft
+  zichtbaar op straal 740m → leest als "rotsformaties die net door de
+  stroming vaag worden". Bestaande sand-floor / kelp / jellyfish setup
+  blijft intact.
+
+### Veiligheidsanalyse
+- Zonder asset-bestanden:
+  - Space en Candy GLTF dispatchers no-op (geen cache).
+  - DeepSea + Candy silhouet-cylinders verschijnen als zachte verre
+    horizon-rand. Op deepsea bijna onzichtbaar door fog; op candy een
+    pastel-suggestie achter de zoete props.
+- Met dropped assets: GLTF asteroids / candy props / textured
+  rockwalls + sweethills allemaal hookable via dezelfde shared helpers.
+
+---
+
+## Track Realism Overhaul (sessie 5c) — Auto-materialen PBR + mobile HDRI variant
+
+### Lambert → Standard voor auto-materialen (desktop only)
+**`js/cars/car-parts.js`** — alle 13 gedeelde auto-materialen + per-auto
+paint en accent gaan nu via een nieuwe `_carMat()` helper die op desktop
+`MeshStandardMaterial` retourneert en op mobile `MeshLambertMaterial`
+(paint blijft Phong op mobile). Per-materiaal metalness/roughness/
+envMapIntensity getuned:
+
+| Material | metalness | roughness | envMapIntensity |
+|---|---:|---:|---:|
+| paint    | 0.65 | 0.22 | 0.85 |
+| accent   | 0.50 | 0.35 | 0.65 |
+| glass    | 0.00 | 0.05 | 0.85 |
+| chrome   | 1.00 | 0.18 | 1.00 |
+| rim      | 0.85 | 0.30 | 0.85 |
+| brakeDisc| 0.70 | 0.40 | 0.65 |
+| grille   | 0.40 | 0.55 | 0.40 |
+| matBlk   | 0.00 | 0.85 | 0.25 |
+| tire     | 0.00 | 0.95 | 0.10 |
+
+Effect: zodra een HDRI op `scene.environment` staat zien we crisp
+spiegelende reflectie op glas + chrome, mat-metallic gloss op de paint,
+en vrijwel niets op rubber/matzwart. Zonder HDRI valt envMapIntensity
+op een null-environment terug op een no-op — auto's renderen prima maar
+zonder IBL-bijdrage.
+
+### Self-review fix: shared car-mat cache survival
+Pre-existing risico (sterker geworden door PBR-shaders): `_carShared`
+materialen werden bij elke world-rebuild gedisposed maar de cache hield
+de disposed references vast. Op desktop met Standard zou dat een
+shader-recompile-hitch geven bij elk track-switch. Fix:
+- Alle `_carShared.*` materialen worden nu geflagged met
+  `userData._sharedAsset=true` zodat disposeScene ze overslaat.
+- `getSharedCarMats()` reset `_headlightMats` array bij rebuild zodat
+  duplicaten zich niet opstapelen.
+- Nieuwe `disposeSharedCarMats()` aangeroepen voor full session reset
+  (niet voor per-race rebuild) — header-comment was al oud, nu echt
+  geïmplementeerd.
+
+### `applyHDRI` envMapIntensity-loop respecteert per-component tuning
+Het globale `envMapIntensity = 0.6` in `js/effects/asset-bridge.js` slaat
+nu materialen over die `userData._carPBR=true` of
+`userData._sharedAsset=true` dragen, zodat de zorgvuldig getunede waarden
+voor chrome (1.0) en rim (0.85) niet teruggezet worden naar 0.6.
+
+### Mobile 1K HDRI variant
+**`assets/manifest.json`** — `hdri_mobile` slot toegevoegd voor 5
+werelden (gp / neoncity / volcano / arctic / themepark) verwijzend naar
+`*_1k.hdr`-paden. **`js/assets/loader.js` `_slot()`** — bij `dotPath ===
+'hdri'` en `window._isMobile===true` retourneert de loader het
+`hdri_mobile`-pad indien aanwezig, valt anders door naar het 2K-pad
+zodat oudere manifests niets breken.
+
+Mobiel geheugengebruik: 2K HDR ≈ 6MB textuur, 1K ≈ 1.5MB. Beide na
+PMREM ≈ same envMap-omvang dus voornaamste winst zit in download +
+decode-tijd op trage netwerken.
+
+---
+
+## Track Realism Overhaul (sessie 5b) — Procedurele silhouetten + GLTF props per wereld
+
+> "Beide" — antwoord op of we per-wereld GLTF dispatchers wilden én
+> procedurele silhouetten voor andere werelden dan GP.
+
+### Per-wereld procedurele silhouetten
+`_SILHOUETTE_PALETTES` in `js/track/environment.js` heeft nu 5 entries
+(gp / neoncity / volcano / arctic / themepark) met paletten gestemd om
+*achter* de bestaande rijke horizon-content te zitten:
+- **GP**: blue-grey atmospheric haze (ongewijzigd).
+- **Neon City**: deep blue-purple distant skyline ridge (lagere opacity).
+- **Volcano**: rust-red silhouetten die in de ember haze verdwijnen.
+- **Arctic**: koud blauw-misty mountains, lichter palette zodat ze
+  blenden in de fog ipv eruit te springen.
+- **Themepark**: dusk-purple ridges achter de fireworks.
+- **DeepSea / Space / Candy** blijven uit (onderwater / cosmic /
+  thematisch). Deepsea sand-floor PBR slot blijft beschikbaar.
+
+Palette format uitgebreid met height + opacity per laag zodat per-wereld
+de "verberg in fog of pop boven horizon"-tradeoff fijn af te stemmen is.
+
+### Per-wereld GLTF prop dispatchers
+**`js/effects/asset-bridge.js`** krijgt twee shared helpers:
+- `spawnGLTFProp(proto, x, z, opts)` — clones een GLTF root, normaliseert
+  schaal naar `opts.sizeHint`, plaatst in scene. Flagt geometry, material
+  én alle map slots (`map`/`normalMap`/`roughnessMap`/`metalnessMap`/
+  `emissiveMap`/`aoMap`/`bumpMap`) als `_sharedAsset` zodat disposeScene
+  de cache niet stukmaakt.
+- `spawnRoadsideProps(worldId, opts)` — leest beschikbare prop GLTFs uit
+  cache, plaatst clusters langs de baan via `trackCurve`. Bailt direct
+  als `BARRIER_OFF` ontbreekt of geen GLTF in cache zit.
+
+**Per-wereld manifest slots + dispatch wiring:**
+- volcano: `rock_basalt_small`, `rock_basalt_medium`, `lava_chunk`
+- arctic: `iceberg_small`, `iceberg_medium`, `snow_rock`
+- themepark: `traffic_cone`, `bollard`, `barrel`
+- neoncity: `trashbin`, `bollard_neon`, `roadblock`
+- deepsea: `coral_small`, `coral_medium`, `wreck_box`
+- grandprix: ongewijzigd (`tree_pine` + `tree_birch` + `rock_*` +
+  `haybale`); de oude lokale `_spawnGLTFProp` is verwijderd uit
+  `grandprix.js`, dispatcher gebruikt nu `window.spawnGLTFProp`.
+
+Elke `buildXEnvironment` roept `window.spawnRoadsideProps(world,...)`
+aan aan het einde van zijn build. **Cache leeg → no-op**: zonder
+gedropte assets zijn geen visuele wijzigingen tegenover de procedurele
+omgeving.
+
+### Self-review fix toegepast
+- Eerdere `_spawnGLTFProp` flagde alleen het material als shared, niet
+  de map slots. Op world-rebuild zou disposeScene de cached GLTF maps
+  vernietigen → texturefout in volgende race van dezelfde wereld. Nu
+  worden alle 7 map slots geflagged in zowel `spawnGLTFProp` als de
+  GLTF tree-spawner. Pre-existing risico, blast-radius nu over 6
+  werelden, dus opgelost.
+
+### Veiligheidsanalyse
+- Zonder asset-bestanden:
+  - Procedurele silhouetten verschijnen op gp / neoncity / volcano /
+    arctic / themepark als zachte ridge-line ver achter bestaande
+    content. **Dit is een visuele wijziging** — bewust, want de gebruiker
+    vroeg om realisme-richting voor alle tracks.
+  - GLTF dispatchers zijn no-op (geen GLTFs in cache).
+  - DeepSea / Space / Candy zien er identiek uit aan vóór.
+- Met dropped assets: HDRI / ground PBR / GLTF props alle hookable.
+
+---
+
+## Track Realism Overhaul (sessie 5) — Roll-out naar alle werelden
+
+> "Ziet er goed uit. Je mag nu verder met alle tracks."
+
+Pipeline uit sessie 4 uitgerold over Neon City, Volcano, Arctic, Themepark
+en DeepSea zonder gedrag te wijzigen totdat de gebruiker assets laat
+landen. Procedurele paths en bestaande wereld-stijlen blijven volledig
+intact — pas bij een gedropt bestand verandert wat er op het scherm
+verschijnt.
+
+### Aanpassingen
+
+- **`assets/manifest.json`** — slots toegevoegd voor 5 werelden:
+  - HDRI: neoncity / volcano / arctic / themepark
+  - Ground PBR (color + normal + roughness): neoncity (wet asphalt),
+    volcano (lava rock), arctic (snow/ice), themepark (pavement),
+    deepsea (sand floor)
+  - Skybox layers: neoncity / volcano / arctic / themepark
+  - Space en candy blijven `{}` (geen baat bij PBR-realism)
+
+- **Per-wereld proc-ground meshes getagd** (`_isProcGround=true`) zodat
+  `asset-bridge.applyGround` ze kan herkennen wanneer PBR-textures
+  geladen zijn:
+  - `js/worlds/arctic.js` (ice plane)
+  - `js/worlds/volcano.js` (rock plane)
+  - `js/worlds/deepsea.js` (sand floor in `buildSeaFloor`)
+  - `js/worlds/themepark.js` (pavement plane)
+  - `js/worlds/neoncity.js` (asphalt base — overlay wet/sheen meshes
+    blijven onaangetast bovenop de Standard ground)
+
+- **`buildBackgroundLayers` gegeneraliseerd** in
+  `js/track/environment.js`: leest nu `skybox_layers.mountains_far/_near`
+  uit het manifest van de actieve wereld. Procedurele canvas-silhouetten
+  blijven Grand-Prix-only (om bestaande rich horizons in andere werelden
+  niet te overschrijven). Wireup in `js/core/scene.js` voegt de call toe
+  aan neoncity / volcano / arctic / themepark zodat hun textured layers
+  meegerenderd worden zodra ze in de cache zitten.
+
+- **`assets/README.md`** uitgebreid met per-wereld activatie-tabel +
+  HDRI-suggesties (Poly Haven CC0).
+
+### Veiligheidsanalyse
+
+- Zonder asset-bestanden: alle werelden zien er identiek uit aan main.
+  `applyHDRI` / `applyGround` returnen `null` zonder cache hit;
+  `buildBackgroundLayers` no-op't voor non-GP zonder textured layers.
+- HDRI fog-overschrijving voor stylistische werelden (volcano red,
+  neon purple) is een bewuste opt-in trade: wie een Poly Haven HDRI
+  dropt accepteert dat de wereld richting realistic schuift. Stick met
+  procedural om de stijlkleuren te behouden.
+
+### Niet uitgerold deze sessie
+
+- GLTF tree-pool en prop-pool blijven GP-only. Per-wereld prop
+  dispatchers (volcano: rocks/ash; arctic: icebergs; themepark: traffic
+  cones; neoncity: trash bins/bollards) zijn aparte sessies.
+- Auto materials nog steeds Lambert. Materiaalupgrade naar Standard
+  blijft een aparte beslissing.
+
+---
+
 ## Track Realism Overhaul (sessie 4) — Spencer Grand Prix als pilot
 
 > "Ik vind de ondergrond van de tracks echt heel goed. Maar ik zie nog steeds

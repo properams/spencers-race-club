@@ -11,30 +11,97 @@
 
 'use strict';
 
+// PBR material helpers — Standard on desktop (so HDRI envMap reflections
+// land on glass / chrome / paint), Lambert/Phong on mobile to keep
+// fillrate budget. Both branches accept the same `color` argument plus
+// optional `emissive` / `transparent` / `opacity`. Mobile path silently
+// drops the PBR-only fields; the per-mesh appearance only differs in
+// reflection sharpness and specular response.
+function _carMat(opts){
+  const o = opts || {};
+  // _carPBR=true → carry-flag so asset-bridge can leave envMapIntensity
+  // alone on car materials (their own setting takes precedence over the
+  // 0.6 cap applied to other PBR meshes in the scene).
+  if (window._isMobile){
+    const lo = { color:o.color };
+    if (o.transparent != null) lo.transparent = o.transparent;
+    if (o.opacity != null)     lo.opacity = o.opacity;
+    if (o.emissive != null)    lo.emissive = o.emissive;
+    if (o.emissiveIntensity!=null) lo.emissiveIntensity = o.emissiveIntensity;
+    return new THREE.MeshLambertMaterial(lo);
+  }
+  const m = new THREE.MeshStandardMaterial({
+    color: o.color,
+    metalness: o.metalness != null ? o.metalness : 0.0,
+    roughness: o.roughness != null ? o.roughness : 0.6,
+    transparent: !!o.transparent,
+    opacity: o.opacity != null ? o.opacity : 1.0,
+    emissive: o.emissive != null ? o.emissive : 0x000000,
+    emissiveIntensity: o.emissiveIntensity != null ? o.emissiveIntensity : 1.0,
+    envMapIntensity: o.envMapIntensity != null ? o.envMapIntensity : 0.7,
+  });
+  m.userData = m.userData || {};
+  m.userData._carPBR = true;
+  return m;
+}
+
 let _carShared = null;
 function getSharedCarMats(){
   if(_carShared) return _carShared;
+  // Headlight registry rebuilds with the materials. Otherwise re-creating
+  // _carShared would push a duplicate `head` reference each rebuild and
+  // syncHeadlights would walk an ever-growing list.
+  if(window._headlightMats) window._headlightMats.length = 0;
   _carShared = {
-    glass:    new THREE.MeshLambertMaterial({color:0x0a1a2a, transparent:true, opacity:.72}),
-    glassDark:new THREE.MeshLambertMaterial({color:0x040810, transparent:true, opacity:.86}),
-    chrome:   new THREE.MeshLambertMaterial({color:0xdddddd}),
-    blk:      new THREE.MeshLambertMaterial({color:0x050505}),  // splitters, skirts, vents
-    matBlk:   new THREE.MeshLambertMaterial({color:0x101012}),  // body trim
-    grille:   new THREE.MeshLambertMaterial({color:0x1a1a1c}),  // honeycomb mesh-suggestie
-    tire:     new THREE.MeshLambertMaterial({color:0x080808}),
-    rim:      new THREE.MeshLambertMaterial({color:0xc0c0c8}),  // 5-spoke alloy
-    brakeRed: new THREE.MeshLambertMaterial({color:0xcc1010}),
-    brakeDisc:new THREE.MeshLambertMaterial({color:0x282828}),
-    head:     new THREE.MeshLambertMaterial({color:0xfff8e8, emissive:0xffe8a8, emissiveIntensity:.6}),
-    tail:     new THREE.MeshLambertMaterial({color:0xff1010, emissive:0xcc0000, emissiveIntensity:.45}),
-    indicator:new THREE.MeshLambertMaterial({color:0xff7e10, emissive:0xff5500, emissiveIntensity:.35})
+    // Glass: very low roughness so HDRI environment shows up as crisp
+    // tinted reflection; transparent keeps interior visible.
+    glass:    _carMat({color:0x0a1a2a, transparent:true, opacity:.72, metalness:0.0, roughness:0.05, envMapIntensity:0.85}),
+    glassDark:_carMat({color:0x040810, transparent:true, opacity:.86, metalness:0.0, roughness:0.10, envMapIntensity:0.75}),
+    // Chrome: full metallic, mirror-smooth → mirror reflection of HDRI.
+    chrome:   _carMat({color:0xdddddd, metalness:1.0, roughness:0.18, envMapIntensity:1.0}),
+    // Splitters / skirts / vents: matte black, dim reflections.
+    blk:      _carMat({color:0x050505, metalness:0.0, roughness:0.75, envMapIntensity:0.30}),
+    matBlk:   _carMat({color:0x101012, metalness:0.0, roughness:0.85, envMapIntensity:0.25}),
+    // Honeycomb grille: slightly metallic mesh.
+    grille:   _carMat({color:0x1a1a1c, metalness:0.4, roughness:0.55, envMapIntensity:0.40}),
+    // Tire: pure matte rubber, no reflection contribution.
+    tire:     _carMat({color:0x080808, metalness:0.0, roughness:0.95, envMapIntensity:0.10}),
+    // Rim: polished alloy, strong reflection.
+    rim:      _carMat({color:0xc0c0c8, metalness:0.85, roughness:0.30, envMapIntensity:0.85}),
+    // Brake caliper: matte red painted metal.
+    brakeRed: _carMat({color:0xcc1010, metalness:0.0, roughness:0.85, envMapIntensity:0.30}),
+    // Brake disc: brushed steel.
+    brakeDisc:_carMat({color:0x282828, metalness:0.7, roughness:0.40, envMapIntensity:0.65}),
+    // Emissive lights — keep their existing colors / intensities.
+    head:     _carMat({color:0xfff8e8, emissive:0xffe8a8, emissiveIntensity:.6, metalness:0.1, roughness:0.30, envMapIntensity:0.40}),
+    tail:     _carMat({color:0xff1010, emissive:0xcc0000, emissiveIntensity:.45, metalness:0.1, roughness:0.30, envMapIntensity:0.35}),
+    indicator:_carMat({color:0xff7e10, emissive:0xff5500, emissiveIntensity:.35, metalness:0.1, roughness:0.30, envMapIntensity:0.35})
   };
+  // Flag every shared car material so disposeScene leaves the cache alive
+  // across world rebuilds — otherwise getSharedCarMats() would return a
+  // bag of disposed material handles after the first race ends, and on
+  // desktop the next race would pay a Standard-shader recompile hitch.
+  Object.values(_carShared).forEach(m=>{
+    m.userData = m.userData || {};
+    m.userData._sharedAsset = true;
+  });
   // Track headlight material in a registry so night.js can sync emissive intensity
   // when toggling dark mode without touching every car mesh.
   if(!window._headlightMats) window._headlightMats = [];
   window._headlightMats.push(_carShared.head);
   return _carShared;
 }
+
+// Drop the shared car material cache. Call on full session reset (not on
+// per-race world rebuild — the materials are flagged _sharedAsset so they
+// survive disposeScene). Currently no caller; documented for completeness.
+function disposeSharedCarMats(){
+  if(!_carShared) return;
+  Object.values(_carShared).forEach(m=>{ try{ m.dispose(); } catch(_){} });
+  _carShared = null;
+  if(window._headlightMats) window._headlightMats.length = 0;
+}
+window.disposeSharedCarMats = disposeSharedCarMats;
 
 // Update headlight emissive intensity globally — called from night.js when isDark flips.
 function syncHeadlights(intensity){
@@ -48,12 +115,27 @@ window.syncHeadlights = syncHeadlights;
 // overrides apply per-mesh and we don't want to retint the def-default for
 // other instances).
 function makePaintMats(def){
-  // MeshPhongMaterial gives a glossy paint look (specular highlights catch
-  // headlights/sun) — heavier than Lambert but worth it for the car hero.
+  // Per-car body paint. Desktop: MeshStandardMaterial with metallic-paint
+  // tuning (clearcoat-ish without actual clearcoat — three r134 has no
+  // MeshPhysicalMaterial.clearcoat in this build path). Mobile: keep the
+  // existing MeshPhongMaterial path so we don't pay PBR shader cost on
+  // 9 paint meshes while moving.
   const color = (typeof def.color === 'string') ? parseInt(def.color,16) : def.color;
   const accent = (typeof def.accent === 'string') ? parseInt(def.accent,16) : def.accent;
-  const paint = new THREE.MeshPhongMaterial({color:color, shininess:120, specular:0x666666});
-  const accentMat = new THREE.MeshLambertMaterial({color:accent});
+  let paint, accentMat;
+  if (window._isMobile){
+    paint = new THREE.MeshPhongMaterial({color:color, shininess:120, specular:0x666666});
+    accentMat = new THREE.MeshLambertMaterial({color:accent});
+  } else {
+    paint = new THREE.MeshStandardMaterial({
+      color: color, metalness: 0.65, roughness: 0.22, envMapIntensity: 0.85,
+    });
+    accentMat = new THREE.MeshStandardMaterial({
+      color: accent, metalness: 0.50, roughness: 0.35, envMapIntensity: 0.65,
+    });
+    paint.userData = paint.userData || {}; paint.userData._carPBR = true;
+    accentMat.userData = accentMat.userData || {}; accentMat.userData._carPBR = true;
+  }
   return {paint, accent: accentMat};
 }
 

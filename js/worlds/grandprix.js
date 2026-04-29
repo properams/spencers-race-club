@@ -125,32 +125,6 @@ function buildTyreBarriers(){
 }
 
 
-// Drop a GLTF prototype into the scene at world position. Each call clones
-// the prototype scene because every spawn needs its own transform; the
-// underlying geometry/material stays shared (flagged so disposeScene skips).
-function _spawnGLTFProp(proto, worldX, worldZ, scaleHint){
-  const root = proto.scene.clone(true);
-  // Normalize size: many CC0 props ship 0.5–4× the desired size. Sample
-  // bounding box and scale to roughly the requested hint (in meters).
-  const box = new THREE.Box3().setFromObject(root);
-  const size = new THREE.Vector3(); box.getSize(size);
-  const longest = Math.max(size.x, size.z, 0.01);
-  const sFit = (scaleHint || 1.6) / longest;
-  const sJit = 0.85 + Math.random()*0.30;
-  const s = sFit * sJit;
-  root.scale.setScalar(s);
-  root.position.set(worldX, 0, worldZ);
-  root.rotation.y = Math.random()*Math.PI*2;
-  root.traverse(o=>{
-    if (o.isMesh){
-      // Geometry/material come from the cached GLTF — flag shared.
-      if (o.geometry){ o.geometry.userData = o.geometry.userData||{}; o.geometry.userData._sharedAsset=true; }
-      if (o.material){ o.material.userData = o.material.userData||{}; o.material.userData._sharedAsset=true; }
-    }
-  });
-  scene.add(root);
-}
-
 function buildGPTrackProps(){
   // Tire-stack barriers at key corners — replaced by GLTF haybales/rocks
   // when those are available in the asset cache, else the original
@@ -177,10 +151,10 @@ function buildGPTrackProps(){
       for (let k=0;k<cluster;k++){
         const pick = gltfProps[(Math.random()*gltfProps.length)|0];
         const sizeHint = pick.key==='rock_medium' ? 2.2 : pick.key==='rock_small' ? 1.4 : 1.8;
-        _spawnGLTFProp(pick.proto,
+        window.spawnGLTFProp(pick.proto,
           cx + (Math.random()-.5)*2.4,
           cz + (Math.random()-.5)*2.4,
-          sizeHint);
+          { sizeHint });
       }
       return;
     }

@@ -11,7 +11,9 @@ function buildThemeparkEnvironment(){
   // Dark pavement ground
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
     new THREE.MeshLambertMaterial({color:0x4a3855,map:_pavementGroundTex()}));
-  g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;scene.add(g);
+  g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;
+  g.userData._isProcGround=true;
+  scene.add(g);
   // Tribune-style crowds at start/finish — same procedural crowd texture as GP
   buildSpectators();
   // Park-visitor clusters: 6 small sprite-billboards spread around the infield
@@ -257,6 +259,14 @@ function buildThemeparkEnvironment(){
   stars.instanceMatrix.needsUpdate=true;scene.add(stars);
   // Overhead coaster collapse signature moment — strobes lap 2, tilts lap 3.
   if(typeof buildThemeparkCoaster==='function')buildThemeparkCoaster();
+  // GLTF roadside props (traffic cones / barrels / bollards). Procedural
+  // path stays untouched if the cache is empty.
+  if(window.spawnRoadsideProps){
+    window.spawnRoadsideProps('themepark',{
+      propKeys:['traffic_cone','bollard','barrel'],
+      count:8, sizeHint:1.2, clusterSize:2,
+    });
+  }
 }
 
 

@@ -63,9 +63,50 @@ assets/
 4. If a slot stays `✗`, open the error viewer (Ctrl+Shift+E) — the asset
    loader logs the failed path under channel `assets`.
 
-## Next worlds
+## All-worlds rollout (sessie 5)
 
-This sessie pilots the pipeline on Grand Prix only. Manifests for other
-worlds are stubbed (`{}`) so missing assets stay silent. Future sessies
-will roll out matching slots for Neon City, Volcano, Arctic, Themepark,
-Space, Deep Sea, and Candy.
+The pipeline is now active on every world that benefits from realism
+upgrades. Drop matching files in the paths listed in `manifest.json`:
+
+| World      | HDRI | Ground PBR | Procedural silhouettes | Textured silhouettes | GLTF props |
+|------------|:---:|:---:|:---:|:---:|---|
+| grandprix  | ✓ | ✓ | ✓ | ✓ | trees + haybales + rocks |
+| neoncity   | ✓ | ✓ (wet asphalt) | ✓ (deep blue-purple) | ✓ (skyline) | trash bin / bollard / roadblock |
+| volcano    | ✓ | ✓ (lava rock) | ✓ (rust-red) | ✓ | basalt rocks / lava chunk |
+| arctic     | ✓ | ✓ (snow/ice) | ✓ (cold blue) | ✓ (ice peaks) | iceberg s/m / snow rock |
+| themepark  | ✓ | ✓ (pavement) | ✓ (dusk purple) | ✓ | traffic cone / bollard / barrel |
+| deepsea    | — (underwater) | ✓ (sand floor) | ✓ (dark teal rockwalls) | ✓ | coral s/m / wreck box |
+| space      | — (cosmic) | — | — | — | asteroid s/l |
+| candy      | — (thematic) | — | ✓ (pastel sweet hills) | ✓ | lollipop / candy cane / gumdrop |
+
+### Recommended HDRI variants per world
+
+- **grandprix**: Poly Haven `kloofendal_48d_partly_cloudy_puresky` 2K, or `meadow_2`
+- **neoncity**: Poly Haven `urban_alley_01` 2K (night-tinted), or `dikhololo_night`
+- **volcano**: Poly Haven `lonely_road_afternoon_puresky` (warm), or any dusk HDRI
+- **arctic**: Poly Haven `snowy_park_01` 2K
+- **themepark**: Poly Haven `evening_road_01_puresky` 2K
+
+### Mobile HDRI variants (optional but recommended)
+
+The manifest has an `hdri_mobile` slot per world. Drop a 1K-resolution
+HDRI alongside the 2K version — name it `*_1k.hdr` instead of `*_2k.hdr`
+in the `assets/hdri/` folder. On mobile devices the loader automatically
+prefers the 1K variant; if absent it falls back to the 2K file. 2K is
+~6MB on disk; 1K is ~1.5MB — significantly faster download + decode on
+slower mobile networks. Final envMap output is identical after PMREM
+prefiltering, so visual quality on mobile is barely affected.
+
+### Notes on world-specific behaviour
+
+- HDRI fog-color sampling overrides the world's procedural fog tint. For
+  thematic worlds (volcano red, neon purple) this is the user's opt-in
+  trade — drop a matching HDRI or stick to procedural.
+- Procedural background silhouettes are tuned per world to sit *behind*
+  the existing rich horizons (volcano embers, neon skyscrapers, arctic
+  auroras, themepark fireworks). They render automatically on grandprix /
+  neoncity / volcano / arctic / themepark; deepsea / space / candy stay
+  pure procedural.
+- GLTF roadside prop dispatchers run on all worlds with prop slots.
+  Without files dropped in, every spawn loop is a no-op — the existing
+  procedural environment is unchanged.

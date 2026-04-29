@@ -44,11 +44,15 @@
     }
 
     // Boost reflectivity so PBR materials (if any) actually sample the env.
-    // Lambert materials ignore envMap entirely — no harm done.
+    // Lambert materials ignore envMap entirely — no harm done. Materials
+    // that have already been tuned per-component (cars, ground PBR) carry
+    // userData._carPBR / _sharedAsset so we don't clobber their balance.
     scene.traverse(obj => {
-      if (obj.isMesh && obj.material && 'envMapIntensity' in obj.material){
-        obj.material.envMapIntensity = 0.6;
-      }
+      if (!obj.isMesh || !obj.material) return;
+      const m = obj.material;
+      if (!('envMapIntensity' in m)) return;
+      if (m.userData && (m.userData._carPBR || m.userData._sharedAsset)) return;
+      m.envMapIntensity = 0.6;
     });
     if (window.dbg) dbg.log('asset-bridge', 'HDRI applied', { world: worldId });
     return true;
@@ -120,6 +124,93 @@
     return any;
   }
 
+  // ── Shared GLTF spawn helper ────────────────────────────────────────
+  // Drop one GLTF prop into the active scene at a world-space position.
+  // Each call clones the prototype scene because every spawn needs its
+  // own transform; the underlying geometry/material stay shared via the
+  // _sharedAsset flag so disposeScene preserves the cache.
+  function spawnGLTFProp(proto, worldX, worldZ, opts){
+    if (!proto || !proto.scene || !window.scene) return null;
+    opts = opts || {};
+    const root = proto.scene.clone(true);
+    // Normalize: many CC0 props ship 0.5–4× desired size. Sample bounding
+    // box and scale longest horizontal extent to opts.sizeHint (meters).
+    const box = new THREE.Box3().setFromObject(root);
+    const size = new THREE.Vector3(); box.getSize(size);
+    const longest = Math.max(size.x, size.z, 0.01);
+    const sFit = (opts.sizeHint || 1.6) / longest;
+    const sJit = opts.scaleJitter !== false
+      ? (0.85 + Math.random()*0.30) : 1;
+    const s = sFit * sJit;
+    root.scale.setScalar(s);
+    root.position.set(worldX, opts.yOffset || 0, worldZ);
+    root.rotation.y = (opts.rotation != null) ? opts.rotation : Math.random()*Math.PI*2;
+    root.traverse(o=>{
+      if (!o.isMesh) return;
+      if (o.geometry){ o.geometry.userData = o.geometry.userData||{}; o.geometry.userData._sharedAsset=true; }
+      const mats = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []);
+      mats.forEach(m=>{
+        m.userData = m.userData||{}; m.userData._sharedAsset=true;
+        // Also flag every map slot so disposeScene's per-layer texture
+        // check leaves the cached GLTF maps alive across world rebuilds.
+        ['map','normalMap','roughnessMap','metalnessMap','emissiveMap','aoMap','bumpMap'].forEach(slot=>{
+          const t = m[slot];
+          if (t){ t.userData = t.userData||{}; t.userData._sharedAsset=true; }
+        });
+      });
+    });
+    scene.add(root);
+    return root;
+  }
+
+  // Spawn N prop clusters at the trackside. Reads available prop GLTFs
+  // from window.Assets cache for the active world. Returns count of
+  // clusters actually placed (0 if no GLTFs cached → caller's procedural
+  // fallback should handle it).
+  function spawnRoadsideProps(worldId, opts){
+    if (!window.scene || !window.Assets || !window.trackCurve) return 0;
+    // BARRIER_OFF must come from config.js — bail if script-load order is
+    // ever broken so we can't accidentally spawn props on top of the wall.
+    if (typeof BARRIER_OFF === 'undefined') return 0;
+    opts = opts || {};
+    const propKeys = (opts.propKeys || []).filter(k => !!Assets.getGLTF(worldId, k));
+    if (!propKeys.length) return 0;
+    const count = opts.count || 8;
+    const minOff = (opts.offsetMin || (BARRIER_OFF + 3));
+    const offRange = Math.max(2, (opts.offsetMax || (BARRIER_OFF + 12)) - minOff);
+    const sizeHint = opts.sizeHint || 1.8;
+    const cluster = opts.clusterSize || 2;
+    // Optional per-spawn vertical jitter — used by space (asteroids should
+    // float at varied heights y=1..6) so GLTF props don't all stick to the
+    // y=0 track surface.
+    const yMin = opts.yOffsetMin != null ? opts.yOffsetMin : 0;
+    const yRange = Math.max(0, (opts.yOffsetMax != null ? opts.yOffsetMax : yMin) - yMin);
+    let placed = 0;
+    for (let i=0;i<count;i++){
+      const t = (i + 0.5)/count;
+      const p = trackCurve.getPoint(t);
+      const tg = trackCurve.getTangent(t).normalize();
+      const nr = new THREE.Vector3(-tg.z,0,tg.x);
+      const side = (i % 2 === 0 ? 1 : -1);
+      const off = minOff + Math.random()*offRange;
+      const cx = p.x + nr.x*side*off;
+      const cz = p.z + nr.z*side*off;
+      const k = 1 + (Math.random()*cluster|0);
+      for (let j=0;j<k;j++){
+        const propKey = propKeys[(Math.random()*propKeys.length)|0];
+        const proto = Assets.getGLTF(worldId, propKey);
+        const dx = (Math.random()-.5)*2.6;
+        const dz = (Math.random()-.5)*2.6;
+        const yOff = yMin + Math.random()*yRange;
+        spawnGLTFProp(proto, cx+dx, cz+dz, { sizeHint, yOffset: yOff });
+        placed++;
+      }
+    }
+    return placed;
+  }
+
   window.maybeUpgradeWorld = maybeUpgradeWorld;
-  window._assetBridge = { applyHDRI, applyGround, maybeUpgradeWorld };
+  window.spawnGLTFProp = spawnGLTFProp;
+  window.spawnRoadsideProps = spawnRoadsideProps;
+  window._assetBridge = { applyHDRI, applyGround, maybeUpgradeWorld, spawnGLTFProp, spawnRoadsideProps };
 })();
