@@ -95,6 +95,44 @@ function _makeRadialGlowTexture(hex){
   return new THREE.CanvasTexture(c);
 }
 
+// Camera-richting van de bake-camera (genormaliseerd). Hergebruikt door
+// _fitCameraToCar zodat alle auto's vanuit dezelfde 3/4-hoek worden
+// gerenderd, alleen de afstand verandert per bounding box.
+const _CAM_DIR=new THREE.Vector3(4.2,1.13,5.8).normalize();
+
+// Plaats _snapCam zo dat de hele auto binnen het frame past met padding.
+// Setminus visible Mesh nodes only — auto-meshes hebben anchor-points,
+// boost-trail mountpoints en exhaust-pivots als kinder-Object3D's die
+// Box3.setFromObject() opblazen tot factor-2 te grote bbox waardoor
+// dist te klein berekend werd → camera te dichtbij.
+function _fitCameraToCar(car){
+  const bbox=new THREE.Box3();
+  let any=false;
+  car.traverse(o=>{
+    if(o.isMesh&&o.visible!==false&&o.geometry){
+      // Reken bbox van deze mesh in world-space en union'd 'm in.
+      const mb=new THREE.Box3().setFromObject(o);
+      if(any)bbox.union(mb);else{bbox.copy(mb);any=true;}
+    }
+  });
+  if(!any){bbox.setFromObject(car);} // fallback voor edge cases
+  const center=new THREE.Vector3();bbox.getCenter(center);
+  const size=new THREE.Vector3();bbox.getSize(size);
+  // Camera kijkt vanaf 3/4 voor-rechts; horizontale extent gedomineerd
+  // door max(X,Z), verticale door Y.
+  const halfV=size.y*0.5;
+  const halfH=Math.max(size.x,size.z)*0.5;
+  const padding=1.45; // 45% lucht rond de auto — voorheen 1.20 was te krap
+  const fovRad=THREE.MathUtils.degToRad(_snapCam.fov);
+  const aspect=_snapCam.aspect;
+  const distV=(halfV*padding)/Math.tan(fovRad/2);
+  const distH=(halfH*padding)/Math.tan(Math.atan(Math.tan(fovRad/2)*aspect));
+  const dist=Math.max(distV,distH,6.5); // floor verhoogd 5.5→6.5
+  _snapCam.position.copy(center).addScaledVector(_CAM_DIR,dist);
+  // LookAt iets onder car-center zodat het podium nog deels zichtbaar is.
+  _snapCam.lookAt(center.x,center.y-halfV*0.15,center.z);
+}
+
 // Render één auto naar het snapshot-canvas. Hergebruikt bake-scene via
 // add → render → remove + dispose. Schrijft naar _snapCache[def.id].
 function _bakeCarSnapshot(def,colorOverride){
@@ -110,6 +148,8 @@ function _bakeCarSnapshot(def,colorOverride){
       }
     });
   }
+  // Fit camera op deze specifieke auto (bounding-box-aware framing).
+  _fitCameraToCar(car);
   // Render naar off-screen target zodat de hoofdcanvas niet wordt verstoord.
   const prevTarget=window.renderer.getRenderTarget();
   window.renderer.setRenderTarget(_snapRT);
@@ -489,6 +529,17 @@ function _renderHeaderSubtitle(){
 
 function buildCarSelectUI(){
   loadPersistent();
+  // Restore race-config voorkeuren uit localStorage. loadPersistent zelf
+  // restoreert alleen unlocks/coins/records — laps en difficulty werden
+  // bij elke reload terug op hardcoded defaults gezet (3, normal),
+  // waardoor de start-button summary niet matched met wat gebruiker
+  // eerder gekozen had.
+  try{
+    const sl=parseInt(localStorage.getItem('src_lap'),10);
+    if(sl===1||sl===3||sl===5){_selectedLaps=sl;TOTAL_LAPS=sl;}
+    const sd=parseInt(localStorage.getItem('src_difficulty'),10);
+    if(sd===0||sd===1||sd===2)difficulty=sd;
+  }catch(e){}
   _prevDefId=-1;
   // Pre-bake snapshots voor alle 12 auto's via de hoofd-renderer.
   // Synchronous (~200ms) — gebeurt tijdens screen-transitie naar SELECT
@@ -511,16 +562,29 @@ function buildCarSelectUI(){
   // World indicator badge
   const wInd=document.getElementById('worldIndicator');
   if(wInd){
-    const wIcons={grandprix:'🏁',space:'🚀',deepsea:'🌊',candy:'🍬',neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢'};
+    const wIcons={grandprix:'🏎️',space:'🚀',deepsea:'🌊',candy:'🍬',neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢'};
     const wNames2={grandprix:'GRAND PRIX',space:'COSMIC',deepsea:'DEEP SEA',candy:'CANDY',neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK'};
     wInd.textContent=(wIcons[activeWorld]||'⬢')+' '+(wNames2[activeWorld]||activeWorld.toUpperCase());
   }
   _weatherMode='clear';
-  // Sync difficulty tab visual state to current `difficulty` global.
+  // Sync difficulty tab visual state + wire onclick. Voorheen alleen
+  // visual sync, geen handler — segmented control was non-functional,
+  // wat de "LAPS=1 maar START RACE zegt 'normal'" desync verklaart.
   ['dEasy','dNorm','dHard'].forEach((id,i)=>{
     const el=document.getElementById(id);if(!el)return;
     el.classList.toggle('setOptSel',i===difficulty);
     el.classList.toggle('diffSel',i===difficulty);
+    el.onclick=()=>{
+      difficulty=i;
+      try{localStorage.setItem('src_difficulty',i);}catch(e){}
+      ['dEasy','dNorm','dHard'].forEach((id2,j)=>{
+        const e2=document.getElementById(id2);if(!e2)return;
+        e2.classList.toggle('setOptSel',j===i);
+        e2.classList.toggle('diffSel',j===i);
+      });
+      _renderRival(); // rival lap-record key bevat difficulty
+      _updateSelectSummary();
+    };
   });
   // Wire LAPS tab options.
   [1,3,5].forEach(n=>{
@@ -528,6 +592,7 @@ function buildCarSelectUI(){
     btn.classList.toggle('setOptSel',n===_selectedLaps);
     btn.onclick=()=>{
       _selectedLaps=n;TOTAL_LAPS=n;
+      try{localStorage.setItem('src_lap',n);}catch(e){}
       [1,3,5].forEach(m=>{const b=document.getElementById('lap'+m);if(b)b.classList.toggle('setOptSel',m===n);});
       _updateSelectSummary();
     };

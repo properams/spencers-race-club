@@ -92,7 +92,9 @@
 .tierTabs{
   display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;
   font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1px;
-  scrollbar-width:none;-ms-overflow-style:none
+  scrollbar-width:none;-ms-overflow-style:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 18px),transparent 100%);
+          mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 18px),transparent 100%)
 }
 .tierTabs::-webkit-scrollbar{display:none}
 .tierTab{
@@ -144,10 +146,11 @@
   width:24px;height:24px;border-radius:6px;flex-shrink:0;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.10),0 0 6px var(--team)
 }
-.carInfo{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.carInfo{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;overflow:hidden}
 .carBrand{
   font-family:'Orbitron',sans-serif;font-size:8px;color:#6e5a9a;
-  letter-spacing:3px;text-transform:uppercase
+  letter-spacing:3px;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
 .carName{
   font-family:'Rajdhani',sans-serif;font-size:11px;color:#fff;
@@ -283,16 +286,20 @@
   font-family:'Orbitron',sans-serif;font-size:9px;color:#6e5a9a;
   letter-spacing:3px;padding-left:2px
 }
-.setOpts{display:flex;gap:0}
+.setOpts{display:flex;gap:0;border-bottom:1px solid #2a1f4a}
 .setOpt{
   flex:1;padding:7px 0;text-align:center;cursor:pointer;
-  font-family:'Rajdhani',sans-serif;font-size:13px;color:#6e5a9a;
-  letter-spacing:1px;border-bottom:1px solid #2a1f4a;
-  transition:color .15s,border-color .15s,text-shadow .15s;user-select:none
+  font-family:'Rajdhani',sans-serif;font-size:13px;color:#a89bc7;
+  letter-spacing:1px;
+  border-bottom:2px solid transparent;
+  border-left:1px solid rgba(255,255,255,.06);
+  transition:color .15s,border-color .15s,text-shadow .15s,background .15s;
+  user-select:none
 }
-.setOpt:hover{color:#c9b9ff}
+.setOpt:first-child{border-left:none}
+.setOpt:hover{color:#fff;background:rgba(255,58,140,.06)}
 .setOptSel{
-  color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:500;
+  color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:600;
   text-shadow:0 0 8px rgba(255,58,140,.45)
 }
 
@@ -370,6 +377,15 @@
     max-height:none;overflow-y:visible
   }
   .garageHeader{padding:8px 10px 6px}
+  /* Mobile tabs: smaller padding/gap zodat alle 5 in 365px viewport
+     content area passen, plus mask-fade voor scroll-affordance op
+     extra-narrow phones (iPhone SE, 320px). */
+  .tierTabs{
+    gap:2px;font-size:8px;letter-spacing:.5px;
+    -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 16px),transparent 100%);
+            mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 16px),transparent 100%)
+  }
+  .tierTab{padding:5px 4px;min-width:28px}
   /* Garage on mobile becomes a horizontally-scrollable strip with a
      subtle right-edge fade so users see scroll affordance. */
   .carGrid{
@@ -380,7 +396,7 @@
             mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 24px),transparent 100%)
   }
   .carCard{
-    flex-shrink:0;width:118px;border-bottom:none;border-left:none;
+    flex-shrink:0;width:132px;border-bottom:none;border-left:none;
     border-radius:10px;margin:0 4px;scroll-snap-align:start;
     background:rgba(20,10,40,.55);padding:7px 8px;gap:7px
   }
@@ -420,8 +436,13 @@
   .setSeg{gap:4px;padding:7px 9px 6px}
   .rivalSeg{padding:7px 9px 8px}
   .rivalIcon{width:32px;height:32px;font-size:16px}
-  /* Brighter unselected state — old #6e5a9a was unreadable on dark bg */
-  .setOpt{padding:8px 0;font-size:13px;min-height:36px;color:#a89bc7}
+  /* Brighter unselected state op mobile — #a89bc7 was nog te donker op
+     real-device dark bg. Plus duidelijker vertical separators tussen
+     opties zodat de drie "1 / 3 / 5" niet visueel samenvallen tot één
+     gecentreerd nummer. */
+  .setOpt{padding:8px 0;font-size:14px;min-height:38px;color:#d4c8e8;font-weight:500}
+  .setOpt+.setOpt{border-left-color:rgba(255,255,255,.16)}
+  .setOptSel{font-weight:700}
   /* Pin start button to bottom on mobile so it's always reachable */
   .startBtnWrap{
     position:fixed;left:10px;right:10px;z-index:10;

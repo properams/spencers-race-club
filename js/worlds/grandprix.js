@@ -49,11 +49,14 @@ function buildDRSZone(){
     pole.position.addScaledVector(new THREE.Vector3(-tgDet.z,0,tgDet.x),s*(TW+1.8));
     scene.add(pole);
   });
-  // Horizontal sign board up high
+  // Horizontal sign board up high. Tekst was 'DRS DETECTION' (13 chars)
+  // wat door viewport-clipping bij voorbij-rijden meestal als 'DRS DE'
+  // werd afgekapt. 'DRS ZONE' (8 chars) is snel leesbaar en past breder
+  // binnen de Sprite aspect ratio voordat clip-edges relevant worden.
   const signCvs=document.createElement('canvas');signCvs.width=256;signCvs.height=48;
   const sCtx=signCvs.getContext('2d');sCtx.fillStyle='#003311';sCtx.fillRect(0,0,256,48);
-  sCtx.font='bold 22px Orbitron,Arial';sCtx.fillStyle='#00ff66';sCtx.textAlign='center';
-  sCtx.fillText('DRS DETECTION',128,33);
+  sCtx.font='bold 26px Orbitron,Arial';sCtx.fillStyle='#00ff66';sCtx.textAlign='center';
+  sCtx.fillText('DRS ZONE',128,35);
   const signTex=new THREE.CanvasTexture(signCvs);
   const signMesh=new THREE.Sprite(new THREE.SpriteMaterial({map:signTex,transparent:true}));
   signMesh.position.copy(pDet);signMesh.position.y=5.2;signMesh.scale.set(14,2.2,1);scene.add(signMesh);

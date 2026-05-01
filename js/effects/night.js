@@ -183,7 +183,11 @@ function updateCarLights(){
     const ratio=Math.abs(pCar.speed)/Math.max(.01,pCar.def.topSpd);
     const chaseCam=(typeof _camView==='undefined'||_camView===0);
     const tNow=(typeof _nowSec!=='undefined')?_nowSec:performance.now()*0.001;
-    const baseOp=(isDark&&chaseCam)?(0.30+ratio*0.10):0;
+    // Subtle: 0.16-0.23 ipv 0.30-0.40. Eerder vond user de twee cones
+    // visueel te dominant op chase-cam ("mysterieuze cirkels die de view
+    // blokkeren"). Kleinere baseOp behoudt de night-driving sfeer maar
+    // laat de auto + track beter zichtbaar.
+    const baseOp=(isDark&&chaseCam)?(0.16+ratio*0.07):0;
     pCar.mesh.children.forEach(ch=>{
       if(ch.userData&&ch.userData.isHeadBeam&&ch.material){
         // Subtle organic flicker (~5%) op een sinus van ~1.25 Hz, individueel
