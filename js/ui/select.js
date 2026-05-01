@@ -101,24 +101,33 @@ function _makeRadialGlowTexture(hex){
 const _CAM_DIR=new THREE.Vector3(4.2,1.13,5.8).normalize();
 
 // Plaats _snapCam zo dat de hele auto binnen het frame past met padding.
-// Zonder fit-to-frame stond elke auto op dezelfde fixed afstand — F1
-// (lang+laag) en muscle (hoog+kort) werden ongelijk geframed waarbij
-// soms de boven/onderkant werd afgesneden.
+// Setminus visible Mesh nodes only — auto-meshes hebben anchor-points,
+// boost-trail mountpoints en exhaust-pivots als kinder-Object3D's die
+// Box3.setFromObject() opblazen tot factor-2 te grote bbox waardoor
+// dist te klein berekend werd → camera te dichtbij.
 function _fitCameraToCar(car){
-  const bbox=new THREE.Box3().setFromObject(car);
+  const bbox=new THREE.Box3();
+  let any=false;
+  car.traverse(o=>{
+    if(o.isMesh&&o.visible!==false&&o.geometry){
+      // Reken bbox van deze mesh in world-space en union'd 'm in.
+      const mb=new THREE.Box3().setFromObject(o);
+      if(any)bbox.union(mb);else{bbox.copy(mb);any=true;}
+    }
+  });
+  if(!any){bbox.setFromObject(car);} // fallback voor edge cases
   const center=new THREE.Vector3();bbox.getCenter(center);
   const size=new THREE.Vector3();bbox.getSize(size);
-  // Camera kijkt vanaf 3/4 voor-rechts; de zichtbare extent wordt gedomineerd
-  // door car-length (Z) en height (Y). Neem de grootste van X/Z voor
-  // horizontaal en Y voor verticaal.
+  // Camera kijkt vanaf 3/4 voor-rechts; horizontale extent gedomineerd
+  // door max(X,Z), verticale door Y.
   const halfV=size.y*0.5;
   const halfH=Math.max(size.x,size.z)*0.5;
-  const padding=1.20; // 20% lucht rond de auto
+  const padding=1.45; // 45% lucht rond de auto — voorheen 1.20 was te krap
   const fovRad=THREE.MathUtils.degToRad(_snapCam.fov);
   const aspect=_snapCam.aspect;
   const distV=(halfV*padding)/Math.tan(fovRad/2);
   const distH=(halfH*padding)/Math.tan(Math.atan(Math.tan(fovRad/2)*aspect));
-  const dist=Math.max(distV,distH,5.5); // floor: niet té dichtbij
+  const dist=Math.max(distV,distH,6.5); // floor verhoogd 5.5→6.5
   _snapCam.position.copy(center).addScaledVector(_CAM_DIR,dist);
   // LookAt iets onder car-center zodat het podium nog deels zichtbaar is.
   _snapCam.lookAt(center.x,center.y-halfV*0.15,center.z);
