@@ -547,11 +547,24 @@ function buildCarSelectUI(){
     wInd.textContent=(wIcons[activeWorld]||'⬢')+' '+(wNames2[activeWorld]||activeWorld.toUpperCase());
   }
   _weatherMode='clear';
-  // Sync difficulty tab visual state to current `difficulty` global.
+  // Sync difficulty tab visual state + wire onclick. Voorheen alleen
+  // visual sync, geen handler — segmented control was non-functional,
+  // wat de "LAPS=1 maar START RACE zegt 'normal'" desync verklaart.
   ['dEasy','dNorm','dHard'].forEach((id,i)=>{
     const el=document.getElementById(id);if(!el)return;
     el.classList.toggle('setOptSel',i===difficulty);
     el.classList.toggle('diffSel',i===difficulty);
+    el.onclick=()=>{
+      difficulty=i;
+      try{localStorage.setItem('src_difficulty',i);}catch(e){}
+      ['dEasy','dNorm','dHard'].forEach((id2,j)=>{
+        const e2=document.getElementById(id2);if(!e2)return;
+        e2.classList.toggle('setOptSel',j===i);
+        e2.classList.toggle('diffSel',j===i);
+      });
+      _renderRival(); // rival lap-record key bevat difficulty
+      _updateSelectSummary();
+    };
   });
   // Wire LAPS tab options.
   [1,3,5].forEach(n=>{
