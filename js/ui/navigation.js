@@ -18,6 +18,9 @@ function goToRace(){
   // tweede valt door naar de fallback factory).
   if(gameState!=='SELECT')return;
   if(titleMusic){titleMusic.stop();titleMusic=null;}
+  // Tear down de bake-scene + render target. De cache (2D canvases per
+  // auto) blijft staan voor snel terugkeren naar SELECT zonder re-bake.
+  if(typeof disposeSnapshotBakery==='function')disposeSnapshotBakery();
 document.getElementById('sSelect').classList.add('hidden');document.getElementById('hud').style.display='block';
   makeAllCars();cacheHUDRefs();applyWorldHUDTint(activeWorld);
   // Start camera directly behind car at ground level — no overhead swoop
@@ -126,6 +129,8 @@ function goToTitle(){
   _resetRaceState();
   gameState='TITLE';
   setTouchControlsVisible(false);
+  // Title heeft geen car-preview nodig — bake-scene + render target weg.
+  if(typeof disposeSnapshotBakery==='function')disposeSnapshotBakery();
   document.getElementById('sSelect').classList.add('hidden');
   document.getElementById('sWorld').classList.add('hidden');
   document.getElementById('sTitle').classList.remove('hidden');
