@@ -377,6 +377,15 @@
     max-height:none;overflow-y:visible
   }
   .garageHeader{padding:8px 10px 6px}
+  /* Mobile tabs: smaller padding/gap zodat alle 5 in 365px viewport
+     content area passen, plus mask-fade voor scroll-affordance op
+     extra-narrow phones (iPhone SE, 320px). */
+  .tierTabs{
+    gap:2px;font-size:8px;letter-spacing:.5px;
+    -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 16px),transparent 100%);
+            mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 16px),transparent 100%)
+  }
+  .tierTab{padding:5px 4px;min-width:28px}
   /* Garage on mobile becomes a horizontally-scrollable strip with a
      subtle right-edge fade so users see scroll affordance. */
   .carGrid{
