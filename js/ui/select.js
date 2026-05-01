@@ -95,6 +95,35 @@ function _makeRadialGlowTexture(hex){
   return new THREE.CanvasTexture(c);
 }
 
+// Camera-richting van de bake-camera (genormaliseerd). Hergebruikt door
+// _fitCameraToCar zodat alle auto's vanuit dezelfde 3/4-hoek worden
+// gerenderd, alleen de afstand verandert per bounding box.
+const _CAM_DIR=new THREE.Vector3(4.2,1.13,5.8).normalize();
+
+// Plaats _snapCam zo dat de hele auto binnen het frame past met padding.
+// Zonder fit-to-frame stond elke auto op dezelfde fixed afstand — F1
+// (lang+laag) en muscle (hoog+kort) werden ongelijk geframed waarbij
+// soms de boven/onderkant werd afgesneden.
+function _fitCameraToCar(car){
+  const bbox=new THREE.Box3().setFromObject(car);
+  const center=new THREE.Vector3();bbox.getCenter(center);
+  const size=new THREE.Vector3();bbox.getSize(size);
+  // Camera kijkt vanaf 3/4 voor-rechts; de zichtbare extent wordt gedomineerd
+  // door car-length (Z) en height (Y). Neem de grootste van X/Z voor
+  // horizontaal en Y voor verticaal.
+  const halfV=size.y*0.5;
+  const halfH=Math.max(size.x,size.z)*0.5;
+  const padding=1.20; // 20% lucht rond de auto
+  const fovRad=THREE.MathUtils.degToRad(_snapCam.fov);
+  const aspect=_snapCam.aspect;
+  const distV=(halfV*padding)/Math.tan(fovRad/2);
+  const distH=(halfH*padding)/Math.tan(Math.atan(Math.tan(fovRad/2)*aspect));
+  const dist=Math.max(distV,distH,5.5); // floor: niet té dichtbij
+  _snapCam.position.copy(center).addScaledVector(_CAM_DIR,dist);
+  // LookAt iets onder car-center zodat het podium nog deels zichtbaar is.
+  _snapCam.lookAt(center.x,center.y-halfV*0.15,center.z);
+}
+
 // Render één auto naar het snapshot-canvas. Hergebruikt bake-scene via
 // add → render → remove + dispose. Schrijft naar _snapCache[def.id].
 function _bakeCarSnapshot(def,colorOverride){
@@ -110,6 +139,8 @@ function _bakeCarSnapshot(def,colorOverride){
       }
     });
   }
+  // Fit camera op deze specifieke auto (bounding-box-aware framing).
+  _fitCameraToCar(car);
   // Render naar off-screen target zodat de hoofdcanvas niet wordt verstoord.
   const prevTarget=window.renderer.getRenderTarget();
   window.renderer.setRenderTarget(_snapRT);
