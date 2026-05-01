@@ -49,7 +49,11 @@
 @media(min-width:769px) and (max-width:1200px){
 #controlHints{display:none!important}
 #bannerOverlay{top:calc(108px + env(safe-area-inset-top,0px))!important}
-#popupMsg{top:calc(180px + env(safe-area-inset-top,0px))!important}
+/* popupMsg op iPhone landscape stond op 180px = ~46% van viewport-h
+   = exact waar de player-car in chase-cam zit. Popups als '▼ P7' en
+   'NEAR MISS' overlapten daardoor de auto. Verlaagd naar 38px+inset
+   zodat ze boven de gameplay-zone zweven. */
+#popupMsg{top:calc(38px + env(safe-area-inset-top,0px))!important}
 }
 @media(max-width:600px){
 #sFinish{padding:14px 12px 80px!important;overflow-y:auto!important}
