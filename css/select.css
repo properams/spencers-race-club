@@ -92,7 +92,9 @@
 .tierTabs{
   display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;
   font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1px;
-  scrollbar-width:none;-ms-overflow-style:none
+  scrollbar-width:none;-ms-overflow-style:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 18px),transparent 100%);
+          mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 18px),transparent 100%)
 }
 .tierTabs::-webkit-scrollbar{display:none}
 .tierTab{
