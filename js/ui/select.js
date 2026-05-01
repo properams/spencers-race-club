@@ -520,6 +520,17 @@ function _renderHeaderSubtitle(){
 
 function buildCarSelectUI(){
   loadPersistent();
+  // Restore race-config voorkeuren uit localStorage. loadPersistent zelf
+  // restoreert alleen unlocks/coins/records — laps en difficulty werden
+  // bij elke reload terug op hardcoded defaults gezet (3, normal),
+  // waardoor de start-button summary niet matched met wat gebruiker
+  // eerder gekozen had.
+  try{
+    const sl=parseInt(localStorage.getItem('src_lap'),10);
+    if(sl===1||sl===3||sl===5){_selectedLaps=sl;TOTAL_LAPS=sl;}
+    const sd=parseInt(localStorage.getItem('src_difficulty'),10);
+    if(sd===0||sd===1||sd===2)difficulty=sd;
+  }catch(e){}
   _prevDefId=-1;
   // Pre-bake snapshots voor alle 12 auto's via de hoofd-renderer.
   // Synchronous (~200ms) — gebeurt tijdens screen-transitie naar SELECT
@@ -572,6 +583,7 @@ function buildCarSelectUI(){
     btn.classList.toggle('setOptSel',n===_selectedLaps);
     btn.onclick=()=>{
       _selectedLaps=n;TOTAL_LAPS=n;
+      try{localStorage.setItem('src_lap',n);}catch(e){}
       [1,3,5].forEach(m=>{const b=document.getElementById('lap'+m);if(b)b.classList.toggle('setOptSel',m===n);});
       _updateSelectSummary();
     };
