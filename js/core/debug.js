@@ -37,10 +37,64 @@
 
   const ERR_RING_MAX = 50;
   const errRing = [];
+
+  // ── Persistent error capture (cross-session) ─────────────────────────
+  // Errors die de tab-crash overleven: gemirrored naar localStorage.
+  // Bedoeld voor mobile waar ringbuffer + console-log verloren gaan bij
+  // een browser-tab kill (iOS Chrome doet dat agressief bij OOM/JS-error).
+  // Cap is 30 entries, oudste eerst. 7-day TTL — stale entries worden
+  // bij volgende boot weggegooid.
+  const PERSIST_KEY = 'src_persisted_errors';
+  const PERSIST_MAX = 30;
+  const PERSIST_TTL_MS = 7 * 24 * 3600 * 1000;
+  // Korte session-id zodat we kunnen zien welke errors van welke run zijn.
+  const SESSION_ID = (Math.random().toString(36).slice(2, 8) + '-' +
+                      Date.now().toString(36).slice(-4));
+  let _persistedSeen = []; // entries from previous sessions, lazy-loaded
+  function _persistError(entry) {
+    try {
+      let cur = [];
+      const raw = localStorage.getItem(PERSIST_KEY);
+      if (raw) { try { cur = JSON.parse(raw) || []; } catch (_) { cur = []; } }
+      cur.push({
+        t: entry.t,
+        kind: entry.kind,
+        msg: entry.msg,
+        extra: entry.extra || null,
+        sid: SESSION_ID,
+        wt: Date.now()
+      });
+      if (cur.length > PERSIST_MAX) cur = cur.slice(-PERSIST_MAX);
+      localStorage.setItem(PERSIST_KEY, JSON.stringify(cur));
+    } catch (_) { /* private-mode / quota — silently drop persistence */ }
+  }
+  function _loadPersistedErrors() {
+    try {
+      const raw = localStorage.getItem(PERSIST_KEY);
+      if (!raw) return [];
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return [];
+      const now = Date.now();
+      const fresh = arr.filter(e => e && typeof e === 'object'
+                                 && (now - (e.wt || 0)) < PERSIST_TTL_MS
+                                 && e.sid !== SESSION_ID);  // skip current-session
+      // Prune stale entries back to storage if we filtered any out.
+      if (fresh.length !== arr.length) {
+        try { localStorage.setItem(PERSIST_KEY, JSON.stringify(fresh)); } catch (_) {}
+      }
+      return fresh;
+    } catch (_) { return []; }
+  }
+  function _clearPersistedErrors() {
+    try { localStorage.removeItem(PERSIST_KEY); } catch (_) {}
+    _persistedSeen.length = 0;
+  }
+
   function pushErr(kind, msg, extra) {
     const entry = { t: ts(), kind, msg: String(msg || ''), extra: extra || null };
     errRing.push(entry);
     if (errRing.length > ERR_RING_MAX) errRing.shift();
+    _persistError(entry);
     return entry;
   }
 
@@ -95,7 +149,12 @@
     },
 
     errors() { return errRing.slice(); },
-    clearErrors() { errRing.length = 0; if (window._dbgViewer) window._dbgViewer.refresh(); },
+    clearErrors() {
+      errRing.length = 0;
+      _clearPersistedErrors();
+      if (window._dbgViewer) window._dbgViewer.refresh();
+    },
+    persistedErrors() { return _persistedSeen.slice(); },
 
     showErrors() { _ensureViewer(); _viewerEl.style.display = 'flex'; _viewerRefresh(); },
     hideErrors() { if (_viewerEl) _viewerEl.style.display = 'none'; },
@@ -357,6 +416,56 @@
     console.log('[dbg] enabled (url=' + URL_FLAG + ' ls=' + LS_FLAG + ')' +
       (CHANNEL_FILTER ? ' channels=[' + [...CHANNEL_FILTER].join(',') + ']' : ' all channels') +
       ' — Ctrl+Shift+E voor error-viewer');
+  }
+
+  // ── Load previous-session persisted errors (always — also without dbg
+  // enabled — zodat een tab-crash de volgende session zichtbaar wordt).
+  // Toont een kleine tap-vriendelijke badge in de URL ?showcrash=1, OF
+  // wanneer ?debug actief is, OF wanneer src_show_crash localStorage flag
+  // is gezet. Op mobile is Ctrl+Shift+E er niet — de badge is de toegang.
+  _persistedSeen = _loadPersistedErrors();
+  if (_persistedSeen.length > 0) {
+    // Voeg ze toe aan de in-memory ring zodat de viewer ze toont.
+    for (const e of _persistedSeen) {
+      errRing.push({
+        t: '(prev) ' + e.t,
+        kind: '[' + (e.sid || '?') + '] ' + e.kind,
+        msg: e.msg,
+        extra: e.extra
+      });
+    }
+    if (errRing.length > ERR_RING_MAX) errRing.splice(0, errRing.length - ERR_RING_MAX);
+
+    // Voorwaarden voor automatische zichtbaarheid:
+    //  - ?showcrash=1 in URL: altijd tonen
+    //  - ?debug in URL of src_debug=1 in localStorage: tonen
+    //  - localStorage src_show_crash=1: tonen
+    let showBadge = false;
+    try {
+      if (new URLSearchParams(location.search).has('showcrash')) showBadge = true;
+      if (URL_FLAG || LS_FLAG) showBadge = true;
+      if (localStorage.getItem('src_show_crash') === '1') showBadge = true;
+    } catch (_) {}
+
+    if (showBadge) {
+      // Lazy-build kleine badge die rechtsboven verschijnt en op tap de
+      // viewer opent. Geen styling-conflict met game-HUD: position fixed +
+      // z-index hoger dan de meeste game-overlays.
+      const _showCrashBadge = () => {
+        if (document.getElementById('dbgCrashBadge')) return;
+        const b = document.createElement('div');
+        b.id = 'dbgCrashBadge';
+        b.style.cssText = 'position:fixed;top:10px;right:10px;background:rgba(180,40,20,.95);color:#fff;font-family:monospace;font-size:11px;padding:8px 12px;border-radius:8px;z-index:99997;cursor:pointer;letter-spacing:1px;box-shadow:0 4px 12px rgba(0,0,0,.5);border-left:3px solid #ff8866;max-width:240px;line-height:1.3';
+        b.innerHTML = '⚠ ' + _persistedSeen.length + ' errors from prev session<br><span style="font-size:9px;opacity:.7">tap voor details</span>';
+        b.addEventListener('click', () => { dbg.showErrors(); });
+        document.body.appendChild(b);
+      };
+      if (document.body) _showCrashBadge();
+      else document.addEventListener('DOMContentLoaded', _showCrashBadge);
+    }
+
+    // Console-log in alle gevallen zodat remote-inspect ze ook ziet.
+    console.warn('[dbg] ' + _persistedSeen.length + ' persisted errors from previous session(s) — dbg.persistedErrors() of dbg.showErrors()');
   }
 
   // ── Perf Phase A: lichtgewicht performance.mark/measure helpers ──────
