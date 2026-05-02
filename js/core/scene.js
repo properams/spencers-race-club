@@ -540,20 +540,11 @@ function buildScene(){
   if(window.perfMark)perfMark('build:precompile:start');
   _precompileScene();
   if(window.perfMark){perfMark('build:precompile:end');perfMeasure('build.precompile','build:precompile:start','build:precompile:end');}
-  // PHASE-C: warm postfx pipeline by rendering one full-canvas frame via
-  // renderWithPostFX. This pre-compiles scene shaders in the exact render-
-  // target encoding they use during the race, plus links the postfx
-  // pipeline shaders (rtScene→rtBright→blur→composite) so the first race
-  // frame doesn't pay shader-link or texture-upload cost. Replaces the
-  // 16×16 off-screen render that used to live in _precompileScene.
-  if(window.perfMark)perfMark('build:postfxWarm:start');
-  try{
-    if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
-    else if(renderer)renderer.render(scene,camera);
-  }catch(e){
-    if(window.dbg)dbg.warn('scene','postfx warm-render failed: '+(e&&e.message||e));
-  }
-  if(window.perfMark){perfMark('build:postfxWarm:end');perfMeasure('build.postfxWarm','build:postfxWarm:start','build:postfxWarm:end');}
+  // Postfx warm-render is verhuisd naar goToRace() ná makeAllCars()
+  // — zie js/ui/navigation.js. Reden: in buildScene staan de cars nog
+  // niet in scene én is de camera nog op de title-cam-positie, dus de
+  // warm-render representeerde niet de echte race-view en miste de
+  // car-shaders. PHASE-C2 fix.
   if(window.perfMark){perfMark('build:total:end');perfMeasure('build.total','build:total:start','build:total:end');}
   // Shader-program count delta over the buildScene window.
   if(window.perfLog){

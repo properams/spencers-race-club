@@ -178,11 +178,11 @@ async function boot(){
       if(window.dbg)dbg.error('boot',e,'buildScene crashed');
       else console.error('buildScene crashed:',e);
     }
-    // PHASE-C: buildScene() doet zelf nu een renderWithPostFX warm-render
-    // aan het einde (zie scene.js build:postfxWarm). De extra renderWithPostFX
-    // call die hier voorheen stond is daardoor dubbel werk; alleen de
-    // loading-screen rAF-fade blijft staan. Het canvas heeft al een image
-    // van buildScene's warm-render dus de title verschijnt zonder flash.
+    // Loading-screen rAF-fade. De warm-render gebeurt nu niet meer in
+    // buildScene (PHASE-C2 verhuisde 'm naar goToRace ná makeAllCars).
+    // Het eerste title-frame wordt synchroon gerendered door de loop()
+    // call hieronder (loop()'s body draait synchroon vóór rAF #1, dus
+    // het canvas heeft een image vóór rAF #2 het loading-scherm verbergt).
     if(renderer&&scene&&camera){
       if(_loadEl){
         const ls=_loadEl.querySelector('#loadStep');
