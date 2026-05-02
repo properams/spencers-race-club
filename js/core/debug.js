@@ -358,6 +358,25 @@
       (CHANNEL_FILTER ? ' channels=[' + [...CHANNEL_FILTER].join(',') + ']' : ' all channels') +
       ' — Ctrl+Shift+E voor error-viewer');
   }
+
+  // ── Perf Phase A: lichtgewicht performance.mark/measure helpers ──────
+  // Altijd actief (ook zonder dbg.enabled) zodat tools/perf-run.mjs
+  // window.perfLog kan uitlezen na een headless run. Push-cap op 500.
+  window.perfLog = window.perfLog || [];
+  window.perfMark = (label) => { try { performance.mark(label); } catch (e) {} };
+  window.perfMeasure = (name, startLabel, endLabel) => {
+    try {
+      performance.measure(name, startLabel, endLabel);
+      const entries = performance.getEntriesByName(name, 'measure');
+      const last = entries[entries.length - 1];
+      if (last) {
+        window.perfLog.push({ name, ms: last.duration, t: performance.now() });
+        if (window.perfLog.length > 500) window.perfLog.shift();
+        if (window.dbg) dbg.log('perf', `${name}: ${last.duration.toFixed(1)}ms`);
+      }
+      return last ? last.duration : null;
+    } catch (e) { return null; }
+  };
 })();
 
 // ── Bestaande visual badge (alleen ?debug in URL) ────────────────────────

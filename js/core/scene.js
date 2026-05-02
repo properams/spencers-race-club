@@ -325,7 +325,12 @@ function makeGPSkyTex(){
 
 function buildScene(){
   window.dbg&&dbg.log('scene','buildScene start — world='+activeWorld);
+  // Perf Phase A: shader-program count voor en na buildScene.
+  const _perfProgBefore=(renderer&&renderer.info&&renderer.info.programs&&renderer.info.programs.length)||0;
+  if(window.perfMark)perfMark('build:total:start');
+  if(window.perfMark)perfMark('build:disposeScene:start');
   disposeScene();
+  if(window.perfMark){perfMark('build:disposeScene:end');perfMeasure('build.disposeScene','build:disposeScene:start','build:disposeScene:end');}
   // ── Swap TRACK_WP data for active world ───────────────────────
   {const src=(_TRACKS&&_TRACKS[activeWorld])||_GP_WP;
    TRACK_WP.length=0;src.forEach(wp=>TRACK_WP.push(wp));}
@@ -442,7 +447,10 @@ function buildScene(){
   const _hemiInt=isSpace?.14:isDeepSea?.30:isCandy?.45:isNeon?.15:isThemepark?.35:.36;
   hemiLight=new THREE.HemisphereLight(_hemiSky,_hemiGnd,_hemiInt);scene.add(hemiLight);
 
+  if(window.perfMark)perfMark('build:track:start');
   buildTrack();
+  if(window.perfMark){perfMark('build:track:end');perfMeasure('build.track','build:track:start','build:track:end');}
+  if(window.perfMark)perfMark('build:world:start');
   if(isSpace){
     buildSpaceEnvironment();
   }else if(isDeepSea){
@@ -489,6 +497,8 @@ function buildScene(){
       });
     }
   }
+  if(window.perfMark){perfMark('build:world:end');perfMeasure('build.world','build:world:start','build:world:end');}
+  if(window.perfMark)perfMark('build:gameplayObjects:start');
   buildJumpRamps();
   buildCenterlineArrows();
   buildSpinPads();
@@ -501,56 +511,66 @@ function buildScene(){
   buildGhostMesh();
   initSpeedLines();
   initRain();
+  if(window.perfMark){perfMark('build:gameplayObjects:end');perfMeasure('build.gameplayObjects','build:gameplayObjects:start','build:gameplayObjects:end');}
   // Cache minimap bounds
   const _xs=TRACK_WP.map(p=>p[0]),_zs=TRACK_WP.map(p=>p[1]);
   _mmBounds={mnX:Math.min(..._xs),mxX:Math.max(..._xs),mnZ:Math.min(..._zs),mxZ:Math.max(..._zs)};
   // Default to dark mode (isDark=false at entry, toggleNight sets it dark)
+  if(window.perfMark)perfMark('build:night:start');
   isDark=false;toggleNight();
+  if(window.perfMark){perfMark('build:night:end');perfMeasure('build.night','build:night:start','build:night:end');}
   // Apply any cached HDRI / PBR ground textures from window.Assets. No-op
   // if the manifest has no slots filled or preload hasn't completed yet —
   // boot.js + select.js re-call maybeUpgradeWorld when preload resolves.
+  if(window.perfMark)perfMark('build:assetBridge:start');
   if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(activeWorld);
-  // Pre-compile materials voor de nieuwe wereld + force texture/attribute
-  // uploads via een 16x16 off-screen render. Voorheen was dit een dbg-only
-  // experiment in select.js; nu default-aan in buildScene zodat ELKE scene-
-  // build (inclusief eerste boot-world en rebuildWorld) shader-link en
-  // GPU-upload spikes uit de hot path haalt. Dit is hét voorkomen van de
-  // start-freeze op iPad voor wereld-specifieke material sets — boot doet
-  // al een warm-up render, maar pakte alleen de default GP wereld.
+  if(window.perfMark){perfMark('build:assetBridge:end');perfMeasure('build.assetBridge','build:assetBridge:start','build:assetBridge:end');}
+  // Pre-compile materials voor de nieuwe wereld. _precompileScene roept
+  // alleen renderer.compile() aan; de daadwerkelijke shader-link + GPU-
+  // upload kost wordt opgevangen door de postfx warm-render hieronder
+  // (PHASE-C fix), die langs het echte race-render-pad gaat zodat de
+  // juiste shader-permutaties en postfx-pipeline gewarmd worden.
+  if(window.perfMark)perfMark('build:precompile:start');
   _precompileScene();
+  if(window.perfMark){perfMark('build:precompile:end');perfMeasure('build.precompile','build:precompile:start','build:precompile:end');}
+  // Postfx warm-render is verhuisd naar goToRace() ná makeAllCars()
+  // — zie js/ui/navigation.js. Reden: in buildScene staan de cars nog
+  // niet in scene én is de camera nog op de title-cam-positie, dus de
+  // warm-render representeerde niet de echte race-view en miste de
+  // car-shaders. PHASE-C2 fix.
+  if(window.perfMark){perfMark('build:total:end');perfMeasure('build.total','build:total:start','build:total:end');}
+  // Shader-program count delta over the buildScene window.
+  if(window.perfLog){
+    const _perfProgAfter=(renderer&&renderer.info&&renderer.info.programs&&renderer.info.programs.length)||0;
+    window.perfLog.push({name:'shaderPrograms.delta',ms:_perfProgAfter-_perfProgBefore,t:performance.now(),world:activeWorld});
+    window.perfLog.push({name:'shaderPrograms.afterBuild',ms:_perfProgAfter,t:performance.now(),world:activeWorld});
+    if(window.dbg)dbg.log('perf','shader programs '+_perfProgBefore+'→'+_perfProgAfter+' ('+activeWorld+')');
+  }
   window.dbg&&dbg.snapshot('scene','buildScene done',{world:activeWorld,objects:scene.children.length,camPos:camera.position});
 }
 
-// Pre-compile + 16x16 off-screen render. renderer.compile() linkt shaders
-// maar triggert niet altijd attribute/texture uploads — daarom een echte
-// (off-screen) render erachter. Cost is zichtbaar via PRECOMPILE-DONE
-// race-event wanneer dbg.enabled.
-//
-// NB: deze render triggert ook de shadow-pass van sunLight (1024×1024 shadow
-// map). Op iPad kost dat 8–25ms — bewust hier omdat we die cost willen
-// verschuiven van race-start naar select-screen. Shadow-uniforms moeten
-// gecompiled worden mét shadow-variant zodat de eerste race-frame géén
-// program-link spike heeft; daarom shadowMap.enabled NIET tijdelijk uitzetten.
+// Pre-compile materials. renderer.compile() laat de driver shader-source
+// uploaden + async compileren — de werkelijke link gebeurt pas op de eerste
+// echte render-call. Geen render hier: de phase-A meting liet zien dat een
+// off-screen 16×16 render (eerder hier aanwezig) niet alleen de link forceert
+// maar ook de sunLight shadow-pass (1024×1024) en alle texture/geometry
+// uploads sync uitvoert; cost was 1.0–25.2 sec per build vs <1 sec voor
+// compile zelf (zie PERF_PHASE_B_PLAN.md). De link/upload cost wordt nu
+// opgevangen door de postfx warm-render in buildScene direct hierna, die
+// langs het echte race-render-pad gaat zodat de juiste shader-permutaties
+// gewarmd worden.
 function _precompileScene(){
   if(!renderer||!scene||!camera)return;
   const _t0=performance.now();
   const _progBefore=(renderer.info.programs&&renderer.info.programs.length)||0;
   const _texBefore=renderer.info.memory.textures;
-  let _rt=null;
+  if(window.perfMark)perfMark('precompile:compile:start');
   try{
     if(typeof renderer.compile==='function')renderer.compile(scene,camera);
-    if(window.THREE&&THREE.WebGLRenderTarget){
-      _rt=new THREE.WebGLRenderTarget(16,16);
-      const _prevTarget=renderer.getRenderTarget();
-      renderer.setRenderTarget(_rt);
-      renderer.render(scene,camera);
-      renderer.setRenderTarget(_prevTarget);
-    }
   }catch(e){
     if(window.dbg)dbg.error('scene',e,'precompile failed');
-  }finally{
-    if(_rt)try{_rt.dispose();}catch(_){}
   }
+  if(window.perfMark){perfMark('precompile:compile:end');perfMeasure('build.precompile.compile','precompile:compile:start','precompile:compile:end');}
   if(window.dbg){
     const _dur=performance.now()-_t0;
     const _progAfter=(renderer.info.programs&&renderer.info.programs.length)||0;

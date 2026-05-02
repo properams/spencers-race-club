@@ -344,26 +344,42 @@
   async function preloadWorld(worldId){
     if (!worldId) return { kind:'none' };
     if (_worldPreloaded.has(worldId)) return { kind:'cached' };
+    // Perf Phase A: split timings per asset-class. Logged in window.perfLog
+    // tagged with world-id so the runner can attribute load cost per world.
+    const _t0 = performance.now();
     await _loadManifest();
     const w = _manifest.worlds && _manifest.worlds[worldId];
     if (!w){ _worldPreloaded.add(worldId); return { kind:'no-manifest' }; }
 
-    const tasks = [];
-    if (w.hdri) tasks.push(loadHDRI(w.hdri));
-    if (w.ground) tasks.push(loadGroundSet(worldId));
+    // Models = HDRI + GLTF/OBJ/FBX props. Textures = ground-set + skybox
+    // layers. Audio is a separate preloadWorldAudio path (samples.js).
+    const _modelTasks = [];
+    const _textureTasks = [];
+    if (w.hdri) _modelTasks.push(loadHDRI(w.hdri));
+    if (w.ground) _textureTasks.push(loadGroundSet(worldId));
     if (w.props){
       // Each prop slot may be a string (single variant) or an array
       // (multiple variants for natural per-cluster variety).
       for (const k in w.props){
         const v = w.props[k];
-        if (Array.isArray(v)) v.forEach(p => { if (p) tasks.push(loadGLTF(p)); });
-        else if (v) tasks.push(loadGLTF(v));
+        if (Array.isArray(v)) v.forEach(p => { if (p) _modelTasks.push(loadGLTF(p)); });
+        else if (v) _modelTasks.push(loadGLTF(v));
       }
     }
     if (w.skybox_layers){
-      for (const k in w.skybox_layers) tasks.push(loadTexture(w.skybox_layers[k], { colorSpace:'srgb' }));
+      for (const k in w.skybox_layers) _textureTasks.push(loadTexture(w.skybox_layers[k], { colorSpace:'srgb' }));
     }
-    await Promise.all(tasks);
+
+    const _tModelStart = performance.now();
+    const _modelP = Promise.all(_modelTasks).then(()=>{
+      if (window.perfLog) window.perfLog.push({ name:'assets.models', ms: performance.now()-_tModelStart, t: performance.now(), world: worldId, count: _modelTasks.length });
+    });
+    const _tTexStart = performance.now();
+    const _texP = Promise.all(_textureTasks).then(()=>{
+      if (window.perfLog) window.perfLog.push({ name:'assets.textures', ms: performance.now()-_tTexStart, t: performance.now(), world: worldId, count: _textureTasks.length });
+    });
+    await Promise.all([_modelP, _texP]);
+    if (window.perfLog) window.perfLog.push({ name:'assets.preloadWorld.total', ms: performance.now()-_t0, t: performance.now(), world: worldId });
     _worldPreloaded.add(worldId);
     return { kind:'loaded' };
   }

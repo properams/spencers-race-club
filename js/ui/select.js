@@ -363,6 +363,7 @@ function _selectPreviewCar(defId){
 
 function rebuildWorld(newWorld){
   if(newWorld===activeWorld)return;
+  if(window.perfMark)perfMark('transition:start');
   activeWorld=newWorld;
   localStorage.setItem('src_world',newWorld);
   // Preload muziek-stems + surface voor deze wereld (fire-and-forget). Als
@@ -391,6 +392,7 @@ function rebuildWorld(newWorld){
   _prevDefId=-1;_selectPreviewCar(selCarId);
   // (Pre-compile + GPU upload prime gebeurt nu standaard aan het eind van
   // buildScene() via _precompileScene — zie js/core/scene.js.)
+  if(window.perfMark){perfMark('transition:end');perfMeasure('transition.total','transition:start','transition:end');}
 }
 
 function applyWorldHUDTint(world){

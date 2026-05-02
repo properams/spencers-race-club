@@ -31,6 +31,18 @@ assets/_inbox/*
 !assets/_inbox/README.md
 !assets/_inbox/.gitkeep
 
+# Perf Phase A: runner output (raw JSON) — niet committen, regenereerbaar
+# via tools/perf-run.mjs. Het rapport (PERF_PHASE_A_REPORT.md) blijft wél
+# tracked zodat we 'm kunnen reviewen.
+tools/perf-output.json
+# Baselines onder tools/baselines/ DO get tracked — die zijn juist het
+# referentiemateriaal voor toekomstige delta-vergelijkingen.
+!tools/baselines/
+!tools/baselines/*.json
+# .txt-export van het rapport (voor Claude Chat upload) — wegwerp, kopie
+# van de .md. Regenereren met: cp PERF_PHASE_A_REPORT.md PERF_PHASE_A_REPORT.txt
+PERF_PHASE_A_REPORT.txt
+
 # Werk-documentatie / planning — lokaal houden, niet publiceren
 CLAUDE.md
 CLAUDE_CODE_PROMPTS.md

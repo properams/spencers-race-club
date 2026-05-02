@@ -2,12 +2,22 @@
 
 'use strict';
 
+// Perf Phase A: heap-snapshot helper. Pusht event-naam + heap MB naar
+// window.perfLog. No-op als performance.memory niet beschikbaar (Safari/FF).
+function _perfHeap(eventName){
+  if(!window.perfLog||!performance.memory)return;
+  const mb=+(performance.memory.usedJSHeapSize/1048576).toFixed(2);
+  window.perfLog.push({name:'heap.'+eventName,ms:mb,t:performance.now()});
+  if(window.dbg)dbg.log('perf','heap@'+eventName+': '+mb+'MB');
+}
+
 function goToSelect(){
   if(gameState!=='TITLE')return;gameState='SELECT';initAudio();startSelectMusic();
   setTouchControlsVisible(false);
   document.getElementById('sTitle').classList.add('hidden');
   buildCarSelectUI();
   document.getElementById('sSelect').classList.remove('hidden');
+  _perfHeap('goToSelect');
 }
 
 function goToRace(){
@@ -17,12 +27,17 @@ function goToRace(){
   // met twee parallel music-schedulers (eerste consumeert pendingRaceMusic,
   // tweede valt door naar de fallback factory).
   if(gameState!=='SELECT')return;
+  if(window.perfMark)perfMark('goToRace:start');
+  _perfHeap('goToRace');
   if(titleMusic){titleMusic.stop();titleMusic=null;}
   // Tear down de bake-scene + render target. De cache (2D canvases per
   // auto) blijft staan voor snel terugkeren naar SELECT zonder re-bake.
   if(typeof disposeSnapshotBakery==='function')disposeSnapshotBakery();
 document.getElementById('sSelect').classList.add('hidden');document.getElementById('hud').style.display='block';
-  makeAllCars();cacheHUDRefs();applyWorldHUDTint(activeWorld);
+  if(window.perfMark)perfMark('goToRace:makeAllCars:start');
+  makeAllCars();
+  if(window.perfMark){perfMark('goToRace:makeAllCars:end');perfMeasure('goToRace.makeAllCars','goToRace:makeAllCars:start','goToRace:makeAllCars:end');}
+  cacheHUDRefs();applyWorldHUDTint(activeWorld);
   // Start camera directly behind car at ground level — no overhead swoop
   const p=carObjs[playerIdx];
   if(p){
@@ -35,6 +50,21 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
     camera.position.copy(camPos);camera.lookAt(camTgt);
     camera.fov=62;camera.updateProjectionMatrix();
   }
+  // PHASE-C2: postfx warm-render hier, ná makeAllCars() en ná de race-cam
+  // reposition, zodat de warm-render exact de eerste race-frame scope ziet
+  // (8 cars + race-cam view + postfx pipeline). Voorheen stond deze in
+  // buildScene maar daar waren de cars nog niet aan de scene toegevoegd
+  // en stond de camera nog op de title-cam-positie — fase C-meting laat
+  // zien dat dat de eerste race-frame niet afdekte. Eén warm-render per
+  // race-start; als de fix terug moet, alleen dit blok verwijderen.
+  if(window.perfMark)perfMark('goToRace:postfxWarm:start');
+  try{
+    if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
+    else if(renderer)renderer.render(scene,camera);
+  }catch(e){
+    if(window.dbg)dbg.warn('navigation','postfx warm-render failed: '+(e&&e.message||e));
+  }
+  if(window.perfMark){perfMark('goToRace:postfxWarm:end');perfMeasure('goToRace.postfxWarm','goToRace:postfxWarm:start','goToRace:postfxWarm:end');}
   _introPanTimer=0;
   _raceMaxSpeed=0;_raceOvertakes=0;_lastPlayerPos=9;
   _camView=0;_achieveUnlocked.clear();
@@ -44,6 +74,7 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
   _ghostPos.length=0;_ghostSampleT=0;_ghostPlayT=0;
   initDriftVisuals();
   gameState='COUNTDOWN';_raceStartGrace=99;
+  if(window.perfMark){perfMark('goToRace:end');perfMeasure('goToRace.total','goToRace:start','goToRace:end');}
   setTouchControlsVisible(true);
   // Pre-warm ambient audio during countdown so the WebAudio node graph is
   // already alive by GO. Both functions are idempotent and ramp gain from 0,
@@ -127,6 +158,7 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
 
 function goToTitle(){
   _resetRaceState();
+  _perfHeap('goToTitle');
   gameState='TITLE';
   setTouchControlsVisible(false);
   // Title heeft geen car-preview nodig — bake-scene + render target weg.
@@ -140,6 +172,7 @@ function goToTitle(){
 }
 
 function goToWorldSelect(){
+  _perfHeap('goToWorldSelect');
   gameState='WORLD_SELECT';
   setTouchControlsVisible(false);
   initAudio();startSelectMusic();

@@ -17,6 +17,30 @@
 
 'use strict';
 
+// ── Perf Phase A test-mode (URL ?perfauto=1) ─────────────────────────
+// Activeert dbg-channels op localStorage (idempotent) en exposeert een
+// kleine programmatic-API zodat tools/perf-run.mjs de game zonder canvas-
+// klikken door het menu kan jagen. Geen game-logica wordt geraakt; dit is
+// puur een entry-shim voor headless meting. Wordt uitgeschakeld als de
+// flag niet gezet is.
+(function(){
+  try{
+    const _qs = new URLSearchParams(location.search);
+    if(_qs.has('perfauto')){
+      try{
+        if(localStorage.getItem('src_debug')!=='1') localStorage.setItem('src_debug','1');
+        // Channels: 'perf' minimum, behoud bestaande filter als die er is.
+        const _ch = localStorage.getItem('src_debug_channels');
+        if(_ch && !_ch.split(',').map(s=>s.trim()).includes('perf')){
+          localStorage.setItem('src_debug_channels', _ch + ',perf');
+        }
+      }catch(_){}
+      window._perfAuto = true;
+      window._bootDone = false;
+    }
+  }catch(_){}
+})();
+
 // ── iOS long-press / context-menu / selection-popup blockers ─────────
 // Killt de "Copy | Translate"-popup die anders mid-gameplay verschijnt
 // bij het vasthouden van een knop.
@@ -154,17 +178,16 @@ async function boot(){
       if(window.dbg)dbg.error('boot',e,'buildScene crashed');
       else console.error('buildScene crashed:',e);
     }
-    // Warm-up render: forceer GPU shader-compilatie voor titel verschijnt.
+    // Loading-screen rAF-fade. De warm-render gebeurt nu niet meer in
+    // buildScene (PHASE-C2 verhuisde 'm naar goToRace ná makeAllCars).
+    // Het eerste title-frame wordt synchroon gerendered door de loop()
+    // call hieronder (loop()'s body draait synchroon vóór rAF #1, dus
+    // het canvas heeft een image vóór rAF #2 het loading-scherm verbergt).
     if(renderer&&scene&&camera){
       if(_loadEl){
         const ls=_loadEl.querySelector('#loadStep');
         if(ls)ls.textContent='COMPILING SHADERS...';
       }
-      // Use post-FX render path (bloom/vignette/grading) when available,
-      // val terug op directe renderer.render bij ontbreken (eerste frame
-      // moet shader-compilatie triggeren langs hetzelfde pad als de loop).
-      if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
-      else renderer.render(scene,camera);
       requestAnimationFrame(()=>{requestAnimationFrame(()=>{
         if(_loadEl)_loadEl.style.display='none';
       });});
@@ -179,5 +202,31 @@ async function boot(){
     _restoreUserPrefs();
     loop();
     window.dbg&&dbg.log('boot','done');
+    // Perf Phase A: signaalvlag voor headless test-runner. Pas zetten na
+    // loop() zodat de runner zeker weet dat rAF al draait.
+    window._bootDone = true;
+    if(window._perfAuto){
+      // Programmatic test-API. Gebruikt dezelfde paden als de UI buttons,
+      // maar zonder DOM-clicks (canvas + WebGL HUD overlays zijn lastig
+      // klikbaar vanuit Playwright). Geen game-logica, alleen routing.
+      window._perfHooks = {
+        goToWorldSelect: ()=>{ try{ initAudio(); }catch(_){} goToWorldSelect(); },
+        pickWorld: (name)=>{
+          // Mirrors _wireMenuButtons: rebuildWorld als de wereld verandert,
+          // toon dan car-select scherm.
+          if(name && name!==window.activeWorld){ rebuildWorld(name); }
+          document.getElementById('sWorld').classList.add('hidden');
+          window.gameState='SELECT';
+          buildCarSelectUI();
+          document.getElementById('sSelect').classList.remove('hidden');
+        },
+        startRace: ()=>{ goToRace(); },
+        goToTitle: ()=>{ goToTitle(); },
+        // Force GO direct als debugging-handvat (slaat 5×700ms staggered
+        // light-sequence over). Niet standaard gebruikt door de runner —
+        // we wachten liever op de echte countdown via 'go.toFirstFrame'.
+        forceGo: ()=>{ /* placeholder, niet gebruikt */ },
+      };
+    }
   },50);
 }
