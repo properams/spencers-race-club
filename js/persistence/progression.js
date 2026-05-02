@@ -63,11 +63,16 @@ function checkUnlocks(finishPos){
   return newOnes;
 }
 
+// showUnlockToast: thin wrapper rond Notify.unlock. De oude #unlockToast DOM
+// staat nog in index.html maar wordt niet meer geschreven (DEPRECATED — FASE 4).
 function showUnlockToast(carDef){
-  const el=document.getElementById('unlockToast');if(!el)return;
-  el.textContent='🔓 UNLOCKED: '+carDef.brand+' '+carDef.name;
-  el.style.opacity='1';
-  setTimeout(()=>el.style.opacity='0',3200);
+  if(!carDef) return;
+  if(!window.Notify){
+    if(window.dbg)window.dbg.warn('notify','Notify niet ready, drop unlock',carDef&&carDef.name);
+    else console.warn('Notify not ready for showUnlockToast');
+    return;
+  }
+  window.Notify.unlock(carDef);
 }
 
 function showUnlocks(ids,idx=0){

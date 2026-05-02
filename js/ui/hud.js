@@ -27,9 +27,11 @@ let _currentGear=1;
 let _mmBounds=null;
 let _mmFrameCtr=0;
 
-// Banner/popup helpers (uit main.js verhuisd).
-//   popupTimeouts — array van setTimeout-handles voor showPopup-fade
-//   bannerTimer   — setTimeout-handle voor showBannerTop auto-hide
+// DEPRECATED: vervangen door Notify.* — verwijderen na visuele test (FASE 4).
+// popupTimeouts / bannerTimer waren state voor de oude #popupMsg + #bannerOverlay
+// fade-timers. Notify-facade gebruikt eigen rAF-tick, dus deze variabelen
+// worden niet meer gelezen. In FASE 4 weghalen samen met de DOM-elementen
+// #popupMsg / #bannerOverlay / #topBanner.
 let popupTimeouts=[];
 let bannerTimer=null;
 
@@ -97,30 +99,62 @@ function cacheHUDRefs(){
 }
 
 
+// showPopup / showBanner / showBannerTop / hideBanner zijn nu thin wrappers
+// rond window.Notify (zie js/ui/notifications.js + NOTIFICATIONS_PLAN.md).
+// Externe call-sites (cars/physics.js, worlds/*, ui/input.js, gameplay/*)
+// blijven werken zonder wijziging — ze raken automatisch de Notify-facade.
+
+// _inferPopupPriority: classificeert een popup-string naar Notify-priority
+// op basis van vaste tekst-patronen die throughout the codebase gebruikt
+// worden. Hogere prioriteit overrulet lager (race-leader > overtake > hint).
+function _inferPopupPriority(text){
+  if(/RACE LEADER/i.test(text)) return 100;
+  if(/FASTEST LAP/i.test(text)) return 90;
+  if(/OVERTAKE/i.test(text))    return 60;
+  if(/^▼\s*P\d/i.test(text))    return 50;
+  if(/DRIFT|MINI TURBO|FRESH TYRES|TYRES WORN|NITRO/i.test(text)) return 50;
+  if(/HARD LANDING|COLD TYRES/i.test(text)) return 40;
+  if(/CAM|MIRROR|LEADERBOARD|PIT ENTRY/i.test(text)) return 30;
+  return 40; // world hazards, generic
+}
+
 function showBannerTop(text,color,dur){
-  var el=document.getElementById('topBanner');if(!el)return;
-  el.textContent=text;el.style.color=color;
-  el.style.opacity='1';el.style.transform='translateX(-50%) translateY(0)';
-  clearTimeout(el._t);el._t=setTimeout(function(){el.style.opacity='0';el.style.transform='translateX(-50%) translateY(20px)';},dur||2000);
+  if(!window.Notify){
+    if(window.dbg)dbg.warn('notify','Notify niet ready, drop showBannerTop',text);
+    return;
+  }
+  // tracklimits.js stuurt 'LAP n / N'; weather.js stuurt 'RAIN INCOMING' etc.
+  // De eerste hoort in Zone B (subtiel, top-center), de tweede in Zone A.
+  var m=/^LAP\s+(\d+)\s*\/\s*(\d+)/i.exec(text);
+  if(m){ Notify.lap(+m[1],+m[2]); return; }
+  Notify.status(text,{color:color,dur:dur||2000,priority:70});
 }
 
 function showPopup(text,color,dur=1000){
-  const el=document.getElementById('popupMsg');
-  el.textContent=text;el.style.color=color;el.style.textShadow='0 0 14px '+color+',0 2px 6px rgba(0,0,0,.85)';
-  el.style.opacity='1'; // font-size now lives in CSS so it stays compact
-  popupTimeouts.forEach(t=>clearTimeout(t));
-  popupTimeouts=[setTimeout(()=>{const start=performance.now();const fade=now=>{const p=(now-start)/400;el.style.opacity=Math.max(0,1-p);if(p<1)requestAnimationFrame(fade);};requestAnimationFrame(fade);},dur)];
+  if(!window.Notify){
+    if(window.dbg)dbg.warn('notify','Notify niet ready, drop showPopup',text);
+    return;
+  }
+  Notify.status(text,{color:color,dur:dur,priority:_inferPopupPriority(text)});
 }
-
 
 function showBanner(text,color,dur){
-  if(bannerTimer)clearTimeout(bannerTimer);
-  const ov=document.getElementById('bannerOverlay'),el=document.getElementById('bannerText');
-  el.textContent=text;el.style.color=color;el.style.border='3px solid '+color;el.style.background='rgba(0,0,0,.8)';el.style.textShadow='0 0 20px '+color;
-  ov.style.display='block';if(dur)bannerTimer=setTimeout(hideBanner,dur);
+  if(!window.Notify){
+    if(window.dbg)dbg.warn('notify','Notify niet ready, drop showBanner',text);
+    return;
+  }
+  Notify.banner(text,color,dur);
 }
 
-function hideBanner(){document.getElementById('bannerOverlay').style.display='none';}
+// hideBanner: backward-compat shim. tracklimits.js + spacefx.js roepen 'm
+// aan na een recovery-cooldown. Notify auto-dismisst de banner via z'n eigen
+// dur-timer (zelfde 2000 ms), dus deze functie is in praktijk een no-op
+// behalve dat we de oude #bannerOverlay DOM-node leegmaken voor het geval
+// een eerdere boot-fallback 'm nog had ingevuld.
+function hideBanner(){
+  var ov=document.getElementById('bannerOverlay');
+  if(ov) ov.style.display='none';
+}
 
 
 function getPositions(){
