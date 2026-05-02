@@ -511,3 +511,338 @@
     aspect-ratio:16/10;height:auto;max-height:34vh;min-height:140px
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────
+   MOBILE PORTRAIT REDESIGN — parallel .selMobile block.
+   Hidden by default; visible on portrait phones only. The legacy
+   .selHeader and .selBody are hidden on this breakpoint so the new
+   layout takes over without restructuring the desktop DOM.
+   ────────────────────────────────────────────────────────────────────── */
+.selMobile{display:none}
+
+@media (orientation:portrait) and (max-width:600px){
+  /* Hide legacy desktop layout pieces */
+  #sSelect > .selHeader,
+  #sSelect > .selBody{display:none !important}
+  /* Override .screen flex centering so the mobile block fills the screen */
+  #sSelect{
+    align-items:stretch !important;
+    justify-content:flex-start !important;
+    overflow-y:auto;overflow-x:hidden
+  }
+
+  .selMobile{
+    display:flex;flex-direction:column;
+    position:relative;z-index:2;
+    width:100%;max-width:480px;margin:0 auto;
+    min-height:100dvh;
+    padding-bottom:calc(118px + env(safe-area-inset-bottom,0px));
+    color:#f5f3ff;
+    font-family:'Rajdhani',sans-serif;
+    -webkit-tap-highlight-color:transparent
+  }
+
+  /* ── TOP BAR ─────────────────────────────────────────────────────── */
+  .selM-topbar{
+    position:sticky;top:0;z-index:3;
+    padding:max(env(safe-area-inset-top),10px) 14px 10px;
+    background:linear-gradient(180deg,rgba(10,6,18,.95) 0%,rgba(10,6,18,.85) 70%,transparent 100%);
+    -webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+    display:flex;align-items:center;gap:10px
+  }
+  .selM-iconBtn{
+    width:40px;height:40px;border-radius:12px;
+    background:rgba(255,255,255,.04);
+    border:1px solid rgba(167,139,250,.12);
+    display:grid;place-items:center;
+    color:#f5f3ff;flex-shrink:0;cursor:pointer;
+    transition:transform .15s,background .15s;padding:0
+  }
+  .selM-iconBtn:active{transform:scale(.92);background:rgba(255,45,138,.15)}
+  .selM-iconBtn svg{width:18px;height:18px}
+  .selM-trackPill{
+    flex:1;height:40px;border-radius:12px;
+    background:linear-gradient(135deg,rgba(217,70,239,.18),rgba(255,45,138,.12));
+    border:1px solid rgba(217,70,239,.35);
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    padding:0 12px;color:#f5f3ff;cursor:pointer;
+    font-family:'Orbitron',sans-serif;font-weight:700;font-size:11px;
+    letter-spacing:.12em;transition:transform .15s;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+  }
+  .selM-trackPill:active{transform:scale(.98)}
+  .selM-trackEmoji{font-size:15px}
+  .selM-trackPill svg{flex-shrink:0;opacity:.7}
+  .selM-coinsPill{
+    height:40px;border-radius:12px;
+    background:rgba(251,191,36,.08);
+    border:1px solid rgba(251,191,36,.25);
+    display:flex;align-items:center;gap:6px;
+    padding:0 12px;color:#fbbf24;
+    font-family:'Orbitron',sans-serif;font-weight:700;font-size:12px;
+    flex-shrink:0
+  }
+  .selM-coinDot{
+    width:11px;height:11px;border-radius:50%;
+    background:radial-gradient(circle at 30% 30%,#fcd34d,#d97706);
+    box-shadow:0 0 8px rgba(251,191,36,.5)
+  }
+
+  /* ── TITLE BLOCK ─────────────────────────────────────────────────── */
+  .selM-titleBlock{padding:6px 18px 12px}
+  .selM-title{
+    font-family:'Orbitron',sans-serif;font-weight:900;font-size:26px;
+    line-height:1;letter-spacing:.02em;margin:0;
+    background:linear-gradient(135deg,#ff2d8a 0%,#d946ef 100%);
+    -webkit-background-clip:text;background-clip:text;
+    color:transparent
+  }
+  .selM-subtitle{
+    margin-top:6px;font-size:11px;color:#6b5b8c;
+    letter-spacing:.08em;display:flex;align-items:center;gap:8px;
+    font-family:'Orbitron',sans-serif;font-weight:700
+  }
+  .selM-progress{
+    flex:1;height:3px;background:rgba(255,255,255,.06);
+    border-radius:999px;overflow:hidden;max-width:120px
+  }
+  .selM-progressFill{
+    height:100%;width:0%;transition:width .3s ease;
+    background:linear-gradient(90deg,#ff2d8a,#d946ef);
+    box-shadow:0 0 10px #ff2d8a
+  }
+
+  /* ── TIER TABS ───────────────────────────────────────────────────── */
+  .selM-tabs{
+    display:flex;gap:6px;padding:0 14px;
+    overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none
+  }
+  .selM-tabs::-webkit-scrollbar{display:none}
+  .selM-tab{
+    flex-shrink:0;padding:7px 14px;border-radius:999px;
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(167,139,250,.12);
+    color:#a89cc7;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+    letter-spacing:.1em;text-transform:uppercase;
+    cursor:pointer;transition:all .2s
+  }
+  .selM-tab.selM-tabActive{
+    background:linear-gradient(135deg,rgba(255,45,138,.2),rgba(217,70,239,.2));
+    border-color:#ff2d8a;color:#f5f3ff;
+    box-shadow:0 0 16px rgba(255,45,138,.3)
+  }
+
+  /* ── CAROUSEL ────────────────────────────────────────────────────── */
+  .selM-carouselWrap{position:relative;margin-top:14px;height:300px}
+  .selM-carousel{
+    display:flex;overflow-x:auto;
+    scroll-snap-type:x mandatory;scroll-behavior:smooth;
+    height:100%;gap:14px;
+    padding:0 calc(50% - 130px);
+    scrollbar-width:none;-ms-overflow-style:none;
+    -webkit-overflow-scrolling:touch
+  }
+  .selM-carousel::-webkit-scrollbar{display:none}
+  .selM-card{
+    flex-shrink:0;width:260px;height:260px;
+    scroll-snap-align:center;position:relative;
+    border-radius:26px;overflow:hidden;
+    transform:scale(.88);opacity:.5;
+    transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;
+    cursor:pointer;
+    --car-accent:#ff2d8a;
+    --car-glow:rgba(255,45,138,.4)
+  }
+  .selM-card.selM-cardActive{transform:scale(1);opacity:1}
+  .selM-card.selM-cardLocked{cursor:not-allowed}
+  .selM-cardBg{
+    position:absolute;inset:0;
+    background:linear-gradient(135deg,#120a1f 0%,#1a0f2e 100%);
+    border:1px solid rgba(255,45,138,.18)
+  }
+  .selM-cardBg::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(circle at 50% 70%,var(--car-glow) 0%,transparent 60%)
+  }
+  .selM-cardBg::after{
+    content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,transparent,var(--car-accent),transparent);
+    box-shadow:0 0 18px var(--car-accent)
+  }
+  .selM-cardCorners{position:absolute;inset:12px;pointer-events:none}
+  .selM-cardCorners::before,.selM-cardCorners::after{
+    content:'';position:absolute;width:18px;height:18px;
+    border:2px solid var(--car-accent);opacity:.7
+  }
+  .selM-cardCorners::before{
+    top:0;left:0;border-right:none;border-bottom:none;
+    border-top-left-radius:8px
+  }
+  .selM-cardCorners::after{
+    bottom:0;right:0;border-left:none;border-top:none;
+    border-bottom-right-radius:8px
+  }
+  .selM-cardCanvas{
+    position:absolute;inset:0;width:100%;height:100%;
+    display:block
+  }
+  .selM-cardCanvas.selM-cardCanvasLocked{filter:grayscale(.85) brightness(.55)}
+  .selM-cardBadge{
+    position:absolute;top:14px;left:14px;z-index:2;
+    padding:4px 10px;border-radius:6px;
+    background:rgba(0,0,0,.55);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    font-family:'Orbitron',sans-serif;font-weight:700;font-size:9px;
+    letter-spacing:.15em;color:var(--car-accent);
+    border:1px solid var(--car-accent)
+  }
+  .selM-cardLock{
+    position:absolute;top:14px;right:14px;z-index:2;
+    width:28px;height:28px;border-radius:50%;
+    background:rgba(0,0,0,.7);display:grid;place-items:center;
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)
+  }
+  .selM-cardName{
+    position:absolute;left:16px;right:16px;bottom:16px;z-index:2
+  }
+  .selM-cardBrand{
+    font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;
+    letter-spacing:.2em;color:#a89cc7;margin-bottom:2px
+  }
+  .selM-cardModel{
+    font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;
+    letter-spacing:.04em;color:#fff;
+    text-shadow:0 2px 12px rgba(0,0,0,.8)
+  }
+  .selM-cardPrice{
+    margin-top:4px;font-family:'Rajdhani',sans-serif;font-weight:700;
+    font-size:12px;letter-spacing:.08em;color:#ffcc44
+  }
+  .selM-cardPrice.afford{color:#7dffb0;text-shadow:0 0 6px rgba(125,255,176,.4)}
+
+  /* ── DOTS ────────────────────────────────────────────────────────── */
+  .selM-dots{
+    display:flex;justify-content:center;gap:6px;margin-top:12px
+  }
+  .selM-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:rgba(255,255,255,.15);transition:all .3s
+  }
+  .selM-dot.selM-dotActive{
+    width:20px;border-radius:999px;
+    background:linear-gradient(90deg,#ff2d8a,#d946ef);
+    box-shadow:0 0 8px #ff2d8a
+  }
+
+  /* ── STATS STRIP ─────────────────────────────────────────────────── */
+  .selM-stats{
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+    margin:14px 14px 0
+  }
+  .selM-stat{
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(167,139,250,.12);
+    border-radius:14px;padding:9px 10px;text-align:center
+  }
+  .selM-statLbl{
+    font-family:'Orbitron',sans-serif;font-size:8.5px;font-weight:700;
+    letter-spacing:.18em;color:#6b5b8c;margin-bottom:4px
+  }
+  .selM-statVal{
+    font-family:'Orbitron',sans-serif;font-size:15px;font-weight:900;
+    color:#f5f3ff;line-height:1
+  }
+  .selM-statUnit{
+    font-size:9px;color:#a89cc7;margin-left:2px;font-weight:600
+  }
+  .selM-statBar{
+    margin-top:6px;height:3px;background:rgba(255,255,255,.06);
+    border-radius:999px;overflow:hidden
+  }
+  .selM-statBarFill{
+    height:100%;width:0%;border-radius:999px;
+    background:linear-gradient(90deg,#ff2d8a,#d946ef);
+    transition:width .25s ease-out
+  }
+
+  /* ── OPTIONS ─────────────────────────────────────────────────────── */
+  .selM-options{
+    margin-top:16px;padding:0 14px;
+    display:flex;flex-direction:column;gap:10px
+  }
+  .selM-optionRow{display:flex;align-items:center;gap:10px}
+  .selM-optionLabel{
+    width:60px;flex-shrink:0;
+    font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;
+    letter-spacing:.18em;color:#6b5b8c
+  }
+  .selM-chips{
+    flex:1;display:flex;gap:4px;
+    background:rgba(255,255,255,.03);
+    border:1px solid rgba(167,139,250,.12);
+    border-radius:12px;padding:4px
+  }
+  .selM-chip{
+    flex:1;height:34px;border-radius:8px;
+    background:transparent;border:none;color:#a89cc7;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
+    letter-spacing:.05em;cursor:pointer;transition:all .18s;
+    display:flex;align-items:center;justify-content:center;gap:4px;
+    padding:0 6px
+  }
+  .selM-chip.selM-chipActive{
+    background:linear-gradient(135deg,#ff2d8a,#d946ef);color:#fff;
+    box-shadow:0 4px 14px rgba(255,45,138,.4)
+  }
+  .selM-chipIcon{font-size:14px;line-height:1}
+
+  /* ── CTA BAR (sticky bottom) ─────────────────────────────────────── */
+  .selM-ctaBar{
+    position:fixed;left:0;right:0;bottom:0;z-index:5;
+    padding:10px 14px max(env(safe-area-inset-bottom),12px);
+    background:linear-gradient(180deg,transparent 0%,rgba(10,6,18,.92) 30%,#0a0612 100%);
+    -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)
+  }
+  .selM-ctaBarInner{max-width:480px;margin:0 auto}
+  .selM-ctaBtn{
+    width:100%;height:56px;border:none;border-radius:16px;
+    background:linear-gradient(135deg,#ff2d8a 0%,#d946ef 60%,#6d28d9 100%);
+    color:#fff;cursor:pointer;position:relative;overflow:hidden;
+    font-family:'Orbitron',sans-serif;font-weight:900;font-size:16px;
+    letter-spacing:.18em;
+    box-shadow:0 8px 26px rgba(255,45,138,.4),
+               0 2px 8px rgba(217,70,239,.3),
+               inset 0 1px 0 rgba(255,255,255,.2);
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    transition:transform .15s
+  }
+  .selM-ctaBtn:active{transform:scale(.97)}
+  .selM-ctaBtn::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+    transform:translateX(-100%);
+    animation:selMShine 3s ease-in-out infinite
+  }
+  @keyframes selMShine{
+    0%,60%{transform:translateX(-100%)}
+    100%{transform:translateX(100%)}
+  }
+  .selM-ctaSummary{
+    display:flex;justify-content:center;align-items:center;gap:6px;
+    margin-top:7px;font-size:10.5px;color:#6b5b8c;
+    letter-spacing:.08em;text-transform:uppercase;
+    font-family:'Rajdhani',sans-serif;font-weight:700;
+    flex-wrap:wrap
+  }
+  .selM-ctaSummary .selM-sep{opacity:.4}
+}
+
+/* Smaller Android phones — 360px viewport, shorter screens. */
+@media (orientation:portrait) and (max-width:380px){
+  .selM-card{width:228px;height:228px}
+  .selM-carousel{padding:0 calc(50% - 114px)}
+  .selM-carouselWrap{height:264px}
+  .selM-title{font-size:22px}
+  .selM-cardModel{font-size:18px}
+}
