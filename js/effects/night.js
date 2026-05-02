@@ -235,9 +235,12 @@ function updateAmbientWindSpeed(dt){
   // ratio=0 audible was. Threshold zat oorspronkelijk in engine.js
   // _carWindGain (sinds disabled) en is hier verloren gegaan.
   // Boven 65% topspeed: lineair naar 0.065 max op ratio=1.0.
-  // Rain-baseline 0.018 blijft behouden zodat regen-suis nog hoorbaar is.
+  // Rain-bonus (0.018) wordt óók speed-gated zodat regen-races op de
+  // grid ook stil zijn — rain heeft eigen audio (thunder + rain particles
+  // visueel) die niet afhankelijk is van wind-loop voor immersion.
   const speedWind=ratio<0.65?0:(ratio-0.65)*(0.065/0.35);
-  const target=speedWind+(isRain?.018:0);
+  const rainBoost=isRain?ratio*0.018:0;
+  const target=speedWind+rainBoost;
   const cur=_ambientWindGain.gain.value;
   // Smooth ramp — fast attack, slow release
   const rate=target>cur?8:2;
