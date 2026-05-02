@@ -619,4 +619,372 @@ function buildCarSelectUI(){
     };
   }
   _updateSelectSummary();
+  // Build the parallel mobile-portrait UI. CSS keeps it hidden on
+  // desktop/landscape; on portrait phones it replaces the legacy layout.
+  _buildMobileSelect();
 }
+
+// ──────────────────────────────────────────────────────────────────────
+// MOBILE PORTRAIT REDESIGN — parallel renderer.
+// State is shared with the desktop UI via window.* globals (selCarId,
+// _selectedLaps, difficulty, isDark, _activeTier, _coins, _unlockedCars,
+// _carColorOverride, activeWorld). Both renderers update the same
+// state setters so switching orientation mid-screen stays consistent.
+// ──────────────────────────────────────────────────────────────────────
+
+let _selMScrollTimer=null;
+let _selMScrollWired=false;
+
+const _SELM_WORLD_ICONS={
+  grandprix:'🏎️',space:'🚀',deepsea:'🌊',candy:'🍬',
+  neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢'
+};
+const _SELM_WORLD_NAMES={
+  grandprix:'GRAND PRIX',space:'COSMIC',deepsea:'DEEP SEA',candy:'SUGAR RUSH',
+  neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK'
+};
+const _SELM_TIER_LABEL={super:'SUPER',f1:'F1',muscle:'MUSCLE',electric:'ELECTRIC'};
+
+function _selMVibrate(ms){
+  try{if(navigator.vibrate)navigator.vibrate(ms);}catch(e){}
+}
+
+// Filtered list of car defs based on _activeTier. Locked cars stay in
+// the list (visible with padlock badge) but are not selectable.
+function _selMFilteredCars(){
+  if(!window.CAR_DEFS)return [];
+  if(_activeTier==='all')return CAR_DEFS.slice();
+  return CAR_DEFS.filter(d=>d.type===_activeTier);
+}
+
+// Draw the pre-baked snapshot into a card's <canvas>. Cover-fit so the
+// car fills the square frame without letterbox; podium-edges may crop.
+function _selMDrawCardCanvas(canvas,defId){
+  if(!canvas)return;
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const cw=Math.max(2,(canvas.clientWidth||260)*dpr|0);
+  const ch=Math.max(2,(canvas.clientHeight||260)*dpr|0);
+  if(canvas.width!==cw||canvas.height!==ch){canvas.width=cw;canvas.height=ch;}
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,cw,ch);
+  const snap=_snapCache[defId];
+  if(!snap)return;
+  // Cover-fit: scale to fill card, center horizontally, crop overflow.
+  const sa=SNAP_W/SNAP_H,da=cw/ch;
+  let dw,dh,dx,dy;
+  if(da<sa){dh=ch;dw=ch*sa;dx=(cw-dw)/2;dy=0;}
+  else     {dw=cw;dh=cw/sa;dx=0;dy=(ch-dh)/2;}
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.drawImage(snap,dx,dy,dw,dh);
+}
+
+// Convert def.accent (or def.color) to a CSS hex string. Used as the
+// per-car accent for borders, glow, badge and corner brackets.
+function _selMAccentHex(def){
+  const v=(def.accent!=null?def.accent:def.color)|0;
+  return '#'+v.toString(16).padStart(6,'0');
+}
+function _selMHexToRgba(def,alpha){
+  const v=(def.accent!=null?def.accent:def.color)|0;
+  const r=(v>>16)&0xff,g=(v>>8)&0xff,b=v&0xff;
+  return 'rgba('+r+','+g+','+b+','+alpha+')';
+}
+
+// Build/rebuild the carousel cards based on the active tier filter.
+// Each card has its own <canvas> drawn from the pre-baked snapshot.
+function _selMRenderCarousel(){
+  const carousel=document.getElementById('selMCarousel');
+  const dotsEl=document.getElementById('selMDots');
+  if(!carousel||!dotsEl)return;
+  const list=_selMFilteredCars();
+  carousel.innerHTML='';dotsEl.innerHTML='';
+  if(!list.length)return;
+  // If selCarId is filtered out, fall back to first in list.
+  let activeIdx=list.findIndex(d=>d.id===selCarId);
+  if(activeIdx<0){activeIdx=0;selCarId=list[0].id;}
+  list.forEach((def,i)=>{
+    const unlocked=_unlockedCars.has(def.id);
+    const card=document.createElement('div');
+    card.className='selM-card'+(i===activeIdx?' selM-cardActive':'')+(unlocked?'':' selM-cardLocked');
+    card.dataset.defId=def.id;
+    card.style.setProperty('--car-accent',_selMAccentHex(def));
+    card.style.setProperty('--car-glow',_selMHexToRgba(def,.45));
+    const tierLbl=_SELM_TIER_LABEL[def.type]||(def.type||'').toUpperCase();
+    let lockHtml='';
+    if(!unlocked){
+      const price=_carPrices[def.id];
+      const coins=window._coins|0;
+      const afford=price&&coins>=price;
+      lockHtml=
+        '<div class="selM-cardLock">'+
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">'+
+            '<rect x="3" y="11" width="18" height="11" rx="2"/>'+
+            '<path d="M7 11V7a5 5 0 0 1 10 0v4"/>'+
+          '</svg>'+
+        '</div>';
+      var priceHtml=price?'<div class="selM-cardPrice'+(afford?' afford':'')+'">'+price+' COINS</div>':'';
+    }
+    card.innerHTML=
+      '<div class="selM-cardBg"></div>'+
+      '<div class="selM-cardCorners"></div>'+
+      '<canvas class="selM-cardCanvas'+(unlocked?'':' selM-cardCanvasLocked')+'"></canvas>'+
+      '<div class="selM-cardBadge">'+tierLbl+'</div>'+
+      lockHtml+
+      '<div class="selM-cardName">'+
+        '<div class="selM-cardBrand">'+def.brand+'</div>'+
+        '<div class="selM-cardModel">'+def.name.toUpperCase()+'</div>'+
+        (priceHtml||'')+
+      '</div>';
+    // Tap on a non-active card → snap to it via scrollIntoView.
+    card.addEventListener('click',()=>{
+      if(card.classList.contains('selM-cardActive'))return;
+      card.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+    });
+    carousel.appendChild(card);
+    const dot=document.createElement('div');
+    dot.className='selM-dot'+(i===activeIdx?' selM-dotActive':'');
+    dotsEl.appendChild(dot);
+  });
+  // Draw all canvases on next frame (after layout so clientWidth is real).
+  requestAnimationFrame(()=>{
+    carousel.querySelectorAll('.selM-cardCanvas').forEach((cvs,i)=>{
+      _selMDrawCardCanvas(cvs,list[i].id);
+    });
+    // Snap scroll position to the active card without animation.
+    const cards=carousel.querySelectorAll('.selM-card');
+    if(cards[activeIdx]){
+      const c=cards[activeIdx];
+      const target=c.offsetLeft+c.clientWidth/2-carousel.clientWidth/2;
+      carousel.scrollTo({left:target,behavior:'auto'});
+    }
+  });
+  _selMWireScroll();
+}
+
+// One-time scroll listener — debounced, finds the centered card and
+// updates state via _selMSetActiveDef. We re-bind as needed because
+// _selMRenderCarousel rebuilds carousel children on tier change but
+// the carousel container itself is stable.
+function _selMWireScroll(){
+  if(_selMScrollWired)return;
+  const carousel=document.getElementById('selMCarousel');
+  if(!carousel)return;
+  _selMScrollWired=true;
+  carousel.addEventListener('scroll',()=>{
+    if(_selMScrollTimer)clearTimeout(_selMScrollTimer);
+    _selMScrollTimer=setTimeout(()=>{
+      const cards=carousel.querySelectorAll('.selM-card');
+      if(!cards.length)return;
+      const center=carousel.scrollLeft+carousel.clientWidth/2;
+      let closest=0,closestDist=Infinity;
+      cards.forEach((c,i)=>{
+        const cc=c.offsetLeft+c.clientWidth/2;
+        const dist=Math.abs(cc-center);
+        if(dist<closestDist){closestDist=dist;closest=i;}
+      });
+      const list=_selMFilteredCars();
+      const def=list[closest];if(!def)return;
+      const prevId=selCarId;
+      // Update visual classes immediately for snappy feedback.
+      cards.forEach((c,i)=>c.classList.toggle('selM-cardActive',i===closest));
+      document.querySelectorAll('.selM-dot').forEach((d,i)=>d.classList.toggle('selM-dotActive',i===closest));
+      // Locked cars are visible but stay non-selectable — preview
+      // updates anyway so users see what they're working towards.
+      if(def.id!==prevId){
+        if(_unlockedCars.has(def.id)){
+          // Sync with desktop selection logic: drives stats, snapshot, etc.
+          _selectPreviewCar(def.id);
+          // Mirror selection to legacy garage list visual state.
+          document.querySelectorAll('.carCard').forEach(el=>{
+            el.classList.toggle('sel',el.dataset.defId==String(def.id));
+          });
+        }else{
+          // Locked — show preview info but don't commit selection.
+          _selMRenderInfo(def);
+        }
+        _selMRenderInfo(def);
+        _selMVibrate(8);
+      }
+    },70);
+  });
+}
+
+// Render stats strip (POWER / TOP SPEED / 0-100) and bottom summary.
+// Stats are derived from the same fields as the desktop prevSpecs line:
+// hp = topSpd * 820, topKmh = topSpd * 255, accel = 1/accel rough seconds.
+function _selMRenderInfo(def){
+  if(!def)return;
+  const hp=Math.round(def.topSpd*820);
+  const topKmh=Math.round(def.topSpd*255);
+  // 0-100 seconds — accel field is a per-frame increment (~.017–.026).
+  // Map to a feel-correct seconds value: slower-accel cars get ~3.5s,
+  // faster ones ~1.8s. Linear scale based on observed range.
+  const sec=Math.max(1.6,Math.min(4.5,5.5 - def.accel*150));
+  const stats=document.getElementById('selMStats');
+  if(stats){
+    stats.innerHTML=
+      '<div class="selM-stat">'+
+        '<div class="selM-statLbl">POWER</div>'+
+        '<div class="selM-statVal">'+hp+'<span class="selM-statUnit">HP</span></div>'+
+        '<div class="selM-statBar"><div class="selM-statBarFill" style="width:'+Math.min(100,hp/11)+'%"></div></div>'+
+      '</div>'+
+      '<div class="selM-stat">'+
+        '<div class="selM-statLbl">TOP SPEED</div>'+
+        '<div class="selM-statVal">'+topKmh+'<span class="selM-statUnit">KM/H</span></div>'+
+        '<div class="selM-statBar"><div class="selM-statBarFill" style="width:'+Math.min(100,topKmh/3.8)+'%"></div></div>'+
+      '</div>'+
+      '<div class="selM-stat">'+
+        '<div class="selM-statLbl">0—100</div>'+
+        '<div class="selM-statVal">'+sec.toFixed(1)+'<span class="selM-statUnit">S</span></div>'+
+        '<div class="selM-statBar"><div class="selM-statBarFill" style="width:'+Math.max(20,100-sec*22)+'%"></div></div>'+
+      '</div>';
+  }
+  _selMRenderSummary(def);
+}
+
+function _selMRenderSummary(def){
+  const el=document.getElementById('selMSummary');
+  if(!el)return;
+  if(!def)def=CAR_DEFS.find(d=>d.id===selCarId)||CAR_DEFS[0];
+  const dNames=['EASY','NORMAL','HARD'];
+  const mode=isDark?'DARK':'DAY';
+  el.innerHTML=
+    '<span>'+def.brand+' '+def.name.toUpperCase()+'</span>'+
+    '<span class="selM-sep">·</span>'+
+    '<span>'+_selectedLaps+' LAPS</span>'+
+    '<span class="selM-sep">·</span>'+
+    '<span>'+dNames[difficulty]+'</span>'+
+    '<span class="selM-sep">·</span>'+
+    '<span>'+mode+'</span>';
+}
+
+function _selMRenderHeader(){
+  const u=_unlockedCars.size,t=(window.CAR_DEFS||[]).length;
+  const coinsEl=document.getElementById('selMCoins');
+  if(coinsEl)coinsEl.textContent=((window._coins|0)).toLocaleString('en');
+  const unEl=document.getElementById('selMUnlocked');
+  if(unEl)unEl.textContent=u+' / '+t+' UNLOCKED';
+  const fill=document.getElementById('selMProgFill');
+  if(fill)fill.style.width=(t>0?(u/t)*100:0)+'%';
+  const tNameEl=document.getElementById('selMTrackName');
+  const tEmojiEl=document.getElementById('selMTrackEmoji');
+  if(tNameEl)tNameEl.textContent=_SELM_WORLD_NAMES[activeWorld]||activeWorld.toUpperCase();
+  if(tEmojiEl)tEmojiEl.textContent=_SELM_WORLD_ICONS[activeWorld]||'⬢';
+}
+
+function _selMSyncTabs(){
+  document.querySelectorAll('#selMTabs .selM-tab').forEach(t=>{
+    t.classList.toggle('selM-tabActive',t.dataset.tier===_activeTier);
+  });
+}
+function _selMSyncChips(){
+  document.querySelectorAll('#selMLaps .selM-chip').forEach(c=>{
+    c.classList.toggle('selM-chipActive',+c.dataset.val===+_selectedLaps);
+  });
+  document.querySelectorAll('#selMDiff .selM-chip').forEach(c=>{
+    c.classList.toggle('selM-chipActive',+c.dataset.val===+difficulty);
+  });
+  const modeVal=isDark?'dark':'day';
+  document.querySelectorAll('#selMMode .selM-chip').forEach(c=>{
+    c.classList.toggle('selM-chipActive',c.dataset.val===modeVal);
+  });
+}
+
+let _selMWired=false;
+function _selMWireOnce(){
+  if(_selMWired)return;
+  _selMWired=true;
+  const back=document.getElementById('selMBack');
+  if(back)back.addEventListener('click',()=>{
+    _selMVibrate(8);
+    if(typeof goToWorldSelect==='function')goToWorldSelect();
+  });
+  const track=document.getElementById('selMTrack');
+  if(track)track.addEventListener('click',()=>{
+    _selMVibrate(8);
+    if(typeof goToWorldSelect==='function')goToWorldSelect();
+  });
+  const race=document.getElementById('selMRace');
+  if(race)race.addEventListener('click',()=>{
+    _selMVibrate(15);
+    if(typeof goToRace==='function')goToRace();
+  });
+  // Tier tabs — share _activeTier with desktop garage list.
+  document.querySelectorAll('#selMTabs .selM-tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      _activeTier=tab.dataset.tier;
+      _selMSyncTabs();
+      // Keep desktop tabs visually in sync too in case user rotates.
+      document.querySelectorAll('.tierTab').forEach(t=>t.classList.toggle('tierTabSel',t.dataset.tier===_activeTier));
+      _renderGarageList();
+      _selMRenderCarousel();
+      const def=CAR_DEFS.find(d=>d.id===selCarId);
+      if(def)_selMRenderInfo(def);
+      _selMVibrate(8);
+    });
+  });
+  // LAPS chips
+  document.querySelectorAll('#selMLaps .selM-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const n=+chip.dataset.val;
+      _selectedLaps=n;TOTAL_LAPS=n;
+      try{localStorage.setItem('src_lap',n);}catch(e){}
+      // Mirror to desktop segmented control.
+      [1,3,5].forEach(m=>{const b=document.getElementById('lap'+m);if(b)b.classList.toggle('setOptSel',m===n);});
+      _selMSyncChips();
+      _selMRenderSummary();
+      _updateSelectSummary();
+      _selMVibrate(8);
+    });
+  });
+  // DIFF chips
+  document.querySelectorAll('#selMDiff .selM-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const i=+chip.dataset.val;
+      difficulty=i;
+      try{localStorage.setItem('src_difficulty',i);}catch(e){}
+      // Mirror to desktop segmented control.
+      ['dEasy','dNorm','dHard'].forEach((id,j)=>{
+        const e=document.getElementById(id);if(!e)return;
+        e.classList.toggle('setOptSel',j===i);
+        e.classList.toggle('diffSel',j===i);
+      });
+      _selMSyncChips();
+      if(typeof _renderRival==='function')_renderRival();
+      _selMRenderSummary();
+      _updateSelectSummary();
+      _selMVibrate(8);
+    });
+  });
+  // MODE chips (Day / Dark) — reuses isDark + toggleNight().
+  document.querySelectorAll('#selMMode .selM-chip').forEach(chip=>{
+    chip.addEventListener('click',()=>{
+      const wantDark=chip.dataset.val==='dark';
+      if(wantDark!==isDark){
+        if(typeof initAudio==='function')initAudio();
+        if(typeof startSelectMusic==='function')startSelectMusic();
+        if(typeof toggleNight==='function')toggleNight();
+      }
+      // Mirror to desktop segmented control.
+      const off=document.getElementById('togNightOff'),on=document.getElementById('togNightOn');
+      if(off)off.classList.toggle('setOptSel',!isDark);
+      if(on)on.classList.toggle('setOptSel',isDark);
+      _selMSyncChips();
+      _selMRenderSummary();
+      _updateSelectSummary();
+      _selMVibrate(8);
+    });
+  });
+}
+
+function _buildMobileSelect(){
+  if(!document.querySelector('.selMobile'))return;
+  _selMWireOnce();
+  _selMRenderHeader();
+  _selMSyncTabs();
+  _selMSyncChips();
+  _selMRenderCarousel();
+  const def=CAR_DEFS.find(d=>d.id===selCarId)||CAR_DEFS[0];
+  if(def)_selMRenderInfo(def);
+}
+window._buildMobileSelect=_buildMobileSelect;
