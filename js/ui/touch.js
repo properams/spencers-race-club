@@ -38,20 +38,47 @@ function initTouchControls(){
   _touchControlsReady=true;
   const tc=document.getElementById('touchControls');
   const canVibrate='vibrate' in navigator;
-  // Use pointer events for unified touch+mouse support
+  // Double-tap GAS = nitro. Tracks the last gas-press timestamp so a second
+  // press within _DOUBLE_TAP_MS triggers KeyN. The N-flag is held only for
+  // the duration of the second press so single taps remain pure gas.
+  const _DOUBLE_TAP_MS=350;
+  let _lastGasDown=0;
+  let _gasNitroLatched=false;
+  // Use pointer events for unified touch+mouse support. Skip non-interactive
+  // buttons (data-key="") so the nitro indicator can live in the touch DOM
+  // without intercepting taps near the speedometer.
   tc.querySelectorAll('.tcBtn').forEach(btn=>{
     const key=btn.dataset.key;
+    if(!key)return;
     const hapticMs=_HAPTIC_MS[key]||0;
     const alsoGas=_ALSO_GAS[key];
+    const isGas=btn.id==='tcGas';
     const on=e=>{
       e.preventDefault();e.stopPropagation();
       keys[key]=true;btn.classList.add('active');
       if(alsoGas)keys['ArrowUp']=true;
+      if(isGas){
+        const now=performance.now();
+        if(now-_lastGasDown<=_DOUBLE_TAP_MS){
+          // Second tap of a double-tap: arm nitro for the duration of this press.
+          keys['KeyN']=true;_gasNitroLatched=true;
+          btn.classList.add('nitroFlash');
+          if(canVibrate)try{navigator.vibrate(_HAPTIC_MS.KeyN||18);}catch(_){}
+          // Reset so a third tap doesn't immediately re-trigger.
+          _lastGasDown=0;
+        }else{
+          _lastGasDown=now;
+        }
+      }
       if(canVibrate&&hapticMs>0)try{navigator.vibrate(hapticMs);}catch(_){}
     };
     const off=e=>{
       e.preventDefault();e.stopPropagation();
       keys[key]=false;btn.classList.remove('active');
+      if(isGas&&_gasNitroLatched){
+        keys['KeyN']=false;_gasNitroLatched=false;
+        btn.classList.remove('nitroFlash');
+      }
       // Only release ArrowUp if gas button isn't also pressed
       if(alsoGas){
         const gasBtn=document.getElementById('tcGas');
