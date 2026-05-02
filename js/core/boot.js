@@ -178,17 +178,16 @@ async function boot(){
       if(window.dbg)dbg.error('boot',e,'buildScene crashed');
       else console.error('buildScene crashed:',e);
     }
-    // Warm-up render: forceer GPU shader-compilatie voor titel verschijnt.
+    // PHASE-C: buildScene() doet zelf nu een renderWithPostFX warm-render
+    // aan het einde (zie scene.js build:postfxWarm). De extra renderWithPostFX
+    // call die hier voorheen stond is daardoor dubbel werk; alleen de
+    // loading-screen rAF-fade blijft staan. Het canvas heeft al een image
+    // van buildScene's warm-render dus de title verschijnt zonder flash.
     if(renderer&&scene&&camera){
       if(_loadEl){
         const ls=_loadEl.querySelector('#loadStep');
         if(ls)ls.textContent='COMPILING SHADERS...';
       }
-      // Use post-FX render path (bloom/vignette/grading) when available,
-      // val terug op directe renderer.render bij ontbreken (eerste frame
-      // moet shader-compilatie triggeren langs hetzelfde pad als de loop).
-      if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
-      else renderer.render(scene,camera);
       requestAnimationFrame(()=>{requestAnimationFrame(()=>{
         if(_loadEl)_loadEl.style.display='none';
       });});
