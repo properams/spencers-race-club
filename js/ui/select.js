@@ -906,6 +906,17 @@ function _selMWireOnce(){
   });
   const race=document.getElementById('selMRace');
   if(race)race.addEventListener('click',()=>{
+    // Block race start when the visually-active card is a locked car.
+    // Keeps the summary/preview consistent with the carousel center
+    // without committing selCarId to a locked def.
+    const activeCard=document.querySelector('.selM-card.selM-cardActive');
+    if(activeCard&&activeCard.classList.contains('selM-cardLocked')){
+      _selMVibrate(20);
+      const id=+activeCard.dataset.defId;
+      const hint=(typeof _unlockHints!=='undefined'&&_unlockHints[id])||'complete challenges';
+      if(typeof showPopup==='function')showPopup('🔒 LOCKED — '+hint,'#ff6644',1800);
+      return;
+    }
     _selMVibrate(15);
     if(typeof goToRace==='function')goToRace();
   });
@@ -988,3 +999,32 @@ function _buildMobileSelect(){
   if(def)_selMRenderInfo(def);
 }
 window._buildMobileSelect=_buildMobileSelect;
+
+// Redraw card canvases + recenter the active card on viewport changes.
+// Necessary because clientWidth changes between portrait/landscape and
+// canvas backing-store needs re-DPR'ing.
+let _selMResizeRaf=0;
+function _selMHandleResize(){
+  if(_selMResizeRaf)return;
+  _selMResizeRaf=requestAnimationFrame(()=>{
+    _selMResizeRaf=0;
+    const carousel=document.getElementById('selMCarousel');
+    if(!carousel||!carousel.clientWidth)return;
+    const list=_selMFilteredCars();
+    const cards=carousel.querySelectorAll('.selM-card');
+    cards.forEach((c,i)=>{
+      const cvs=c.querySelector('.selM-cardCanvas');
+      if(cvs&&list[i])_selMDrawCardCanvas(cvs,list[i].id);
+    });
+    const idx=list.findIndex(d=>d.id===selCarId);
+    if(idx>=0&&cards[idx]){
+      const c=cards[idx];
+      const target=c.offsetLeft+c.clientWidth/2-carousel.clientWidth/2;
+      carousel.scrollTo({left:target,behavior:'auto'});
+    }
+  });
+}
+window.addEventListener('resize',_selMHandleResize);
+window.addEventListener('orientationchange',()=>{
+  setTimeout(_selMHandleResize,250);
+});
