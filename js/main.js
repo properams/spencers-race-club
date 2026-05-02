@@ -32,7 +32,10 @@ async function loadGameData(){
   WORLD_PRICES=prices.worlds;
 }
 // ── World state ───────────────────────────────
-var activeWorld='grandprix';  // var: ES-modules schrijven window.activeWorld
+// Default-world verschoven van 'grandprix' naar 'volcano' (GP-card verwijderd
+// uit world-select UI). Wereld-builder + _GP_WP fallback blijven in code als
+// safety-net voor onbekende activeWorld-waarden in scene.js's else-tak.
+var activeWorld='volcano';  // var: ES-modules schrijven window.activeWorld
 // Per-world arrays (_space*, _dsa*, _kelp*, _jellyfish*, _volcano*, _arctic*,
 // _tp*, _sprinkle*, _gummy*, _candy*, _neon*, _holo*) verhuisd naar
 // js/worlds/<world>.js — zie de "Per-world state" blokken bovenaan elk wereld-bestand.
