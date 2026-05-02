@@ -2,11 +2,17 @@
 
 'use strict';
 
-// Car-preview state — gebruikt in initCarPreview/updateCarPreview.
-// (carPreviews dict verwijderd samen met buildCarPreviews — was de enige populator.)
-let _prevRen=null,_prevScene=null,_prevCam=null,_prevCarMesh=null,_prevDefId=-1;
-let _prevPodiumGrid=null,_prevPodiumGridTex=null,_prevRimRing=null,_prevHintFaded=false,_prevHasInteracted=false;
-let _prevSizeW=0,_prevSizeH=0;
+// Pre-baked snapshot architectuur (Route 1):
+// In plaats van een TWEEDE WebGLRenderer voor een live 3D preview (wat op
+// iOS Safari een hard context-budget probleem oplevert) renderen we elke
+// auto één keer naar een snapshot canvas via de HOOFD-game renderer en een
+// off-screen WebGLRenderTarget. Display in SELECT is dan een goedkope 2D
+// drawImage operatie. Eén WebGL-context tijdens de hele app-lifecycle.
+let _prevDefId=-1;
+let _snapCache={};         // {carId: HTMLCanvasElement} 2D snapshot per auto
+let _snapScene=null,_snapCam=null,_snapRT=null;
+let _snapPodiumGridTex=null,_snapGlowTex=null;
+const SNAP_W=640,SNAP_H=360;  // 16:9 snapshot resolutie (~3MB cache totaal)
 const _unlockHints=[
   '','','','',
   '🏆 Finish P1',       // 4 Red Bull
@@ -19,59 +25,49 @@ const _unlockHints=[
   '💰 2000 coins',   // 11
 ];
 
-function initCarPreview(){
-  if(_prevRen&&_prevScene)return;
-  var cvs=document.getElementById('carPreviewCvs');if(!cvs)return;
-  if(!_prevRen){
-    var opts=[{antialias:true,alpha:true},{antialias:false,alpha:true},{antialias:false,alpha:false}];
-    for(var i=0;i<opts.length;i++){try{_prevRen=new THREE.WebGLRenderer({canvas:cvs,...opts[i]});break;}catch(e){_prevRen=null;}}
-  }
-  if(!_prevRen){
-    var ctx=cvs.getContext('2d');
-    if(ctx){ctx.fillStyle='#080818';ctx.fillRect(0,0,cvs.width,cvs.height);ctx.fillStyle='rgba(180,80,255,0.3)';ctx.font='bold 13px Orbitron,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('3D PREVIEW',cvs.width/2,cvs.height/2);}
-    return;
-  }
-  _prevRen.setPixelRatio(Math.min(devicePixelRatio,2));
-  _resizePreviewRenderer(cvs);
-  _prevRen.toneMapping=THREE.ACESFilmicToneMapping;_prevRen.toneMappingExposure=1.35;
-  ThreeCompat.applyRendererColorSpace(_prevRen);_prevRen.setClearColor(0x050812,1);
-  _prevScene=new THREE.Scene();
-  _prevCam=new THREE.PerspectiveCamera(34,(_prevSizeW||400)/(_prevSizeH||220),.1,100);
-  _prevCam.position.set(4.8,1.5,5.6);_prevCam.lookAt(0,.55,0);
-  // Cinematic 3-point lighting: warm key from front-left, cool fill from
-  // right, magenta rim from behind for cyberpunk silhouette.
-  var key=new THREE.DirectionalLight(0xfff0e0,2.3);key.position.set(-3,5,5);_prevScene.add(key);
-  var fill=new THREE.DirectionalLight(0x88aaff,.9);fill.position.set(4,2,3);_prevScene.add(fill);
-  var rim=new THREE.DirectionalLight(0xff44aa,2.0);rim.position.set(0,3,-6);_prevScene.add(rim);
-  _prevScene.add(new THREE.AmbientLight(0x223344,.7));
-  _prevScene.fog=new THREE.FogExp2(0x060010,.06);
-  // Hexagonal podium: top deck (slim slab) + emissive neon ring at the rim.
-  var hexGeo=new THREE.CylinderGeometry(3.4,3.6,.16,6);
-  var hexMat=new THREE.MeshStandardMaterial({color:0x0c0820,metalness:.4,roughness:.6,emissive:0x1a0033,emissiveIntensity:.3});
-  var hex=new THREE.Mesh(hexGeo,hexMat);hex.position.y=-.08;_prevScene.add(hex);
-  // Neon edge ring sitting on top of the deck — emissive magenta.
+// Lazy setup van de offscreen bake-scene. Hergebruikt de hoofd-renderer
+// (window.renderer) — geen tweede WebGL context. Aangemaakt bij eerste
+// bake call, opgeruimd in disposeSnapshotBakery.
+function _initSnapshotBakery(){
+  if(_snapScene)return true;
+  if(!window.renderer)return false;
+  _snapScene=new THREE.Scene();
+  _snapCam=new THREE.PerspectiveCamera(32,SNAP_W/SNAP_H,.1,100);
+  _snapCam.position.set(4.2,1.55,5.8);_snapCam.lookAt(0,.42,0);
+  // Cinematic 3-point lighting: warm key, cool fill, magenta rim.
+  var key=new THREE.DirectionalLight(0xfff0e0,2.3);key.position.set(-3,5,5);_snapScene.add(key);
+  var fill=new THREE.DirectionalLight(0x88aaff,.9);fill.position.set(4,2,3);_snapScene.add(fill);
+  var rim=new THREE.DirectionalLight(0xff44aa,2.0);rim.position.set(0,3,-6);_snapScene.add(rim);
+  _snapScene.add(new THREE.AmbientLight(0x223344,.7));
+  _snapScene.fog=new THREE.FogExp2(0x060010,.06);
+  // Hexagonal podium met emissive neon ring + scrolling grid.
+  var hex=new THREE.Mesh(
+    new THREE.CylinderGeometry(3.4,3.6,.16,6),
+    new THREE.MeshStandardMaterial({color:0x0c0820,metalness:.4,roughness:.6,emissive:0x1a0033,emissiveIntensity:.3})
+  );
+  hex.position.y=-.08;_snapScene.add(hex);
   var ring=new THREE.Mesh(
     new THREE.TorusGeometry(3.35,.025,8,64),
     new THREE.MeshBasicMaterial({color:0xff2d6f})
   );
-  ring.rotation.x=Math.PI/2;ring.position.y=.012;_prevScene.add(ring);
-  // Scrolling grid texture sitting flush on the deck — procedural canvas.
-  _prevPodiumGridTex=_makePodiumGridTexture();
-  var gridMat=new THREE.MeshBasicMaterial({map:_prevPodiumGridTex,transparent:true,opacity:.55,depthWrite:false});
-  var gridGeo=new THREE.CircleGeometry(3.25,32);
-  _prevPodiumGrid=new THREE.Mesh(gridGeo,gridMat);
-  _prevPodiumGrid.rotation.x=-Math.PI/2;_prevPodiumGrid.position.y=.011;
-  _prevScene.add(_prevPodiumGrid);
-  // Soft rim glow disc underneath — gives the podium a halo on the floor.
-  var glowTex=_makeRadialGlowTexture('#ff2d6f');
-  _prevRimRing=new THREE.Mesh(
-    new THREE.PlaneGeometry(11,11),
-    new THREE.MeshBasicMaterial({map:glowTex,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending})
+  ring.rotation.x=Math.PI/2;ring.position.y=.012;_snapScene.add(ring);
+  _snapPodiumGridTex=_makePodiumGridTexture();
+  var grid=new THREE.Mesh(
+    new THREE.CircleGeometry(3.25,32),
+    new THREE.MeshBasicMaterial({map:_snapPodiumGridTex,transparent:true,opacity:.55,depthWrite:false})
   );
-  _prevRimRing.rotation.x=-Math.PI/2;_prevRimRing.position.y=-.07;
-  _prevScene.add(_prevRimRing);
-  _initPreviewDrag(cvs);
-  _initPreviewResize(cvs);
+  grid.rotation.x=-Math.PI/2;grid.position.y=.011;_snapScene.add(grid);
+  _snapGlowTex=_makeRadialGlowTexture('#ff2d6f');
+  var rimRing=new THREE.Mesh(
+    new THREE.PlaneGeometry(11,11),
+    new THREE.MeshBasicMaterial({map:_snapGlowTex,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending})
+  );
+  rimRing.rotation.x=-Math.PI/2;rimRing.position.y=-.07;_snapScene.add(rimRing);
+  _snapRT=new THREE.WebGLRenderTarget(SNAP_W,SNAP_H,{
+    minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,
+    format:THREE.RGBAFormat,depthBuffer:true
+  });
+  return true;
 }
 
 function _makePodiumGridTexture(){
@@ -99,92 +95,170 @@ function _makeRadialGlowTexture(hex){
   return new THREE.CanvasTexture(c);
 }
 
-function _resizePreviewRenderer(cvs){
-  if(!_prevRen||!cvs)return;
-  const w=Math.max(2,cvs.clientWidth|0),h=Math.max(2,cvs.clientHeight|0);
-  if(w===_prevSizeW&&h===_prevSizeH)return;
-  _prevSizeW=w;_prevSizeH=h;
-  _prevRen.setSize(w,h,false);
-  if(_prevCam){_prevCam.aspect=w/h;_prevCam.updateProjectionMatrix();}
+// Camera-richting van de bake-camera (genormaliseerd). Hergebruikt door
+// _fitCameraToCar zodat alle auto's vanuit dezelfde 3/4-hoek worden
+// gerenderd, alleen de afstand verandert per bounding box.
+const _CAM_DIR=new THREE.Vector3(4.2,1.13,5.8).normalize();
+
+// Plaats _snapCam zo dat de hele auto binnen het frame past met padding.
+// Setminus visible Mesh nodes only — auto-meshes hebben anchor-points,
+// boost-trail mountpoints en exhaust-pivots als kinder-Object3D's die
+// Box3.setFromObject() opblazen tot factor-2 te grote bbox waardoor
+// dist te klein berekend werd → camera te dichtbij.
+function _fitCameraToCar(car){
+  const bbox=new THREE.Box3();
+  let any=false;
+  car.traverse(o=>{
+    if(o.isMesh&&o.visible!==false&&o.geometry){
+      // Reken bbox van deze mesh in world-space en union'd 'm in.
+      const mb=new THREE.Box3().setFromObject(o);
+      if(any)bbox.union(mb);else{bbox.copy(mb);any=true;}
+    }
+  });
+  if(!any){bbox.setFromObject(car);} // fallback voor edge cases
+  const center=new THREE.Vector3();bbox.getCenter(center);
+  const size=new THREE.Vector3();bbox.getSize(size);
+  // Camera kijkt vanaf 3/4 voor-rechts; horizontale extent gedomineerd
+  // door max(X,Z), verticale door Y.
+  const halfV=size.y*0.5;
+  const halfH=Math.max(size.x,size.z)*0.5;
+  const padding=1.45; // 45% lucht rond de auto — voorheen 1.20 was te krap
+  const fovRad=THREE.MathUtils.degToRad(_snapCam.fov);
+  const aspect=_snapCam.aspect;
+  const distV=(halfV*padding)/Math.tan(fovRad/2);
+  const distH=(halfH*padding)/Math.tan(Math.atan(Math.tan(fovRad/2)*aspect));
+  const dist=Math.max(distV,distH,6.5); // floor verhoogd 5.5→6.5
+  _snapCam.position.copy(center).addScaledVector(_CAM_DIR,dist);
+  // LookAt iets onder car-center zodat het podium nog deels zichtbaar is.
+  _snapCam.lookAt(center.x,center.y-halfV*0.15,center.z);
 }
 
-function _initPreviewResize(cvs){
-  if(!cvs||cvs.dataset.resizeWired==='1')return;
-  cvs.dataset.resizeWired='1';
+// Render één auto naar het snapshot-canvas. Hergebruikt bake-scene via
+// add → render → remove + dispose. Schrijft naar _snapCache[def.id].
+function _bakeCarSnapshot(def,colorOverride){
+  if(!_initSnapshotBakery())return;
+  const car=makeCar(def);
+  _snapScene.add(car);
+  // Color override: vervang de body-kleur op materials waarvan de hex
+  // matched de def.color (zelfde patroon als de oude live preview).
+  if(colorOverride!=null&&colorOverride!==def.color){
+    car.traverse(o=>{
+      if(o.isMesh&&o.material&&o.material.color&&o.material.color.getHex()===def.color){
+        o.material.color.setHex(colorOverride);
+      }
+    });
+  }
+  // Fit camera op deze specifieke auto (bounding-box-aware framing).
+  _fitCameraToCar(car);
+  // Render naar off-screen target zodat de hoofdcanvas niet wordt verstoord.
+  const prevTarget=window.renderer.getRenderTarget();
+  window.renderer.setRenderTarget(_snapRT);
+  window.renderer.render(_snapScene,_snapCam);
+  window.renderer.setRenderTarget(prevTarget);
+  // Read pixels back en zet op een 2D snapshot canvas. WebGL is bottom-up,
+  // dus tijdens copy doen we een rij-flip op de Y-as.
+  const pixels=new Uint8Array(SNAP_W*SNAP_H*4);
+  window.renderer.readRenderTargetPixels(_snapRT,0,0,SNAP_W,SNAP_H,pixels);
+  let snap=_snapCache[def.id];
+  if(!snap){
+    snap=document.createElement('canvas');
+    snap.width=SNAP_W;snap.height=SNAP_H;
+    _snapCache[def.id]=snap;
+  }
+  const ctx=snap.getContext('2d');
+  const imgData=ctx.createImageData(SNAP_W,SNAP_H);
+  // Y-flip: rij i van pixels (vanaf onderkant) → rij (H-1-i) van imgData.
+  for(let y=0;y<SNAP_H;y++){
+    const srcStart=(SNAP_H-1-y)*SNAP_W*4;
+    imgData.data.set(pixels.subarray(srcStart,srcStart+SNAP_W*4),y*SNAP_W*4);
+  }
+  ctx.putImageData(imgData,0,0);
+  // Cleanup: car uit scene + dispose geometries/materials.
+  _snapScene.remove(car);
+  car.traverse(o=>{
+    if(o.geometry)o.geometry.dispose();
+    if(o.material){
+      if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());
+      else o.material.dispose();
+    }
+  });
+}
+
+// Bake alle auto's vooraf zodat selecteren instant is. Aangeroepen vanuit
+// buildCarSelectUI. Synchronous loop (~200ms voor 12 auto's) — gebeurt
+// tijdens screen-transitie dus geen visuele hapering.
+function bakeAllCarSnapshots(){
+  if(!window.renderer||!window.CAR_DEFS)return;
+  if(!_initSnapshotBakery())return;
+  for(let i=0;i<CAR_DEFS.length;i++){
+    const def=CAR_DEFS[i];
+    if(_snapCache[def.id])continue; // skip al-gecachte
+    const ovr=(typeof _carColorOverride!=='undefined'&&_carColorOverride[def.id])||null;
+    _bakeCarSnapshot(def,ovr);
+  }
+}
+
+// Display de cached snapshot van defId op de visible preview canvas via
+// 2D drawImage. Behoudt aspect ratio met letterbox-fit.
+function _displayCarSnapshot(defId){
+  const cvs=document.getElementById('carPreviewCvs');
+  if(!cvs)return;
+  const snap=_snapCache[defId];
+  // Zorg dat canvas backing-store de visible size matched (DPR-aware).
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const cw=Math.max(2,(cvs.clientWidth||SNAP_W)*dpr|0);
+  const ch=Math.max(2,(cvs.clientHeight||SNAP_H)*dpr|0);
+  if(cvs.width!==cw||cvs.height!==ch){cvs.width=cw;cvs.height=ch;}
+  const ctx=cvs.getContext('2d');
+  ctx.clearRect(0,0,cw,ch);
+  if(!snap){
+    // Fallback als bake nog niet gedaan is — laat de canvas zien als
+    // dark gradient zodat het niet zwart-leeg is.
+    return;
+  }
+  // Cover-fit: snapshot vult de hele preview, behoud aspect ratio.
+  const sa=SNAP_W/SNAP_H,da=cw/ch;
+  let dx=0,dy=0,dw=cw,dh=ch;
+  if(da>sa){dh=cw/sa;dy=(ch-dh)/2;}else{dw=ch*sa;dx=(cw-dw)/2;}
+  ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+  ctx.drawImage(snap,dx,dy,dw,dh);
+}
+
+// Resize observer — herteken de snapshot wanneer de preview-canvas van
+// grootte verandert (orientation flip, window resize).
+function _initSnapshotResize(){
+  const cvs=document.getElementById('carPreviewCvs');
+  if(!cvs||cvs.dataset.snapResizeWired==='1')return;
+  cvs.dataset.snapResizeWired='1';
   if(typeof ResizeObserver!=='undefined'){
-    new ResizeObserver(()=>_resizePreviewRenderer(cvs)).observe(cvs);
+    new ResizeObserver(()=>{if(_prevDefId>=0)_displayCarSnapshot(_prevDefId);}).observe(cvs);
   }else{
-    window.addEventListener('resize',()=>_resizePreviewRenderer(cvs));
+    window.addEventListener('resize',()=>{if(_prevDefId>=0)_displayCarSnapshot(_prevDefId);});
   }
 }
 
-// Drag-to-rotate: while dragging the user controls the rotation. After
-// release we keep their offset for ~2s, then resume the auto-rotate idle
-// loop. updateCarPreview reads _prevDragHoldT to skip auto-rotate.
-let _prevDragging=false,_prevDragLastX=0,_prevDragHoldT=0;
-function _initPreviewDrag(cvs){
-  if(!cvs||cvs.dataset.dragWired==='1')return;
-  cvs.dataset.dragWired='1';
-  const onDown=(x)=>{_prevDragging=true;_prevDragLastX=x;_prevHasInteracted=true;};
-  const onMove=(x)=>{
-    if(!_prevDragging||!_prevCarMesh)return;
-    const dx=x-_prevDragLastX;
-    _prevCarMesh.rotation.y+=dx*0.012;
-    _prevDragLastX=x;
-  };
-  const onUp=()=>{_prevDragging=false;_prevDragHoldT=2.0;};
-  cvs.addEventListener('mousedown',e=>onDown(e.clientX));
-  window.addEventListener('mousemove',e=>onMove(e.clientX));
-  window.addEventListener('mouseup',onUp);
-  cvs.addEventListener('touchstart',e=>{if(e.touches[0])onDown(e.touches[0].clientX);},{passive:true});
-  window.addEventListener('touchmove',e=>{if(e.touches[0])onMove(e.touches[0].clientX);},{passive:true});
-  window.addEventListener('touchend',onUp);
+// Cleanup bij screen-transitie naar TITLE/RACE. Disposed render target +
+// scene-resources zodat ze niet idle GPU-memory innemen. Cache blijft
+// staan voor snel terugkeren naar SELECT.
+function disposeSnapshotBakery(){
+  if(_snapScene){
+    _snapScene.traverse(o=>{
+      if(o.geometry)o.geometry.dispose();
+      if(o.material){
+        if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());
+        else o.material.dispose();
+      }
+    });
+    _snapScene=null;
+  }
+  if(_snapPodiumGridTex){_snapPodiumGridTex.dispose();_snapPodiumGridTex=null;}
+  if(_snapGlowTex){_snapGlowTex.dispose();_snapGlowTex=null;}
+  if(_snapRT){_snapRT.dispose();_snapRT=null;}
+  _snapCam=null;
+  // _snapCache blijft — 2D canvases nemen alleen JS heap memory in, geen
+  // GPU memory. Snel weergave bij volgende SELECT-bezoek zonder re-bake.
 }
-
-function setPreviewCar(defId){
-  if(!_prevScene||defId===_prevDefId)return;
-  _prevDefId=defId;
-  if(_prevCarMesh){
-    _prevScene.remove(_prevCarMesh);
-    _prevCarMesh.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){if(Array.isArray(o.material))o.material.forEach(m=>m.dispose());else o.material.dispose();}});
-    _prevCarMesh=null;
-  }
-  const def=CAR_DEFS.find(d=>d.id===defId);if(!def)return;
-  _prevCarMesh=makeCar(def);_prevScene.add(_prevCarMesh);
-}
-
-function updateCarPreview(dt){
-  if(gameState!=='SELECT')return;
-  if(!_prevScene)initCarPreview();
-  if(!_prevRen||!_prevScene||!_prevCam)return;
-  // initCarPreview may have run while #sSelect was still display:none
-  // (clientWidth=0). Once layout is real, re-size before rendering so
-  // the first visible frame uses the correct framebuffer + aspect.
-  if(_prevSizeW<=2){
-    const cvs=_prevRen.domElement;
-    if(cvs&&cvs.clientWidth>2)_resizePreviewRenderer(cvs);
-    if(_prevSizeW<=2)return;
-  }
-  if(_prevDragHoldT>0)_prevDragHoldT=Math.max(0,_prevDragHoldT-dt);
-  if(_prevCarMesh&&!_prevDragging&&_prevDragHoldT<=0)_prevCarMesh.rotation.y+=dt*0.3;
-  if(_prevPodiumGridTex){
-    _prevPodiumGridTex.offset.x=(_prevPodiumGridTex.offset.x+dt*0.04)%1;
-    _prevPodiumGridTex.offset.y=(_prevPodiumGridTex.offset.y+dt*0.02)%1;
-  }
-  // Fade the DRAG TO ROTATE hint once the user has interacted.
-  if(_prevHasInteracted&&!_prevHintFaded){
-    const h=document.getElementById('prevHint');
-    if(h){h.style.transition='opacity .8s ease';h.style.opacity='0';}
-    _prevHintFaded=true;
-  }
-  _prevRen.render(_prevScene,_prevCam);
-}
-
-// buildCarPreviews was dead — render-to-texture pre-render van 12 cars naar
-// PNG (bedoeld voor select-screen thumbnails). Vervangen door live 3D
-// preview (initCarPreview/setPreviewCar/updateCarPreview hierboven).
-// Verwijderd in dead-code cleanup.
-
+window.disposeSnapshotBakery=disposeSnapshotBakery;
 
 // Format a lap time as M:SS.t (e.g. 1:39.8).
 function _fmtLapTime(t){
@@ -231,8 +305,7 @@ function _updateSelectSummary(){
 
 function _selectPreviewCar(defId){
   const switching=(defId!==_prevDefId);
-  selCarId=defId;
-  setPreviewCar(defId);
+  selCarId=defId;_prevDefId=defId;
   const def=CAR_DEFS.find(d=>d.id===defId);if(!def)return;
   if(window.Audio&&window.Audio.preloadAll)window.Audio.preloadAll(def.type);
   // Short rev burst per car-type when actually switching (skip on initial
@@ -244,16 +317,7 @@ function _selectPreviewCar(defId){
   }
   // Brand line + model + specs
   const b=document.getElementById('prevBrand');if(b)b.textContent=def.brand;
-  const n=document.getElementById('prevName');
-  if(n){
-    if(n._fadeT){clearTimeout(n._fadeT);n._fadeT=null;}
-    n.style.cssText+='transition:none;opacity:0;transform:translateY(6px)';
-    n._fadeT=setTimeout(()=>{
-      n.textContent=def.name;
-      n.style.cssText+='transition:all .22s ease;opacity:1;transform:translateY(0)';
-      n._fadeT=null;
-    },60);
-  }
+  const n=document.getElementById('prevName');if(n)n.textContent=def.name;
   const sp=document.getElementById('prevSpecs');
   if(sp){
     const tlabel=def.type==='f1'?'F1':def.type==='muscle'?'MUSCLE':def.type==='electric'?'ELECTRIC':'SUPER';
@@ -261,11 +325,17 @@ function _selectPreviewCar(defId){
     const tk=Math.round(def.topSpd*255);
     sp.textContent=tlabel+' · '+hp+' hp · '+tk+' km/h';
   }
+  // Snapshot display — als de bake ervoor nog niet is gedaan (eerste klik
+  // op deze auto na color override), bake nu just-in-time.
+  if(!_snapCache[defId]){
+    _bakeCarSnapshot(def,_carColorOverride[defId]||null);
+  }
+  _displayCarSnapshot(defId);
   // 4-stat card stack: SPEED / ACCEL / HANDLING / NITRO with a ghost
   // bar at the catalog max behind the current car's bar, and a rank-
   // coloured numeric. Animated via CSS transition on .statCardFill.
   _renderStatCards(def);
-  // Color swatches — overlay on preview canvas (no separate "COLOUR" label).
+  // Color swatches — onder de preview canvas. Click → re-bake die ene auto.
   const colorEl=document.getElementById('colorRow');
   if(colorEl){
     colorEl.innerHTML='';
@@ -275,7 +345,10 @@ function _selectPreviewCar(defId){
       dot.style.background='#'+hex.toString(16).padStart(6,'0');
       dot.onclick=()=>{
         _carColorOverride[defId]=hex;
-        if(_prevCarMesh){_prevCarMesh.traverse(o=>{if(o.isMesh&&o.material&&o.material.color){const m=o.material;if(m.color.getHex()===def.color||m.color.getHex()===(_carColorOverride[defId]||def.color)){m.color.setHex(hex);}}});}
+        // Invalidate cache + re-bake met nieuwe kleur, herteken display.
+        delete _snapCache[defId];
+        _bakeCarSnapshot(def,hex);
+        _displayCarSnapshot(defId);
         colorEl.querySelectorAll('.colorDot').forEach(d=>d.classList.remove('cSel'));
         dot.classList.add('cSel');
       };
@@ -364,12 +437,14 @@ function _renderStatCards(def){
     statsEl.dataset.built='1';
     statsEl.innerHTML=_STAT_DEFS.map(s=>(
       '<div class="statCard" data-stat="'+s.key+'">'+
-        '<div class="statCardLbl">'+s.lbl+'</div>'+
+        '<div class="statCardHead">'+
+          '<div class="statCardLbl">'+s.lbl+'</div>'+
+          '<div class="statCardVal"><span class="statCardValNum">0</span><span class="statCardValMax"> / 100</span></div>'+
+        '</div>'+
         '<div class="statCardBar">'+
           '<div class="statCardGhost"></div>'+
           '<div class="statCardFill" style="background:'+s.col+';box-shadow:0 0 6px '+s.col+'99"></div>'+
         '</div>'+
-        '<div class="statCardVal"><span class="statCardValNum">0</span><span class="statCardValMax"> / 100</span></div>'+
       '</div>'
     )).join('');
   }
@@ -454,8 +529,24 @@ function _renderHeaderSubtitle(){
 
 function buildCarSelectUI(){
   loadPersistent();
+  // Restore race-config voorkeuren uit localStorage. loadPersistent zelf
+  // restoreert alleen unlocks/coins/records — laps en difficulty werden
+  // bij elke reload terug op hardcoded defaults gezet (3, normal),
+  // waardoor de start-button summary niet matched met wat gebruiker
+  // eerder gekozen had.
+  try{
+    const sl=parseInt(localStorage.getItem('src_lap'),10);
+    if(sl===1||sl===3||sl===5){_selectedLaps=sl;TOTAL_LAPS=sl;}
+    const sd=parseInt(localStorage.getItem('src_difficulty'),10);
+    if(sd===0||sd===1||sd===2)difficulty=sd;
+  }catch(e){}
   _prevDefId=-1;
-  initCarPreview();_selectPreviewCar(selCarId);
+  // Pre-bake snapshots voor alle 12 auto's via de hoofd-renderer.
+  // Synchronous (~200ms) — gebeurt tijdens screen-transitie naar SELECT
+  // dus de gebruiker ziet geen visuele hapering.
+  bakeAllCarSnapshots();
+  _initSnapshotResize();
+  _selectPreviewCar(selCarId);
   _renderHeaderSubtitle();
   _renderGarageList();
   _renderRival();
@@ -471,16 +562,29 @@ function buildCarSelectUI(){
   // World indicator badge
   const wInd=document.getElementById('worldIndicator');
   if(wInd){
-    const wIcons={grandprix:'🏁',space:'🚀',deepsea:'🌊',candy:'🍬',neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢'};
+    const wIcons={grandprix:'🏎️',space:'🚀',deepsea:'🌊',candy:'🍬',neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢'};
     const wNames2={grandprix:'GRAND PRIX',space:'COSMIC',deepsea:'DEEP SEA',candy:'CANDY',neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK'};
     wInd.textContent=(wIcons[activeWorld]||'⬢')+' '+(wNames2[activeWorld]||activeWorld.toUpperCase());
   }
   _weatherMode='clear';
-  // Sync difficulty tab visual state to current `difficulty` global.
+  // Sync difficulty tab visual state + wire onclick. Voorheen alleen
+  // visual sync, geen handler — segmented control was non-functional,
+  // wat de "LAPS=1 maar START RACE zegt 'normal'" desync verklaart.
   ['dEasy','dNorm','dHard'].forEach((id,i)=>{
     const el=document.getElementById(id);if(!el)return;
     el.classList.toggle('setOptSel',i===difficulty);
     el.classList.toggle('diffSel',i===difficulty);
+    el.onclick=()=>{
+      difficulty=i;
+      try{localStorage.setItem('src_difficulty',i);}catch(e){}
+      ['dEasy','dNorm','dHard'].forEach((id2,j)=>{
+        const e2=document.getElementById(id2);if(!e2)return;
+        e2.classList.toggle('setOptSel',j===i);
+        e2.classList.toggle('diffSel',j===i);
+      });
+      _renderRival(); // rival lap-record key bevat difficulty
+      _updateSelectSummary();
+    };
   });
   // Wire LAPS tab options.
   [1,3,5].forEach(n=>{
@@ -488,6 +592,7 @@ function buildCarSelectUI(){
     btn.classList.toggle('setOptSel',n===_selectedLaps);
     btn.onclick=()=>{
       _selectedLaps=n;TOTAL_LAPS=n;
+      try{localStorage.setItem('src_lap',n);}catch(e){}
       [1,3,5].forEach(m=>{const b=document.getElementById('lap'+m);if(b)b.classList.toggle('setOptSel',m===n);});
       _updateSelectSummary();
     };

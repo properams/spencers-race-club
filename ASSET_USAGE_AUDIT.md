@@ -1,316 +1,271 @@
 # Asset Usage Audit
 
-*Gegenereerd op 2026-04-29 — branch `claude/audit-unused-assets-ZoNfT`*
+*Gegenereerd op 2026-04-29*
 
-Statische analyse van `assets/models/` en `assets/manifest.json` tegen alle
-spawn-call-sites in `js/`. Geen runtime-tests, geen code-wijzigingen — puur
-cross-reference.
+Static analyse van `assets/models/`, gekruist met `assets/manifest.json` en alle
+spawn-callsites in `js/`. Geen runtime-tests, geen wijzigingen aan code of
+assets — dit is een spike, output is dit document.
+
+## Methode
+
+1. Disk inventory: `find assets/models -name "*.glb" -o -name "*.gltf"` — 108
+   model-bestanden gevonden (18 .glb + 90 .gltf).
+2. Manifest parse (`assets/manifest.json`) — slot-paden per wereld geëxtraheerd.
+3. Spawn-callsites verzameld via grep op `spawnRoadsideProps`,
+   `spawnGroundClutter`, `spawnGLTFProp`, `getGLTF`, `getGLTFVariants`,
+   `listProps` over `js/`.
+4. Per file: gecheckt of pad voorkomt in manifest **én** of de bijbehorende
+   propKey in een spawn-call zit.
+5. Manifest-entries waarvan het bestand niet op disk staat (HDRI/textures)
+   apart gerapporteerd.
 
 ## Summary
 
-- **Totaal model-assets op disk:** 108 (`*.glb` / `*.gltf` onder `assets/models/`)
-- **Used:** 86 (80%) — manifest verwijst ernaar én een spawn-call bereikt het
-- **Orphan:** 22 (20%) — bestand op disk, geen enkele referentie
-- **Manifested but unspawned:** 0 — elke gevulde manifest-slot heeft een spawn-pad
-- **Spawned but ungated:** 0 — alle spawn-calls gaan via `Assets.getGLTF` (manifest)
-- **Manifest verwijzingen zonder bestand op disk:** 44
-  (12 HDRI + 18 ground textures + 14 skybox layer textures)
+| Metric | Aantal |
+|---|---|
+| Totaal model-bestanden op disk | 108 |
+| Used (manifest + spawn-call) | 86 (79.6%) |
+| Orphan (op disk, geen verwijzing) | 22 (20.4%) |
+| Manifest-entries naar niet-bestaand bestand | 47 |
+| Manifest-slots met lege string (intentioneel uit) | 6 |
+| HDRI / texture / skybox dir's leeg | ja (`assets/hdri/`, `assets/textures/`) |
 
-Empty-string slots (intentioneel inactief, procedural fallback): 6
-(`grandprix.haybale`, `arctic.iceberg_medium`, `themepark.traffic_cone`,
-`candy.candy_lollipop`, `candy.candy_cane`, `candy.gumdrop`,
-`deepsea.hdri`). Deze zijn geen bugs — manifest-comment documenteert
-ze als bewust leeg.
-
----
-
-## Cross-reference methode
-
-Voor elk fysiek bestand:
-
-1. Gegrep'd in `assets/manifest.json` voor exacte path-string.
-2. Voor elke manifest-slot die hem bevat: gecheckt welk(e) `propKeys`-array
-   in `js/worlds/*.js`, `js/core/scene.js` of `js/track/environment.js`
-   die slot-key noemt.
-3. Slot-key gevonden in een spawn-call → asset is **Used**.
-4. Slot-key niet gevonden → **Manifested but unspawned** (kwam in praktijk
-   niet voor — de uitzonderingen waren empty-string slots, niet path-slots).
-
-Voor elke manifest-entry: bestand op disk gecheckt met `find assets/`.
-
-Spawn entrypoints in scope:
-
-- `spawnRoadsideProps(worldId, {propKeys})` — `effects/asset-bridge.js`
-- `spawnGroundClutter(worldId, {propKeys})` — idem
-- `spawnGLTFProp(proto, ...)` direct met `Assets.getGLTF()` lookup —
-  alleen `worlds/grandprix.js:137`
-- `Assets.listProps(worldId)` + `Assets.getGLTFVariants(worldId, k)` —
-  alleen `track/environment.js:596` (`buildEnvironmentTrees` voor GP)
-
----
+PROJECT_STATE.md noemt "~132 GLTF assets" — feitelijk telling is 108. Het
+verschil zijn waarschijnlijk de `.bin` sidecars (90×) die als losse files
+meetellen op disk.
 
 ## Per directory
+
+### assets/models/city/ (22 bestanden)
+
+| Bestand | Status | Gebruikt in (world / propKey) | Notitie |
+|---|---|---|---|
+| base.gltf | Orphan | — | nooit gerefereerd in manifest of code |
+| bench.gltf | Used | themepark / `bench` | spawnRoadsideProps |
+| box_A.gltf | Used | neoncity / `roadblock`, deepsea / `wreck_box` | spawnRoadsideProps |
+| box_B.gltf | Used | neoncity / `roadblock`, deepsea / `wreck_box` | spawnRoadsideProps |
+| building_A.gltf | Used | neoncity / `building_bg`, themepark / `building_bg` | desktop-only layer |
+| building_B.gltf | Used | neoncity, themepark / `building_bg` | desktop-only |
+| building_C.gltf | Used | neoncity, themepark / `building_bg` | desktop-only |
+| building_D.gltf | Used | neoncity, themepark / `building_bg` | desktop-only |
+| building_E.gltf | Used | neoncity, themepark / `building_bg` | desktop-only |
+| building_F.gltf | Used | neoncity, themepark / `building_bg` | desktop-only |
+| building_G.gltf | Used | neoncity, themepark / `building_bg` | desktop-only |
+| building_H.gltf | Used | neoncity, themepark / `building_bg` | desktop-only |
+| bush.gltf | Orphan | — | grandprix `bush` slot wijst naar nature/Bush_Common*.gltf |
+| dumpster.gltf | Used | neoncity / `trashbin` | spawnRoadsideProps |
+| firehydrant.gltf | Used | neoncity / `bollard_neon`, themepark / `bollard` | spawnRoadsideProps |
+| streetlight.gltf | Used | neoncity, themepark / `streetlight` | desktop-only neoncity |
+| trafficlight_A.gltf | Used | neoncity / `traffic_light` | desktop-only |
+| trafficlight_B.gltf | Used | neoncity / `traffic_light` | desktop-only |
+| trafficlight_C.gltf | Used | neoncity / `traffic_light` | desktop-only |
+| trash_A.gltf | Used | neoncity / `trashbin`, themepark / `barrel` | spawnRoadsideProps |
+| trash_B.gltf | Used | neoncity / `trashbin`, themepark / `barrel` | spawnRoadsideProps |
+| watertower.gltf | Used | neoncity / `watertower` | desktop-only |
+
+### assets/models/nature/ (68 bestanden)
+
+| Bestand | Status | Gebruikt in (world / propKey) | Notitie |
+|---|---|---|---|
+| Bush_Common.gltf | Used | grandprix / `bush` | scene.js spawnRoadsideProps |
+| Bush_Common_Flowers.gltf | Used | grandprix / `bush` | scene.js |
+| Clover_1.gltf | Used | grandprix / `ground_fern` | spawnGroundClutter (desktop-only) |
+| Clover_2.gltf | Used | grandprix / `ground_fern` | spawnGroundClutter |
+| CommonTree_1.gltf | Used | grandprix / `tree_birch` | environment.js instanced trees |
+| CommonTree_2.gltf | Used | grandprix / `tree_birch` | environment.js |
+| CommonTree_3.gltf | Used | grandprix / `tree_birch` | environment.js |
+| CommonTree_4.gltf | Used | grandprix / `tree_birch` | environment.js |
+| CommonTree_5.gltf | Used | grandprix / `tree_birch` | environment.js |
+| DeadTree_1.gltf | Used | grandprix / `tree_dead`, volcano / `tree_burnt`, arctic / `tree_frosted` | hergebruikt 3× |
+| DeadTree_2.gltf | Used | grandprix / `tree_dead`, volcano / `tree_burnt`, arctic / `tree_frosted` | hergebruikt 3× |
+| DeadTree_3.gltf | Used | grandprix / `tree_dead`, volcano / `tree_burnt`, arctic / `tree_frosted` | hergebruikt 3× |
+| DeadTree_4.gltf | Used | grandprix / `tree_dead`, volcano / `tree_burnt`, arctic / `tree_frosted` | hergebruikt 3× |
+| DeadTree_5.gltf | Used | grandprix / `tree_dead`, volcano / `tree_burnt`, arctic / `tree_frosted` | hergebruikt 3× |
+| Fern_1.gltf | Used | grandprix / `ground_fern` | spawnGroundClutter |
+| Flower_3_Group.gltf | Used | grandprix / `ground_flower` | spawnGroundClutter |
+| Flower_3_Single.gltf | Used | grandprix / `ground_flower` | spawnGroundClutter |
+| Flower_4_Group.gltf | Used | grandprix / `ground_flower` | spawnGroundClutter |
+| Flower_4_Single.gltf | Used | grandprix / `ground_flower` | spawnGroundClutter |
+| Grass_Common_Short.gltf | Orphan | — | nooit in manifest |
+| Grass_Common_Tall.gltf | Orphan | — | nooit in manifest |
+| Grass_Wispy_Short.gltf | Orphan | — | nooit in manifest |
+| Grass_Wispy_Tall.gltf | Orphan | — | nooit in manifest |
+| Mushroom_Common.gltf | Used | grandprix / `ground_mushroom` | spawnGroundClutter |
+| Mushroom_Laetiporus.gltf | Used | grandprix / `ground_mushroom` | spawnGroundClutter |
+| Pebble_Round_1.gltf | Used | grandprix / `rock_small`, arctic / `snow_rock` | hergebruikt 2× |
+| Pebble_Round_2.gltf | Used | grandprix / `rock_small`, arctic / `snow_rock` | hergebruikt 2× |
+| Pebble_Round_3.gltf | Used | grandprix / `rock_small`, arctic / `snow_rock` | hergebruikt 2× |
+| Pebble_Round_4.gltf | Used | grandprix / `rock_small`, arctic / `snow_rock` | hergebruikt 2× |
+| Pebble_Round_5.gltf | Used | grandprix / `rock_small`, arctic / `snow_rock` | hergebruikt 2× |
+| Pebble_Square_1.gltf | Used | volcano / `rock_basalt_small` | spawnRoadsideProps |
+| Pebble_Square_2.gltf | Used | volcano / `rock_basalt_small` | spawnRoadsideProps |
+| Pebble_Square_3.gltf | Used | volcano / `rock_basalt_small` | spawnRoadsideProps |
+| Pebble_Square_4.gltf | Used | volcano / `rock_basalt_small` | spawnRoadsideProps |
+| Pebble_Square_5.gltf | Used | volcano / `rock_basalt_small` | spawnRoadsideProps |
+| Pebble_Square_6.gltf | Used | volcano / `rock_basalt_small` | spawnRoadsideProps |
+| Petal_1.gltf | Orphan | — | nooit in manifest |
+| Petal_2.gltf | Orphan | — | nooit in manifest |
+| Petal_3.gltf | Orphan | — | nooit in manifest |
+| Petal_4.gltf | Orphan | — | nooit in manifest |
+| Petal_5.gltf | Orphan | — | nooit in manifest |
+| Pine_1.gltf | Used | grandprix / `tree_pine` | environment.js instanced trees |
+| Pine_2.gltf | Used | grandprix / `tree_pine` | environment.js |
+| Pine_3.gltf | Used | grandprix / `tree_pine` | environment.js |
+| Pine_4.gltf | Used | grandprix / `tree_pine` | environment.js |
+| Pine_5.gltf | Used | grandprix / `tree_pine` | environment.js |
+| Plant_1.gltf | Used | deepsea / `coral_small` | spawnRoadsideProps |
+| Plant_1_Big.gltf | Used | deepsea / `coral_medium` | spawnRoadsideProps |
+| Plant_7.gltf | Used | deepsea / `coral_small` | spawnRoadsideProps |
+| Plant_7_Big.gltf | Used | deepsea / `coral_medium` | spawnRoadsideProps |
+| RockPath_Round_Small_1.gltf | Orphan | — | nooit in manifest |
+| RockPath_Round_Small_2.gltf | Orphan | — | nooit in manifest |
+| RockPath_Round_Small_3.gltf | Orphan | — | nooit in manifest |
+| RockPath_Round_Thin.gltf | Orphan | — | nooit in manifest |
+| RockPath_Round_Wide.gltf | Orphan | — | nooit in manifest |
+| RockPath_Square_Small_1.gltf | Orphan | — | nooit in manifest |
+| RockPath_Square_Small_2.gltf | Orphan | — | nooit in manifest |
+| RockPath_Square_Small_3.gltf | Orphan | — | nooit in manifest |
+| RockPath_Square_Thin.gltf | Orphan | — | nooit in manifest |
+| RockPath_Square_Wide.gltf | Orphan | — | nooit in manifest |
+| Rock_Medium_1.gltf | Used | grandprix / `rock_medium`, volcano / `rock_basalt_medium` | hergebruikt 2× |
+| Rock_Medium_2.gltf | Used | grandprix / `rock_medium`, volcano / `rock_basalt_medium` | hergebruikt 2× |
+| Rock_Medium_3.gltf | Used | grandprix / `rock_medium`, volcano / `rock_basalt_medium` | hergebruikt 2× |
+| TwistedTree_1.gltf | Used | volcano / `tree_burnt` | spawnRoadsideProps |
+| TwistedTree_2.gltf | Used | volcano / `tree_burnt` | spawnRoadsideProps |
+| TwistedTree_3.gltf | Used | volcano / `tree_burnt` | spawnRoadsideProps |
+| TwistedTree_4.gltf | Used | volcano / `tree_burnt` | spawnRoadsideProps |
+| TwistedTree_5.gltf | Used | volcano / `tree_burnt` | spawnRoadsideProps |
+
+### assets/models/space/ (16 bestanden)
+
+| Bestand | Status | Gebruikt in (world / propKey) | Notitie |
+|---|---|---|---|
+| crater.glb | Used | space / `crater` | desktop-only |
+| craterLarge.glb | Used | space / `crater` | desktop-only |
+| meteor.glb | Used | space / `asteroid_small` | spawnRoadsideProps |
+| meteor_detailed.glb | Used | space / `asteroid_large` | spawnRoadsideProps |
+| meteor_half.glb | Used | space / `asteroid_small` | spawnRoadsideProps |
+| rock.glb | Used | space / `asteroid_small` | spawnRoadsideProps |
+| rock_crystals.glb | Used | volcano / `lava_chunk` | hergebruikt cross-world |
+| rock_crystalsLargeA.glb | Used | volcano / `lava_chunk`, space / `asteroid_large` | hergebruikt 2× |
+| rock_crystalsLargeB.glb | Used | volcano / `lava_chunk`, space / `asteroid_large` | hergebruikt 2× |
+| rock_largeA.glb | Used | space / `asteroid_large` | spawnRoadsideProps |
+| rock_largeB.glb | Used | space / `asteroid_large` | spawnRoadsideProps |
+| rocks_smallA.glb | Used | space / `asteroid_small` | spawnRoadsideProps |
+| rocks_smallB.glb | Used | space / `asteroid_small` | spawnRoadsideProps |
+| satelliteDish.glb | Used | space / `satellite` | desktop-only |
+| satelliteDish_detailed.glb | Used | space / `satellite` | desktop-only |
+| satelliteDish_large.glb | Used | space / `satellite` | desktop-only |
 
 ### assets/models/arctic/ (1 bestand)
 
 | Bestand | Status | Gebruikt in | Notitie |
-|---------|--------|-------------|---------|
-| iceberg_small.glb | Used | arctic | manifest `arctic.iceberg_small` → `worlds/arctic.js:137` |
-
-### assets/models/city/ (22 bestanden)
-
-| Bestand | Status | Gebruikt in | Notitie |
-|---------|--------|-------------|---------|
-| base.gltf | **Orphan** | — | nooit in manifest, nooit gerefereerd |
-| bench.gltf | Used | themepark | `themepark.bench` |
-| box_A.gltf | Used | neoncity, deepsea | `neoncity.roadblock`, `deepsea.wreck_box` |
-| box_B.gltf | Used | neoncity, deepsea | idem |
-| building_A.gltf | Used | neoncity, themepark | `building_bg` (desktop only in beide werelden) |
-| building_B.gltf | Used | neoncity, themepark | idem |
-| building_C.gltf | Used | neoncity, themepark | idem |
-| building_D.gltf | Used | neoncity, themepark | idem |
-| building_E.gltf | Used | neoncity, themepark | idem |
-| building_F.gltf | Used | neoncity, themepark | idem |
-| building_G.gltf | Used | neoncity, themepark | idem |
-| building_H.gltf | Used | neoncity, themepark | idem |
-| bush.gltf | **Orphan** | — | manifest's `grandprix.bush` slot map naar `nature/Bush_Common*`, niet hierheen |
-| dumpster.gltf | Used | neoncity | `neoncity.trashbin` |
-| firehydrant.gltf | Used | neoncity, themepark | `neoncity.bollard_neon`, `themepark.bollard` |
-| streetlight.gltf | Used | neoncity, themepark | `streetlight` slot in beide |
-| trafficlight_A.gltf | Used | neoncity | `neoncity.traffic_light` |
-| trafficlight_B.gltf | Used | neoncity | idem |
-| trafficlight_C.gltf | Used | neoncity | idem |
-| trash_A.gltf | Used | neoncity, themepark | `neoncity.trashbin`, `themepark.barrel` |
-| trash_B.gltf | Used | neoncity, themepark | idem |
-| watertower.gltf | Used | neoncity | `neoncity.watertower` (desktop only) |
-
-**Totaal city: 20 used / 2 orphan**
+|---|---|---|---|
+| iceberg_small.glb | Used | arctic / `iceberg_small` | spawnRoadsideProps |
 
 ### assets/models/landmarks/ (1 bestand)
 
 | Bestand | Status | Gebruikt in | Notitie |
-|---------|--------|-------------|---------|
-| mountain_cabin.glb | **Orphan** | — | nergens in manifest of code |
+|---|---|---|---|
+| mountain_cabin.glb | Orphan | — | alleen genoemd in `assets/README.md` als "held for a future GP track-side"; geen manifest-slot, geen code |
 
-### assets/models/nature/ (68 bestanden)
+## Manifest issues
 
-| Bestand | Status | Gebruikt in | Notitie |
-|---------|--------|-------------|---------|
-| Bush_Common.gltf | Used | grandprix | `grandprix.bush` → `core/scene.js:479` |
-| Bush_Common_Flowers.gltf | Used | grandprix | idem |
-| Clover_1.gltf | Used | grandprix | `grandprix.ground_fern` (groundClutter) |
-| Clover_2.gltf | Used | grandprix | idem |
-| CommonTree_1.gltf | Used | grandprix | `grandprix.tree_birch` → `environment.js:596` |
-| CommonTree_2.gltf | Used | grandprix | idem |
-| CommonTree_3.gltf | Used | grandprix | idem |
-| CommonTree_4.gltf | Used | grandprix | idem |
-| CommonTree_5.gltf | Used | grandprix | idem |
-| DeadTree_1.gltf | Used | grandprix, volcano, arctic | `tree_dead` / `tree_burnt` / `tree_frosted` |
-| DeadTree_2.gltf | Used | grandprix, volcano, arctic | idem |
-| DeadTree_3.gltf | Used | grandprix, volcano, arctic | idem |
-| DeadTree_4.gltf | Used | grandprix, volcano, arctic | idem |
-| DeadTree_5.gltf | Used | grandprix, volcano, arctic | idem |
-| Fern_1.gltf | Used | grandprix | `grandprix.ground_fern` |
-| Flower_3_Group.gltf | Used | grandprix | `grandprix.ground_flower` |
-| Flower_3_Single.gltf | Used | grandprix | idem |
-| Flower_4_Group.gltf | Used | grandprix | idem |
-| Flower_4_Single.gltf | Used | grandprix | idem |
-| Grass_Common_Short.gltf | **Orphan** | — | geen manifest-slot, geen spawn |
-| Grass_Common_Tall.gltf | **Orphan** | — | idem |
-| Grass_Wispy_Short.gltf | **Orphan** | — | idem |
-| Grass_Wispy_Tall.gltf | **Orphan** | — | idem |
-| Mushroom_Common.gltf | Used | grandprix | `grandprix.ground_mushroom` |
-| Mushroom_Laetiporus.gltf | Used | grandprix | idem |
-| Pebble_Round_1.gltf | Used | grandprix, arctic | `rock_small` / `snow_rock` |
-| Pebble_Round_2.gltf | Used | grandprix, arctic | idem |
-| Pebble_Round_3.gltf | Used | grandprix, arctic | idem |
-| Pebble_Round_4.gltf | Used | grandprix, arctic | idem |
-| Pebble_Round_5.gltf | Used | grandprix, arctic | idem |
-| Pebble_Square_1.gltf | Used | volcano | `volcano.rock_basalt_small` |
-| Pebble_Square_2.gltf | Used | volcano | idem |
-| Pebble_Square_3.gltf | Used | volcano | idem |
-| Pebble_Square_4.gltf | Used | volcano | idem |
-| Pebble_Square_5.gltf | Used | volcano | idem |
-| Pebble_Square_6.gltf | Used | volcano | idem |
-| Petal_1.gltf | **Orphan** | — | geen manifest-slot, geen spawn |
-| Petal_2.gltf | **Orphan** | — | idem |
-| Petal_3.gltf | **Orphan** | — | idem |
-| Petal_4.gltf | **Orphan** | — | idem |
-| Petal_5.gltf | **Orphan** | — | idem |
-| Pine_1.gltf | Used | grandprix | `grandprix.tree_pine` |
-| Pine_2.gltf | Used | grandprix | idem |
-| Pine_3.gltf | Used | grandprix | idem |
-| Pine_4.gltf | Used | grandprix | idem |
-| Pine_5.gltf | Used | grandprix | idem |
-| Plant_1.gltf | Used | deepsea | `deepsea.coral_small` |
-| Plant_1_Big.gltf | Used | deepsea | `deepsea.coral_medium` |
-| Plant_7.gltf | Used | deepsea | `deepsea.coral_small` |
-| Plant_7_Big.gltf | Used | deepsea | `deepsea.coral_medium` |
-| RockPath_Round_Small_1.gltf | **Orphan** | — | geen manifest-slot, geen spawn |
-| RockPath_Round_Small_2.gltf | **Orphan** | — | idem |
-| RockPath_Round_Small_3.gltf | **Orphan** | — | idem |
-| RockPath_Round_Thin.gltf | **Orphan** | — | idem |
-| RockPath_Round_Wide.gltf | **Orphan** | — | idem |
-| RockPath_Square_Small_1.gltf | **Orphan** | — | idem |
-| RockPath_Square_Small_2.gltf | **Orphan** | — | idem |
-| RockPath_Square_Small_3.gltf | **Orphan** | — | idem |
-| RockPath_Square_Thin.gltf | **Orphan** | — | idem |
-| RockPath_Square_Wide.gltf | **Orphan** | — | idem |
-| Rock_Medium_1.gltf | Used | grandprix, volcano | `rock_medium` / `rock_basalt_medium` |
-| Rock_Medium_2.gltf | Used | grandprix, volcano | idem |
-| Rock_Medium_3.gltf | Used | grandprix, volcano | idem |
-| TwistedTree_1.gltf | Used | volcano | `volcano.tree_burnt` |
-| TwistedTree_2.gltf | Used | volcano | idem |
-| TwistedTree_3.gltf | Used | volcano | idem |
-| TwistedTree_4.gltf | Used | volcano | idem |
-| TwistedTree_5.gltf | Used | volcano | idem |
+### Niet-bestaande bestanden waarnaar manifest verwijst
 
-**Totaal nature: 49 used / 19 orphan**
+`assets/hdri/` en `assets/textures/` zijn beide leeg op disk. Manifest claimt
+de volgende paden — alle laden falen graceful (loader.js zet cache-entry op
+`null` en de procedural fallback neemt over).
 
-### assets/models/space/ (16 bestanden)
+| Manifest entry | Aantal verwijzingen | Type |
+|---|---|---|
+| `assets/hdri/<world>_*_2k.hdr` | 5 | HDRI desktop (grandprix, neoncity, volcano, arctic, themepark) |
+| `assets/hdri/<world>_*_1k.hdr` | 5 | HDRI mobile variant |
+| `assets/textures/<world>/ground_*.{jpg}` | 18 | Ground PBR (color/normal/roughness × 6 worlds) |
+| `assets/textures/<world>/skyline_*.png` etc. | 14 | Skybox layers (mountains_far/near × 7 worlds) |
+| `assets/hdri/themepark_evening_2k.hdr` etc. | (zit in 5 hierboven) | — |
 
-| Bestand | Status | Gebruikt in | Notitie |
-|---------|--------|-------------|---------|
-| crater.glb | Used | space | `space.crater` (desktop only) |
-| craterLarge.glb | Used | space | idem |
-| meteor.glb | Used | space | `space.asteroid_small` |
-| meteor_detailed.glb | Used | space | `space.asteroid_large` |
-| meteor_half.glb | Used | space | `space.asteroid_small` |
-| rock.glb | Used | space | `space.asteroid_small` |
-| rock_crystals.glb | Used | volcano | `volcano.lava_chunk` |
-| rock_crystalsLargeA.glb | Used | volcano, space | `volcano.lava_chunk`, `space.asteroid_large` |
-| rock_crystalsLargeB.glb | Used | volcano, space | idem |
-| rock_largeA.glb | Used | space | `space.asteroid_large` |
-| rock_largeB.glb | Used | space | idem |
-| rocks_smallA.glb | Used | space | `space.asteroid_small` |
-| rocks_smallB.glb | Used | space | idem |
-| satelliteDish.glb | Used | space | `space.satellite` (desktop only) |
-| satelliteDish_detailed.glb | Used | space | idem |
-| satelliteDish_large.glb | Used | space | idem |
+Totaal **47** manifest-paden naar niet-bestaande bestanden. `deepsea` en
+`space` hebben geen `hdri:` slot (deepsea heeft lege string, space ontbreekt);
+candy ook niet. Deepsea/themepark/candy hebben skybox_layers maar de
+bijbehorende texture-files bestaan niet.
 
-**Totaal space: 16 used / 0 orphan**
+### Lege slots (intentioneel uit, geen bestand verwacht)
 
----
+| World | Slot | Code-call die slot leest |
+|---|---|---|
+| grandprix | `haybale` | `buildGPTrackProps` (worlds/grandprix.js:136) |
+| arctic | `iceberg_medium` | spawnRoadsideProps (worlds/arctic.js:137) |
+| themepark | `traffic_cone` | spawnRoadsideProps (worlds/themepark.js:266) |
+| candy | `candy_lollipop` | spawnRoadsideProps (worlds/candy.js:38) |
+| candy | `candy_cane` | spawnRoadsideProps (worlds/candy.js:38) |
+| candy | `gumdrop` | spawnRoadsideProps (worlds/candy.js:38) |
 
-## Manifest issues (paden zonder bestand op disk)
+Deze slots zijn lege strings in het manifest. `Assets.getGLTF` retourneert
+`null`, `propKeys.filter` haalt ze eruit, en de procedural fallback draait —
+geen runtime-fout. Dat is design (PROJECT_STATE: "samples are additive";
+hetzelfde patroon hier voor models).
 
-`assets/loader.js` faalt graceful op missing files (slot blijft `null`,
-de scene valt terug op procedural). Dat verklaart waarom alles speelbaar
-is ondanks dat HDRI/ground/skybox-textures volledig leeg zijn.
+### Manifested but unspawned
 
-### HDRI (12 entries — `assets/hdri/` bevat alleen `.gitkeep`)
+Geen. Elke niet-lege manifest-prop-key wordt door minstens één wereld via
+`spawnRoadsideProps` / `spawnGroundClutter` / `getGLTF` (grandprix tracksprops,
+environment.js trees) bereikt.
 
-| Manifest entry | Wereld |
-|----------------|--------|
-| assets/hdri/grandprix_dusk_2k.hdr | grandprix (desktop) |
-| assets/hdri/grandprix_dusk_1k.hdr | grandprix (mobile) |
-| assets/hdri/neoncity_night_2k.hdr | neoncity (desktop) |
-| assets/hdri/neoncity_night_1k.hdr | neoncity (mobile) |
-| assets/hdri/volcano_dusk_2k.hdr | volcano (desktop) |
-| assets/hdri/volcano_dusk_1k.hdr | volcano (mobile) |
-| assets/hdri/arctic_overcast_2k.hdr | arctic (desktop) |
-| assets/hdri/arctic_overcast_1k.hdr | arctic (mobile) |
-| assets/hdri/themepark_evening_2k.hdr | themepark (desktop) |
-| assets/hdri/themepark_evening_1k.hdr | themepark (mobile) |
+### Spawned but ungated
 
-`deepsea.hdri` is leeg (`""`). `space` en `candy` hebben geen `hdri` key —
-geen entry, geen probleem.
-
-### Ground textures (18 entries — `assets/textures/` bevat alleen `.gitkeep`)
-
-| Manifest entry | Wereld |
-|----------------|--------|
-| assets/textures/grandprix/ground_color.jpg | grandprix |
-| assets/textures/grandprix/ground_normal.jpg | grandprix |
-| assets/textures/grandprix/ground_rough.jpg | grandprix |
-| assets/textures/neoncity/asphalt_wet_color.jpg | neoncity |
-| assets/textures/neoncity/asphalt_wet_normal.jpg | neoncity |
-| assets/textures/neoncity/asphalt_wet_rough.jpg | neoncity |
-| assets/textures/volcano/lavarock_color.jpg | volcano |
-| assets/textures/volcano/lavarock_normal.jpg | volcano |
-| assets/textures/volcano/lavarock_rough.jpg | volcano |
-| assets/textures/arctic/snowice_color.jpg | arctic |
-| assets/textures/arctic/snowice_normal.jpg | arctic |
-| assets/textures/arctic/snowice_rough.jpg | arctic |
-| assets/textures/themepark/pavement_color.jpg | themepark |
-| assets/textures/themepark/pavement_normal.jpg | themepark |
-| assets/textures/themepark/pavement_rough.jpg | themepark |
-| assets/textures/deepsea/sand_color.jpg | deepsea |
-| assets/textures/deepsea/sand_normal.jpg | deepsea |
-| assets/textures/deepsea/sand_rough.jpg | deepsea |
-
-### Skybox layer textures (14 entries — zelfde lege `assets/textures/`)
-
-| Manifest entry | Wereld |
-|----------------|--------|
-| assets/textures/grandprix/mountains_far.png | grandprix |
-| assets/textures/grandprix/mountains_near.png | grandprix |
-| assets/textures/neoncity/skyline_far.png | neoncity |
-| assets/textures/neoncity/skyline_near.png | neoncity |
-| assets/textures/volcano/silhouette_far.png | volcano |
-| assets/textures/volcano/silhouette_near.png | volcano |
-| assets/textures/arctic/icepeaks_far.png | arctic |
-| assets/textures/arctic/icepeaks_near.png | arctic |
-| assets/textures/themepark/silhouette_far.png | themepark |
-| assets/textures/themepark/silhouette_near.png | themepark |
-| assets/textures/deepsea/rockwall_far.png | deepsea |
-| assets/textures/deepsea/rockwall_near.png | deepsea |
-| assets/textures/candy/sweethills_far.png | candy |
-| assets/textures/candy/sweethills_near.png | candy |
-
----
-
-## Empty-string slots (intentioneel inactief)
-
-Niet bugs — manifest-comment documenteert dat een lege string of lege array
-een procedural fallback signaleert. Genoteerd voor volledigheid:
-
-| Slot | Wereld | Procedural fallback in |
-|------|--------|------------------------|
-| `haybale` | grandprix | `worlds/grandprix.js:137` (tireStack hak terug) |
-| `iceberg_medium` | arctic | `worlds/arctic.js` (alleen `iceberg_small` spawnt) |
-| `traffic_cone` | themepark | `worlds/themepark.js` |
-| `candy_lollipop` | candy | `worlds/candy.js` |
-| `candy_cane` | candy | idem |
-| `gumdrop` | candy | idem |
-| `hdri` | deepsea | (geen HDRI gepland voor underwater) |
-
----
+Geen. Alle code-paden lopen via `Assets.getGLTF` / `Assets.listProps` /
+`Assets.getGLTFVariants` — alles via manifest. Geen direct hardcoded paden
+naar GLTF-bestanden in code.
 
 ## Aanbevelingen
 
-Feitelijk, geen architectuur-discussie. Beslissingen voor een aparte sessie.
+Feitelijk, geen architectuur-discussie:
 
-1. **22 orphan model-bestanden kunnen weggehaald worden** als ze geen
-   geplande rol hebben in komende werelden:
-   - `models/city/base.gltf`, `models/city/bush.gltf`
-   - `models/landmarks/mountain_cabin.glb`
-   - 4× `models/nature/Grass_*` (Common Short/Tall, Wispy Short/Tall)
-   - 5× `models/nature/Petal_1..5`
-   - 5× `models/nature/RockPath_Round_*` (3× Small + Thin + Wide)
-   - 5× `models/nature/RockPath_Square_*` (3× Small + Thin + Wide)
+- **22 orphan-modelbestanden** kunnen weg of in `assets/_inbox/` geplaatst.
+  Lijst: city/base.gltf, city/bush.gltf, landmarks/mountain_cabin.glb, en alle
+  19 nature-orphans (4× Grass_, 5× Petal_, 10× RockPath_).
+- **47 manifest-entries naar niet-bestaande bestanden** — beslissing nodig:
+  ofwel `assets/hdri/` + `assets/textures/` echt vullen (HDRI's en PBR
+  ground/skybox sets), ofwel deze entries uit manifest verwijderen. Op dit
+  moment kost het alleen netwerk-roundtrips bij elke world-switch (alle 404's
+  cached na eerste poging).
+- **6 lege manifest-slots** (haybale, iceberg_medium, traffic_cone, candy ×3)
+  zijn intentioneel placeholder voor toekomstige assets. Geen actie nodig
+  tenzij besloten wordt dat ze nooit gevuld worden — dan slot + propKey-array
+  in callsite samen verwijderen.
+- **Externe Asset Integratie project zinvol?** De model-pipeline is gezond
+  (80% used, geen ongelinkte spawns, hergebruik cross-world is hoog). De
+  HDRI/textures-laag is daarentegen volledig leeg ondanks volledige manifest-
+  en loader-infrastructuur. Een vervolg-sessie kan zich beter daar op
+  richten dan op nog meer GLTF-props.
 
-2. **44 manifest-entries verwijzen naar lege `hdri/` en `textures/` mappen.**
-   Twee opties — keuze nodig:
-   - (a) **Vullen** — HDRI's en PBR-grond/skybox-textures daadwerkelijk
-     downloaden en in de mappen zetten (loader is al klaar, `_assetBridge`
-     past ze automatisch toe).
-   - (b) **Verwijderen** uit `manifest.json` — wat er nu staat is louter
-     intent-as-comment. Loader doet `null`-fallback dus er zijn geen
-     warnings, maar de manifest geeft een misleidend beeld van wat de
-     game daadwerkelijk laadt.
+## Bijlage: orphan-bestanden (kopieerbaar)
 
-3. **`bush.gltf` in `models/city/` is verwarrend** — de manifest-key
-   `grandprix.bush` mapt naar `nature/Bush_Common*`, niet hierheen. Als
-   `city/bush.gltf` blijft (bijv. voor toekomstige neoncity foliage),
-   overweeg een nieuwe slot zoals `neoncity.bush_urban`.
+```
+assets/models/city/base.gltf
+assets/models/city/bush.gltf
+assets/models/landmarks/mountain_cabin.glb
+assets/models/nature/Grass_Common_Short.gltf
+assets/models/nature/Grass_Common_Tall.gltf
+assets/models/nature/Grass_Wispy_Short.gltf
+assets/models/nature/Grass_Wispy_Tall.gltf
+assets/models/nature/Petal_1.gltf
+assets/models/nature/Petal_2.gltf
+assets/models/nature/Petal_3.gltf
+assets/models/nature/Petal_4.gltf
+assets/models/nature/Petal_5.gltf
+assets/models/nature/RockPath_Round_Small_1.gltf
+assets/models/nature/RockPath_Round_Small_2.gltf
+assets/models/nature/RockPath_Round_Small_3.gltf
+assets/models/nature/RockPath_Round_Thin.gltf
+assets/models/nature/RockPath_Round_Wide.gltf
+assets/models/nature/RockPath_Square_Small_1.gltf
+assets/models/nature/RockPath_Square_Small_2.gltf
+assets/models/nature/RockPath_Square_Small_3.gltf
+assets/models/nature/RockPath_Square_Thin.gltf
+assets/models/nature/RockPath_Square_Wide.gltf
+```
 
-4. **`landmarks/` is een dode directory** — 1 bestand,
-   nergens gerefereerd. Of de subdirectory schrappen, of bewust gaan
-   benutten (manifest-slot `*.landmark` per wereld bv).
-
-5. **Externe Asset Integratie project** — het 3D-model kanaal
-   functioneert end-to-end (manifest → loader → cache → spawn dispatcher),
-   maar het HDRI- en texture-kanaal wordt nul keer met echte data gevoed.
-   Of dat een gemiste kans is of een bewust geschrapt traject is een
-   product-beslissing buiten scope van deze audit.
+(.bin sidecars en .png textures naast deze .gltf-bestanden zijn ook orphan en
+mogen mee als de .gltf zelf weggaat — de .gltf wijst naar zijn eigen .bin.)

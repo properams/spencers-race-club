@@ -27,7 +27,7 @@
 //   updateRpmBar, updateRevLimiter, updateDriftVisuals,
 //   updateNitroVisual, updateBoostTrail, updateGhost, updateSpeedLines,
 //   updatePitStop, updateFastestLapFlash, updateCloseBattle,
-//   updateCollisionFlash, updateRain, updateCarPreview, updateMirror,
+//   updateCollisionFlash, updateRain, updateMirror,
 //   Audio.updateThunder, Audio.updateCrowd.
 
 'use strict';
@@ -79,7 +79,12 @@ function loop(){
       checkJumps();checkSpinPads(dt);checkBoostPads();checkCollectibles();checkCollisions(dt);checkTrackLimits(dt);checkWrongWay(dt);
       if(activeWorld==='space'){checkSpaceRailgun();checkGravityZones(dt);checkOrbitingAsteroids(dt);checkWarpTunnels(dt);}
       else if(activeWorld==='deepsea'){checkCurrentStreams(dt);checkAbyssCracks(dt);checkTreasureTrail(dt);}
-      else{checkWaterPuddles(dt);checkDRSZone(dt);}
+      else{
+        checkWaterPuddles(dt);checkDRSZone(dt);
+        if(activeWorld==='grandprix'&&typeof updateGrandPrixStorm==='function'){
+          const _pl=carObjs[playerIdx];updateGrandPrixStorm(dt,_pl?_pl.lap:1);
+        }
+      }
       updateBoostArrows();updateSlipstreamVisuals();updateSafetyCar(dt);
     }
     sparkSystem.update(dt);exhaustSystem.update(dt);
@@ -146,7 +151,6 @@ function loop(){
       else renderer.render(scene,camera);
     }
   }
-  updateCarPreview(dt);
   // Mirror pass — second render with backward-facing camera (chase cam + race only, not during victory orbit or intro)
   if(gameState==='RACE'&&_mirrorEnabled&&_camView===0&&!_victoryOrbit&&_introPanTimer<=0){
     // Skip mirror on low quality to save a full render pass

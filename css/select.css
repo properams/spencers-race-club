@@ -92,7 +92,9 @@
 .tierTabs{
   display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;
   font-family:'Orbitron',sans-serif;font-size:8.5px;letter-spacing:1px;
-  scrollbar-width:none;-ms-overflow-style:none
+  scrollbar-width:none;-ms-overflow-style:none;
+  -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 18px),transparent 100%);
+          mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 18px),transparent 100%)
 }
 .tierTabs::-webkit-scrollbar{display:none}
 .tierTab{
@@ -144,10 +146,11 @@
   width:24px;height:24px;border-radius:6px;flex-shrink:0;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.10),0 0 6px var(--team)
 }
-.carInfo{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1}
+.carInfo{display:flex;flex-direction:column;gap:1px;min-width:0;flex:1;overflow:hidden}
 .carBrand{
   font-family:'Orbitron',sans-serif;font-size:8px;color:#6e5a9a;
-  letter-spacing:3px;text-transform:uppercase
+  letter-spacing:3px;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
 .carName{
   font-family:'Rajdhani',sans-serif;font-size:11px;color:#fff;
@@ -169,29 +172,35 @@
 
 /* ── CENTER: hero preview ───────────────────────────────────────────── */
 .selCenter{
-  display:flex;flex-direction:column;padding:14px 22px 14px;
-  gap:8px;position:relative;overflow:hidden;min-height:0
+  display:flex;flex-direction:column;padding:18px 24px 16px;
+  gap:10px;position:relative;overflow:hidden;min-height:0;
+  align-items:center
 }
 .selCenter::before{
   content:'';position:absolute;inset:0;
   background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(140,60,255,.06) 0%,transparent 70%);
   pointer-events:none
 }
+.prevHeader{
+  width:100%;max-width:720px;margin:0 auto;
+  text-align:center
+}
 .prevBrandLine{
   font-family:'Orbitron',sans-serif;font-size:10px;color:#6e5a9a;
-  letter-spacing:4px;text-transform:uppercase;padding-left:2px
+  letter-spacing:4px;text-transform:uppercase;text-align:center
 }
 .prevModelLine{
-  font-family:'Rajdhani',sans-serif;font-size:22px;color:#fff;
-  font-weight:500;letter-spacing:1px;line-height:1.05;padding-left:2px
+  font-family:'Rajdhani',sans-serif;font-size:24px;color:#fff;
+  font-weight:600;letter-spacing:1.5px;line-height:1.1;text-align:center
 }
 .prevSpecsLine{
-  font-family:'Rajdhani',sans-serif;font-size:11px;color:#6e5a9a;
-  letter-spacing:1.5px;padding-left:2px;margin-bottom:4px
+  font-family:'Rajdhani',sans-serif;font-size:11px;color:#8a78b8;
+  letter-spacing:2px;margin-top:1px;text-align:center
 }
 .prevCanvasWrap{
-  position:relative;width:100%;max-width:760px;
-  flex:1 1 auto;min-height:280px;margin:0 auto;
+  position:relative;width:100%;max-width:720px;
+  flex:0 1 auto;aspect-ratio:16/10;min-height:0;
+  margin:0 auto;
   border:1px solid #2a1f4a;border-radius:12px;
   background:radial-gradient(ellipse at 50% 60%,#2a1a4a,#0d0820);
   overflow:hidden
@@ -207,21 +216,14 @@
 .prevCornerBL{bottom:7px;left:7px;border-bottom-width:2px;border-left-width:2px;border-bottom-left-radius:5px}
 .prevCornerBR{bottom:7px;right:7px;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:5px}
 #carPreviewCvs{
-  width:100%;height:100%;display:block;cursor:grab
-}
-#carPreviewCvs:active{cursor:grabbing}
-.prevHint{
-  position:absolute;top:10px;right:12px;
-  font-family:'Orbitron',sans-serif;font-size:8.5px;color:rgba(255,255,255,.6);
-  letter-spacing:2.5px;pointer-events:none;opacity:1;
-  text-shadow:0 0 6px rgba(255,45,111,.4);
-  transition:opacity .8s ease
+  width:100%;height:100%;display:block
 }
 .colorRow{
-  position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
-  display:flex;gap:8px;padding:6px 10px;
-  background:rgba(0,0,0,.45);border-radius:14px;backdrop-filter:blur(6px);
-  -webkit-backdrop-filter:blur(6px)
+  display:flex;gap:8px;padding:6px 10px;margin:6px auto 0;
+  width:fit-content;max-width:100%;
+  background:rgba(0,0,0,.4);border-radius:14px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.05)
 }
 .colorDot{
   width:18px;height:18px;border-radius:50%;cursor:pointer;
@@ -235,20 +237,25 @@
              inset 0 0 0 1px rgba(255,255,255,.2)
 }
 
-/* ── STATS BAR (vertical stack of 4 horizontal rows) ────────────────── */
+/* ── STATS BAR (horizontal 4-column grid of compact stat cards) ─────── */
 .statBars{
-  display:flex;flex-direction:column;gap:6px;margin-top:4px;flex-shrink:0
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  width:100%;max-width:720px;margin:2px auto 0;flex-shrink:0
 }
 .statCard{
-  background:#1a0f3a;border-radius:6px;padding:7px 12px;
-  display:grid;grid-template-columns:64px 1fr 56px;align-items:center;gap:12px
+  background:rgba(26,15,58,.7);border:1px solid rgba(255,255,255,.05);
+  border-radius:8px;padding:8px 10px 9px;
+  display:flex;flex-direction:column;gap:5px;align-items:stretch
+}
+.statCardHead{
+  display:flex;align-items:baseline;justify-content:space-between;gap:6px
 }
 .statCardLbl{
-  font-family:'Orbitron',sans-serif;font-size:9px;color:#6e5a9a;
-  letter-spacing:2.5px
+  font-family:'Orbitron',sans-serif;font-size:8.5px;color:#8a78b8;
+  letter-spacing:2px
 }
 .statCardBar{
-  position:relative;height:6px;background:rgba(255,255,255,.05);
+  position:relative;height:5px;background:rgba(255,255,255,.05);
   border-radius:3px;overflow:hidden
 }
 .statCardGhost{
@@ -260,10 +267,10 @@
   transition:width .22s ease-out
 }
 .statCardVal{
-  font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:500;
-  letter-spacing:.5px;text-align:right;white-space:nowrap
+  font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;
+  letter-spacing:.3px;text-align:right;white-space:nowrap;line-height:1
 }
-.statCardValMax{font-size:9px;color:#4a3a6a;letter-spacing:.5px}
+.statCardValMax{font-size:9px;color:#4a3a6a;letter-spacing:.3px;font-weight:400}
 
 /* ── RIGHT: settings + rival + start ────────────────────────────────── */
 .selRight{
@@ -279,16 +286,20 @@
   font-family:'Orbitron',sans-serif;font-size:9px;color:#6e5a9a;
   letter-spacing:3px;padding-left:2px
 }
-.setOpts{display:flex;gap:0}
+.setOpts{display:flex;gap:0;border-bottom:1px solid #2a1f4a}
 .setOpt{
   flex:1;padding:7px 0;text-align:center;cursor:pointer;
-  font-family:'Rajdhani',sans-serif;font-size:13px;color:#6e5a9a;
-  letter-spacing:1px;border-bottom:1px solid #2a1f4a;
-  transition:color .15s,border-color .15s,text-shadow .15s;user-select:none
+  font-family:'Rajdhani',sans-serif;font-size:13px;color:#a89bc7;
+  letter-spacing:1px;
+  border-bottom:2px solid transparent;
+  border-left:1px solid rgba(255,255,255,.06);
+  transition:color .15s,border-color .15s,text-shadow .15s,background .15s;
+  user-select:none
 }
-.setOpt:hover{color:#c9b9ff}
+.setOpt:first-child{border-left:none}
+.setOpt:hover{color:#fff;background:rgba(255,58,140,.06)}
 .setOptSel{
-  color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:500;
+  color:#ff3a8c;border-bottom-color:#ff3a8c;font-weight:600;
   text-shadow:0 0 8px rgba(255,58,140,.45)
 }
 
@@ -366,6 +377,15 @@
     max-height:none;overflow-y:visible
   }
   .garageHeader{padding:8px 10px 6px}
+  /* Mobile tabs: smaller padding/gap zodat alle 5 in 365px viewport
+     content area passen, plus mask-fade voor scroll-affordance op
+     extra-narrow phones (iPhone SE, 320px). */
+  .tierTabs{
+    gap:2px;font-size:8px;letter-spacing:.5px;
+    -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 16px),transparent 100%);
+            mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 16px),transparent 100%)
+  }
+  .tierTab{padding:5px 4px;min-width:28px}
   /* Garage on mobile becomes a horizontally-scrollable strip with a
      subtle right-edge fade so users see scroll affordance. */
   .carGrid{
@@ -376,7 +396,7 @@
             mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 24px),transparent 100%)
   }
   .carCard{
-    flex-shrink:0;width:118px;border-bottom:none;border-left:none;
+    flex-shrink:0;width:132px;border-bottom:none;border-left:none;
     border-radius:10px;margin:0 4px;scroll-snap-align:start;
     background:rgba(20,10,40,.55);padding:7px 8px;gap:7px
   }
@@ -391,23 +411,22 @@
   .carCardTrail{margin-left:0;gap:3px}
   .carPriceLbl,.carLockMini,.carLockIcon{font-size:9px}
   .selCenter{
-    order:2;padding:10px 14px;gap:4px
+    order:2;padding:10px 14px;gap:8px;
+    align-items:stretch
   }
+  .prevHeader{max-width:none}
   .prevBrandLine{font-size:9px;letter-spacing:3px}
   .prevModelLine{font-size:18px}
   .prevSpecsLine{font-size:10px;margin-bottom:2px}
   .prevCanvasWrap{
-    flex:0 0 auto;width:100%;height:auto;
-    aspect-ratio:16/9;min-height:0;max-height:240px
+    flex:0 0 auto;width:100%;max-width:none;
+    height:48vw;max-height:240px;min-height:160px;
+    aspect-ratio:auto
   }
-  .prevHint{font-size:7.5px;letter-spacing:1.8px;top:8px;right:10px}
-  .statBars{display:grid;grid-template-columns:1fr 1fr;gap:4px;flex-direction:initial}
-  .statCard{
-    grid-template-columns:1fr;display:flex;flex-direction:column;
-    gap:4px;padding:5px 8px;align-items:stretch
-  }
-  .statCardLbl{font-size:7px;letter-spacing:2px}
-  .statCardVal{font-size:10px;text-align:left}
+  .statBars{max-width:none;grid-template-columns:1fr 1fr;gap:6px}
+  .statCard{padding:6px 9px 7px;gap:4px}
+  .statCardLbl{font-size:7.5px;letter-spacing:1.8px}
+  .statCardVal{font-size:12px}
   .statCardValMax{font-size:8px}
   .selRight{
     order:3;padding:10px 14px;gap:10px;
@@ -417,8 +436,13 @@
   .setSeg{gap:4px;padding:7px 9px 6px}
   .rivalSeg{padding:7px 9px 8px}
   .rivalIcon{width:32px;height:32px;font-size:16px}
-  /* Brighter unselected state — old #6e5a9a was unreadable on dark bg */
-  .setOpt{padding:8px 0;font-size:13px;min-height:36px;color:#a89bc7}
+  /* Brighter unselected state op mobile — #a89bc7 was nog te donker op
+     real-device dark bg. Plus duidelijker vertical separators tussen
+     opties zodat de drie "1 / 3 / 5" niet visueel samenvallen tot één
+     gecentreerd nummer. */
+  .setOpt{padding:8px 0;font-size:14px;min-height:38px;color:#d4c8e8;font-weight:500}
+  .setOpt+.setOpt{border-left-color:rgba(255,255,255,.16)}
+  .setOptSel{font-weight:700}
   /* Pin start button to bottom on mobile so it's always reachable */
   .startBtnWrap{
     position:fixed;left:10px;right:10px;z-index:10;

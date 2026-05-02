@@ -9,9 +9,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/worlds.css">
-<link rel="stylesheet" href="css/select.css">
-<link rel="stylesheet" href="css/hud.css">
-<link rel="stylesheet" href="css/screens.css">
+<link rel="stylesheet" href="css/select.css?v=8">
+<link rel="stylesheet" href="css/hud.css?v=2">
+<link rel="stylesheet" href="css/screens.css?v=2">
 </head>
 <body>
 <div id="__dbg_overlay" style="position:fixed;top:0;left:0;right:0;max-height:50vh;background:rgba(180,0,0,.92);color:#fff;font-family:monospace;font-size:11px;padding:8px;z-index:99999;overflow-y:auto;display:none;white-space:pre-wrap;word-break:break-word"></div>
@@ -63,7 +63,7 @@
     <div class="worldBigCard" data-world="grandprix">
       <div class="worldCardBg worldBgGP"></div>
       <div class="worldCardContent">
-        <div class="worldCardIcon">🏁</div>
+        <div class="worldCardIcon">🏎️</div>
         <div class="worldCardName">GRAND PRIX</div>
         <div class="worldCardDesc">Classic racing through mountains and forests. Chicanes, hairpins, big jumps.</div>
       </div>
@@ -160,18 +160,19 @@
     </div>
     <!-- CENTER: hero preview -->
     <div class="selCenter">
-      <div class="prevBrandLine" id="prevBrand">FERRARI</div>
-      <div class="prevModelLine" id="prevName">SF90</div>
-      <div class="prevSpecsLine" id="prevSpecs">SUPER · 986 hp</div>
+      <div class="prevHeader">
+        <div class="prevBrandLine" id="prevBrand">FERRARI</div>
+        <div class="prevModelLine" id="prevName">SF90</div>
+        <div class="prevSpecsLine" id="prevSpecs">SUPER · 986 hp</div>
+      </div>
       <div class="prevCanvasWrap">
         <canvas id="carPreviewCvs" width="400" height="220"></canvas>
         <span class="prevCorner prevCornerTL"></span>
         <span class="prevCorner prevCornerTR"></span>
         <span class="prevCorner prevCornerBL"></span>
         <span class="prevCorner prevCornerBR"></span>
-        <div class="prevHint" id="prevHint">↻ DRAG TO ROTATE</div>
-        <div class="colorRow" id="colorRow"></div>
       </div>
+      <div class="colorRow" id="colorRow"></div>
       <div class="statBars" id="prevStats"></div>
     </div>
     <!-- RIGHT: settings + rival + start -->
@@ -413,7 +414,7 @@
 <script src="js/effects/postfx.js"></script>
 <script src="js/core/renderer.js"></script>
 <script src="js/core/scene.js"></script>
-<script src="js/core/loop.js"></script>
+<script src="js/core/loop.js?v=2"></script>
 
 <!-- Audio implementatie (geregistreerd voor api-facade deferred evalueert) -->
 <script src="js/audio/engine.js"></script>
@@ -421,15 +422,19 @@
 <script src="js/audio/ambient.js"></script>
 
 <!-- Worlds (8 stuks — elk een build/update/checks set) -->
-<script src="js/worlds/grandprix.js"></script>
+<script src="js/worlds/grandprix-storm.js"></script>
+<script src="js/worlds/grandprix.js?v=2"></script>
 <script src="js/worlds/volcano-bridge.js"></script>
 <script src="js/worlds/volcano.js"></script>
 <script src="js/worlds/arctic-iceshelf.js"></script>
 <script src="js/worlds/arctic.js"></script>
 <script src="js/worlds/themepark-coaster.js"></script>
 <script src="js/worlds/themepark.js"></script>
+<script src="js/worlds/space-anomaly.js"></script>
 <script src="js/worlds/space.js"></script>
+<script src="js/worlds/deepsea-current.js"></script>
 <script src="js/worlds/deepsea.js"></script>
+<script src="js/worlds/neoncity-emp.js"></script>
 <script src="js/worlds/neoncity.js"></script>
 <script src="js/worlds/candy-chocobridge.js"></script>
 <script src="js/worlds/candy.js"></script>
@@ -446,7 +451,7 @@
 <script src="js/cars/physics.js"></script>
 <script src="js/cars/ai.js"></script>
 <script src="js/effects/weather.js"></script>
-<script src="js/effects/night.js"></script>
+<script src="js/effects/night.js?v=2"></script>
 <script src="js/effects/visuals.js"></script>
 
 <!-- Gameplay (race lifecycle, hazards, scoring) -->
@@ -469,9 +474,9 @@
 <!-- UI -->
 <script src="js/ui/hud.js"></script>
 <script src="js/ui/touch.js"></script>
-<script src="js/ui/select.js"></script>
+<script src="js/ui/select.js?v=9"></script>
 <script src="js/ui/pause.js"></script>
-<script src="js/ui/navigation.js"></script>
+<script src="js/ui/navigation.js?v=6"></script>
 <script src="js/ui/input.js"></script>
 <script src="js/ui/help.js"></script>
 <script src="js/core/boot.js"></script>
