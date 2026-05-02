@@ -532,6 +532,49 @@ function buildScene(){
   if(window.perfMark)perfMark('build:assetBridge:start');
   if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(activeWorld);
   if(window.perfMark){perfMark('build:assetBridge:end');perfMeasure('build.assetBridge','build:assetBridge:start','build:assetBridge:end');}
+  // ── PHASE-B DIAGNOSTIC (to remove in phase C) ─────────────────────
+  // Telt scene-content vlak voor _precompileScene zodat we per wereld
+  // weten waar de cost vandaan komt. Push naar window.perfLog zodat de
+  // headless runner het oppakt. Geen game-impact.
+  if(window.perfLog){
+    let _meshes=0,_mats=0,_uniqueMats=new Set(),_geos=new Set();
+    let _lPoint=0,_lSpot=0,_lDir=0,_lAmb=0,_lHemi=0;
+    let _emiss=0,_transparent=0,_skin=0,_shaderMat=0;
+    const _matTypeCounts={};
+    scene.traverse(o=>{
+      if(o.isMesh||o.isPoints||o.isLine||o.isSprite){
+        _meshes++;
+        if(o.geometry)_geos.add(o.geometry.uuid);
+        const ms=Array.isArray(o.material)?o.material:(o.material?[o.material]:[]);
+        for(const m of ms){
+          _mats++;_uniqueMats.add(m.uuid);
+          const tn=m.type||'?';_matTypeCounts[tn]=(_matTypeCounts[tn]||0)+1;
+          if(m.isShaderMaterial||m.isRawShaderMaterial)_shaderMat++;
+          if(m.transparent)_transparent++;
+          if(m.emissive&&(m.emissiveIntensity===undefined||m.emissiveIntensity>0)){
+            // emissive Color isn't always 0,0,0 even if intensity is 1; treat presence as marker
+            if(m.emissive.r>0||m.emissive.g>0||m.emissive.b>0)_emiss++;
+          }
+          if(o.isSkinnedMesh)_skin++;
+        }
+      }
+      if(o.isPointLight)_lPoint++;
+      else if(o.isSpotLight)_lSpot++;
+      else if(o.isDirectionalLight)_lDir++;
+      else if(o.isAmbientLight)_lAmb++;
+      else if(o.isHemisphereLight)_lHemi++;
+    });
+    const _texCount=(renderer&&renderer.info&&renderer.info.memory.textures)||0;
+    const _geoCount=(renderer&&renderer.info&&renderer.info.memory.geometries)||0;
+    window.perfLog.push({name:'diag.preCompile',ms:0,t:performance.now(),world:activeWorld,
+      meshes:_meshes,materials:_mats,uniqueMaterials:_uniqueMats.size,geometriesUnique:_geos.size,
+      lights:{point:_lPoint,spot:_lSpot,dir:_lDir,amb:_lAmb,hemi:_lHemi},
+      matTypes:_matTypeCounts,emissive:_emiss,transparent:_transparent,
+      shaderMaterials:_shaderMat,skinnedMeshes:_skin,
+      rendererTextures:_texCount,rendererGeometries:_geoCount,
+    });
+    if(window.dbg)dbg.log('perf','diag preCompile '+activeWorld+' meshes='+_meshes+' materials='+_mats+' unique='+_uniqueMats.size+' lights='+(_lPoint+_lSpot+_lDir+_lAmb+_lHemi)+' shaderMats='+_shaderMat);
+  }
   // Pre-compile materials voor de nieuwe wereld + force texture/attribute
   // uploads via een 16x16 off-screen render. Voorheen was dit een dbg-only
   // experiment in select.js; nu default-aan in buildScene zodat ELKE scene-
@@ -540,14 +583,23 @@ function buildScene(){
   // start-freeze op iPad voor wereld-specifieke material sets — boot doet
   // al een warm-up render, maar pakte alleen de default GP wereld.
   if(window.perfMark)perfMark('build:precompile:start');
+  // PHASE-B DIAGNOSTIC: split renderer.compile() vs the 16x16 render
+  // (which triggers shadow-map render + texture uploads). Cost-attribution
+  // helpt scheiden welk deel van precompile dominant is.
+  const _diagPreProg=(renderer&&renderer.info&&renderer.info.programs&&renderer.info.programs.length)||0;
+  const _diagPreTex=(renderer&&renderer.info&&renderer.info.memory.textures)||0;
   _precompileScene();
   if(window.perfMark){perfMark('build:precompile:end');perfMeasure('build.precompile','build:precompile:start','build:precompile:end');}
   if(window.perfMark){perfMark('build:total:end');perfMeasure('build.total','build:total:start','build:total:end');}
   // Shader-program count delta over the buildScene window.
   if(window.perfLog){
     const _perfProgAfter=(renderer&&renderer.info&&renderer.info.programs&&renderer.info.programs.length)||0;
+    const _diagPostTex=(renderer&&renderer.info&&renderer.info.memory.textures)||0;
     window.perfLog.push({name:'shaderPrograms.delta',ms:_perfProgAfter-_perfProgBefore,t:performance.now(),world:activeWorld});
     window.perfLog.push({name:'shaderPrograms.afterBuild',ms:_perfProgAfter,t:performance.now(),world:activeWorld});
+    // Diagnostic: hoeveel programs/textures heeft _precompileScene zelf toegevoegd?
+    window.perfLog.push({name:'diag.precompile.progDelta',ms:_perfProgAfter-_diagPreProg,t:performance.now(),world:activeWorld});
+    window.perfLog.push({name:'diag.precompile.texDelta',ms:_diagPostTex-_diagPreTex,t:performance.now(),world:activeWorld});
     if(window.dbg)dbg.log('perf','shader programs '+_perfProgBefore+'→'+_perfProgAfter+' ('+activeWorld+')');
   }
   window.dbg&&dbg.snapshot('scene','buildScene done',{world:activeWorld,objects:scene.children.length,camPos:camera.position});
@@ -569,14 +621,23 @@ function _precompileScene(){
   const _progBefore=(renderer.info.programs&&renderer.info.programs.length)||0;
   const _texBefore=renderer.info.memory.textures;
   let _rt=null;
+  // PHASE-B DIAGNOSTIC: meet renderer.compile() apart van de 16x16 off-
+  // screen render zodat we weten welke fase de cost veroorzaakt.
+  const _diag=window.perfMark?true:false;
   try{
-    if(typeof renderer.compile==='function')renderer.compile(scene,camera);
+    if(typeof renderer.compile==='function'){
+      if(_diag)perfMark('precompile:compile:start');
+      renderer.compile(scene,camera);
+      if(_diag){perfMark('precompile:compile:end');perfMeasure('build.precompile.compile','precompile:compile:start','precompile:compile:end');}
+    }
     if(window.THREE&&THREE.WebGLRenderTarget){
+      if(_diag)perfMark('precompile:render:start');
       _rt=new THREE.WebGLRenderTarget(16,16);
       const _prevTarget=renderer.getRenderTarget();
       renderer.setRenderTarget(_rt);
       renderer.render(scene,camera);
       renderer.setRenderTarget(_prevTarget);
+      if(_diag){perfMark('precompile:render:end');perfMeasure('build.precompile.render','precompile:render:start','precompile:render:end');}
     }
   }catch(e){
     if(window.dbg)dbg.error('scene',e,'precompile failed');

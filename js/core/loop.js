@@ -161,10 +161,22 @@ function loop(){
       });
     }else if(_isFirstRaceFrame){
       // Same measurement, dbg-disabled pad: blijft handig voor de runner.
+      // PHASE-B DIAGNOSTIC: prog/tex/draw delta around the first-frame render.
+      const _ffProgB=(renderer.info.programs&&renderer.info.programs.length)||0;
+      const _ffTexB=renderer.info.memory.textures;
+      const _ffGeoB=renderer.info.memory.geometries;
       if(window.perfMark)perfMark('firstRaceFrame:render:start');
       if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
       else renderer.render(scene,camera);
       if(window.perfMark){perfMark('firstRaceFrame:render:end');perfMeasure('firstRaceFrame.render','firstRaceFrame:render:start','firstRaceFrame:render:end');}
+      if(window.perfLog){
+        const _ffProgA=(renderer.info.programs&&renderer.info.programs.length)||0;
+        const _ffTexA=renderer.info.memory.textures;
+        const _ffGeoA=renderer.info.memory.geometries;
+        window.perfLog.push({name:'diag.firstFrame.progDelta',ms:_ffProgA-_ffProgB,t:performance.now(),world:window.activeWorld});
+        window.perfLog.push({name:'diag.firstFrame.texDelta',ms:_ffTexA-_ffTexB,t:performance.now(),world:window.activeWorld});
+        window.perfLog.push({name:'diag.firstFrame.geoDelta',ms:_ffGeoA-_ffGeoB,t:performance.now(),world:window.activeWorld});
+      }
     }else{
       if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
       else renderer.render(scene,camera);

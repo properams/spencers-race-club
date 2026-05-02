@@ -9,6 +9,14 @@ function _perfHeap(eventName){
   const mb=+(performance.memory.usedJSHeapSize/1048576).toFixed(2);
   window.perfLog.push({name:'heap.'+eventName,ms:mb,t:performance.now()});
   if(window.dbg)dbg.log('perf','heap@'+eventName+': '+mb+'MB');
+  // PHASE-B DIAGNOSTIC: ook renderer.info totals meelogger zodat een lek in
+  // geometries/textures op disposal-niveau zichtbaar wordt los van JS-heap.
+  if(window.renderer&&window.renderer.info){
+    const ri=window.renderer.info;
+    window.perfLog.push({name:'diag.rendererInfo.'+eventName,ms:0,t:performance.now(),
+      geometries:ri.memory.geometries,textures:ri.memory.textures,
+      programs:(ri.programs&&ri.programs.length)||0});
+  }
 }
 
 function goToSelect(){
