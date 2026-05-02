@@ -4,11 +4,28 @@
 
 // Perf Phase A: heap-snapshot helper. Pusht event-naam + heap MB naar
 // window.perfLog. No-op als performance.memory niet beschikbaar (Safari/FF).
+//
+// Sinds claude/perf-safe-wins ook een renderer.info snapshot (geometries +
+// textures + program-count) zodat heap-trends los van JS-heap analyseerbaar
+// zijn. Alle kosten zijn no-op als renderer/perf-memory niet bestaat.
 function _perfHeap(eventName){
-  if(!window.perfLog||!performance.memory)return;
-  const mb=+(performance.memory.usedJSHeapSize/1048576).toFixed(2);
-  window.perfLog.push({name:'heap.'+eventName,ms:mb,t:performance.now()});
-  if(window.dbg)dbg.log('perf','heap@'+eventName+': '+mb+'MB');
+  if(!window.perfLog)return;
+  if(performance.memory){
+    const mb=+(performance.memory.usedJSHeapSize/1048576).toFixed(2);
+    window.perfLog.push({name:'heap.'+eventName,ms:mb,t:performance.now()});
+    if(window.dbg)dbg.log('perf','heap@'+eventName+': '+mb+'MB');
+  }
+  if(window.renderer&&window.renderer.info){
+    const ri=window.renderer.info;
+    window.perfLog.push({
+      name:'rendererInfo.'+eventName,
+      ms:0,
+      t:performance.now(),
+      geometries:ri.memory.geometries,
+      textures:ri.memory.textures,
+      programs:(ri.programs&&ri.programs.length)||0,
+    });
+  }
 }
 
 function goToSelect(){

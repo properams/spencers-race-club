@@ -38,6 +38,19 @@ function initPostFX(){
   if(!renderer) return;
   // Skip on mobile — extra render passes hurt FPS too much
   if(window._isMobile){_postfx.enabled=false;return;}
+  // Skip ook als gebruiker postfx persistent heeft uitgeschakeld via pause-
+  // overlay toggle (localStorage src_fx='0'). Voorheen werden 4 render-
+  // targets + 3 ShaderMaterials alsnog opgebouwd om vervolgens nooit
+  // gebruikt te worden — pure GPU- + heap-waste op desktop. _ready blijft
+  // false dus toggleQuality() krijgt een N/A-pad bij eventuele user-toggle
+  // tijdens deze sessie (vereist reload om alsnog op te bouwen).
+  try {
+    if (localStorage.getItem('src_fx') === '0') {
+      _postfx.enabled = false;
+      _postfx.ready = false;
+      return;
+    }
+  } catch (_) { /* private mode — gewoon doorgaan */ }
 
   const w = innerWidth, h = innerHeight;
   const halfW = Math.max(2, Math.floor(w/2));
