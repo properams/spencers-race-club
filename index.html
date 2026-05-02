@@ -61,9 +61,15 @@
     <button class="worldSelBack" onclick="goToTitle()">← BACK</button>
   </div>
   <div class="worldGrid">
-    <!-- Grand Prix world-card verwijderd — wereld-builder + assets blijven in de
-         code als fallback (zie js/core/scene.js's else-tak en _GP_WP in main.js).
-         Default activeWorld is daarom van 'grandprix' verschoven naar 'volcano'. -->
+    <div class="worldBigCard" data-world="grandprix">
+      <div class="worldCardBg worldBgGP"></div>
+      <div class="worldCardContent">
+        <div class="worldCardIcon">🏎️</div>
+        <div class="worldCardName">GRAND PRIX</div>
+        <div class="worldCardDesc">Classic racing through mountains and forests. Chicanes, hairpins, big jumps.</div>
+      </div>
+      <div class="worldCardSel">✓ SELECTED</div>
+    </div>
     <div class="worldBigCard" data-world="space">
       <div class="worldCardBg worldBgSpace"></div>
       <div class="worldCardContent">
