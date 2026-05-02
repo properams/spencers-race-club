@@ -50,21 +50,14 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
     camera.position.copy(camPos);camera.lookAt(camTgt);
     camera.fov=62;camera.updateProjectionMatrix();
   }
-  // PHASE-C2: postfx warm-render hier, ná makeAllCars() en ná de race-cam
-  // reposition, zodat de warm-render exact de eerste race-frame scope ziet
-  // (8 cars + race-cam view + postfx pipeline). Voorheen stond deze in
-  // buildScene maar daar waren de cars nog niet aan de scene toegevoegd
-  // en stond de camera nog op de title-cam-positie — fase C-meting laat
-  // zien dat dat de eerste race-frame niet afdekte. Eén warm-render per
-  // race-start; als de fix terug moet, alleen dit blok verwijderen.
-  if(window.perfMark)perfMark('goToRace:postfxWarm:start');
-  try{
-    if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
-    else if(renderer)renderer.render(scene,camera);
-  }catch(e){
-    if(window.dbg)dbg.warn('navigation','postfx warm-render failed: '+(e&&e.message||e));
-  }
-  if(window.perfMark){perfMark('goToRace:postfxWarm:end');perfMeasure('goToRace.postfxWarm','goToRace:postfxWarm:start','goToRace:postfxWarm:end');}
+  // PHASE-D: GEEN expliciete warm-render meer hier. Reden: blokkeerde de
+  // click→countdown-light latency met 51-929ms (sandbox-meting; onbekend
+  // op echte hardware). loop() rendert tijdens de 4.2-sec countdown ~250
+  // frames via renderWithPostFX op race-cam-view, dus de eerste van die
+  // frames betaalt de compile + texture-upload cost — verstopt achter de
+  // F1-light-sequence (DOM-setTimeout, animeert onafhankelijk van rAF).
+  // GO-frame is daardoor warm tegen de tijd dat gameState→RACE flipt.
+  // Phase-C2 warm-render in goToRace verwijderd; rest van flow ongewijzigd.
   _introPanTimer=0;
   _raceMaxSpeed=0;_raceOvertakes=0;_lastPlayerPos=9;
   _camView=0;_achieveUnlocked.clear();

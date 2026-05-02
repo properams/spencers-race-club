@@ -1,0 +1,1384 @@
+{
+  "meta": {
+    "browser": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.7390.37 Safari/537.36",
+    "date": "2026-05-02",
+    "method": "playwright-chromium",
+    "url": "http://localhost:8087/?perfauto=1",
+    "worlds": [
+      "candy",
+      "volcano",
+      "space",
+      "neoncity",
+      "grandprix"
+    ]
+  },
+  "heap": {
+    "boot": 17.47,
+    "afterWorldSelect": 20.35,
+    "end": 62.61
+  },
+  "baselineLog": [
+    {
+      "name": "build.disposeScene",
+      "ms": 0.10000000009313226,
+      "t": 785
+    },
+    {
+      "name": "build.track",
+      "ms": 21.800000000046566,
+      "t": 813.1999999999534
+    },
+    {
+      "name": "build.world",
+      "ms": 118.5,
+      "t": 931.6999999999534
+    },
+    {
+      "name": "build.gameplayObjects",
+      "ms": 82.89999999990687,
+      "t": 1014.5999999998603
+    },
+    {
+      "name": "build.night",
+      "ms": 1.4000000001396984,
+      "t": 1016.2999999998137
+    },
+    {
+      "name": "build.assetBridge",
+      "ms": 0.10000000009313226,
+      "t": 1016.3999999999069
+    },
+    {
+      "name": "build.precompile.compile",
+      "ms": 318.5999999998603,
+      "t": 1335.1999999999534
+    },
+    {
+      "name": "build.precompile",
+      "ms": 318.89999999990687,
+      "t": 1335.2999999998137
+    },
+    {
+      "name": "build.total",
+      "ms": 550.6999999999534,
+      "t": 1335.3999999999069
+    },
+    {
+      "name": "shaderPrograms.delta",
+      "ms": 13,
+      "t": 1335.3999999999069,
+      "world": "grandprix"
+    },
+    {
+      "name": "shaderPrograms.afterBuild",
+      "ms": 13,
+      "t": 1335.3999999999069,
+      "world": "grandprix"
+    },
+    {
+      "name": "assets.textures",
+      "ms": 6262.09999999986,
+      "t": 9925.09999999986,
+      "world": "grandprix",
+      "count": 3
+    },
+    {
+      "name": "assets.models",
+      "ms": 6262.399999999907,
+      "t": 9925.399999999907,
+      "world": "grandprix",
+      "count": 35
+    },
+    {
+      "name": "assets.preloadWorld.total",
+      "ms": 9141.300000000047,
+      "t": 9925.399999999907,
+      "world": "grandprix"
+    }
+  ],
+  "runs": [
+    {
+      "world": "candy",
+      "label": "cold",
+      "heapBefore": 20.41,
+      "heapAfter": 60.59,
+      "programs": 48,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 20.42,
+          "t": 10757.399999999907
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 9.300000000046566,
+          "t": 12315.199999999953
+        },
+        {
+          "name": "build.track",
+          "ms": 13.800000000046566,
+          "t": 12332.09999999986
+        },
+        {
+          "name": "build.world",
+          "ms": 117.80000000004657,
+          "t": 12450
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 15.800000000046566,
+          "t": 12466
+        },
+        {
+          "name": "build.night",
+          "ms": 0.6000000000931323,
+          "t": 12466.699999999953
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0,
+          "t": 12466.699999999953
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 232.0999999998603,
+          "t": 12698.799999999814
+        },
+        {
+          "name": "build.precompile",
+          "ms": 232.19999999995343,
+          "t": 12698.899999999907
+        },
+        {
+          "name": "build.total",
+          "ms": 393,
+          "t": 12698.899999999907
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -19,
+          "t": 12698.899999999907,
+          "world": "candy"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 13,
+          "t": 12698.899999999907,
+          "world": "candy"
+        },
+        {
+          "name": "transition.total",
+          "ms": 852.0999999998603,
+          "t": 13157.799999999814
+        },
+        {
+          "name": "assets.models",
+          "ms": 0.8999999999068677,
+          "t": 14054.399999999907,
+          "world": "candy",
+          "count": 0
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 1748.6000000000931,
+          "t": 14054.399999999907,
+          "world": "candy",
+          "kind": "procedural"
+        },
+        {
+          "name": "assets.textures",
+          "ms": 6907.299999999814,
+          "t": 20960.799999999814,
+          "world": "candy",
+          "count": 2
+        },
+        {
+          "name": "assets.preloadWorld.total",
+          "ms": 8654.899999999907,
+          "t": 20960.899999999907,
+          "world": "candy"
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 25.43,
+          "t": 20962.899999999907
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 53.800000000046566,
+          "t": 21019
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 57.5999999998603,
+          "t": 21020.399999999907
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 15.199999999953434,
+          "t": 34082.19999999995
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 26,
+          "t": 34082.19999999995,
+          "world": "candy"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 2582.399999999907,
+          "t": 36664.69999999995
+        }
+      ]
+    },
+    {
+      "world": "volcano",
+      "label": "cold",
+      "heapBefore": 32.64,
+      "heapAfter": 34.22,
+      "programs": 70,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 32.65,
+          "t": 53579
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 0.4000000001396984,
+          "t": 53580.5,
+          "world": "candy",
+          "kind": "procedural"
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 58.800000000046566,
+          "t": 53981.59999999986
+        },
+        {
+          "name": "build.track",
+          "ms": 16.399999999906868,
+          "t": 54001.5
+        },
+        {
+          "name": "build.world",
+          "ms": 33.699999999953434,
+          "t": 54035.19999999995
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 74.39999999990687,
+          "t": 54109.59999999986
+        },
+        {
+          "name": "build.night",
+          "ms": 0.30000000004656613,
+          "t": 54109.89999999991
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0,
+          "t": 54109.89999999991
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 249.69999999995343,
+          "t": 54359.69999999995
+        },
+        {
+          "name": "build.precompile",
+          "ms": 249.89999999990687,
+          "t": 54359.799999999814
+        },
+        {
+          "name": "build.total",
+          "ms": 437.19999999995343,
+          "t": 54359.799999999814
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -14,
+          "t": 54359.799999999814,
+          "world": "volcano"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 34,
+          "t": 54359.799999999814,
+          "world": "volcano"
+        },
+        {
+          "name": "transition.total",
+          "ms": 439.69999999995343,
+          "t": 54361.89999999991
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 449.4000000001397,
+          "t": 54371.69999999995,
+          "world": "volcano",
+          "kind": "procedural"
+        },
+        {
+          "name": "assets.models",
+          "ms": 1.8000000000465661,
+          "t": 54371.799999999814,
+          "world": "volcano",
+          "count": 23
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 22.08,
+          "t": 57315.5
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 39,
+          "t": 57354.799999999814
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 39.5999999998603,
+          "t": 57355.09999999986
+        },
+        {
+          "name": "assets.textures",
+          "ms": 4574,
+          "t": 58943.89999999991,
+          "world": "volcano",
+          "count": 3
+        },
+        {
+          "name": "assets.preloadWorld.total",
+          "ms": 5021.399999999907,
+          "t": 58944,
+          "world": "volcano"
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 18.600000000093132,
+          "t": 66126.69999999995
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 46,
+          "t": 66126.69999999995,
+          "world": "volcano"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 958.8000000000466,
+          "t": 67085.5
+        }
+      ]
+    },
+    {
+      "world": "space",
+      "label": "cold",
+      "heapBefore": 26.79,
+      "heapAfter": 49.13,
+      "programs": 94,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 25.22,
+          "t": 75004.19999999995
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 0.6999999999534339,
+          "t": 75006.19999999995,
+          "world": "volcano",
+          "kind": "procedural"
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 23.199999999953434,
+          "t": 75537
+        },
+        {
+          "name": "build.track",
+          "ms": 20.899999999906868,
+          "t": 75565
+        },
+        {
+          "name": "build.world",
+          "ms": 101.0999999998603,
+          "t": 75666.09999999986
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 39.800000000046566,
+          "t": 75706
+        },
+        {
+          "name": "build.night",
+          "ms": 0.39999999990686774,
+          "t": 75706.3999999999
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0.10000000009313226,
+          "t": 75706.5
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 363.5,
+          "t": 76070.19999999995
+        },
+        {
+          "name": "build.precompile",
+          "ms": 363.69999999995343,
+          "t": 76070.19999999995
+        },
+        {
+          "name": "build.total",
+          "ms": 556.5,
+          "t": 76070.19999999995
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -14,
+          "t": 76070.19999999995,
+          "world": "space"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 56,
+          "t": 76070.29999999981,
+          "world": "space"
+        },
+        {
+          "name": "transition.total",
+          "ms": 559.3000000000466,
+          "t": 76072.5
+        },
+        {
+          "name": "assets.textures",
+          "ms": 0.20000000018626451,
+          "t": 76081.5,
+          "world": "space",
+          "count": 0
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 567.9000000001397,
+          "t": 76081.5,
+          "world": "space",
+          "kind": "procedural"
+        },
+        {
+          "name": "assets.models",
+          "ms": 0.20000000018626451,
+          "t": 76081.5,
+          "world": "space",
+          "count": 15
+        },
+        {
+          "name": "assets.preloadWorld.total",
+          "ms": 567.8000000000466,
+          "t": 76081.5,
+          "world": "space"
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 30.88,
+          "t": 85284.79999999981
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 55.5,
+          "t": 85340.69999999995
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 56.300000000046566,
+          "t": 85341.09999999986
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 11.299999999813735,
+          "t": 98876.3999999999
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 71,
+          "t": 98876.3999999999,
+          "world": "space"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 3620,
+          "t": 102496.5
+        }
+      ]
+    },
+    {
+      "world": "neoncity",
+      "label": "cold",
+      "heapBefore": 51.06,
+      "heapAfter": 54.97,
+      "programs": 130,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 51.06,
+          "t": 121476.3999999999
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 0.30000000004656613,
+          "t": 121478.19999999995,
+          "world": "space",
+          "kind": "procedural"
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 27.799999999813735,
+          "t": 121838.3999999999
+        },
+        {
+          "name": "build.track",
+          "ms": 20,
+          "t": 121864.29999999981
+        },
+        {
+          "name": "build.world",
+          "ms": 93.10000000009313,
+          "t": 121957.5
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 17.299999999813735,
+          "t": 121974.79999999981
+        },
+        {
+          "name": "build.night",
+          "ms": 0.8000000000465661,
+          "t": 121975.69999999995
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0.19999999995343387,
+          "t": 121975.8999999999
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 759.5999999998603,
+          "t": 122735.59999999986
+        },
+        {
+          "name": "build.precompile",
+          "ms": 759.6999999999534,
+          "t": 122735.69999999995
+        },
+        {
+          "name": "build.total",
+          "ms": 925.1999999999534,
+          "t": 122735.69999999995
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -17,
+          "t": 122735.79999999981,
+          "world": "neoncity"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 79,
+          "t": 122735.79999999981,
+          "world": "neoncity"
+        },
+        {
+          "name": "transition.total",
+          "ms": 935.0999999998603,
+          "t": 122738.19999999995
+        },
+        {
+          "name": "assets.models",
+          "ms": 0.6000000000931323,
+          "t": 122749,
+          "world": "neoncity",
+          "count": 20
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 43436.89999999991,
+          "t": 165240.19999999995,
+          "world": "neoncity",
+          "kind": "procedural"
+        },
+        {
+          "name": "assets.textures",
+          "ms": 42497.39999999991,
+          "t": 165245.7999999998,
+          "world": "neoncity",
+          "count": 3
+        },
+        {
+          "name": "assets.preloadWorld.total",
+          "ms": 43435.5,
+          "t": 165245.8999999999,
+          "world": "neoncity"
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 48.2,
+          "t": 165250.09999999986
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 73.69999999995343,
+          "t": 165324.7999999998
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 75.60000000009313,
+          "t": 165325.3999999999
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 20.899999999906868,
+          "t": 181816.69999999995
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 98,
+          "t": 181816.7999999998,
+          "world": "neoncity"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 6408.90000000014,
+          "t": 188225.69999999995
+        }
+      ]
+    },
+    {
+      "world": "grandprix",
+      "label": "cold",
+      "heapBefore": 46.69,
+      "heapAfter": 48.87,
+      "programs": 140,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 46.69,
+          "t": 243494.59999999986
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 0.6000000000931323,
+          "t": 243496.5,
+          "world": "neoncity",
+          "kind": "procedural"
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 87.9000000001397,
+          "t": 244094.09999999986
+        },
+        {
+          "name": "build.track",
+          "ms": 9.200000000186265,
+          "t": 244108.59999999986
+        },
+        {
+          "name": "build.world",
+          "ms": 108.80000000004657,
+          "t": 244217.59999999986
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 25.5,
+          "t": 244243.09999999986
+        },
+        {
+          "name": "build.night",
+          "ms": 0.6000000000931323,
+          "t": 244243.69999999995
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0.19999999995343387,
+          "t": 244243.8999999999
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 423.19999999995343,
+          "t": 244667.19999999995
+        },
+        {
+          "name": "build.precompile",
+          "ms": 423.30000000004657,
+          "t": 244667.19999999995
+        },
+        {
+          "name": "build.total",
+          "ms": 661.1000000000931,
+          "t": 244667.19999999995
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -36,
+          "t": 244667.2999999998,
+          "world": "grandprix"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 94,
+          "t": 244667.2999999998,
+          "world": "grandprix"
+        },
+        {
+          "name": "transition.total",
+          "ms": 663.8999999999069,
+          "t": 244669.2999999998
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 670.3000000000466,
+          "t": 244676.3999999999,
+          "world": "grandprix",
+          "kind": "procedural"
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 41.04,
+          "t": 253381.8999999999
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 83.19999999995343,
+          "t": 253465.69999999995
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 84.89999999990687,
+          "t": 253466.59999999986
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 11.599999999860302,
+          "t": 266878.5
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 111,
+          "t": 266878.5,
+          "world": "grandprix"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 3085.899999999907,
+          "t": 269964.3999999999
+        }
+      ]
+    },
+    {
+      "world": "candy",
+      "label": "warm",
+      "heapBefore": 42.98,
+      "heapAfter": 65.64,
+      "programs": 123,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 42.98,
+          "t": 290856
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 0.30000000004656613,
+          "t": 290857.09999999986,
+          "world": "grandprix",
+          "kind": "procedural"
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 54.4000000001397,
+          "t": 291335.7999999998
+        },
+        {
+          "name": "build.track",
+          "ms": 19.5999999998603,
+          "t": 291360.59999999986
+        },
+        {
+          "name": "build.world",
+          "ms": 112.10000000009313,
+          "t": 291472.69999999995
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 49.10000000009313,
+          "t": 291521.8999999999
+        },
+        {
+          "name": "build.night",
+          "ms": 0.5,
+          "t": 291522.5
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0.09999999986030161,
+          "t": 291522.59999999986
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 124.30000000004657,
+          "t": 291647
+        },
+        {
+          "name": "build.precompile",
+          "ms": 124.4000000001397,
+          "t": 291647
+        },
+        {
+          "name": "build.total",
+          "ms": 365.70000000018626,
+          "t": 291647
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -34,
+          "t": 291647,
+          "world": "candy"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 108,
+          "t": 291647,
+          "world": "candy"
+        },
+        {
+          "name": "transition.total",
+          "ms": 368.5,
+          "t": 291649.3999999999
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 375.69999999995343,
+          "t": 291656.69999999995,
+          "world": "candy",
+          "kind": "procedural"
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 60.53,
+          "t": 295561.8999999999
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 31.699999999953434,
+          "t": 295593.8999999999
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 32.699999999953434,
+          "t": 295594.19999999995
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 5.100000000093132,
+          "t": 304563.5
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 113,
+          "t": 304563.5,
+          "world": "candy"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 779.0999999998603,
+          "t": 305342.69999999995
+        }
+      ]
+    },
+    {
+      "world": "volcano",
+      "label": "warm",
+      "heapBefore": 65.91,
+      "heapAfter": 85.67,
+      "programs": 126,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 65.91,
+          "t": 315399.5
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 0.30000000004656613,
+          "t": 315401,
+          "world": "candy",
+          "kind": "procedural"
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 59.199999999953434,
+          "t": 315968.69999999995
+        },
+        {
+          "name": "build.track",
+          "ms": 6.600000000093132,
+          "t": 315979.19999999995
+        },
+        {
+          "name": "build.world",
+          "ms": 35.39999999990687,
+          "t": 316014.59999999986
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 41.800000000046566,
+          "t": 316056.5
+        },
+        {
+          "name": "build.night",
+          "ms": 0.39999999990686774,
+          "t": 316056.8999999999
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0,
+          "t": 316057
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 102.4000000001397,
+          "t": 316159.5
+        },
+        {
+          "name": "build.precompile",
+          "ms": 102.5,
+          "t": 316159.59999999986
+        },
+        {
+          "name": "build.total",
+          "ms": 250.0999999998603,
+          "t": 316159.69999999995
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -14,
+          "t": 316159.69999999995,
+          "world": "volcano"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 109,
+          "t": 316159.69999999995,
+          "world": "volcano"
+        },
+        {
+          "name": "transition.total",
+          "ms": 253,
+          "t": 316162.3999999999
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 259.5,
+          "t": 316169,
+          "world": "volcano",
+          "kind": "procedural"
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 81.81,
+          "t": 318211.8999999999
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 45.9000000001397,
+          "t": 318258.09999999986
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 46.5,
+          "t": 318258.19999999995
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 14.399999999906868,
+          "t": 326559
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 114,
+          "t": 326559,
+          "world": "volcano"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 419,
+          "t": 326978
+        }
+      ]
+    },
+    {
+      "world": "space",
+      "label": "warm",
+      "heapBefore": 91.21,
+      "heapAfter": 69.79,
+      "programs": 131,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 91.21,
+          "t": 332896.3999999999
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 0.19999999995343387,
+          "t": 332898.3999999999,
+          "world": "volcano",
+          "kind": "procedural"
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 31.799999999813735,
+          "t": 333295.3999999999
+        },
+        {
+          "name": "build.track",
+          "ms": 12.400000000139698,
+          "t": 333317.59999999986
+        },
+        {
+          "name": "build.world",
+          "ms": 66.80000000004657,
+          "t": 333384.3999999999
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 26.600000000093132,
+          "t": 333411
+        },
+        {
+          "name": "build.night",
+          "ms": 0.5,
+          "t": 333411.59999999986
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0,
+          "t": 333411.59999999986
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 100,
+          "t": 333511.59999999986
+        },
+        {
+          "name": "build.precompile",
+          "ms": 100.10000000009313,
+          "t": 333511.69999999995
+        },
+        {
+          "name": "build.total",
+          "ms": 248.39999999990687,
+          "t": 333511.7999999998
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -14,
+          "t": 333511.7999999998,
+          "world": "space"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 112,
+          "t": 333511.7999999998,
+          "world": "space"
+        },
+        {
+          "name": "transition.total",
+          "ms": 250,
+          "t": 333513.19999999995
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 253.30000000004657,
+          "t": 333516.59999999986,
+          "world": "space",
+          "kind": "procedural"
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 67,
+          "t": 339326.5
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 36.800000000046566,
+          "t": 339363.7999999998
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 37.800000000046566,
+          "t": 339364.19999999995
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 10.299999999813735,
+          "t": 349049.3999999999
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 120,
+          "t": 349049.3999999999,
+          "world": "space"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 1644.8000000000466,
+          "t": 350694.19999999995
+        }
+      ]
+    },
+    {
+      "world": "neoncity",
+      "label": "warm",
+      "heapBefore": 83.37,
+      "heapAfter": 73.16,
+      "programs": 145,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 83.37,
+          "t": 366016.7999999998
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 0.2999999998137355,
+          "t": 366020.2999999998,
+          "world": "space",
+          "kind": "procedural"
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 61.699999999953434,
+          "t": 366522.2999999998
+        },
+        {
+          "name": "build.track",
+          "ms": 16.800000000046566,
+          "t": 366544
+        },
+        {
+          "name": "build.world",
+          "ms": 123.19999999995343,
+          "t": 366667.3999999999
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 33.300000000046566,
+          "t": 366700.7999999998
+        },
+        {
+          "name": "build.night",
+          "ms": 0.5,
+          "t": 366701.2999999998
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0,
+          "t": 366701.2999999998
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 240.30000000004657,
+          "t": 366941.69999999995
+        },
+        {
+          "name": "build.precompile",
+          "ms": 240.4000000001397,
+          "t": 366941.69999999995
+        },
+        {
+          "name": "build.total",
+          "ms": 481.5,
+          "t": 366941.8999999999
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -17,
+          "t": 366941.8999999999,
+          "world": "neoncity"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 116,
+          "t": 366941.8999999999,
+          "world": "neoncity"
+        },
+        {
+          "name": "transition.total",
+          "ms": 576.5,
+          "t": 366944.09999999986
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 22673.100000000093,
+          "t": 389040.69999999995,
+          "world": "neoncity",
+          "kind": "procedural"
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 76.1,
+          "t": 389043.3999999999
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 82.5,
+          "t": 389126.2999999998
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 84.19999999995343,
+          "t": 389127.3999999999
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 11.600000000093132,
+          "t": 399811.5
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 128,
+          "t": 399811.5,
+          "world": "neoncity"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 2297.2999999998137,
+          "t": 402108.8999999999
+        }
+      ]
+    },
+    {
+      "world": "grandprix",
+      "label": "warm",
+      "heapBefore": 66.16,
+      "heapAfter": 70.64,
+      "programs": 140,
+      "entries": [
+        {
+          "name": "heap.goToWorldSelect",
+          "ms": 66.38,
+          "t": 435503.59999999986
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 0.30000000004656613,
+          "t": 435504.59999999986,
+          "world": "neoncity",
+          "kind": "procedural"
+        },
+        {
+          "name": "build.disposeScene",
+          "ms": 91.5,
+          "t": 436156.19999999995
+        },
+        {
+          "name": "build.track",
+          "ms": 14.5,
+          "t": 436174.69999999995
+        },
+        {
+          "name": "build.world",
+          "ms": 157.80000000004657,
+          "t": 436332.5
+        },
+        {
+          "name": "build.gameplayObjects",
+          "ms": 37.799999999813735,
+          "t": 436370.3999999999
+        },
+        {
+          "name": "build.night",
+          "ms": 2.3999999999068677,
+          "t": 436372.8999999999
+        },
+        {
+          "name": "build.assetBridge",
+          "ms": 0,
+          "t": 436372.8999999999
+        },
+        {
+          "name": "build.precompile.compile",
+          "ms": 141.19999999995343,
+          "t": 436514.09999999986
+        },
+        {
+          "name": "build.precompile",
+          "ms": 141.19999999995343,
+          "t": 436514.09999999986
+        },
+        {
+          "name": "build.total",
+          "ms": 449.69999999995343,
+          "t": 436514.09999999986
+        },
+        {
+          "name": "shaderPrograms.delta",
+          "ms": -36,
+          "t": 436514.19999999995,
+          "world": "grandprix"
+        },
+        {
+          "name": "shaderPrograms.afterBuild",
+          "ms": 112,
+          "t": 436514.19999999995,
+          "world": "grandprix"
+        },
+        {
+          "name": "transition.total",
+          "ms": 451.5,
+          "t": 436515.7999999998
+        },
+        {
+          "name": "audio.musicStems",
+          "ms": 457.10000000009313,
+          "t": 436521.5,
+          "world": "grandprix",
+          "kind": "procedural"
+        },
+        {
+          "name": "heap.goToRace",
+          "ms": 58.92,
+          "t": 442385.7999999998
+        },
+        {
+          "name": "goToRace.makeAllCars",
+          "ms": 42.10000000009313,
+          "t": 442428.19999999995
+        },
+        {
+          "name": "goToRace.total",
+          "ms": 42.800000000046566,
+          "t": 442428.5
+        },
+        {
+          "name": "go.toFirstFrame",
+          "ms": 4.900000000139698,
+          "t": 453866.19999999995
+        },
+        {
+          "name": "shaderPrograms.atFirstFrame",
+          "ms": 123,
+          "t": 453866.19999999995,
+          "world": "grandprix"
+        },
+        {
+          "name": "firstRaceFrame.render",
+          "ms": 1337,
+          "t": 455203.19999999995
+        }
+      ]
+    }
+  ]
+}
