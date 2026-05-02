@@ -230,7 +230,14 @@ function updateAmbientWindSpeed(dt){
   if(!_ambientWindGain||!audioCtx)return;
   const car=carObjs[playerIdx];if(!car)return;
   const ratio=Math.abs(car.speed)/Math.max(car.def.topSpd,.01);
-  const target=0.005+ratio*.065+(isRain?.018:0);
+  // 2026-05-02: 65%-threshold hersteld zodat stilstaande auto geen
+  // continue suis produceert. Voorheen: 0.005 base-gain die ook bij
+  // ratio=0 audible was. Threshold zat oorspronkelijk in engine.js
+  // _carWindGain (sinds disabled) en is hier verloren gegaan.
+  // Boven 65% topspeed: lineair naar 0.065 max op ratio=1.0.
+  // Rain-baseline 0.018 blijft behouden zodat regen-suis nog hoorbaar is.
+  const speedWind=ratio<0.65?0:(ratio-0.65)*(0.065/0.35);
+  const target=speedWind+(isRain?.018:0);
   const cur=_ambientWindGain.gain.value;
   // Smooth ramp — fast attack, slow release
   const rate=target>cur?8:2;

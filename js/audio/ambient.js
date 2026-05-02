@@ -92,7 +92,10 @@ function startAmbientWind(){
       const src=audioCtx.createBufferSource();src.buffer=buf;src.loop=true;
       const g=audioCtx.createGain();g.gain.value=0;
       src.connect(g);g.connect(_dst());src.start();
-      const t=audioCtx.currentTime;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.038,t+2.5);
+      // 2026-05-02: initial gain blijft op 0 — updateAmbientWindSpeed
+      // (effects/night.js) gate't gain op speed-ratio >= 65%. Voorheen:
+      // ramp naar 0.038 die hoorbaar was tijdens countdown/stilstand.
+      const t=audioCtx.currentTime;g.gain.setValueAtTime(0,t);
       _ambientWind=src;_ambientWindGain=g;
       return;
     }
@@ -107,7 +110,10 @@ function startAmbientWind(){
   const g=audioCtx.createGain();g.gain.value=0;
   src.connect(f1);f1.connect(f2);f2.connect(g);g.connect(_dst());
   src.start();
-  const t=audioCtx.currentTime;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.038,t+2.5);
+  // 2026-05-02: initial gain blijft op 0 — updateAmbientWindSpeed
+  // (effects/night.js) gate't gain op speed-ratio >= 65%. Voorheen:
+  // ramp naar 0.038 die hoorbaar was tijdens countdown/stilstand.
+  const t=audioCtx.currentTime;g.gain.setValueAtTime(0,t);
   _ambientWind=src;_ambientWindGain=g;
 }
 
