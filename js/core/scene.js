@@ -470,13 +470,6 @@ function buildScene(){
     buildNightObjects();buildSpectators();buildSunBillboard();
     buildAdvertisingBoards();buildCornerBoards();buildTrackFlags();
     buildGPTrackProps();
-    // 2026-05-02: pit garage disabled per user request — het 330m lange
-    // witte gebouw met oranje accentstreep en de bijbehorende witte
-    // pit-wall (z=187) + timing tower (x=185) zagen er rommelig uit
-    // naast de baan en de pit-wall werd vanuit chase-cam gelezen als een
-    // schuine "finish-muur". Functie buildPitBuilding() blijft beschikbaar
-    // in js/track/environment.js:329 voor toekomstig gebruik.
-    // buildPitBuilding();
     // Bushes track-side + ground clutter (mushrooms / flowers / ferns)
     // in the infield. spawnRoadsideProps walks the track curve;
     // spawnGroundClutter scatters more freely. Both no-op if cache

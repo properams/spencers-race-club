@@ -34,8 +34,15 @@
 #tcGas.active{background:linear-gradient(135deg,rgba(0,255,150,.6),rgba(0,200,110,.35));border-color:rgba(150,255,200,.95);box-shadow:0 8px 34px rgba(0,255,160,.7),inset 0 2px 0 rgba(255,255,255,.35)}
 #tcBrake{bottom:24px;right:122px;width:70px;height:70px;border-radius:50%;font-size:11px;letter-spacing:2px;background:linear-gradient(135deg,rgba(255,90,50,.28) 0%,rgba(200,30,0,.08) 100%);border-color:rgba(255,90,50,.45);box-shadow:0 4px 18px rgba(255,60,30,.25),inset 0 1px 0 rgba(255,255,255,.2)}
 #tcBrake.active{background:linear-gradient(135deg,rgba(255,130,90,.6),rgba(220,60,30,.35));border-color:rgba(255,170,140,.95);box-shadow:0 6px 26px rgba(255,90,50,.55),inset 0 2px 0 rgba(255,255,255,.3)}
-#tcNitro{bottom:118px;right:18px;width:58px;height:58px;border-radius:18px;font-size:22px;background:linear-gradient(135deg,rgba(255,220,40,.28) 0%,rgba(255,160,0,.08) 100%);border-color:rgba(255,220,40,.45);box-shadow:0 4px 16px rgba(255,200,0,.25),inset 0 1px 0 rgba(255,255,255,.22)}
-#tcNitro.active{background:linear-gradient(135deg,rgba(255,240,100,.6),rgba(255,180,30,.35));border-color:rgba(255,250,150,.95);box-shadow:0 6px 24px rgba(255,220,40,.7),inset 0 2px 0 rgba(255,255,255,.35)}
+/* Nitro indicator: pointer-events disabled — it's now a passive charge gauge.
+   Activation happens via double-tap on #tcGas (see js/ui/touch.js). The fill
+   element grows with nitroLevel; .ready glow signals 100% charge. */
+#tcNitro{bottom:118px;right:18px;width:58px;height:30px;border-radius:14px;font-size:16px;background:linear-gradient(135deg,rgba(255,220,40,.18) 0%,rgba(255,160,0,.06) 100%);border-color:rgba(255,220,40,.35);box-shadow:0 2px 10px rgba(255,200,0,.15),inset 0 1px 0 rgba(255,255,255,.18);pointer-events:none;overflow:hidden;position:fixed;display:flex;align-items:center;justify-content:center;transition:box-shadow .25s,border-color .25s}
+#tcNitro.ready{border-color:rgba(255,250,150,.95);box-shadow:0 4px 18px rgba(255,220,40,.7),inset 0 1px 0 rgba(255,255,255,.35),0 0 14px rgba(255,220,40,.55)}
+#tcNitroIcon{position:relative;z-index:2;color:#fff;text-shadow:0 0 6px rgba(255,200,0,.85);pointer-events:none}
+#tcNitroFill{position:absolute;left:0;bottom:0;height:100%;width:0%;background:linear-gradient(90deg,#ffee00,#ff7700);opacity:.55;z-index:1;transition:width .12s linear;pointer-events:none}
+/* Brief flash on the GAS button when double-tap arms nitro. */
+#tcGas.nitroFlash{box-shadow:0 8px 38px rgba(255,220,40,.85),inset 0 2px 0 rgba(255,255,255,.45);border-color:rgba(255,250,150,.95)}
 #tcHbk{bottom:118px;right:86px;width:58px;height:58px;border-radius:18px;font-size:10px;letter-spacing:1px;background:linear-gradient(135deg,rgba(140,110,255,.28) 0%,rgba(80,50,200,.08) 100%);border-color:rgba(140,110,255,.45);box-shadow:0 4px 16px rgba(120,90,255,.25),inset 0 1px 0 rgba(255,255,255,.22)}
 #tcHbk.active{background:linear-gradient(135deg,rgba(170,130,255,.6),rgba(100,70,220,.35));border-color:rgba(210,180,255,.95);box-shadow:0 6px 24px rgba(140,110,255,.6),inset 0 2px 0 rgba(255,255,255,.35)}
 #tcSteer{display:none;position:fixed;z-index:50;background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,rgba(255,255,255,.03) 100%);backdrop-filter:blur(14px) saturate(160%);-webkit-backdrop-filter:blur(14px) saturate(160%);border:1px solid rgba(255,255,255,.22);border-radius:36px;box-shadow:0 6px 20px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.25);touch-action:none;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;overflow:hidden}
@@ -126,12 +133,7 @@
 #hudInstruments .hiGearVal{font-size:18px!important}
 #hudInstruments .hiSpdVal{font-size:24px!important;line-height:1!important}
 #hudInstruments .hiSpdLbl{font-size:7px!important}
-#nitroBar{
-    bottom:calc(140px + env(safe-area-inset-bottom,0px))!important;
-    right:calc(126px + env(safe-area-inset-right,0px))!important;
-    width:10px!important;height:60px!important;
-    z-index:15!important;
-  }
+#nitroBar{display:none!important} /* replaced by #tcNitro indicator on mobile */
 #nitroLbl{display:none!important}
 #hudLeader:not(.lShow),#hudCarStatus,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines,#hudRpm{display:none!important}
 /* When expanded via L-hotkey, the leaderboard returns even on small viewports. */
@@ -142,10 +144,10 @@
 #tcRight{bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;left:calc(118px + env(safe-area-inset-left,0px))!important}
 #tcBrake,#tcHbk{display:none!important}
 #tcGas{width:96px!important;height:96px!important;bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;right:calc(20px + env(safe-area-inset-right,0px))!important;font-size:13px!important}
-#tcNitro{width:64px!important;height:64px!important;bottom:calc(210px + env(safe-area-inset-bottom,0px))!important;right:calc(20px + env(safe-area-inset-right,0px))!important;font-size:22px!important;border-radius:18px!important}
+#tcNitro{width:80px!important;height:24px!important;bottom:calc(195px + env(safe-area-inset-bottom,0px))!important;right:calc(16px + env(safe-area-inset-right,0px))!important;font-size:14px!important;border-radius:12px!important;z-index:16!important}
 #wrongWayOverlay{top:22%!important;font-size:26px!important;letter-spacing:4px!important}
 #slipIndicator{top:38%!important;right:calc(10px + env(safe-area-inset-right,0px))!important;font-size:11px!important}
-#tcLeft:active,#tcRight:active,#tcGas:active,#tcNitro:active{
+#tcLeft:active,#tcRight:active,#tcGas:active{
     transform:scale(.94)!important;
     filter:brightness(1.2)!important;
   }
@@ -156,7 +158,7 @@
 #tcLeft{left:calc(22px + env(safe-area-inset-left,0px))!important}
 #tcRight{left:calc(142px + env(safe-area-inset-left,0px))!important}
 #tcGas{width:100px!important;height:100px!important;bottom:calc(26px + env(safe-area-inset-bottom,0px))!important;right:calc(22px + env(safe-area-inset-right,0px))!important;font-size:14px!important}
-#tcNitro{width:74px!important;height:74px!important;bottom:calc(140px + env(safe-area-inset-bottom,0px))!important;right:calc(22px + env(safe-area-inset-right,0px))!important;font-size:28px!important;border-radius:22px!important}
+#tcNitro{width:90px!important;height:26px!important;bottom:calc(95px + env(safe-area-inset-bottom,0px))!important;right:calc(155px + env(safe-area-inset-right,0px))!important;font-size:16px!important;border-radius:13px!important;z-index:16!important}
 #tcBrake,#tcHbk{display:none!important}
 #hudMap{width:118px!important;height:118px!important;bottom:calc(200px + env(safe-area-inset-bottom,0px))!important;left:calc(22px + env(safe-area-inset-left,0px))!important;border-radius:50%!important;border:1px solid rgba(180,180,200,.55)!important;background:rgba(0,0,0,.78)!important;box-shadow:0 0 12px rgba(0,0,0,.5)!important}
 #hudRaceInfo{top:calc(18px + env(safe-area-inset-top,0px))!important;left:calc(18px + env(safe-area-inset-left,0px))!important}
@@ -164,13 +166,12 @@
 #hudRaceInfo .riLap{font-size:13px!important}
 .tcBtn{background:rgba(0,0,0,.45)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;border:1px solid rgba(255,255,255,.18)!important;color:#fff!important}
 #tcGas{background:linear-gradient(135deg,rgba(0,150,80,.55),rgba(0,90,40,.4))!important;border-color:rgba(0,200,110,.5)!important}
-#tcNitro{background:linear-gradient(135deg,rgba(200,150,0,.55),rgba(160,100,0,.4))!important;border-color:rgba(255,200,40,.5)!important}
+#tcNitro{background:linear-gradient(135deg,rgba(200,150,0,.32),rgba(160,100,0,.18))!important;border-color:rgba(255,200,40,.4)!important}
 #hudInstruments{bottom:calc(30px + env(safe-area-inset-bottom,0px))!important;right:calc(155px + env(safe-area-inset-right,0px))!important}
 #hudInstruments .hiGearVal{font-size:24px!important}
 #hudInstruments .hiSpdVal{font-size:36px!important}
 #hudPauseBtn{top:calc(16px + env(safe-area-inset-top,0px))!important;right:calc(16px + env(safe-area-inset-right,0px))!important;padding:10px 18px!important;font-size:13px!important}
 #hudLeader{top:calc(108px + env(safe-area-inset-top,0px))!important;right:calc(18px + env(safe-area-inset-right,0px))!important;max-height:calc(100vh - 280px)!important;overflow:hidden!important}
-#nitroBar{bottom:calc(245px + env(safe-area-inset-bottom,0px))!important;right:calc(30px + env(safe-area-inset-right,0px))!important;width:14px!important;height:110px!important}
 }
 @media(max-height:500px) and (orientation:landscape){
 #hudRaceInfo{top:calc(6px + env(safe-area-inset-top,0px))!important;left:calc(8px + env(safe-area-inset-left,0px))!important;padding:5px 10px!important;min-width:90px!important}
@@ -183,7 +184,6 @@
 #hudInstruments .hiSpdLbl{display:none!important}
 #hudMap{width:72px!important;height:72px!important;top:calc(52px + env(safe-area-inset-top,0px))!important;left:calc(8px + env(safe-area-inset-left,0px))!important;bottom:auto!important}
 #hudPauseBtn{top:auto!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;right:auto!important;left:50%!important;transform:translateX(-50%)!important;padding:7px 14px!important;font-size:11px!important}
-#nitroBar{display:none!important}
 #tcSteer{display:none!important}
 #tcLeft,#tcRight{display:flex!important;width:76px!important;height:60px!important;font-size:36px!important;border-radius:30px!important;bottom:calc(50px + env(safe-area-inset-bottom,0px))!important}
 #tcLeft{left:calc(10px + env(safe-area-inset-left,0px))!important}
@@ -191,7 +191,7 @@
 #tcBrake,#tcHbk{display:none!important}
 #tcGas{width:68px!important;height:68px!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;right:calc(10px + env(safe-area-inset-right,0px))!important;font-size:11px!important}
 #tcBrake{width:56px!important;height:56px!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;right:calc(86px + env(safe-area-inset-right,0px))!important;font-size:9px!important}
-#tcNitro{width:46px!important;height:46px!important;bottom:calc(72px + env(safe-area-inset-bottom,0px))!important;right:calc(10px + env(safe-area-inset-right,0px))!important;font-size:17px!important}
+#tcNitro{width:64px!important;height:18px!important;top:calc(40px + env(safe-area-inset-top,0px))!important;bottom:auto!important;right:calc(8px + env(safe-area-inset-right,0px))!important;font-size:11px!important;border-radius:9px!important;z-index:16!important}
 #tcHbk{width:46px!important;height:46px!important;bottom:calc(72px + env(safe-area-inset-bottom,0px))!important;right:calc(62px + env(safe-area-inset-right,0px))!important;font-size:8px!important}
 }
 #comboEl{position:absolute;top:160px;left:18px;font-family:'Orbitron',sans-serif;font-size:11px;color:#ff8800;letter-spacing:2px;opacity:0;transition:all .3s;text-shadow:0 0 12px #ff880088;text-align:left;pointer-events:none}

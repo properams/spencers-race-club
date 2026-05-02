@@ -54,7 +54,7 @@ let _elCarStatus=null;
 // Gap-display verwijderd in HUD-redesign: leaderboard toont al rij-1/rij+1
 // rond de speler, dus een aparte gap-panel was dubbel-info.
 let _elRpm=null;
-let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;
+let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elNitroInd,_elNitroIndFill,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;
 // Verhuisd uit main.js — gevuld in cacheHUDRefs hieronder.
 let _drsEl=null,_sectorPanelEl=null,_speedTrapEl=null;
 
@@ -75,6 +75,8 @@ function cacheHUDRefs(){
   _elLap=document.getElementById('hdLap');
   _elSpd=document.getElementById('hdSpd');
   _elNitro=document.getElementById('nitroFill');
+  _elNitroInd=document.getElementById('tcNitro');
+  _elNitroIndFill=document.getElementById('tcNitroFill');
   _elLapTime=document.getElementById('hdLapTime');
   _elSlip=document.getElementById('slipIndicator');
   _elWarn=document.getElementById('warnOverlay');

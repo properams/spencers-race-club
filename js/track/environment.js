@@ -326,53 +326,6 @@ function buildLake(){
 }
 
 
-function buildPitBuilding(){
-  const wMat=new THREE.MeshLambertMaterial({color:0xe4e4e4});
-  const rMat=new THREE.MeshLambertMaterial({color:0x383848});
-  const aMat=new THREE.MeshLambertMaterial({color:0xff5500});
-  const dMat=new THREE.MeshLambertMaterial({color:0x1a1a1a});
-  const gMat=new THREE.MeshLambertMaterial({color:0x88ccff,transparent:true,opacity:.75});
-  // Main body (south side of S/F straight)
-  const body=new THREE.Mesh(new THREE.BoxGeometry(330,7,16),wMat);
-  body.position.set(-25,3.5,202);scene.add(body);
-  // Roof overhang
-  const roof=new THREE.Mesh(new THREE.BoxGeometry(338,.7,23),rMat);
-  roof.position.set(-25,7.35,202);scene.add(roof);
-  // Orange accent stripe
-  const stripe=new THREE.Mesh(new THREE.BoxGeometry(330,.55,16.2),aMat);
-  stripe.position.set(-25,6.2,202);scene.add(stripe);
-  // Garage bays (9 doors)
-  for(let i=0;i<9;i++){
-    const gx=-161+i*36;
-    const frame=new THREE.Mesh(new THREE.BoxGeometry(22,5.4,.3),wMat);
-    frame.position.set(gx,2.5,194.4);scene.add(frame);
-    const door=new THREE.Mesh(new THREE.BoxGeometry(20,5,.35),dMat);
-    door.position.set(gx,2.5,194.25);scene.add(door);
-  }
-  // Pit wall
-  const pw=new THREE.Mesh(new THREE.BoxGeometry(340,1.4,.9),
-    new THREE.MeshLambertMaterial({color:0xffffff}));
-  pw.position.set(-25,.7,187);scene.add(pw);
-  // Pit entry light strip (green emissive)
-  const pitEntry=new THREE.Mesh(new THREE.BoxGeometry(340,.12,.15),
-    new THREE.MeshLambertMaterial({color:0x00ff55,emissive:0x00ff55,emissiveIntensity:1.5}));
-  pitEntry.position.set(-25,.05,186.8);scene.add(pitEntry);
-  // PIT IN text board
-  const pitBoard=new THREE.Mesh(new THREE.BoxGeometry(16,3,0.3),
-    new THREE.MeshLambertMaterial({color:0x00cc44,emissive:0x004422}));
-  pitBoard.position.set(-185,4,190);scene.add(pitBoard);
-  // Timing tower (right end of building)
-  const tower=new THREE.Mesh(new THREE.BoxGeometry(15,22,13),wMat);
-  tower.position.set(185,11,202);scene.add(tower);
-  const tcap=new THREE.Mesh(new THREE.BoxGeometry(17,.8,15),aMat);
-  tcap.position.set(185,22.4,202);scene.add(tcap);
-  for(let f=0;f<3;f++){
-    const win=new THREE.Mesh(new THREE.BoxGeometry(9,2.2,.3),gMat);
-    win.position.set(185,6+f*4.8,195.5);scene.add(win);
-  }
-}
-
-
 function buildGravelTraps(){
   const gMat=new THREE.MeshLambertMaterial({color:0xb8a878});
   [{t:.22,s:1,w:30,l:34},{t:.36,s:1,w:26,l:30},

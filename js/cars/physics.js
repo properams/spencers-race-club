@@ -33,6 +33,14 @@ function updatePlayer(dt){
   if(nitroActive&&!_prevNitro){Audio.playNitro();onNitroActivate();Audio.setNitro(true);}
   if(!nitroActive&&_prevNitro&&musicSched&&musicSched.setNitro)musicSched.setNitro(false);
   if(_elNitro)_elNitro.style.height=nitroLevel+'%';
+  if(_elNitroIndFill)_elNitroIndFill.style.width=nitroLevel+'%';
+  if(_elNitroInd){
+    const ready=nitroLevel>=99.5;
+    if(ready!==_elNitroInd._wasReady){
+      _elNitroInd.classList.toggle('ready',ready);
+      _elNitroInd._wasReady=ready;
+    }
+  }
 
   const _dmgMult=1-Math.min(0.18,((car.hitCount||0)/6)*.18); // up to 18% speed penalty at 6 hits
   // Tire temperature grip modifier
