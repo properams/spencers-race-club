@@ -27,14 +27,6 @@ let _currentGear=1;
 let _mmBounds=null;
 let _mmFrameCtr=0;
 
-// DEPRECATED: vervangen door Notify.* — verwijderen na visuele test (FASE 4).
-// popupTimeouts / bannerTimer waren state voor de oude #popupMsg + #bannerOverlay
-// fade-timers. Notify-facade gebruikt eigen rAF-tick, dus deze variabelen
-// worden niet meer gelezen. In FASE 4 weghalen samen met de DOM-elementen
-// #popupMsg / #bannerOverlay / #topBanner.
-let popupTimeouts=[];
-let bannerTimer=null;
-
 // fmtTime: lap-time formatter, gebruikt door HUD + finish-screen + progression.
 // const → script-scope binding; expliciet ook op window voor ES-module
 // persistence/progression.js die window.fmtTime aanroept.
@@ -146,15 +138,11 @@ function showBanner(text,color,dur){
   Notify.banner(text,color,dur);
 }
 
-// hideBanner: backward-compat shim. tracklimits.js + spacefx.js roepen 'm
-// aan na een recovery-cooldown. Notify auto-dismisst de banner via z'n eigen
-// dur-timer (zelfde 2000 ms), dus deze functie is in praktijk een no-op
-// behalve dat we de oude #bannerOverlay DOM-node leegmaken voor het geval
-// een eerdere boot-fallback 'm nog had ingevuld.
-function hideBanner(){
-  var ov=document.getElementById('bannerOverlay');
-  if(ov) ov.style.display='none';
-}
+// hideBanner: backward-compat shim voor tracklimits.js + spacefx.js. In de
+// oude flow hield 'ie de centrale #bannerOverlay zichtbaar tot dur ms;
+// Notify auto-dismist nu via z'n eigen dur-timer (zelfde 2000 ms), dus deze
+// functie is een no-op. Behouden zodat callers niet hoeven te wijzigen.
+function hideBanner(){}
 
 
 function getPositions(){

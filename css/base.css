@@ -2,7 +2,7 @@
 *{margin:0;padding:0;box-sizing:border-box}
 button{-webkit-appearance:none;appearance:none;outline:none;-webkit-tap-highlight-color:transparent;font-family:inherit}
 button:focus,button:focus-visible{outline:none}
-html,body,canvas,button,[id^="hud"],[id^="tc"],.tcBtn,.banner,#glCanvas,#popupMsg,#bannerOverlay,#warnOverlay,#wrongWayOverlay,#nitroBar,#nitroFill,#nitroLbl,#slipIndicator,#cdNum,#cdOverlay{
+html,body,canvas,button,[id^="hud"],[id^="tc"],[id^="ntf"],.tcBtn,#glCanvas,#warnOverlay,#wrongWayOverlay,#nitroBar,#nitroFill,#nitroLbl,#slipIndicator,#cdNum,#cdOverlay{
   -webkit-touch-callout:none !important;
   -webkit-user-select:none !important;
   -moz-user-select:none !important;

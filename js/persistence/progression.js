@@ -63,8 +63,7 @@ function checkUnlocks(finishPos){
   return newOnes;
 }
 
-// showUnlockToast: thin wrapper rond Notify.unlock. De oude #unlockToast DOM
-// staat nog in index.html maar wordt niet meer geschreven (DEPRECATED — FASE 4).
+// showUnlockToast: thin wrapper rond Notify.unlock.
 function showUnlockToast(carDef){
   if(!carDef) return;
   if(!window.Notify){

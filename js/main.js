@@ -209,9 +209,11 @@ var WORLD_PRICES={};    // var: idem
 //  js/track/environment.js, js/worlds/*, js/effects/*, js/gameplay/*.)
 // (Night/rain/cars/physics/AI/special-checks/track-limits/camera/HUD-refs
 //  → respective js/* modules.)
-// popupTimeouts / bannerTimer / fmtTime / _lastPPos → js/ui/hud.js
+// fmtTime / _lastPPos → js/ui/hud.js
 // (fmtTime krijgt daar window.fmtTime alias zodat ES-module progression
 // de eerder latent-broken window.fmtTime call kan resolven.)
+// (popupTimeouts / bannerTimer waren state voor #popupMsg / #bannerOverlay —
+//  beide DOM + state weg sinds Notify-facade. Zie js/ui/notifications.js.)
 // (Countdown, finish, title, select → gameplay/* en ui/*.)
 // Car preview state + _unlockHints → js/ui/select.js
 // (Speed overlay, confetti, boost ring, slipstream, weather-transition,
@@ -219,7 +221,8 @@ var WORLD_PRICES={};    // var: idem
 // _RACE_ACHIEVEMENTS → js/gameplay/achievements.js
 // _nitroUseCount / _airborneAccum / _cleanLapFlag → js/gameplay/race.js (_driftAccum → combo.js)
 
-// _achieveToastEl → js/gameplay/achievements.js
+// (_achieveToastEl / _achieveQueue / _achieveTimer waren dode state — verwijderd
+//  na Notify-refactor. Zie js/gameplay/achievements.js.)
 // _floatSlot / _floatSlotTimer → js/effects/visuals.js
 // _speedLinesFadeT / _speedLinesRedrawT → js/effects/visuals.js
 // (Drift/nitro/boost-trail/ghost/pitstop/AI-mistakes/rev-limiter/gap/

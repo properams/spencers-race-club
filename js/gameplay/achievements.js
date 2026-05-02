@@ -4,13 +4,7 @@
 
 // Runtime achievement-state (uit main.js verhuisd).
 // _achieveUnlocked: ids die deze sessie zijn vrijgespeeld (Set, geen rebind).
-// _achieveQueue:    queue van te tonen toasts (FIFO; gameloop draint hem).
-// _achieveTimer:    delay-counter voor toast-zichtbaarheid.
-// _achieveToastEl:  DOM-ref naar de toast-popup (gevuld door cacheHUDRefs).
 const _achieveUnlocked=new Set();
-const _achieveQueue=[];
-let _achieveTimer=0;
-let _achieveToastEl=null;
 
 // In-race achievement lookup table (uit main.js verhuisd).
 // Gebruikt door unlockAchievement() hieronder.
@@ -85,32 +79,6 @@ function updateAchievements(dt){
 }
 
 
-function updateAchievementToast(dt){
-  if(!_achieveToastEl){_achieveToastEl=document.getElementById('achieveToast');}
-  if(_achieveTimer>0){
-    _achieveTimer-=dt;
-    if(_achieveTimer<=0&&_achieveToastEl){
-      _achieveToastEl.style.opacity='0';
-      _achieveTimer=0;
-      // Show next queued achievement after short gap
-      if(_achieveQueue.length>0)setTimeout(()=>{showNextAchievement();},500);
-    }
-    return;
-  }
-  if(_achieveQueue.length>0&&_achieveTimer<=0)showNextAchievement();
-}
-
-function showNextAchievement(){
-  if(_achieveQueue.length===0)return;
-  const txt=_achieveQueue.shift();
-  if(!_achieveToastEl){_achieveToastEl=document.getElementById('achieveToast');}
-  if(!_achieveToastEl)return;
-  _achieveToastEl.textContent='🏅 '+txt;
-  _achieveToastEl.style.opacity='1';
-  _achieveTimer=3.0;
-}
-
-
 function onNitroActivate(){
   _nitroUseCount++;
   if(_nitroUseCount>=10)unlockAchievement('NITRO_JUNKIE');
@@ -125,12 +93,6 @@ function onLapComplete(){
 // showAchievementToast: thin wrapper rond Notify.achievement.
 // Externe call-sites (finish.js voor post-race achievements + daily-challenge)
 // blijven werken zonder wijziging.
-//
-// DEPRECATED: _achievePopupEl + _achievePopupHideTimer waren de oude pooled
-// inline-toast op bottom:200px (overlapte gas-knop op mobiel — zie FASE 0
-// vondst 1). Verwijderen in FASE 4 samen met de dode #achieveToast queue
-// (_achieveQueue / _achieveTimer / showNextAchievement / updateAchievementToast
-// — die queue wordt nergens gepusht, zie FASE 0 vondst 4).
 function showAchievementToast(ach){
   if(!ach) return;
   if(!window.Notify){

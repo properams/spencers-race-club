@@ -53,7 +53,7 @@ function _resetRaceState(){
   recoverActive=false;recoverTimer=0;camShake=0;slipTimer=0;
   _wrongWayTimer=0;_miniTurboReady=false;_camLateralT=0;_tireWarnCooldown=0;
   _introPanTimer=0;_camView=0;_raceMaxSpeed=0;_raceOvertakes=0;_lastPlayerPos=9;_raceStartGrace=0;
-  _achieveUnlocked.clear();_achieveQueue.length=0;_achieveTimer=0;
+  _achieveUnlocked.clear();
   _nitroUseCount=0;_airborneAccum=0;_cleanLapFlag=true;_driftAccum=0;
   _bestS1=Infinity;_bestS2=Infinity;_bestS3=Infinity;_currentSector=0;_sectorStart=0;
   _comboCount=0;_comboMult=1.0;_comboTimer=0;_lastRaceCoins=0;
@@ -93,7 +93,7 @@ function _resetRaceState(){
   document.getElementById('sFinish').classList.add('hidden');
   document.getElementById('hud').style.display='none';
   if(_elWarn)_elWarn.style.display='none';
-  document.getElementById('bannerOverlay').style.display='none';
+  // Notify drains zelf via _clearAll op gameState-transitie naar COUNTDOWN.
   document.getElementById('controlHints').style.display='none';
   const tc=document.getElementById('touchControls');if(tc)tc.style.display='none';
   const mf=document.getElementById('mirrorFrame'),ml=document.getElementById('mirrorLabel');
@@ -102,7 +102,6 @@ function _resetRaceState(){
   if(rb)rb.style.display='none';if(rl)rl.style.display='none';
   const f1=document.getElementById('f1Lights');if(f1)f1.style.display='none';
   const cf=document.getElementById('colFlash');if(cf)cf.style.opacity='0';
-  const ah=document.getElementById('achieveToast');if(ah)ah.style.opacity='0';
   _revLimiterTimer=0;_titleCamT=0;
   const dbEl=document.getElementById('driftBar');if(dbEl)dbEl.style.display='none';
   const dlEl=document.getElementById('driftLabel');if(dlEl)dlEl.style.display='none';
