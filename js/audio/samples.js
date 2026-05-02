@@ -188,10 +188,16 @@ function _preloadFlat(manifest, cacheMap, readyMap){
 
 function preloadWorld(worldId){
   if(!window.audioCtx) return Promise.resolve({ kind:'procedural', buffers:{} });
+  // Perf Phase A: timing voor audio music-stems load. Eindigt op resolve
+  // van Promise.all binnen _preloadBundle; bij lege manifests is dit ~0ms.
+  const _t0 = performance.now();
   return _preloadBundle(MUSIC_MANIFEST[worldId] || {}, _musicCache, _musicReady, worldId)
     .then(buffers => {
       _touch(worldId);
       _evictIfNeeded(worldId);
+      if(window.perfLog){
+        window.perfLog.push({ name:'audio.musicStems', ms: performance.now()-_t0, t: performance.now(), world: worldId, kind: buffers.base ? 'samples' : 'procedural' });
+      }
       return { kind: buffers.base ? 'samples' : 'procedural', buffers };
     });
 }

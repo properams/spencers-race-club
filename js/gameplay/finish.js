@@ -3,6 +3,7 @@
 'use strict';
 
 function showFinish(){
+  if(typeof _perfHeap==='function')_perfHeap('raceFinish');
   gameState='FINISH';document.getElementById('hud').style.display='none';setTouchControlsVisible(false);
   const sov=document.getElementById('speedOverlay');if(sov)sov.style.opacity='0';
   if(musicSched){musicSched.stop();musicSched=null;}

@@ -31,6 +31,11 @@ assets/_inbox/*
 !assets/_inbox/README.md
 !assets/_inbox/.gitkeep
 
+# Perf Phase A: runner output (raw JSON) — niet committen, regenereerbaar
+# via tools/perf-run.mjs. Het rapport (PERF_PHASE_A_REPORT.md) blijft wél
+# tracked zodat we 'm kunnen reviewen.
+tools/perf-output.json
+
 # Werk-documentatie / planning — lokaal houden, niet publiceren
 CLAUDE.md
 CLAUDE_CODE_PROMPTS.md

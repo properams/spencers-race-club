@@ -128,16 +128,29 @@ function loop(){
     updateRain();
   }
   if(renderer&&scene&&camera){
+    // Perf Phase A: meet GO→eerste race-frame los van dbg (zodat headless
+    // run het ook zonder ?debug ziet). Ook shader-count snapshot @ first frame.
+    const _isFirstRaceFrame = (window._waitingForFirstRaceFrame&&gameState==='RACE');
+    if(_isFirstRaceFrame){
+      if(window.perfMark){perfMark('go:firstFrame');perfMeasure('go.toFirstFrame','go:fired','go:firstFrame');}
+      window._waitingForFirstRaceFrame=false;
+      if(window.perfLog){
+        const _pa=(renderer.info.programs&&renderer.info.programs.length)||0;
+        window.perfLog.push({name:'shaderPrograms.atFirstFrame',ms:_pa,t:performance.now(),world:window.activeWorld});
+      }
+    }
     // First-frame-after-GO measure: catches shader compile / texture upload
     // spike on the first race render with this world's full material set.
     if(window.dbg&&!_firstRaceFrameLogged&&gameState==='RACE'){
       _firstRaceFrameLogged=true;
       const _progBefore=(renderer.info.programs&&renderer.info.programs.length)||0;
       const _texBefore=renderer.info.memory.textures;
+      if(window.perfMark)perfMark('firstRaceFrame:render:start');
       dbg.measure('perf','firstRaceFrame.render',()=>{
         if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
         else renderer.render(scene,camera);
       });
+      if(window.perfMark){perfMark('firstRaceFrame:render:end');perfMeasure('firstRaceFrame.render','firstRaceFrame:render:start','firstRaceFrame:render:end');}
       const _progAfter=(renderer.info.programs&&renderer.info.programs.length)||0;
       const _texAfter=renderer.info.memory.textures;
       dbg.markRaceEvent('FIRST-RACE-FRAME',{
@@ -146,6 +159,12 @@ function loop(){
         progAfter:_progAfter,
         texAfter:_texAfter
       });
+    }else if(_isFirstRaceFrame){
+      // Same measurement, dbg-disabled pad: blijft handig voor de runner.
+      if(window.perfMark)perfMark('firstRaceFrame:render:start');
+      if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
+      else renderer.render(scene,camera);
+      if(window.perfMark){perfMark('firstRaceFrame:render:end');perfMeasure('firstRaceFrame.render','firstRaceFrame:render:start','firstRaceFrame:render:end');}
     }else{
       if(typeof renderWithPostFX==='function')renderWithPostFX(scene,camera);
       else renderer.render(scene,camera);

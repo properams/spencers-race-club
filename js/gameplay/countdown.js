@@ -44,6 +44,7 @@ function runCountdown(onGo){
             }catch(e){window.dbg?dbg.error('countdown',e,'GO error'):console.error('Countdown GO error:',e);}
             // ALWAYS fire onGo — even if visuals fail
             if(window.dbg)dbg.markRaceEvent('GO');
+            if(window.perfMark){perfMark('go:fired');window._waitingForFirstRaceFrame=true;}
             onGo();
             if(window.dbg){
               setTimeout(()=>{try{dbg.markRaceEvent('GO+1s');}catch(_){}},1000);

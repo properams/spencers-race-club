@@ -325,7 +325,12 @@ function makeGPSkyTex(){
 
 function buildScene(){
   window.dbg&&dbg.log('scene','buildScene start — world='+activeWorld);
+  // Perf Phase A: shader-program count voor en na buildScene.
+  const _perfProgBefore=(renderer&&renderer.info&&renderer.info.programs&&renderer.info.programs.length)||0;
+  if(window.perfMark)perfMark('build:total:start');
+  if(window.perfMark)perfMark('build:disposeScene:start');
   disposeScene();
+  if(window.perfMark){perfMark('build:disposeScene:end');perfMeasure('build.disposeScene','build:disposeScene:start','build:disposeScene:end');}
   // ── Swap TRACK_WP data for active world ───────────────────────
   {const src=(_TRACKS&&_TRACKS[activeWorld])||_GP_WP;
    TRACK_WP.length=0;src.forEach(wp=>TRACK_WP.push(wp));}
@@ -442,7 +447,10 @@ function buildScene(){
   const _hemiInt=isSpace?.14:isDeepSea?.30:isCandy?.45:isNeon?.15:isThemepark?.35:.36;
   hemiLight=new THREE.HemisphereLight(_hemiSky,_hemiGnd,_hemiInt);scene.add(hemiLight);
 
+  if(window.perfMark)perfMark('build:track:start');
   buildTrack();
+  if(window.perfMark){perfMark('build:track:end');perfMeasure('build.track','build:track:start','build:track:end');}
+  if(window.perfMark)perfMark('build:world:start');
   if(isSpace){
     buildSpaceEnvironment();
   }else if(isDeepSea){
@@ -496,6 +504,8 @@ function buildScene(){
       });
     }
   }
+  if(window.perfMark){perfMark('build:world:end');perfMeasure('build.world','build:world:start','build:world:end');}
+  if(window.perfMark)perfMark('build:gameplayObjects:start');
   buildJumpRamps();
   buildCenterlineArrows();
   buildSpinPads();
@@ -508,15 +518,20 @@ function buildScene(){
   buildGhostMesh();
   initSpeedLines();
   initRain();
+  if(window.perfMark){perfMark('build:gameplayObjects:end');perfMeasure('build.gameplayObjects','build:gameplayObjects:start','build:gameplayObjects:end');}
   // Cache minimap bounds
   const _xs=TRACK_WP.map(p=>p[0]),_zs=TRACK_WP.map(p=>p[1]);
   _mmBounds={mnX:Math.min(..._xs),mxX:Math.max(..._xs),mnZ:Math.min(..._zs),mxZ:Math.max(..._zs)};
   // Default to dark mode (isDark=false at entry, toggleNight sets it dark)
+  if(window.perfMark)perfMark('build:night:start');
   isDark=false;toggleNight();
+  if(window.perfMark){perfMark('build:night:end');perfMeasure('build.night','build:night:start','build:night:end');}
   // Apply any cached HDRI / PBR ground textures from window.Assets. No-op
   // if the manifest has no slots filled or preload hasn't completed yet —
   // boot.js + select.js re-call maybeUpgradeWorld when preload resolves.
+  if(window.perfMark)perfMark('build:assetBridge:start');
   if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(activeWorld);
+  if(window.perfMark){perfMark('build:assetBridge:end');perfMeasure('build.assetBridge','build:assetBridge:start','build:assetBridge:end');}
   // Pre-compile materials voor de nieuwe wereld + force texture/attribute
   // uploads via een 16x16 off-screen render. Voorheen was dit een dbg-only
   // experiment in select.js; nu default-aan in buildScene zodat ELKE scene-
@@ -524,7 +539,17 @@ function buildScene(){
   // GPU-upload spikes uit de hot path haalt. Dit is hét voorkomen van de
   // start-freeze op iPad voor wereld-specifieke material sets — boot doet
   // al een warm-up render, maar pakte alleen de default GP wereld.
+  if(window.perfMark)perfMark('build:precompile:start');
   _precompileScene();
+  if(window.perfMark){perfMark('build:precompile:end');perfMeasure('build.precompile','build:precompile:start','build:precompile:end');}
+  if(window.perfMark){perfMark('build:total:end');perfMeasure('build.total','build:total:start','build:total:end');}
+  // Shader-program count delta over the buildScene window.
+  if(window.perfLog){
+    const _perfProgAfter=(renderer&&renderer.info&&renderer.info.programs&&renderer.info.programs.length)||0;
+    window.perfLog.push({name:'shaderPrograms.delta',ms:_perfProgAfter-_perfProgBefore,t:performance.now(),world:activeWorld});
+    window.perfLog.push({name:'shaderPrograms.afterBuild',ms:_perfProgAfter,t:performance.now(),world:activeWorld});
+    if(window.dbg)dbg.log('perf','shader programs '+_perfProgBefore+'→'+_perfProgAfter+' ('+activeWorld+')');
+  }
   window.dbg&&dbg.snapshot('scene','buildScene done',{world:activeWorld,objects:scene.children.length,camPos:camera.position});
 }
 
