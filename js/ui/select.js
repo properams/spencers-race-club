@@ -678,14 +678,39 @@ function _selMDrawCardCanvas(canvas,defId){
   ctx.drawImage(snap,dx,dy,dw,dh);
 }
 
-// Convert def.accent (or def.color) to a CSS hex string. Used as the
-// per-car accent for borders, glow, badge and corner brackets.
+// Pick a usable accent colour for the carousel card. Prefers def.color
+// (the brand colour spencer's-race-club uses on the body) but bumps it
+// when too dark (Red Bull dark navy → unusable as glow) and falls back
+// to def.accent when too light (Mustang white, Tesla silver). Returns
+// the picked colour as a numeric RGB int.
+function _selMPickAccent(def){
+  const c=(def.color|0),a=(def.accent|0);
+  const lum=v=>{const r=(v>>16)&0xff,g=(v>>8)&0xff,b=v&0xff;return r*.299+g*.587+b*.114;};
+  const cl=lum(c);
+  if(cl>215){
+    // Too light → use accent if it's not also extreme.
+    const al=lum(a);
+    if(al>=30&&al<=215)return a;
+    // Both extreme — lift body colour towards a saturated mid-tone.
+    return 0xff3a8c;
+  }
+  if(cl<40){
+    // Too dark — brighten while preserving hue. Pump weak channels.
+    let r=(c>>16)&0xff,g=(c>>8)&0xff,b=c&0xff;
+    const f=Math.max(2,90/Math.max(cl,4));
+    r=Math.min(255,Math.round(r*f+50));
+    g=Math.min(255,Math.round(g*f+50));
+    b=Math.min(255,Math.round(b*f+50));
+    return (r<<16)|(g<<8)|b;
+  }
+  return c;
+}
 function _selMAccentHex(def){
-  const v=(def.accent!=null?def.accent:def.color)|0;
+  const v=_selMPickAccent(def);
   return '#'+v.toString(16).padStart(6,'0');
 }
 function _selMHexToRgba(def,alpha){
-  const v=(def.accent!=null?def.accent:def.color)|0;
+  const v=_selMPickAccent(def);
   const r=(v>>16)&0xff,g=(v>>8)&0xff,b=v&0xff;
   return 'rgba('+r+','+g+','+b+','+alpha+')';
 }
