@@ -19,7 +19,28 @@ function runCountdown(onGo){
         if(i<lights.length){
           var el=document.getElementById(lights[i]);if(el)el.classList.add('on');
           try{Audio.playCount(1);}catch(e){}
-          i++;
+          // PHASE-E: ná eerste light, één-time compile van ALLE scene-materialen.
+          // Dekt coins/spin-pads/boost-pads/skidmark/etc die buiten countdown-cam
+          // frustum staan en dus niet door loop()'s natuurlijke render gewarmd
+          // worden. requestAnimationFrame zorgt dat de browser het eerste light-
+          // visual paint voordat compile blokkeert. Het is een sync compile —
+          // op SwiftShader 200-1000ms (zichtbaar als gap tussen light 1 en 2),
+          // op echte GPU verwacht <100ms. Eén keer per countdown.
+          if(i===1&&window.perfMark){
+            requestAnimationFrame(function(){
+              perfMark('countdown:compile:start');
+              try{
+                if(window.renderer&&typeof window.renderer.compile==='function'
+                   &&window.scene&&window.camera){
+                  window.renderer.compile(window.scene,window.camera);
+                }
+              }catch(e){
+                if(window.dbg)dbg.warn('countdown','compile failed: '+(e&&e.message||e));
+              }
+              perfMark('countdown:compile:end');
+              perfMeasure('countdown.compile','countdown:compile:start','countdown:compile:end');
+            });
+          }
           setTimeout(lightOn,700);
         }else{
           setTimeout(function(){
