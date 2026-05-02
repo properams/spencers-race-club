@@ -216,10 +216,13 @@ function _displayCarSnapshot(defId){
     // dark gradient zodat het niet zwart-leeg is.
     return;
   }
-  // Cover-fit: snapshot vult de hele preview, behoud aspect ratio.
+  // Contain-fit: hele snapshot zichtbaar binnen preview-canvas met
+  // letterbox-padding. Cover-fit veroorzaakte verticale zoom-crop in
+  // portrait phone (canvas-aspect ~2.1:1 vs snapshot 16:9 = 1.78:1) —
+  // zichtbaar als "alleen rood vlak en hoekje van de auto".
   const sa=SNAP_W/SNAP_H,da=cw/ch;
   let dx=0,dy=0,dw=cw,dh=ch;
-  if(da>sa){dh=cw/sa;dy=(ch-dh)/2;}else{dw=ch*sa;dx=(cw-dw)/2;}
+  if(da>sa){dw=ch*sa;dx=(cw-dw)/2;}else{dh=cw/sa;dy=(ch-dh)/2;}
   ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
   ctx.drawImage(snap,dx,dy,dw,dh);
 }

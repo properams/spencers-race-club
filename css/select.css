@@ -474,3 +474,40 @@
 @media(min-width:769px) and (max-width:1100px){
   .selBody{grid-template-columns:200px 1fr 240px}
 }
+
+/* ── PORTRAIT PHONE (orientation portrait, <=600px wide) ──────────────
+   Eerdere mobile reflow gaf carGrid een horizontale strip van car-cards.
+   In portrait phone werd dat afgekapt op 3 cards → niet alle 12 auto's
+   bereikbaar. In landscape phone blijft de horizontale strip wel goed
+   werken (genoeg breedte). Daarom: portrait-only override naar verticale
+   1-koloms scrollbare lijst, plus aspect-ratio fix op preview-wrap. */
+@media (orientation:portrait) and (max-width:600px){
+  .selLeft{max-height:36vh;overflow-y:auto;overflow-x:hidden}
+  .carGrid{
+    flex-direction:column;overflow-x:hidden;overflow-y:auto;
+    gap:0;padding:4px 0;
+    -webkit-mask-image:none;mask-image:none;
+    scroll-snap-type:none
+  }
+  .carCard{
+    flex-shrink:0;width:auto;margin:0;
+    border-radius:0;border-bottom:1px solid #1a0f3a;
+    padding:8px 12px;gap:10px;scroll-snap-align:none;
+    background:transparent
+  }
+  .carCard.sel{
+    background:linear-gradient(90deg,rgba(255,58,140,.18),rgba(255,58,140,.04));
+    box-shadow:inset 0 0 0 1px rgba(255,58,140,.4)
+  }
+  .carCard.sel::after{
+    content:'▶';display:block;position:absolute;right:10px;top:50%;
+    transform:translateY(-50%);color:#ff3a8c;font-size:9px;
+    text-shadow:0 0 8px rgba(255,58,140,.8)
+  }
+  /* Preview: contain-fit (zie _displayCanvasSnapshot) toont nu de hele
+     auto. Aspect ratio terug naar 16:10 in plaats van 48vw cap zodat de
+     letterbox-marge minimaal is. */
+  .prevCanvasWrap{
+    aspect-ratio:16/10;height:auto;max-height:34vh;min-height:140px
+  }
+}
