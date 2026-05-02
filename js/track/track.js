@@ -229,12 +229,12 @@ function buildGantry(){
   // Clean horizontal bar
   const bar=new THREE.Mesh(new THREE.BoxGeometry(hw*2,.7,.7),new THREE.MeshLambertMaterial({color:0x111122}));
   bar.position.copy(p);bar.position.y=10;scene.add(bar);
-  // Thin neon accent strip — colour matches active world
-  const accentCol=activeWorld==='space'?0x4422aa:activeWorld==='deepsea'?0x006688:0x441166;
-  const accentEmit=activeWorld==='space'?0x3311cc:activeWorld==='deepsea'?0x00aacc:0x6622cc;
-  const accent=new THREE.Mesh(new THREE.BoxGeometry(hw*2-.6,.07,.16),
-    new THREE.MeshLambertMaterial({color:accentCol,emissive:accentEmit,emissiveIntensity:1.4}));
-  accent.position.copy(p);accent.position.y=9.68;scene.add(accent);
+  // (Removed) Thin neon accent strip — was a 31.4×.07×.16 BoxGeometry directly
+  // below the LED sprite. Because the sprite is camera-facing while the box
+  // is fixed in world space, any camera roll/yaw made the box appear as a
+  // diagonal magenta stripe slicing through the start-line scene. Bloom on
+  // emissiveIntensity=1.4 amplified the bleed across half the screen. The
+  // dark bar above + LED ticker sprite already give the gantry its identity.
   // Gantry label — world-specific LED ticker. Sprite met canvas texture die
   // periodiek herrendered wordt met afwisselend race-info en thematische
   // teksten (zie updateGantryTicker).
