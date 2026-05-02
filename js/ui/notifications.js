@@ -132,7 +132,9 @@
     el.style.borderColor=color+'4d';
     el.style.boxShadow='0 0 18px '+color+'33, 0 6px 22px rgba(0,0,0,.5)';
     el.classList.remove('ntfShow'); void el.offsetWidth; el.classList.add('ntfShow');
-    activeA={el, expiresAt:clock+dur, priority};
+    // dur===0 = "keep tot expliciet hideBanner()" — gebruikt door spacefx.js
+    // FALLING-banner. Infinity zorgt dat _tick 'm nooit auto-dismist.
+    activeA={el, expiresAt: dur===0 ? Infinity : clock+dur, priority};
     _ensureRAF();
   }
   function _fadeOutA(){
@@ -224,7 +226,8 @@
     el.style.borderColor=c+'88';
     el.style.boxShadow='0 0 28px '+c+'66, 0 8px 30px rgba(0,0,0,.6)';
     el.classList.remove('ntfShow'); void el.offsetWidth; el.classList.add('ntfShow');
-    activeOOB={el, expiresAt:clock+(dur||2200)};
+    // dur===0 = persistent (zelfde semantiek als _renderA) — wacht op hideBanner.
+    activeOOB={el, expiresAt: dur===0 ? Infinity : clock+(dur||2200)};
     _ensureRAF();
   }
   function _fadeOutOOB(){
@@ -234,8 +237,10 @@
   }
   function _renderBanner(text, color, dur){
     const gs=window.gameState||'';
-    if(gs==='RACE') _renderA(text, {color, dur:dur||2200, priority:PRI.BANNER});
-    else _renderOOB(text, color, dur);
+    // dur===0 doorgeven — _renderA respecteert het en houdt 'm persistent.
+    const passDur = dur===0 ? 0 : (dur||2200);
+    if(gs==='RACE') _renderA(text, {color, dur:passDur, priority:PRI.BANNER});
+    else _renderOOB(text, color, passDur);
   }
 
   function _clearAllInternal(){
@@ -291,7 +296,15 @@
     banner:function(text, color, dur){
       try{ _renderBanner(String(text||''), color, dur); }catch(e){ _dbg('warn', e, 'banner'); }
     },
-    _setPaused:function(v){ window.gamePaused=!!v; },
+    // hideBanner: expliciet dismiss van een persistente banner (dur=0). Door
+    // tracklimits.js + spacefx.js gebruikt na recovery-cooldown. Affecteert
+    // alleen banner-class slots — andere status flashes blijven door-tikken.
+    hideBanner:function(){
+      try{
+        if(activeA && activeA.priority===PRI.BANNER) _fadeOutA();
+        if(activeOOB) _fadeOutOOB();
+      }catch(e){ _dbg('warn', e, 'hideBanner'); }
+    },
     _clearAll:_clearAllInternal,
     _PRI:PRI,
   };

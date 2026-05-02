@@ -138,11 +138,12 @@ function showBanner(text,color,dur){
   Notify.banner(text,color,dur);
 }
 
-// hideBanner: backward-compat shim voor tracklimits.js + spacefx.js. In de
-// oude flow hield 'ie de centrale #bannerOverlay zichtbaar tot dur ms;
-// Notify auto-dismist nu via z'n eigen dur-timer (zelfde 2000 ms), dus deze
-// functie is een no-op. Behouden zodat callers niet hoeven te wijzigen.
-function hideBanner(){}
+// hideBanner: door tracklimits.js + spacefx.js gebruikt om een persistente
+// banner (dur=0) expliciet te dismissen — vooral spacefx.js FALLING-banner
+// die blijft staan tot triggerSpaceRecovery() 'm wegtrekt.
+function hideBanner(){
+  if(window.Notify && typeof Notify.hideBanner==='function') Notify.hideBanner();
+}
 
 
 function getPositions(){
@@ -251,8 +252,10 @@ function updateHUD(dt){
       // Position has been stable for 0.4s — commit it
       if(pPos<_lastPPos){
         if(pPos===1){
-          showPopup('🏆 P1 — RACE LEADER!','#ffd700',2200);
-          showBanner('🏆 RACE LEADER!','#ffd700',2400);
+          // Vóór Notify-refactor schreef showPopup naar #popupMsg en showBanner
+          // naar #bannerOverlay (twee verschillende DOM-zones, beide zichtbaar).
+          // Notify is single-slot per zone; één enkele LEADER-status volstaat.
+          showPopup('🏆 P1 — RACE LEADER!','#ffd700',2400);
           totalScore+=150;
           beep(880,.1,.42,0,'square');beep(1320,.08,.38,.1,'square');beep(1760,.12,.32,.2,'square');
           Audio.playCrowdCheer();setTimeout(()=>Audio.playCrowdCheer(),200);setTimeout(()=>Audio.playCrowdCheer(),400);
