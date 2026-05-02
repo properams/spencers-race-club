@@ -1,0 +1,208 @@
+/* notifications.css — styling voor de Notify-facade.
+   Drie zones (zie js/ui/notifications.js + NOTIFICATIONS_PLAN.md):
+     #ntfA  — top-right status flash
+     #ntfB  — top-center subtle lap announce
+     #ntfC  — top-right achievement/unlock stack
+     #ntfOOB — out-of-band central banner (alleen tijdens FINISH/COUNTDOWN) */
+
+/* ─── Zone A: status (top-right, single slot) ─── */
+#ntfA{
+  position:fixed;
+  top:64px;
+  right:18px;
+  width:260px;
+  z-index:var(--z-toast);
+  pointer-events:none;
+  font-family:'Orbitron',sans-serif;
+}
+.ntfStatus{
+  /* --hud-bg-strong (rgba(8,12,18,.72)) houdt 'm visueel in de HUD-familie.
+     Border-color wordt per-event gezet vanuit JS (event-color + alpha). */
+  background:var(--hud-bg-strong);
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:10px;
+  padding:8px 14px;
+  font-size:13px;
+  letter-spacing:2px;
+  font-weight:700;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  opacity:0;
+  transform:translateX(20px);
+  transition:opacity .28s ease, transform .28s cubic-bezier(.34,1.3,.64,1);
+  text-shadow:0 0 10px currentColor, 0 1px 4px rgba(0,0,0,.7);
+  backdrop-filter:blur(8px) saturate(140%);
+  -webkit-backdrop-filter:blur(8px) saturate(140%);
+  white-space:nowrap;
+  overflow:hidden;
+}
+.ntfStatus.ntfShow{ opacity:1; transform:translateX(0); }
+.ntfStatus .ntfIcon{ font-size:16px; flex-shrink:0; }
+.ntfStatus .ntfTxt{ overflow:hidden; text-overflow:ellipsis; }
+
+/* ─── Zone B: lap announce (top-center, subtle) ─── */
+#ntfB{
+  position:fixed;
+  top:40px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:var(--z-toast);
+  pointer-events:none;
+  font-family:'Orbitron',sans-serif;
+}
+.ntfLap{
+  font-size:12px;
+  font-weight:700;
+  color:rgba(255,255,255,.78);
+  letter-spacing:4px;
+  text-shadow:0 1px 6px rgba(0,0,0,.85);
+  opacity:0;
+  transform:translateY(-6px);
+  transition:opacity .28s, transform .28s;
+  white-space:nowrap;
+}
+.ntfLap.ntfShow{ opacity:.9; transform:translateY(0); }
+
+/* ─── Zone C: achievement / unlock stack (top-right, vertical) ─── */
+#ntfC{
+  position:fixed;
+  top:120px;
+  right:18px;
+  width:280px;
+  z-index:var(--z-toast);
+  pointer-events:none;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  font-family:'Orbitron',sans-serif;
+}
+.ntfToast{
+  background:linear-gradient(135deg,rgba(20,8,40,.94),rgba(8,4,20,.96));
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:12px;
+  padding:10px 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  opacity:0;
+  transform:translateX(24px);
+  transition:opacity .35s ease, transform .35s cubic-bezier(.34,1.3,.64,1);
+  backdrop-filter:blur(10px) saturate(150%);
+  -webkit-backdrop-filter:blur(10px) saturate(150%);
+}
+.ntfToast.ntfShow{ opacity:1; transform:translateX(0); }
+.ntfToastIcon{ font-size:24px; flex-shrink:0; }
+.ntfToastBody{ min-width:0; flex:1; }
+.ntfToastLabel{ font-size:8px; letter-spacing:3px; }
+.ntfToastTitle{
+  font-size:12px;
+  color:#fff;
+  letter-spacing:2px;
+  margin-top:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ntfToastDesc{
+  font-size:9px;
+  color:#886699;
+  margin-top:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+/* ─── Out-of-band central banner (FINISH/COUNTDOWN-pause/PAUSED) ─── */
+#ntfOOB{
+  position:fixed;
+  top:12%;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:var(--z-modal);
+  pointer-events:none;
+  font-family:'Orbitron',sans-serif;
+}
+.ntfOOBInner{
+  font-size:clamp(16px,2.4vw,24px);
+  font-weight:900;
+  letter-spacing:3px;
+  padding:10px 22px;
+  border:2px solid rgba(255,255,255,.5);
+  border-radius:12px;
+  background:rgba(0,0,0,.78);
+  color:#fff;
+  text-shadow:0 0 16px currentColor;
+  opacity:0;
+  transform:scale(.95);
+  transition:opacity .35s, transform .4s cubic-bezier(.34,1.3,.64,1);
+  white-space:nowrap;
+}
+.ntfOOBInner.ntfShow{ opacity:1; transform:scale(1); }
+
+/* ─── Mobile: krimp + houd uit centrale racing zone + uit touch-control zone.
+       Zone A: top-right, onder pause-button (top:16px+44px=60→64px+safe-area).
+       Zone B: top-center subtler.
+       Zone C: top-right onder Zone A; bottom blijft ver boven de gas/nitro/steer
+               touch-knoppen (gas zit op bottom:30px, hoogte 96px → ~126px,
+               nitro stapelt erboven tot ~274px). Met top:120px en max stack-3
+               toasts à ~70px hebben we 3*70+2*6=222px verticaal nodig — dat past
+               binnen y=120 → y≈342, ruim boven nitro-knop op kleine schermen
+               waar viewportHeight typisch 700-900 px is. */
+@media (max-width:600px),(pointer:coarse) and (max-width:900px){
+  #ntfA{
+    top:calc(64px + env(safe-area-inset-top,0px))!important;
+    right:calc(14px + env(safe-area-inset-right,0px))!important;
+    width:min(220px,56vw)!important;
+  }
+  .ntfStatus{
+    font-size:11px!important;
+    padding:6px 10px!important;
+    letter-spacing:1.5px!important;
+  }
+  .ntfStatus .ntfIcon{ font-size:13px!important; }
+  #ntfB{
+    top:calc(36px + env(safe-area-inset-top,0px))!important;
+  }
+  .ntfLap{
+    font-size:10px!important;
+    letter-spacing:3px!important;
+  }
+  #ntfC{
+    top:calc(120px + env(safe-area-inset-top,0px))!important;
+    right:calc(14px + env(safe-area-inset-right,0px))!important;
+    width:min(240px,60vw)!important;
+    gap:6px!important;
+  }
+  .ntfToast{ padding:7px 10px!important; gap:8px!important; }
+  .ntfToastIcon{ font-size:20px!important; }
+  .ntfToastTitle{ font-size:11px!important; letter-spacing:1px!important; }
+  .ntfToastDesc{ font-size:8px!important; }
+  /* Strip backdrop-filter op mobiel — meetbare compositor-cost (~1-2 ms per
+     blur-pass × 3 toasts in de stack). Iets opaker fallback compenseert
+     voor het verlies aan blur-saturatie. Patroon volgt .tcBtn in hud.css
+     waar backdrop-filter ook expliciet voor mobile wordt uitgeschakeld. */
+  .ntfStatus,.ntfToast{
+    backdrop-filter:none!important;
+    -webkit-backdrop-filter:none!important;
+  }
+  .ntfStatus{ background:rgba(8,12,18,.88)!important; }
+  .ntfToast{ background:linear-gradient(135deg,rgba(20,8,40,.96),rgba(8,4,20,.98))!important; }
+}
+
+/* Landscape phones: krap verticaal — verklein gap en max items via padding. */
+@media (max-height:500px) and (orientation:landscape){
+  #ntfC{
+    top:calc(56px + env(safe-area-inset-top,0px))!important;
+    gap:4px!important;
+  }
+  .ntfToast{ padding:5px 9px!important; }
+  .ntfToastDesc{ display:none!important; }
+}
+
+/* Tablets — iets ruimer dan phones maar nog niet desktop. */
+@media (min-width:769px) and (max-width:1200px){
+  #ntfA{ width:240px!important; }
+  #ntfC{ width:260px!important; }
+}

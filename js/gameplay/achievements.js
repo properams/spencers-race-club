@@ -4,13 +4,7 @@
 
 // Runtime achievement-state (uit main.js verhuisd).
 // _achieveUnlocked: ids die deze sessie zijn vrijgespeeld (Set, geen rebind).
-// _achieveQueue:    queue van te tonen toasts (FIFO; gameloop draint hem).
-// _achieveTimer:    delay-counter voor toast-zichtbaarheid.
-// _achieveToastEl:  DOM-ref naar de toast-popup (gevuld door cacheHUDRefs).
 const _achieveUnlocked=new Set();
-const _achieveQueue=[];
-let _achieveTimer=0;
-let _achieveToastEl=null;
 
 // In-race achievement lookup table (uit main.js verhuisd).
 // Gebruikt door unlockAchievement() hieronder.
@@ -85,32 +79,6 @@ function updateAchievements(dt){
 }
 
 
-function updateAchievementToast(dt){
-  if(!_achieveToastEl){_achieveToastEl=document.getElementById('achieveToast');}
-  if(_achieveTimer>0){
-    _achieveTimer-=dt;
-    if(_achieveTimer<=0&&_achieveToastEl){
-      _achieveToastEl.style.opacity='0';
-      _achieveTimer=0;
-      // Show next queued achievement after short gap
-      if(_achieveQueue.length>0)setTimeout(()=>{showNextAchievement();},500);
-    }
-    return;
-  }
-  if(_achieveQueue.length>0&&_achieveTimer<=0)showNextAchievement();
-}
-
-function showNextAchievement(){
-  if(_achieveQueue.length===0)return;
-  const txt=_achieveQueue.shift();
-  if(!_achieveToastEl){_achieveToastEl=document.getElementById('achieveToast');}
-  if(!_achieveToastEl)return;
-  _achieveToastEl.textContent='🏅 '+txt;
-  _achieveToastEl.style.opacity='1';
-  _achieveTimer=3.0;
-}
-
-
 function onNitroActivate(){
   _nitroUseCount++;
   if(_nitroUseCount>=10)unlockAchievement('NITRO_JUNKIE');
@@ -122,24 +90,20 @@ function onLapComplete(){
 }
 
 
-// Pooled toast element — created once, reused for every achievement so we
-// don't churn DOM (and CSS layout) mid-race when an achievement fires.
-let _achievePopupEl=null;
-let _achievePopupHideTimer=null;
+// showAchievementToast: thin wrapper rond Notify.achievement.
+// Externe call-sites (finish.js voor post-race achievements + daily-challenge)
+// blijven werken zonder wijziging.
 function showAchievementToast(ach){
-  if(!_achievePopupEl){
-    _achievePopupEl=document.createElement('div');
-    _achievePopupEl.style.cssText='position:fixed;bottom:200px;left:50%;transform:translateX(-50%) translateY(20px);background:linear-gradient(135deg,#1a0035,#2d0050);border:1px solid rgba(180,80,255,.5);border-radius:14px;padding:14px 24px;display:flex;align-items:center;gap:14px;font-family:Orbitron,sans-serif;z-index:var(--z-toast);box-shadow:0 0 30px rgba(180,80,255,.4);opacity:0;transition:all .4s cubic-bezier(.34,1.3,.64,1);pointer-events:none';
-    document.body.appendChild(_achievePopupEl);
+  if(!ach) return;
+  if(!window.Notify){
+    if(window.dbg)dbg.warn('notify','Notify niet ready, drop achievement',ach.title||ach.label);
+    return;
   }
-  const t=_achievePopupEl;
-  t.innerHTML='<span style="font-size:28px">'+ach.icon+'</span><div><div style="font-size:8px;color:#cc88ff;letter-spacing:3px">ACHIEVEMENT</div><div style="font-size:13px;color:#fff;letter-spacing:2px">'+ach.title+'</div><div style="font-size:9px;color:#886699;margin-top:2px">'+ach.desc+'</div></div>';
-  // If a previous toast is still hiding, cancel its hide and show fresh.
-  if(_achievePopupHideTimer){clearTimeout(_achievePopupHideTimer);_achievePopupHideTimer=null;}
-  t.style.transform='translateX(-50%) translateY(20px)';
-  t.style.opacity='0';
-  requestAnimationFrame(()=>{t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';});
-  _achievePopupHideTimer=setTimeout(()=>{t.style.opacity='0';_achievePopupHideTimer=null;},3500);
+  Notify.achievement({
+    title: ach.title||ach.label||'',
+    desc:  ach.desc||'',
+    icon:  ach.icon||'🏆',
+  });
 }
 
 function initDailyChallenge(){

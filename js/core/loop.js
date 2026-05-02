@@ -22,7 +22,7 @@
 //   updateSpaceWorld, updateDeepSeaWorld, updateCandyWorld,
 //   updateNeonCityWorld, updateVolcanoWorld, updateArcticWorld,
 //   updateThemeparkWorld, updateHUD, updateSpeedOverlay, getPositions,
-//   updateAmbientWindSpeed, updateAchievements, updateAchievementToast,
+//   updateAmbientWindSpeed, updateAchievements,
 //   updateWeatherForecast, updateQuickRestart, updateDamageSmoke,
 //   updateRpmBar, updateRevLimiter, updateDriftVisuals,
 //   updateNitroVisual, updateBoostTrail, updateGhost, updateSpeedLines,
@@ -108,7 +108,6 @@ function loop(){
       Audio.updateMusicIntensity(_pp,_spdR,(typeof _comboTimer!=='undefined'&&_comboTimer>0));
       updateAmbientWindSpeed(dt);
       updateAchievements(dt);
-      updateAchievementToast(dt);
       if(_floatSlotTimer>0){_floatSlotTimer-=dt;if(_floatSlotTimer<=0)_floatSlot=0;}
       updateWeatherForecast(dt);
       updateQuickRestart(dt);

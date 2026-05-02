@@ -2,8 +2,6 @@
 [id^="hud"]:focus,[id^="hud"]:focus-visible{outline:none}
 .hidden{display:none!important}
 #hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:none}
-/* Lightweight transient banner (weather changes, lap announce). */
-#topBanner{position:absolute;top:30%;left:50%;transform:translateX(-50%) translateY(20px);font-family:'Orbitron',sans-serif;font-size:13px;letter-spacing:3px;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;z-index:var(--z-banner);text-shadow:0 0 14px currentColor}
 /* Race-info panel: consolidated POSITION + LAP + LAPTIME (replaces #hudPos/#hudLap/#hudLapTime/#hudScore). */
 #hudRaceInfo{position:absolute;top:18px;left:18px;background:var(--hud-bg);border:1px solid var(--hud-border);border-radius:14px;padding:10px 18px 9px;backdrop-filter:blur(10px) saturate(140%);-webkit-backdrop-filter:blur(10px) saturate(140%);font-family:'Orbitron',sans-serif;min-width:130px;box-shadow:0 8px 28px rgba(0,0,0,.4)}
 #hudRaceInfo .riPosRow{display:flex;align-items:baseline;gap:6px;line-height:1}
