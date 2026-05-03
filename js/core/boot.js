@@ -164,19 +164,10 @@ function _checkMemoryBudget(){
   if(_msg){
     if(window.dbg)dbg.warn('boot','memory budget '+_msg);
     if(window.Breadcrumb)Breadcrumb.push('memBudgetWarn',{msg:_msg.slice(0,80)});
-    // Subtiele non-blocking title-screen note. Geen modal die de user moet
-    // dismissen — alleen informatief zodat tester zonder dbg-flag toch ziet
-    // dat we op een krap device draaien.
-    try{
-      const _hint=document.createElement('div');
-      _hint.id='memBudgetHint';
-      _hint.style.cssText='position:fixed;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(180,90,0,.85);color:#fff;font-family:monospace;font-size:10px;padding:6px 12px;border-radius:6px;z-index:99996;max-width:90vw;text-align:center;line-height:1.3;pointer-events:auto;cursor:pointer';
-      _hint.textContent='⚠ '+_msg+' (tik om te verbergen)';
-      _hint.addEventListener('click',()=>_hint.remove());
-      // Pas inhaken na DOM ready zodat <body> bestaat.
-      if(document.body)document.body.appendChild(_hint);
-      else document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(_hint));
-    }catch(_){}
+    // Subtiele non-blocking warning via bestaande Notify-facade. dur=4500 zodat
+    // de melding lang genoeg leesbaar is om gezien te worden zonder de title
+    // permanent te bedekken. Notify.banner valt op TITLE-state in OOB-slot.
+    if(window.Notify)Notify.banner('⚠ '+_msg,'#ffaa55',4500);
   }
 }
 
