@@ -568,8 +568,9 @@ function _initCarPreviewSwipe(){
     document.querySelectorAll('.carCard').forEach(el=>{
       el.classList.toggle('sel',el.dataset.defId===String(def.id));
     });
-    // Haptic tick op succesful swipe — match's _selMVibrate(8) pattern.
-    try{if(navigator.vibrate)navigator.vibrate(10);}catch(_){ }
+    // Haptic tick op succesful swipe — hergebruik _selMVibrate (zelfde
+    // try/catch wrapper, gedefinieerd verderop in deze file).
+    _selMVibrate(10);
   }
   function down(e){
     if(!e.isPrimary)return;
