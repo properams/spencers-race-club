@@ -245,8 +245,13 @@ function updateCrowd(){
 }
 
 function buildSpectators(){
-  // Skip on space/deepsea — niet thematisch passend
-  if(activeWorld==='space'||activeWorld==='deepsea')return;
+  // Skip on space/deepsea — niet thematisch passend.
+  // Skip on grandprix — de bonte flag-rij + crowd-canvas was de bron van
+  // de "rainbow shimmer along track edges" die in PR #71/#72 niet was
+  // opgelost. Themepark behoudt zijn eigen call. Dubbele guard (function-
+  // level + scene.js call-site) voorkomt regressie als toch ergens een
+  // buildSpectators-call voor GP komt te staan.
+  if(activeWorld==='space'||activeWorld==='deepsea'||activeWorld==='grandprix')return;
   _crowdMaterials.length=0;
   const crowdTex=_buildCrowdTex();
   // Two grandstand sections aan weerszijden van het start/finish-stuk.

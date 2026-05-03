@@ -206,10 +206,12 @@ function buildGPTrackProps(){
     pole.position.set(px,1.9,pz);scene.add(pole);
     const flag=new THREE.Mesh(new THREE.PlaneGeometry(.8,.55),
       new THREE.MeshLambertMaterial({color:0xff6622,side:THREE.DoubleSide}));
-    // Plaats vlag direct aan pole, .4m omhoog en gecentreerd op pole-x/z;
-    // oriëntatie volgt track-tangent zodat de vlag visueel "wappert" in
-    // race-richting i.p.v. random.
-    flag.position.set(px,3.2,pz);
+    // Plaats vlag .12m perpendicular aan de pole (langs de track-tangent)
+    // zodat het flag-plane niet door de pole-cylinder heen z-fights aan
+    // de top. Eerder lag de vlag exact op de pole-x/z-as → flat plane
+    // intersected coaxiaal de cylinder.
+    const flagOff=tg.clone().multiplyScalar(.12);
+    flag.position.set(px+flagOff.x,3.2,pz+flagOff.z);
     flag.rotation.y=Math.atan2(tg.x,tg.z)+Math.PI*.5;
     scene.add(flag);
   });

@@ -408,13 +408,27 @@ function _buildTreePlacements(){
   // op het asfalt plaatsen wanneer de layout een hairpin / S-curve heeft
   // (een offset langs de tangent op waypoint A kan binnen het curve-pad
   // bij waypoint B liggen). Filter elke placement die binnen TW+5m van
-  // ENIG curve-punt zit. Eenmalige build-time check, ~120 samples per
-  // tree, totaal ~32k ops voor 270 trees → <5ms op desktop.
+  // ENIG curve-punt zit.
+  //
+  // M=240 i.p.v. eerder 120: op de nieuwe GP-layout zijn de zuidelijke
+  // segmenten (WP14-17) tot 163m lang; 120 samples gaf 28.5m worst-case
+  // sample-spacing → 14.2m van een midpoint tot dichtstbijzijnde sample,
+  // binnen de SAFE_MARGIN=18m maar met slechts 3.8m speling. Bij 240
+  // samples zakt worst-case sample-spacing naar 14.3m → 7.1m midpoint-
+  // afstand, ruim binnen de 18m marge.
+  // Hergebruik van curvePts (al gesampled in track.js buildTrack op
+  // 600 punten) zou ook werken; we doen het hier afzonderlijk omdat
+  // _buildTreePlacements vóór curvePts kan draaien op cold-build paths.
   const SAFE_MARGIN_SQ=(TW+5)*(TW+5);
-  const M=120;
+  const M=240;
+  // Pre-sample curve-punten éénmaal i.p.v. binnen elke tree-iteratie —
+  // O(M + N×M) → O(M + N×M) cosmetisch hetzelfde maar getPoint heeft
+  // overhead per call (allocates Vector3); pre-sampling met getPoints
+  // is ~3× sneller voor de filter-pass.
+  const curveSamples=trackCurve.getPoints(M);
   return out.filter(pl=>{
-    for(let i=0;i<M;i++){
-      const t=i/M, p=trackCurve.getPoint(t);
+    for(let i=0;i<curveSamples.length;i++){
+      const p=curveSamples[i];
       const dx=pl.x-p.x, dz=pl.z-p.z;
       if(dx*dx+dz*dz<SAFE_MARGIN_SQ)return false;
     }
