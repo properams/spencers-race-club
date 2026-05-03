@@ -36,6 +36,23 @@
 // gelezen door alle modules die "huidige tijd in seconden" nodig hebben.
 let _nowSec=0;
 
+// Page-visibility pause: skip de hele loop body als de tab achtergrond is.
+// Op iOS draait rAF op trage tabs door en blijft alle update/render werk
+// kosten — dit drains battery en triggert iOS' "high-CPU when backgrounded"
+// kill-policy. Met deze vlag pauzeert de loop volledig (geen update, geen
+// render, geen audio-scheduling drain). De clock.getDelta() consume voorkomt
+// een grote dt-spike op resume die physics + AI uit balans gooit.
+// audioCtx + scheduler suspend wordt al gedaan in core/renderer.js:40.
+let _pageHidden=(typeof document!=='undefined'&&document.hidden===true);
+if(typeof document!=='undefined'){
+  document.addEventListener('visibilitychange',()=>{
+    _pageHidden=document.hidden;
+    if(window.dbg)dbg.log('loop','visibility '+(document.hidden?'hidden':'visible'));
+    // Reset clock at resume so the first dt isn't the elapsed background time.
+    if(!_pageHidden&&typeof clock!=='undefined'&&clock&&clock.getDelta)clock.getDelta();
+  });
+}
+
 let _aiFrameCounter=0,_fpsShow=false,_fpsFrames=0,_fpsLast=performance.now(),_fpsVal=60;
 let _perfBadFrames=0,_perfChecked=false,_lowQuality=!!window._isMobile;
 // First-frame-after-GO tracker — used to attribute the initial shader-compile
@@ -51,6 +68,7 @@ const QUALITY_BAD_FRAME_MS=0.032,QUALITY_BAD_FRAME_THRESHOLD=60;
 function loop(){
   requestAnimationFrame(loop);
   if(_ctxLost){clock.getDelta();return;} // context lost — skip frame, consume delta
+  if(_pageHidden){clock.getDelta();return;} // tab in background — full skip, iOS battery + tab-kill protection
   if(gamePaused){clock.getDelta();return;} // consume delta so time doesn't jump on resume
   _nowSec=performance.now()/1000;
   // dt scaling: tablets get a 0.93× world-time multiplier so the race feels slightly calmer on iPad
