@@ -34,11 +34,34 @@
 // material can still wrap a shared texture (e.g. cloned headlight beam
 // material wrapping the cached alpha-mask).
 function _shared(x){ return !!(x && x.userData && x.userData._sharedAsset); }
+// Alle texture-slots die op een r134 MeshPhysicalMaterial kunnen voorkomen.
+// _disposeMat itereert deze lijst zodat per-instance physical materials uit
+// Phase 2/3 (transmission lenses, Tesla glass roof, Mustang stripe-canvas)
+// niet hun texture-uploads lekken bij world-switch. Shared textures
+// (userData._sharedAsset) worden overgeslagen — zo overleven de procedurele
+// envMap, _carbonTex en _softHeadlightTex de rebuild.
+const _MAT_TEX_SLOTS = [
+  'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap',
+  'emissiveMap', 'bumpMap', 'displacementMap', 'alphaMap', 'lightMap',
+  'clearcoatMap', 'clearcoatNormalMap', 'clearcoatRoughnessMap',
+  'transmissionMap', 'thicknessMap', 'envMap'
+];
 function _disposeMat(m){
   if (!m) return;
-  if (m.map && !_shared(m.map)) m.map.dispose();
-  if (m.normalMap && !_shared(m.normalMap)) m.normalMap.dispose();
-  if (m.roughnessMap && !_shared(m.roughnessMap)) m.roughnessMap.dispose();
+  for (let i=0; i<_MAT_TEX_SLOTS.length; i++){
+    const k = _MAT_TEX_SLOTS[i];
+    const t = m[k];
+    if (!t || _shared(t)) continue;
+    if (typeof t.dispose !== 'function'){
+      // Slot bevat geen Texture-object — kan ontstaan als toekomstige three-
+      // upgrades een slot-naam hergebruiken voor een ander type (bv. r136+
+      // sheenColor werd Color i.p.v. number). Defensieve skip i.p.v. crash.
+      if (window.dbg) dbg.warn('cars','non-Texture in material slot: '+k);
+      else if (typeof console !== 'undefined') console.warn('non-Texture in material slot:', k);
+      continue;
+    }
+    t.dispose();
+  }
   if (!_shared(m)) m.dispose();
 }
 function disposeScene(){
@@ -85,6 +108,114 @@ function makeSkyTex(top,bot){
   const g=c.getContext('2d'),gr=g.createLinearGradient(0,0,0,512);
   gr.addColorStop(0,top);gr.addColorStop(1,bot);g.fillStyle=gr;g.fillRect(0,0,2,512);
   const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
+}
+
+// Procedural envMap fallback voor MeshPhysicalMaterial.clearcoat reflecties.
+// HDRI-loader bestaat (assets/loader.js + effects/asset-bridge.js) maar er
+// staan momenteel geen .hdr/.exr assets op disk; scene.environment blijft
+// dus null tenzij we hier zelf een fallback bouwen. Eén PMREM-cubemap voor
+// alle worlds — per-world skybox blijft scene.background; alleen het
+// reflectie-env is gedeeld. Cached forever (één call gebruikt ~5 MB GPU).
+let _proceduralEnv=null;
+function _buildProceduralEnvMap(){
+  if(_proceduralEnv) return _proceduralEnv;
+  if(!renderer || typeof THREE.PMREMGenerator!=='function'){
+    if(window.dbg) dbg.warn('scene','procedural envMap skipped — renderer or PMREMGenerator unavailable');
+    return null;
+  }
+  const W=512,H=256;
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  // Sky→horizon→ground gradient. Geen wereld-specifieke kleuren — dit is de
+  // generieke "auto staat in een ruimte met sky+grond" reflectie. Werelden
+  // krijgen hun eigen background via make<World>SkyTex().
+  const grad=g.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0.00,'#aac4dc'); // sky
+  grad.addColorStop(0.50,'#dcd4cc'); // horizon haze
+  grad.addColorStop(0.55,'#807468'); // soft horizon line
+  grad.addColorStop(1.00,'#3a3a3a'); // ground
+  g.fillStyle=grad;g.fillRect(0,0,W,H);
+  // Sun hotspot — zonder een lokaal-fel-punt geeft de gradient alleen een
+  // zachte ambient-reflectie en blijft clearcoat onmerkbaar op een chase-cam
+  // achteraanzicht. Een radiale highlight in het bovenste derde van de
+  // equirect map zorgt voor een scherp specular spotje dat met de car-
+  // oriëntatie meebeweegt — het "wet paint" effect dat clearcoat hoort te
+  // produceren. Twee kleinere secundaire hotspots zorgen dat de auto vanuit
+  // élke hoek een hint van reflectie pakt (anders alleen wanneer de camera
+  // toevallig de zon recht ziet).
+  const sun=g.createRadialGradient(W*0.28,H*0.22,0,W*0.28,H*0.22,H*0.42);
+  sun.addColorStop(0.0,'rgba(255,250,230,1.00)');
+  sun.addColorStop(0.25,'rgba(255,240,200,0.55)');
+  sun.addColorStop(1.0,'rgba(255,240,200,0.00)');
+  g.fillStyle=sun;g.fillRect(0,0,W,H);
+  const sun2=g.createRadialGradient(W*0.74,H*0.30,0,W*0.74,H*0.30,H*0.30);
+  sun2.addColorStop(0.0,'rgba(240,235,255,0.40)');
+  sun2.addColorStop(1.0,'rgba(240,235,255,0.00)');
+  g.fillStyle=sun2;g.fillRect(0,0,W,H);
+  const tex=new THREE.CanvasTexture(c);
+  tex.mapping=THREE.EquirectangularReflectionMapping;
+  tex.needsUpdate=true;
+  let envMap=null;
+  try{
+    const pmrem=new THREE.PMREMGenerator(renderer);
+    pmrem.compileEquirectangularShader();
+    envMap=pmrem.fromEquirectangular(tex).texture;
+    pmrem.dispose();
+  }catch(e){
+    if(window.dbg) dbg.error('scene',e,'procedural envMap build failed');
+    else console.error('procedural envMap build failed',e);
+  }
+  tex.dispose();
+  if(envMap){
+    envMap.userData=envMap.userData||{};
+    envMap.userData._sharedAsset=true;
+    if(window.dbg) dbg.log('scene','procedural envMap built — '+W+'×'+H+' equirect → PMREM cube');
+  }
+  _proceduralEnv=envMap;
+  return envMap;
+}
+// Geëxposeerd zodat ui/select.js (en eventuele toekomstige off-screen
+// preview-scenes) dezelfde envMap kunnen gebruiken voor clearcoat-reflecties.
+// De buildScene-aanroeppath werkt onafhankelijk van deze export.
+window._buildProceduralEnvMap=_buildProceduralEnvMap;
+
+// Per-world envMap — gebruikt het bestaande make<World>SkyTex() canvas als
+// equirectangular bron en runt PMREM erover voor cubemap-reflecties.
+// Skybox canvases zijn 1024×512 (of 512×256 op mobile) = 2:1 ratio = al
+// equirect-compatible. Cars sampelen scene.environment en krijgen daardoor
+// per-wereld thematische reflecties: sun-spot op GP, neon haze op NeonCity,
+// ember glow op Volcano, aurora op Arctic, etc. Veel rijker dan de
+// generieke procedural gradient.
+//
+// Niet gecached per-world: rebuild bij elke world-switch (PMREM ~50ms,
+// acceptabel binnen de ~500ms world-switch budget). Cubemap krijgt GEEN
+// _sharedAsset flag, zodat disposeScene'm bij de volgende switch netjes
+// vrijgeeft. Procedural env blijft als fallback wanneer PMREM faalt.
+function _buildWorldEnvFromSky(skytex){
+  if(!renderer || typeof THREE.PMREMGenerator!=='function' || !skytex || !skytex.image){
+    return null;
+  }
+  // Wrap dezelfde canvas (skytex.image) als equirect-projectie texture.
+  // Geen pixel-copy nodig — alleen een tweede THREE.CanvasTexture wrapper
+  // met andere mapping. PMREM kopieert pixels naar GPU cubemap-faces.
+  const equirect=new THREE.CanvasTexture(skytex.image);
+  equirect.mapping=THREE.EquirectangularReflectionMapping;
+  equirect.needsUpdate=true;
+  let envMap=null;
+  try{
+    const pmrem=new THREE.PMREMGenerator(renderer);
+    pmrem.compileEquirectangularShader();
+    envMap=pmrem.fromEquirectangular(equirect).texture;
+    pmrem.dispose();
+  }catch(e){
+    if(window.dbg) dbg.error('scene',e,'world envMap build failed');
+    else console.error('world envMap build failed',e);
+  }
+  equirect.dispose();
+  if(envMap && window.dbg){
+    dbg.log('scene','world envMap built — '+activeWorld+' skybox → PMREM cube');
+  }
+  return envMap;
 }
 
 // Helper: dispose previous background + return a sky canvas with vertical
@@ -406,6 +537,11 @@ function buildScene(){
   const isVolcano=activeWorld==='volcano';
   const isArctic=activeWorld==='arctic';
   scene=new THREE.Scene();
+  // scene.environment wordt per-world gezet ná het skybox-block hieronder
+  // (zie _buildWorldEnvFromSky aanroep). Dit was eerder een generieke
+  // procedural gradient direct na new Scene(), maar per-world PMREM-cubemap
+  // van het bestaande skybox canvas geeft dramatisch betere reflecties op
+  // car clearcoat (sun, neon, embers, aurora — wereld-specifiek).
   // Fog color is matched to the skybox horizon (sky-bottom gradient stop) per world,
   // so fogged distant geometry blends seamlessly into the sky instead of producing a
   // visible "kleurverschil" band where the fogged scene meets the skybox.
@@ -446,6 +582,16 @@ function buildScene(){
     scene.background=makeGPSkyTex();
     scene.fog=new THREE.FogExp2(0xb8d8ee,.0017);
     _fogColorDay.setHex(0xb8d8ee);_fogColorNight.setHex(0x162842);
+  }
+  // World-themed envMap: PMREM het skybox canvas voor cubemap-reflecties op
+  // car clearcoat. Vervangt de generic procedural gradient die in een eerder
+  // commit als scene.environment werd gezet (vlak na new Scene()). Per-world
+  // envs zijn dramatisch rijker: sun-spot reflectie op GP, neon haze op
+  // NeonCity, ember glow op Volcano. Procedural blijft fallback voor het
+  // geval PMREM faalt.
+  {
+    const _worldEnv=_buildWorldEnvFromSky(scene.background);
+    scene.environment=_worldEnv||_buildProceduralEnvMap();
   }
   // Per-world color grading + vignette in postfx composite.
   if(typeof setWorldGrading==='function')setWorldGrading(activeWorld);

@@ -57,7 +57,10 @@ function makeCar(def){
   const paintMats = makePaintMats(def);
   const mats = Object.assign({}, shared, paintMats);
   brandBuilder(g, def, mats, lod);
-  buildAllWheels(g, def, mats, lod);
+  // Brand-builders kunnen wheel-style opts (drilled disc, branded caliper)
+  // op g.userData._wheelOpts zetten — buildAllWheels leest die door. Pilot
+  // gebruikt dit voor Bugatti; Phase 3 rolt het uit naar Tier S/A.
+  buildAllWheels(g, def, mats, lod, undefined, g.userData && g.userData._wheelOpts);
   return g;
 }
 
@@ -128,6 +131,21 @@ function makeAllCars(){
         blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
       });
       const ug=new THREE.Mesh(new THREE.CircleGeometry(2.0,16),ugMat);
+      ug.rotation.x=-Math.PI/2;ug.position.y=-.32;
+      mesh.add(ug);
+    }
+    // Player premium-tier underglow — accent-colored additive disc onder
+    // de player car, op alle worlds. Brand-builders (Tier S/A) zetten hun
+    // eigen signature via g.userData._signature.underglow op de top-level
+    // group; non-premium tiers laten dat veld leeg en krijgen geen glow.
+    // Phase 3 patroon — vervangt de Bugatti-only hardcode uit Phase 2.
+    const sig=mesh.userData&&mesh.userData._signature;
+    if(isPlayer && sig && sig.underglow!=null){
+      const ugMat=new THREE.MeshBasicMaterial({
+        color:sig.underglow,transparent:true,opacity:.35,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
+      });
+      const ug=new THREE.Mesh(new THREE.CircleGeometry(2.2,16),ugMat);
       ug.rotation.x=-Math.PI/2;ug.position.y=-.32;
       mesh.add(ug);
     }

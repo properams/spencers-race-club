@@ -32,6 +32,15 @@ function _initSnapshotBakery(){
   if(_snapScene)return true;
   if(!window.renderer)return false;
   _snapScene=new THREE.Scene();
+  // MeshPhysicalMaterial.clearcoat op de car-paint heeft een envMap nodig
+  // om iets te reflecteren — anders rendert clearcoat als een vlakke laag
+  // en zien previews er identiek uit aan de oude MeshStandardMaterial-versie.
+  // Hergebruik de procedurele envMap die core/scene.js bouwt voor de race-
+  // scene. _sharedAsset-flag zorgt dat disposeSnapshotBakery'm overslaat.
+  if(typeof window._buildProceduralEnvMap==='function'){
+    const env=window._buildProceduralEnvMap();
+    if(env)_snapScene.environment=env;
+  }
   _snapCam=new THREE.PerspectiveCamera(32,SNAP_W/SNAP_H,.1,100);
   _snapCam.position.set(4.2,1.55,5.8);_snapCam.lookAt(0,.42,0);
   // Cinematic 3-point lighting: warm key, cool fill, magenta rim.
