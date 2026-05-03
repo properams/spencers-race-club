@@ -162,7 +162,7 @@ let _fastestLapFlashT=0;
 // _tireTemp → js/gameplay/tires.js
 // Speed trap state → js/gameplay/speedtrap.js
 // Car unlock system
-var _unlockedCars=new Set([0,1,2,3,4,5,6,7]); // var: persistence cross-script (default unlocks)
+var _unlockedCars=new Set([0,1,2,3,4,5,6,7,12]); // var: persistence cross-script (default unlocks). Group B (id=12) pilot — default-unlocked tijdens pilot-fase; production-versie kan via price-entry in prices.json gekocht worden.
 var _raceCount=0,_podiumCount=0; // var: persistence cross-script (career stats)
 // _newUnlocks was dead code — verwijderd in race.js extractie.
 // AI overtaking behavior (per car): tries to go around player
