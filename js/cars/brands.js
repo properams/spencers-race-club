@@ -957,6 +957,118 @@ function buildTeslaModelS(g, def, mats, lod){
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// GROUP B RALLY — pilot voor procedural-geometry pipeline (Art of Rally stijl).
+// Long flat hood, korte greenhouse, hatchback achterkant. Matte finish via
+// def.paintClearcoat=0.30. Oversized wheels via def.type='rally' recognitie
+// in buildAllWheels. Two-tone livery via def.color2. Yellow rally light pod
+// op de voorbumper. Geen player underglow — rally cars zijn modder, niet bling.
+// ─────────────────────────────────────────────────────────────────────────────
+function buildGroupBRally(g, def, mats, lod){
+  const lo = lod === 'low';
+  const body = new THREE.Group();
+  body.userData = body.userData || {};
+  body.userData._isBody = true;
+  g.add(body);
+  // Body-shell dimensies — iets korter en hoger dan een super (rally stance:
+  // gehurkt maar met verhoogde ride-height voor wheel-arch ruimte).
+  const W = 1.92, L = 4.10, H = 1.10;
+  // ── Body shell ──────────────────────────────────────────────────────
+  if (lo){
+    // Mobile fallback: box-stack pattern, lijkt op Mustang/Tesla approach.
+    addPart(body, new THREE.BoxGeometry(W, .42, L), mats.paint, 0, .26, 0);
+    addPart(body, new THREE.BoxGeometry(W*.85, .35, L*.42), mats.paint, 0, .68, .15);
+    addPart(body, new THREE.BoxGeometry(W*.92, .04, L*.40), mats.paint, 0, .89, .12);
+  } else {
+    // Desktop: extruded side-profile body. position.y=.05 zet de body iets
+    // boven ground zodat wheels onder de body uitsteken (rally stance).
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
+  }
+  // ── Two-tone center stripe (def.color2) ─────────────────────────────
+  if (!lo && def.color2 != null){
+    const c2 = (typeof def.color2 === 'string') ? parseInt(def.color2, 16) : def.color2;
+    // Lambert (geen PBR) houdt de stripe matte i.p.v. mee te glimmen met
+    // clearcoat. Past bij rally-livery die sticker-achtig leest, niet glas.
+    const stripeMat = new THREE.MeshLambertMaterial({color: c2});
+    // Single brede center stripe over hood + dak + hatchback
+    addPart(body, new THREE.BoxGeometry(0.34, 0.025, L * 0.85), stripeMat, 0, H * 0.97, 0);
+  }
+  // ── Cabin glass (high LOD only) ─────────────────────────────────────
+  if (!lo){
+    // Windshield — raked back
+    addPart(body, new THREE.BoxGeometry(W*0.78, 0.42, 0.08), mats.glass, 0, H*0.78, -L*0.06, -0.45);
+    // Rear hatchback glass — steile slope
+    addPart(body, new THREE.BoxGeometry(W*0.74, 0.32, 0.08), mats.glassDark, 0, H*0.72, L*0.18, 0.55);
+    // Side windows
+    [-W*0.42, +W*0.42].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(0.06, 0.30, L*0.28), mats.glass, s, H*0.78, L*0.04);
+    });
+  }
+  // ── Front grille ────────────────────────────────────────────────────
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.55, 0.18, 0.08), mats.grille, 0, H*0.30, -L*0.49);
+  }
+  // ── Bumper-mounted headlights (klein paar) ──────────────────────────
+  buildHeadlights(body, mats, {spread: W*0.40, y: H*0.42, z: -L*0.49, w: .22, h: .08, d: .06});
+  // ── Yellow rally light pod (boven bumper) ───────────────────────────
+  // Per-instance lens-mat met emissive geel. Niet in _headlightMats[]
+  // geregistreerd — rally lights staan altijd aan, geen night-bump nodig.
+  const podLensMat = lo
+    ? new THREE.MeshLambertMaterial({color:0xffec8a, emissive:0xffd84d, emissiveIntensity:0.4})
+    : new THREE.MeshPhysicalMaterial({
+        color:0xffec8a, emissive:0xffd84d, emissiveIntensity:0.5,
+        metalness:0.1, roughness:0.2,
+        clearcoat:0.5, clearcoatRoughness:0.1,
+        envMapIntensity:0.3
+      });
+  if (!lo){
+    podLensMat.userData = podLensMat.userData || {};
+    podLensMat.userData._carPBR = true;
+  }
+  const pod = buildRallyLightPod({
+    width: W*0.50, lightR: 0.09,
+    mat: mats.matBlk, lensMat: podLensMat
+  });
+  pod.position.set(0, H*0.62, -L*0.50);
+  body.add(pod);
+  // ── Fender flares (high LOD only) ───────────────────────────────────
+  if (!lo){
+    const fenderR = 0.50, fenderW = 0.40;
+    [[-W*0.50, 0.40, -L*0.36], [+W*0.50, 0.40, -L*0.36],
+     [-W*0.50, 0.40, +L*0.36], [+W*0.50, 0.40, +L*0.36]].forEach(([x,y,z])=>{
+      const flare = buildLatheFenderArch(fenderR, fenderW, { mat: mats.paint });
+      flare.position.set(x, y, z);
+      body.add(flare);
+    });
+  }
+  // ── Tail lights ─────────────────────────────────────────────────────
+  buildTaillights(body, mats, {spread: W*0.40, y: H*0.50, z: L*0.49, w: .24, h: .06, d: .04});
+  // ── Low-profile rear spoiler (rally style, niet aggressief supercar wing) ──
+  if (!lo){
+    [-0.30, 0.30].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(0.04, 0.12, 0.10), mats.matBlk, s, H*0.85, L*0.46);
+    });
+    addPart(body, new THREE.BoxGeometry(W*0.55, 0.04, 0.20), mats.matBlk, 0, H*0.95, L*0.46);
+  }
+  // ── Side exhaust (rally signature: side-exit i.p.v. rear) ───────────
+  if (!lo){
+    const ex = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.18, 8), mats.chrome);
+    ex.rotation.z = Math.PI/2;
+    ex.position.set(W*0.46, 0.18, L*0.42);
+    body.add(ex);
+  }
+  // ── Side skirts ─────────────────────────────────────────────────────
+  buildSideSkirts(body, mats, {spread: W*0.50, y: 0.15, z: 0, length: L*0.55});
+  // ── Wheel-style: drilled discs + accent (yellow) calipers via _wheelOpts ──
+  // build.js → buildAllWheels leest g.userData._wheelOpts. def.type='rally'
+  // triggert oversized wheel-stance in buildAllWheels (radius .42, width .30).
+  // Géén _signature.underglow — rally cars hebben geen ground glow.
+  g.userData = g.userData || {};
+  g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // REGISTRY — maps def.brand to its builder. All 12 brands now have explicit
 // builders; the legacy parametric fallback in build.js is dead code and
 // removed in this PR.
@@ -973,7 +1085,8 @@ const BRAND_BUILDERS = {
   'RED BULL':    buildRedBullRBF1,
   'MERCEDES':    buildMercedesW14F1,
   'FORD':        buildFordMustang,
-  'TESLA':       buildTeslaModelS
+  'TESLA':       buildTeslaModelS,
+  'GROUPB':      buildGroupBRally
 };
 
 window.BRAND_BUILDERS = BRAND_BUILDERS;
@@ -989,3 +1102,4 @@ window.buildRedBullRBF1 = buildRedBullRBF1;
 window.buildMercedesW14F1 = buildMercedesW14F1;
 window.buildFordMustang = buildFordMustang;
 window.buildTeslaModelS = buildTeslaModelS;
+window.buildGroupBRally = buildGroupBRally;
