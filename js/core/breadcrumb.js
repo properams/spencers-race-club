@@ -67,18 +67,15 @@
 
   // On boot: read previous session's trail and surface to dbg if there
   // were errors persisted. Don't wipe — the next push() naturally evicts.
+  // Script-load order in index.html (debug.js vóór breadcrumb.js, beide
+  // synchrone classic scripts) garandeert dat window.dbg al bestaat.
   try{
     const prev=_read();
     if(prev.length){
       const last=prev[prev.length-1];
       const seconds=Math.round((Date.now()-last.t)/1000);
       const trail=prev.map(e=>e.n+(e.x?(' '+JSON.stringify(e.x)):'' )).join(' → ');
-      // Use dbg if available; else stash on window so debug.js init can pick up later.
-      if(window.dbg){
-        window.dbg.log('breadcrumb','prev session ('+seconds+'s ago, '+prev.length+' steps): '+trail);
-      }else{
-        window._pendingBreadcrumbLog='prev session ('+seconds+'s ago, '+prev.length+' steps): '+trail;
-      }
+      if(window.dbg)window.dbg.log('breadcrumb','prev session ('+seconds+'s ago, '+prev.length+' steps): '+trail);
     }
   }catch(_){}
 

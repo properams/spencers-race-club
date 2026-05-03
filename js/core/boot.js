@@ -205,8 +205,13 @@ async function boot(){
     // values bevat zijn valid; onbekende waarden vallen terug op default.
     try{
       const _savedWorld=localStorage.getItem('src_world');
-      if(_savedWorld&&document.querySelector('.worldBigCard[data-world="'+_savedWorld+'"]')){
-        activeWorld=_savedWorld;
+      if(_savedWorld){
+        // CSS.escape voorkomt selector-syntax breken op gemanipuleerde
+        // localStorage-waarden met aanhalingstekens of brackets.
+        const _esc=(window.CSS&&CSS.escape)?CSS.escape(_savedWorld):_savedWorld.replace(/[^\w-]/g,'');
+        if(document.querySelector('.worldBigCard[data-world="'+_esc+'"]')){
+          activeWorld=_savedWorld;
+        }
       }
     }catch(_){}
     // Visual asset preload for default world (HDRI/textures/GLTF). Fire-
