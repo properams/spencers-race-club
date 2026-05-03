@@ -651,7 +651,7 @@ function buildSunBillboard(){
   cCtx.fillStyle=cGr;cCtx.fillRect(0,0,64,64);
   const coreSprite=new THREE.Sprite(new THREE.SpriteMaterial({
     map:new THREE.CanvasTexture(coreCv),blending:THREE.AdditiveBlending,
-    transparent:true,opacity:.95,depthWrite:false
+    transparent:true,opacity:.65,depthWrite:false
   }));
   coreSprite.scale.set(80,80,1);
   _sunBillboard.add(coreSprite);
@@ -737,14 +737,16 @@ function buildGodRays(){
   offsets.forEach(([dx,dz])=>{
     const mat=new THREE.SpriteMaterial({
       map:tex.clone(),blending:THREE.AdditiveBlending,
-      transparent:true,opacity:.32,depthWrite:false
+      transparent:true,opacity:.18,depthWrite:false
     });
     mat.map.needsUpdate=true;
     const beam=new THREE.Sprite(mat);
     beam.position.copy(_sunBillboard.position);
     beam.position.x+=dx;beam.position.z+=dz;
     beam.position.y-=120; // beam center hangt onder zon → lijkt naar beneden te schijnen
-    beam.scale.set(80,360,1);
+    beam.scale.set(60,220,1);
+    // baseOpacity stash voor updateLensFlare in-frame fade
+    beam.userData.baseOpacity=.18;
     beam.renderOrder=998; // vóór ghosts (999) maar na rest
     scene.add(beam);
     _godRays.push(beam);
@@ -807,15 +809,36 @@ function buildLensFlareGhosts(){
 const _lfNDC=new THREE.Vector3();
 const _lfFwd=new THREE.Vector3(),_lfUp=new THREE.Vector3(),_lfRight=new THREE.Vector3();
 function updateLensFlare(){
-  if(!_sunBillboard||!camera||!_lensGhosts.length)return;
+  if(!_sunBillboard||!camera)return;
   if(!_sunBillboard.visible){
-    _lensGhosts.forEach(g=>{g.visible=false;});return;
+    _lensGhosts.forEach(g=>{g.visible=false;});
+    _godRays.forEach(b=>{b.visible=false;});
+    return;
   }
   _lfNDC.copy(_sunBillboard.position).project(camera);
   // Achter camera or far off-screen → hide
-  if(_lfNDC.z>1||Math.abs(_lfNDC.x)>1.4||Math.abs(_lfNDC.y)>1.4){
-    _lensGhosts.forEach(g=>{g.visible=false;});return;
+  const offscreen=(_lfNDC.z>1||Math.abs(_lfNDC.x)>1.4||Math.abs(_lfNDC.y)>1.4);
+  if(offscreen){
+    _lensGhosts.forEach(g=>{g.visible=false;});
+    // God-rays blijven zichtbaar offscreen — daar zijn ze juist subtiel
+    // background-detail dat geen gameplay-blocker is. Reset naar baseOp.
+    _godRays.forEach(b=>{b.visible=true;b.material.opacity=b.userData.baseOpacity||.18;});
+    return;
   }
+  // ── In-frame whiteout suppressie ────────────────────────────────────
+  // Wanneer de zon binnen ~50% van het scherm-centrum zit (frontal in
+  // beeld), verlaag god-ray opacity drastisch. Dit voorkomt dat de
+  // verticale beams als witte/gele balken uit de grond schijnen op het
+  // rechte stuk waar de speler de track moet zien. Bij sun-aan-de-rand
+  // (offscreen-naderend) lossen ze geleidelijk weer op.
+  const sunCenterDist=Math.max(Math.abs(_lfNDC.x),Math.abs(_lfNDC.y));
+  // 0..0.5 NDC = volledige whiteout-zone; 0.5..1.0 = lerp terug naar normaal
+  const grayFade=sunCenterDist<0.5?0.20:Math.min(1,(sunCenterDist-0.5)/0.5);
+  _godRays.forEach(b=>{
+    b.visible=true;
+    b.material.opacity=(b.userData.baseOpacity||.18)*grayFade;
+  });
+  if(!_lensGhosts.length)return;
   camera.getWorldDirection(_lfFwd);
   _lfRight.set(1,0,0).applyQuaternion(camera.quaternion);
   _lfUp.set(0,1,0).applyQuaternion(camera.quaternion);
@@ -824,6 +847,9 @@ function updateLensFlare(){
   const fW=fH*camera.aspect;
   const dEdge=Math.max(Math.abs(_lfNDC.x),Math.abs(_lfNDC.y));
   const fadeBase=Math.max(0,1-dEdge*0.65);
+  // Lens ghost opacity wordt ook in-frame iets gedempt — niet zo hard als
+  // godrays want ghosts zijn visueel pleasing en niet blokkerend.
+  const ghostInFrameMul=sunCenterDist<0.5?0.55:1.0;
   _lensGhosts.forEach(g=>{
     const f=g.userData.factor;
     const px=_lfNDC.x*(1-f), py=_lfNDC.y*(1-f);
@@ -832,7 +858,7 @@ function updateLensFlare(){
       .addScaledVector(_lfRight,px*fW*0.5)
       .addScaledVector(_lfUp,py*fH*0.5);
     g.visible=true;
-    g.material.opacity=fadeBase*g.userData.baseOpacity*_sunBillboard.material.opacity;
+    g.material.opacity=fadeBase*g.userData.baseOpacity*_sunBillboard.material.opacity*ghostInFrameMul;
   });
 }
 
