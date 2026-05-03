@@ -28,9 +28,14 @@ function _carMat(opts){
     if (o.opacity != null)     lo.opacity = o.opacity;
     if (o.emissive != null)    lo.emissive = o.emissive;
     if (o.emissiveIntensity!=null) lo.emissiveIntensity = o.emissiveIntensity;
+    if (o.map != null)         lo.map = o.map;
     return new THREE.MeshLambertMaterial(lo);
   }
-  const m = new THREE.MeshStandardMaterial({
+  // Desktop: pak MeshPhysicalMaterial wanneer clearcoat/transmission of de
+  // expliciete `physical: true` flag aanwezig zijn. Zonder die props valt
+  // het terug op MeshStandardMaterial — identiek aan oud gedrag.
+  const wantsPhysical = !!(o.physical || o.clearcoat != null || o.transmission != null);
+  const params = {
     color: o.color,
     metalness: o.metalness != null ? o.metalness : 0.0,
     roughness: o.roughness != null ? o.roughness : 0.6,
@@ -39,10 +44,59 @@ function _carMat(opts){
     emissive: o.emissive != null ? o.emissive : 0x000000,
     emissiveIntensity: o.emissiveIntensity != null ? o.emissiveIntensity : 1.0,
     envMapIntensity: o.envMapIntensity != null ? o.envMapIntensity : 0.7,
-  });
+  };
+  if (o.map != null) params.map = o.map;
+  if (wantsPhysical){
+    if (o.clearcoat != null)          params.clearcoat = o.clearcoat;
+    if (o.clearcoatRoughness != null) params.clearcoatRoughness = o.clearcoatRoughness;
+    if (o.transmission != null)       params.transmission = o.transmission;
+    if (o.thickness != null)          params.thickness = o.thickness;
+    if (o.ior != null)                params.ior = o.ior;
+  }
+  const m = wantsPhysical
+    ? new THREE.MeshPhysicalMaterial(params)
+    : new THREE.MeshStandardMaterial(params);
   m.userData = m.userData || {};
   m.userData._carPBR = true;
   return m;
+}
+
+// Procedural carbon-weave diffuse texture. 256×256, herhalende 32-pixel
+// cellen met diagonale gradient zodat het patroon "weven" leest. Eén keer
+// gebouwd, daarna gedeeld door de carbon-material singleton in
+// getSharedCarMats(). Flagged _sharedAsset zodat disposeScene 'm overslaat.
+let _carbonTex = null;
+function _makeCarbonWeaveTex(){
+  if (_carbonTex) return _carbonTex;
+  const W = 256, H = 256, CELL = 32;
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#1a1a1c'; g.fillRect(0, 0, W, H);
+  // Twee alternerende cell-types met tegenovergestelde gradient-richting —
+  // simuleert het over-en-onder weven van koolstofdraden.
+  for (let y = 0; y < H; y += CELL){
+    for (let x = 0; x < W; x += CELL){
+      const isA = ((x/CELL + y/CELL) & 1) === 0;
+      const grad = g.createLinearGradient(x, y, x + CELL, y + CELL);
+      if (isA){
+        grad.addColorStop(0,   '#2a2a2e');
+        grad.addColorStop(0.5, '#1a1a1c');
+        grad.addColorStop(1,   '#0e0e10');
+      } else {
+        grad.addColorStop(0,   '#0e0e10');
+        grad.addColorStop(0.5, '#1a1a1c');
+        grad.addColorStop(1,   '#2a2a2e');
+      }
+      g.fillStyle = grad;
+      g.fillRect(x, y, CELL, CELL);
+    }
+  }
+  _carbonTex = new THREE.CanvasTexture(c);
+  _carbonTex.wrapS = THREE.RepeatWrapping;
+  _carbonTex.wrapT = THREE.RepeatWrapping;
+  _carbonTex.needsUpdate = true;
+  _carbonTex.userData = { _sharedAsset: true };
+  return _carbonTex;
 }
 
 let _carShared = null;
@@ -57,13 +111,20 @@ function getSharedCarMats(){
     // tinted reflection; transparent keeps interior visible.
     glass:    _carMat({color:0x0a1a2a, transparent:true, opacity:.72, metalness:0.0, roughness:0.05, envMapIntensity:0.85}),
     glassDark:_carMat({color:0x040810, transparent:true, opacity:.86, metalness:0.0, roughness:0.10, envMapIntensity:0.75}),
-    // Chrome: full metallic, mirror-smooth → mirror reflection of HDRI.
-    chrome:   _carMat({color:0xdddddd, metalness:1.0, roughness:0.18, envMapIntensity:1.0}),
+    // Chrome: full metallic, mirror-smooth → mirror reflection of envMap.
+    // Clearcoat geeft de extra "vernis-laag" reflectie die echte chroom heeft.
+    chrome:   _carMat({color:0xdddddd, metalness:1.0, roughness:0.10, clearcoat:0.5, clearcoatRoughness:0.05, envMapIntensity:1.0}),
     // Splitters / skirts / vents: matte black, dim reflections.
     blk:      _carMat({color:0x050505, metalness:0.0, roughness:0.75, envMapIntensity:0.30}),
     matBlk:   _carMat({color:0x101012, metalness:0.0, roughness:0.85, envMapIntensity:0.25}),
     // Honeycomb grille: slightly metallic mesh.
     grille:   _carMat({color:0x1a1a1c, metalness:0.4, roughness:0.55, envMapIntensity:0.40}),
+    // Carbon-fiber trim: diffuse weave map + clearcoat lacquer. Per-instance
+    // builders kunnen hiernaar verwijzen i.p.v. matBlk waar de "zwart"
+    // bedoeld is als premium materiaal (Bugatti accents, McLaren slats,
+    // Koenigsegg roof scoop). matBlk en blk blijven los staan voor échte
+    // matte plastic onderdelen.
+    carbon:   _carMat({color:0x141416, metalness:0.4, roughness:0.55, clearcoat:0.8, clearcoatRoughness:0.25, envMapIntensity:0.85, map:_makeCarbonWeaveTex(), physical:true}),
     // Tire: pure matte rubber, no reflection contribution.
     tire:     _carMat({color:0x080808, metalness:0.0, roughness:0.95, envMapIntensity:0.10}),
     // Rim: polished alloy, strong reflection.
@@ -98,6 +159,9 @@ function getSharedCarMats(){
 function disposeSharedCarMats(){
   if(!_carShared) return;
   Object.values(_carShared).forEach(m=>{ try{ m.dispose(); } catch(_){} });
+  // Carbon-weave diffuse map is een gedeelde CanvasTexture, geen materiaal —
+  // dispose 'm los van de materiaal-loop hierboven.
+  if(_carbonTex){ try{ _carbonTex.dispose(); } catch(_){} _carbonTex = null; }
   _carShared = null;
   if(window._headlightMats) window._headlightMats.length = 0;
 }
@@ -114,24 +178,38 @@ window.syncHeadlights = syncHeadlights;
 // instances of the same def each get fresh paint — needed because color
 // overrides apply per-mesh and we don't want to retint the def-default for
 // other instances).
-function makePaintMats(def){
-  // Per-car body paint. Desktop: MeshStandardMaterial with metallic-paint
-  // tuning (clearcoat-ish without actual clearcoat — three r134 has no
-  // MeshPhysicalMaterial.clearcoat in this build path). Mobile: keep the
-  // existing MeshPhongMaterial path so we don't pay PBR shader cost on
-  // 9 paint meshes while moving.
+//
+// `opts.flake` is gereserveerd voor MeshPhysicalMaterial.iridescence (r135+).
+// Op de huidige r134-bouw is iridescence niet beschikbaar; opts.flake is
+// daarom een no-op tot de three-compat upgrade. Roep-sites mogen 'm wel
+// opgeven zodat ze klaar zijn voor r135.
+function makePaintMats(def, opts){
+  opts = opts || {};
   const color = (typeof def.color === 'string') ? parseInt(def.color,16) : def.color;
   const accent = (typeof def.accent === 'string') ? parseInt(def.accent,16) : def.accent;
   let paint, accentMat;
   if (window._isMobile){
+    // Mobile blijft op Phong/Lambert om PBR-shader-cost te vermijden over
+    // 30+ paint-meshes per auto bij vol grid.
     paint = new THREE.MeshPhongMaterial({color:color, shininess:120, specular:0x666666});
     accentMat = new THREE.MeshLambertMaterial({color:accent});
   } else {
-    paint = new THREE.MeshStandardMaterial({
-      color: color, metalness: 0.65, roughness: 0.22, envMapIntensity: 0.85,
+    // Desktop: MeshPhysicalMaterial met clearcoat-laag = nat-look automotive
+    // lacquer. Hogere metalness + clearcoat samen geven het "diepe gloss"
+    // effect dat MeshStandardMaterial alleen niet kan reproduceren. Vereist
+    // een scene.environment envMap — fallback procedural envMap zit in
+    // core/scene.js (_buildProceduralEnvMap) zodat dit ook werkt zonder HDRI.
+    paint = new THREE.MeshPhysicalMaterial({
+      color: color,
+      metalness: 0.85, roughness: 0.30,
+      clearcoat: 1.0, clearcoatRoughness: 0.05,
+      envMapIntensity: 1.0,
     });
-    accentMat = new THREE.MeshStandardMaterial({
-      color: accent, metalness: 0.50, roughness: 0.35, envMapIntensity: 0.65,
+    accentMat = new THREE.MeshPhysicalMaterial({
+      color: accent,
+      metalness: 0.50, roughness: 0.35,
+      clearcoat: 0.6, clearcoatRoughness: 0.10,
+      envMapIntensity: 0.65,
     });
     paint.userData = paint.userData || {}; paint.userData._carPBR = true;
     accentMat.userData = accentMat.userData || {}; accentMat.userData._carPBR = true;

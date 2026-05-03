@@ -87,6 +87,54 @@ function makeSkyTex(top,bot){
   const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
 }
 
+// Procedural envMap fallback voor MeshPhysicalMaterial.clearcoat reflecties.
+// HDRI-loader bestaat (assets/loader.js + effects/asset-bridge.js) maar er
+// staan momenteel geen .hdr/.exr assets op disk; scene.environment blijft
+// dus null tenzij we hier zelf een fallback bouwen. Eén PMREM-cubemap voor
+// alle worlds — per-world skybox blijft scene.background; alleen het
+// reflectie-env is gedeeld. Cached forever (één call gebruikt ~5 MB GPU).
+let _proceduralEnv=null;
+function _buildProceduralEnvMap(){
+  if(_proceduralEnv) return _proceduralEnv;
+  if(!renderer || typeof THREE.PMREMGenerator!=='function'){
+    if(window.dbg) dbg.warn('scene','procedural envMap skipped — renderer or PMREMGenerator unavailable');
+    return null;
+  }
+  const W=512,H=256;
+  const c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  // Sky→horizon→ground gradient. Geen wereld-specifieke kleuren — dit is de
+  // generieke "auto staat in een ruimte met sky+grond" reflectie. Werelden
+  // krijgen hun eigen background via make<World>SkyTex().
+  const grad=g.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0.00,'#aac4dc'); // sky
+  grad.addColorStop(0.50,'#dcd4cc'); // horizon haze
+  grad.addColorStop(0.55,'#807468'); // soft horizon line
+  grad.addColorStop(1.00,'#3a3a3a'); // ground
+  g.fillStyle=grad;g.fillRect(0,0,W,H);
+  const tex=new THREE.CanvasTexture(c);
+  tex.mapping=THREE.EquirectangularReflectionMapping;
+  tex.needsUpdate=true;
+  let envMap=null;
+  try{
+    const pmrem=new THREE.PMREMGenerator(renderer);
+    pmrem.compileEquirectangularShader();
+    envMap=pmrem.fromEquirectangular(tex).texture;
+    pmrem.dispose();
+  }catch(e){
+    if(window.dbg) dbg.error('scene',e,'procedural envMap build failed');
+    else console.error('procedural envMap build failed',e);
+  }
+  tex.dispose();
+  if(envMap){
+    envMap.userData=envMap.userData||{};
+    envMap.userData._sharedAsset=true;
+    if(window.dbg) dbg.log('scene','procedural envMap built — '+W+'×'+H+' equirect → PMREM cube');
+  }
+  _proceduralEnv=envMap;
+  return envMap;
+}
+
 // Helper: dispose previous background + return a sky canvas with vertical
 // gradient as base. Per-world sky functions paint on top of this.
 // Mobile gebruikt een halve fysieke resolutie (512×256) maar context.scale
@@ -406,6 +454,12 @@ function buildScene(){
   const isVolcano=activeWorld==='volcano';
   const isArctic=activeWorld==='arctic';
   scene=new THREE.Scene();
+  // Procedural envMap fallback zodat MeshPhysicalMaterial.clearcoat reflecties
+  // heeft te samplen. maybeUpgradeWorld() (verderop) overschrijft scene.environment
+  // als er ooit een echte HDRI cached is voor deze world; tot die tijd blijft
+  // procedureel actief. _sharedAsset-flag op de cubemap zorgt dat disposeScene
+  // 'm tijdens world-switch niet vrijgeeft.
+  {const _procEnv=_buildProceduralEnvMap();if(_procEnv)scene.environment=_procEnv;}
   // Fog color is matched to the skybox horizon (sky-bottom gradient stop) per world,
   // so fogged distant geometry blends seamlessly into the sky instead of producing a
   // visible "kleurverschil" band where the fogged scene meets the skybox.
