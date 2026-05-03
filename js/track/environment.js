@@ -404,7 +404,22 @@ function _buildTreePlacements(){
       });
     }
   });
-  return out;
+  // Track-safety post-filter: alle drie de loops hierboven kunnen trees
+  // op het asfalt plaatsen wanneer de layout een hairpin / S-curve heeft
+  // (een offset langs de tangent op waypoint A kan binnen het curve-pad
+  // bij waypoint B liggen). Filter elke placement die binnen TW+5m van
+  // ENIG curve-punt zit. Eenmalige build-time check, ~120 samples per
+  // tree, totaal ~32k ops voor 270 trees → <5ms op desktop.
+  const SAFE_MARGIN_SQ=(TW+5)*(TW+5);
+  const M=120;
+  return out.filter(pl=>{
+    for(let i=0;i<M;i++){
+      const t=i/M, p=trackCurve.getPoint(t);
+      const dx=pl.x-p.x, dz=pl.z-p.z;
+      if(dx*dx+dz*dz<SAFE_MARGIN_SQ)return false;
+    }
+    return true;
+  });
 }
 
 function _spawnInstancedTreesGLTF(protos, placements){
