@@ -335,6 +335,7 @@ function makeGPSkyTex(){
 
 function buildScene(){
   window.dbg&&dbg.log('scene','buildScene start — world='+activeWorld);
+  if(window.Breadcrumb)Breadcrumb.push('buildScene',{world:activeWorld});
   // Perf Phase A: shader-program count voor en na buildScene.
   const _perfProgBefore=(renderer&&renderer.info&&renderer.info.programs&&renderer.info.programs.length)||0;
   if(window.perfMark)perfMark('build:total:start');

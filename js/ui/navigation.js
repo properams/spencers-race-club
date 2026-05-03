@@ -35,6 +35,7 @@ function goToSelect(){
   buildCarSelectUI();
   document.getElementById('sSelect').classList.remove('hidden');
   _perfHeap('goToSelect');
+  if(window.Breadcrumb)Breadcrumb.push('goToSelect');
 }
 
 function goToRace(){
@@ -46,6 +47,7 @@ function goToRace(){
   if(gameState!=='SELECT')return;
   if(window.perfMark)perfMark('goToRace:start');
   _perfHeap('goToRace');
+  if(window.Breadcrumb)Breadcrumb.push('goToRace',{world:activeWorld,car:typeof selCarId!=='undefined'?selCarId:null});
   if(titleMusic){titleMusic.stop();titleMusic=null;}
   // Tear down de bake-scene + render target. De cache (2D canvases per
   // auto) blijft staan voor snel terugkeren naar SELECT zonder re-bake.
@@ -183,6 +185,7 @@ document.getElementById('sSelect').classList.add('hidden');document.getElementBy
 function goToTitle(){
   _resetRaceState();
   _perfHeap('goToTitle');
+  if(window.Breadcrumb)Breadcrumb.push('goToTitle');
   gameState='TITLE';
   setTouchControlsVisible(false);
   // Title heeft geen car-preview nodig — bake-scene + render target weg.
@@ -197,6 +200,7 @@ function goToTitle(){
 
 function goToWorldSelect(){
   _perfHeap('goToWorldSelect');
+  if(window.Breadcrumb)Breadcrumb.push('goToWorldSelect');
   gameState='WORLD_SELECT';
   setTouchControlsVisible(false);
   initAudio();startSelectMusic();

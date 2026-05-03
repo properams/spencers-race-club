@@ -364,6 +364,7 @@ function _selectPreviewCar(defId){
 function rebuildWorld(newWorld){
   if(newWorld===activeWorld)return;
   if(window.perfMark)perfMark('transition:start');
+  if(window.Breadcrumb)Breadcrumb.push('rebuildWorld',{from:activeWorld,to:newWorld});
   activeWorld=newWorld;
   localStorage.setItem('src_world',newWorld);
   // Preload muziek-stems + surface voor deze wereld (fire-and-forget). Als
