@@ -5,7 +5,6 @@
 function buildCollectibles(){
   // Per-world palette — coin, emissive, rim highlight, halo glow, light colour
   const PAL={
-    grandprix:{coin:0xffdd00,emit:0xff9900,rim:0xfff5a8,halo:0xffcc33,light:0xffcc00},
     space:    {coin:0x66ccff,emit:0x2288ff,rim:0xcce8ff,halo:0x66aaff,light:0x88bbff},
     deepsea:  {coin:0xffaa33,emit:0xcc7700,rim:0xffd999,halo:0xffaa00,light:0xffaa44},
     candy:    {coin:0xff77cc,emit:0xdd2288,rim:0xffddf0,halo:0xff55aa,light:0xff66cc},
@@ -14,7 +13,7 @@ function buildCollectibles(){
     arctic:   {coin:0xaadfff,emit:0x4488dd,rim:0xe8f5ff,halo:0x88bbee,light:0xaaddff},
     themepark:{coin:0xffcc22,emit:0xff6600,rim:0xffe999,halo:0xff9933,light:0xffbb00},
   };
-  const pal=PAL[activeWorld]||PAL.grandprix;
+  const pal=PAL[activeWorld]||PAL.space;
 
   const positions=[.07,.18,.30,.42,.55,.67,.78,.90];
   positions.forEach(t=>{
@@ -246,12 +245,7 @@ function updateCrowd(){
 
 function buildSpectators(){
   // Skip on space/deepsea — niet thematisch passend.
-  // Skip on grandprix — de bonte flag-rij + crowd-canvas was de bron van
-  // de "rainbow shimmer along track edges" die in PR #71/#72 niet was
-  // opgelost. Themepark behoudt zijn eigen call. Dubbele guard (function-
-  // level + scene.js call-site) voorkomt regressie als toch ergens een
-  // buildSpectators-call voor GP komt te staan.
-  if(activeWorld==='space'||activeWorld==='deepsea'||activeWorld==='grandprix')return;
+  if(activeWorld==='space'||activeWorld==='deepsea')return;
   _crowdMaterials.length=0;
   const crowdTex=_buildCrowdTex();
   // Two grandstand sections aan weerszijden van het start/finish-stuk.

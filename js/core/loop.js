@@ -15,7 +15,7 @@
 //   checkCollectibles, checkCollisions, checkTrackLimits, checkWrongWay,
 //   checkSpaceRailgun, checkGravityZones,
 //   checkOrbitingAsteroids, checkWarpTunnels, checkCurrentStreams,
-//   checkAbyssCracks, checkTreasureTrail, checkWaterPuddles, checkDRSZone,
+//   checkAbyssCracks, checkTreasureTrail,
 //   updateBoostArrows, updateSlipstreamVisuals, updateSafetyCar,
 //   updateCamera, updateCarLights, updateBoostGlow, updateFlags,
 //   updateSkidMarks, updateWeather, updateSky, updateSnow, updateStormFlash,
@@ -98,12 +98,6 @@ function loop(){
       if(typeof checkPropCollisions==='function')checkPropCollisions(dt);
       if(activeWorld==='space'){checkSpaceRailgun();checkGravityZones(dt);checkOrbitingAsteroids(dt);checkWarpTunnels(dt);}
       else if(activeWorld==='deepsea'){checkCurrentStreams(dt);checkAbyssCracks(dt);checkTreasureTrail(dt);}
-      else{
-        checkWaterPuddles(dt);checkDRSZone(dt);
-        if(activeWorld==='grandprix'&&typeof updateGrandPrixStorm==='function'){
-          const _pl=carObjs[playerIdx];updateGrandPrixStorm(dt,_pl?_pl.lap:1);
-        }
-      }
       updateBoostArrows();updateSlipstreamVisuals();updateSafetyCar(dt);
     }
     sparkSystem.update(dt);exhaustSystem.update(dt);

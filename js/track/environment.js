@@ -209,10 +209,6 @@ function _silhouetteTex(seed, baseColor, accent, jaggedness){
 // Each entry: { far:[lowColor, highColor, jaggedness, opacity, height],
 //               near:[lowColor, highColor, jaggedness, opacity, height] }
 const _SILHOUETTE_PALETTES = {
-  grandprix: {
-    far:  ['#3a4960','#6b7c98',0.55, 0.96, 110],
-    near: ['#222a3d','#404a64',0.85, 1.00,  78],
-  },
   // Neon city: very dark blue-purple distant skyline ridge, low opacity so
   // it reads as far-back atmospheric mass behind the existing buildings.
   neoncity: {
@@ -1076,11 +1072,7 @@ function buildParticles(){
 
 
 function buildWorldElements(){
-  if(activeWorld==='grandprix'){
-    buildWaterPuddles(); buildDRSZone(); buildTyreBarriers();
-    if(typeof buildGrandPrixStorm==='function')buildGrandPrixStorm();
-  }
-  else if(activeWorld==='space'){
+  if(activeWorld==='space'){
     buildGravityZones(); buildOrbitingAsteroids(); buildWarpTunnels();
     if(typeof buildSpaceAnomaly==='function')buildSpaceAnomaly();
   }

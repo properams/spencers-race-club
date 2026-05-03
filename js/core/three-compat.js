@@ -30,7 +30,7 @@
 //   2. Test op http(s):// (niet file://) — sommige r150+ features eisen CORS.
 //   3. Activeer dbg-harness (localStorage src_debug='1') vóór herlaad.
 //   4. Verifieer in console: "[boot] start", "[renderer] init done — THREE 160".
-//   5. Verifieer: "[scene] buildScene done — world=grandprix objects=N".
+//   5. Verifieer: "[scene] buildScene done — world=space objects=N".
 //   6. Visueel: lighting-intensiteit identiek aan r134 baseline (vergelijk
 //      screenshot van titel-scene). Als donkerder → useLegacyLights wordt
 //      niet toegepast; check ThreeCompat.appliedFlags.

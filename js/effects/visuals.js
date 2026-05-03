@@ -191,7 +191,6 @@ function updateBoostTrail(){
       volcano:  {r:1.00,g:0.55,b:0.20,size:0.9,life:0.45,rate:0.55}, // hete dust
       candy:    {r:1.00,g:0.70,b:0.90,size:0.85,life:0.50,rate:0.45}, // roze sprinkle
       themepark:{r:0.45,g:0.40,b:0.50,size:0.7,life:0.40,rate:0.35}, // grijs stof
-      grandprix:{r:0.60,g:0.55,b:0.45,size:0.7,life:0.40,rate:0.40}, // bruin gras-stof
       neoncity: {r:0.70,g:0.85,b:1.00,size:0.6,life:0.35,rate:0.30}, // water-spray
       space:    {r:0.60,g:0.75,b:1.00,size:0.6,life:0.40,rate:0.30}  // ion
     }[activeWorld];
@@ -220,7 +219,7 @@ function updateBoostTrail(){
   const tint={
     space:[.5,.7,1.0],deepsea:[.3,1.0,.85],candy:[1.0,.45,.85],
     neoncity:[.2,1.0,.95],volcano:[1.0,.45,.15],arctic:[.65,.85,1.0],
-    themepark:[1.0,.50,.85],grandprix:[1.0,.55,.20]
+    themepark:[1.0,.50,.85]
   }[activeWorld]||[1.0,.65,.30];
   const fwd=_camV1.set(0,0,-1).applyQuaternion(car.mesh.quaternion);
   const rt=_camV2.set(1,0,0).applyQuaternion(car.mesh.quaternion);
@@ -444,8 +443,7 @@ function addSkidMark(car,opacityOverride){
     candy:{color:0x4a1a30,blend:false},      // donker roze op fondant
     space:{color:0x2244aa,blend:true},       // ion-trail blauw (additive)
     neoncity:{color:0x0a0a0a,blend:false},   // zwart natte asfalt (default)
-    themepark:{color:0x1a1020,blend:false},  // donker paars-zwart
-    grandprix:{color:0x0a0a0a,blend:false}   // klassiek zwart
+    themepark:{color:0x1a1020,blend:false}   // donker paars-zwart
   }[activeWorld]||{color:0x0a0a0a,blend:false};
   const sharedGeo=_getSkidGeo();
   [-0.65,.65].forEach(s=>{

@@ -12,9 +12,6 @@
 .worldBigCard.wBigSel{border-color:#cc44ff;box-shadow:0 0 40px #aa44ff88,inset 0 0 30px rgba(180,80,255,.12)}
 .worldCardBg{position:absolute;inset:0;z-index:0;transition:transform .3s}
 .worldBigCard:hover .worldCardBg{transform:scale(1.06)}
-.worldBgGP{background:linear-gradient(170deg,#0a2010 0%,#1a4020 30%,#2a6030 60%,#3a8040 85%,#5aaa60 100%)}
-.worldBgGP::after{content:'';position:absolute;bottom:0;left:0;right:0;height:45%;background:linear-gradient(0deg,rgba(20,60,20,.85) 0%,transparent 100%);z-index:1}
-.worldBgGP::before{content:'';position:absolute;inset:0;background-image:radial-gradient(ellipse 80% 50% at 50% 110%,#2a5a2a 0%,transparent 60%);pointer-events:none;z-index:1}
 .worldBgSpace{background:linear-gradient(170deg,#0a0020 0%,#1a0040 35%,#2a1060 65%,#0a1044 100%)}
 .worldBgSpace::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.7) 1px,transparent 1px),radial-gradient(circle,rgba(200,180,255,.4) .8px,transparent .8px);background-size:32px 32px,20px 20px;background-position:0 0,12px 12px;animation:starDrift2 9s linear infinite;pointer-events:none;z-index:1;opacity:.5}
 .worldBgSpace::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 40% at 70% 30%,rgba(180,80,255,.22) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 20% 70%,rgba(0,150,255,.15) 0%,transparent 60%);pointer-events:none;z-index:1}
@@ -38,9 +35,6 @@
 .worldBigCard{min-height:140px;width:100%}
 }
 .worldBigCard{min-height:0!important;aspect-ratio:4/3!important}
-.worldBgGP{background:linear-gradient(180deg,#1262a8 0%,#3a8fcc 32%,#6ab6e8 47%,#3a8a44 50%,#2a6a34 72%,#1a4824 100%)!important}
-.worldBgGP::before{content:'';position:absolute;bottom:22%;left:10%;right:10%;height:12%;background:linear-gradient(180deg,#333,#222);border-radius:2px;border-top:2px solid rgba(255,255,255,.5);z-index:1;pointer-events:none}
-.worldBgGP::after{content:'';position:absolute;bottom:26%;left:15%;right:15%;height:2px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.7) 0px,rgba(255,255,255,.7) 12px,transparent 12px,transparent 24px);z-index:2;pointer-events:none}
 .worldBgSpace{background:linear-gradient(170deg,#040012 0%,#0e0030 35%,#1a0848 65%,#070f30 100%)!important}
 .worldBgSpace::before{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.8) 1px,transparent 1px),radial-gradient(circle,rgba(220,200,255,.5) .8px,transparent .8px),radial-gradient(circle,rgba(180,230,255,.4) .6px,transparent .6px);background-size:38px 38px,22px 22px,14px 14px;background-position:4px 5px,13px 11px,7px 20px;animation:starDrift2 8s linear infinite;pointer-events:none;z-index:1;opacity:.7}
 .worldBgSpace::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 74% 68%,#2a1060 0%,#1a0840 22%,transparent 28%),radial-gradient(ellipse 55% 35% at 68% 30%,rgba(160,80,255,.28) 0%,transparent 65%),radial-gradient(ellipse 35% 25% at 22% 72%,rgba(0,140,255,.18) 0%,transparent 60%);pointer-events:none;z-index:1}
@@ -58,7 +52,7 @@
 .worldBigCard.wBigSel{transform:none!important;border-color:#cc44ff!important;box-shadow:inset 0 0 0 2px rgba(204,68,255,.9)!important;z-index:2!important}
 .worldCardBg{position:absolute!important;inset:0!important;z-index:0!important;transform:none!important}
 .worldBigCard .worldCardBg::before,.worldBigCard .worldCardBg::after,
-  .worldBgGP::before,.worldBgGP::after,.worldBgSpace::before,.worldBgSpace::after,
+  .worldBgSpace::before,.worldBgSpace::after,
   .worldBgSea::before,.worldBgSea::after,.worldBgCandy::before,.worldBgCandy::after,
   .worldBgNeonCity::before,.worldBgNeonCity::after,.worldBgThemepark::before,.worldBgThemepark::after{display:none!important}
 .worldCardContent{padding:12px 16px 12px 18px!important;z-index:2!important;position:relative!important;width:100%!important;background:linear-gradient(90deg,rgba(0,0,0,.78) 0%,rgba(0,0,0,.5) 60%,transparent 100%)!important;align-self:center!important;display:flex!important;flex-direction:column!important;justify-content:center!important}

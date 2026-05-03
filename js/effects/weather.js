@@ -89,7 +89,7 @@ function setWeather(mode){
     localStorage.setItem('src_weather',mode);
     return;
   }
-  // ── Grand Prix weather ────────────────────────────────────────
+  // ── Default weather (fallback voor worlds zonder eigen weather-set) ─
   if(mode==='clear'){
     scene.fog.density=.0021;scene.fog.color.setHex(0x8ac0e0);
     if(scene.background)scene.background=makeSkyTex('#1e5292','#b8d8ee');
@@ -219,8 +219,8 @@ function updateWeather(dt){
     _trackMesh.material.needsUpdate=true;
   }
   // Fog — blend per-world day/night base (cached by toggleNight/setWeather) with
-  // rain density bump. Previously hardcoded GP values clobbered every world's
-  // density every frame, which left non-GP worlds (and the raised day densities)
+  // rain density bump. Previously hardcoded values clobbered every world's
+  // density every frame, which left other worlds (and the raised day densities)
   // with too little fog at camera.far=900 → visible prop pop-in while driving.
   const baseFog=_fogBaseDensity;
   const rainAdd=isDark?.0025:.0009;

@@ -238,7 +238,7 @@ function updatePlayer(dt){
         car.speed*=Math.pow(1-overRatio*.22,dt*60);
         if(offDist>TW+4&&Math.random()<.05)showPopup('FROSTING! 🧁','#ff66aa',400);
       } else {
-        // Grand Prix: classic grass friction
+        // Default: classic grass friction
         car.speed*=Math.pow(1-overRatio*.18,dt*60);
         if(offDist>TW+4&&Math.random()<.04)showPopup('GRASS!','#88dd44',400);
       }

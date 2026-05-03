@@ -422,14 +422,14 @@ class SelectMusic{
 class RaceMusic{
   constructor(ctx){
     this.ctx=ctx;this.running=false;this.beat=0;this.bar=0;
-    this.style=window.activeWorld||'grandprix';
-    const BPM={grandprix:150,space:132,deepsea:118,candy:140,neoncity:128,volcano:165,arctic:105,themepark:155};
-    this.bpm=BPM[this.style]||150;
+    this.style=window.activeWorld||'space';
+    const BPM={space:132,deepsea:118,candy:140,neoncity:128,volcano:165,arctic:105,themepark:155};
+    this.bpm=BPM[this.style]||132;
     this.bd=60/this.bpm;this.nextBeat=0;
     this.finalLap=false;
     this.intensity=0;  // 0 normaal, 1 = final-lap urgency
     // Per-world _out.gain calibratie — gelijke perceived loudness tussen werelden
-    const VOL={grandprix:0.75,space:0.9,deepsea:1.0,candy:0.65,neoncity:0.8,volcano:0.75,arctic:0.85,themepark:0.8};
+    const VOL={space:0.9,deepsea:1.0,candy:0.65,neoncity:0.8,volcano:0.75,arctic:0.85,themepark:0.8};
     _ensureMusicMaster();
     this._out=ctx.createGain();
     this._out.gain.value=VOL[this.style]||0.8;
@@ -451,14 +451,8 @@ class RaceMusic{
       this._filt.connect(destTail);
     }
 
-    // === GRAND PRIX: aggressive techno in A minor ===
-    if(this.style==='grandprix'){
-      this.bass=[NF('A',2),NF('A',2),NF('E',2),NF('E',2),NF('F',2),NF('F',2),NF('G',2),NF('G',2),
-                 NF('A',2),NF('A',2),NF('C',3),NF('C',3),NF('G',2),NF('G',2),NF('E',2),NF('E',2)];
-      this.lead=[NF('A',4),NF('E',5),NF('D',5),NF('C',5),NF('E',5),NF('D',5),NF('C',5),NF('A',4),
-                 NF('G',4),NF('A',4),NF('C',5),NF('E',5),NF('D',5),NF('C',5),NF('B',4),NF('A',4)];
     // === SPACE: synthwave — E minor ===
-    }else if(this.style==='space'){
+    if(this.style==='space'){
       this.bass=[NF('E',2),NF('E',2),NF('B',1),NF('B',1),NF('C',2),NF('C',2),NF('A',1),NF('A',1),
                  NF('G',1),NF('G',1),NF('A',1),NF('B',1),NF('C',2),NF('D',2),NF('E',2),NF('E',2)];
       this.lead=[NF('E',5),NF('B',5),NF('A',5),NF('G',5),NF('F#',5),NF('E',5),NF('D',5),NF('B',4),
@@ -502,7 +496,6 @@ class RaceMusic{
     }
     // Chord stabs — per-world palette
     const STABS={
-      grandprix:[[NF('A',2),NF('E',3),NF('A',3)],[NF('F',2),NF('C',3),NF('F',3)],[NF('C',3),NF('G',3),NF('C',4)],[NF('G',2),NF('D',3),NF('G',3)]],
       space:[[NF('A',2),NF('E',3),NF('A',3)],[NF('F',2),NF('C',3),NF('F',3)],[NF('C',3),NF('G',3),NF('C',4)],[NF('G',2),NF('D',3),NF('G',3)]],
       candy:[[NF('C',3),NF('E',3),NF('G',3)],[NF('G',2),NF('B',2),NF('D',3)],[NF('A',2),NF('C',3),NF('E',3)],[NF('F',2),NF('A',2),NF('C',3)]],
       neoncity:[[NF('D',3),NF('F',3),NF('A',3)],[NF('Bb',2),NF('D',3),NF('F',3)],[NF('G',2),NF('Bb',2),NF('D',3)],[NF('A',2),NF('C',3),NF('E',3)]],
@@ -510,7 +503,7 @@ class RaceMusic{
       arctic:[[NF('F#',3),NF('A',3),NF('C#',4)],[NF('D',3),NF('F#',3),NF('A',3)],[NF('A',2),NF('C#',3),NF('E',3)],[NF('E',3),NF('G#',3),NF('B',3)]],
       themepark:[[NF('G',3),NF('B',3),NF('D',4)],[NF('C',3),NF('E',3),NF('G',3)],[NF('D',3),NF('F#',3),NF('A',3)],[NF('G',3),NF('B',3),NF('D',4)]],
     };
-    this.stabs=STABS[this.style]||STABS.grandprix;
+    this.stabs=STABS[this.style]||STABS.space;
   }
 
   start(){this.running=true;this._gen=(this._gen||0)+1;this.nextBeat=this.ctx.currentTime+.05;this._s(this._gen);}
@@ -566,9 +559,9 @@ class RaceMusic{
 
   _kick(t,vol){
     const ctx=this.ctx;
-    const F0={grandprix:210,space:185,deepsea:155,candy:195,neoncity:170,volcano:235,arctic:140,themepark:200};
-    const F1={grandprix:42,space:35,deepsea:25,candy:50,neoncity:30,volcano:48,arctic:30,themepark:45};
-    const V ={grandprix:.72,space:.58,deepsea:.82,candy:.60,neoncity:.75,volcano:.85,arctic:.45,themepark:.68};
+    const F0={space:185,deepsea:155,candy:195,neoncity:170,volcano:235,arctic:140,themepark:200};
+    const F1={space:35,deepsea:25,candy:50,neoncity:30,volcano:48,arctic:30,themepark:45};
+    const V ={space:.58,deepsea:.82,candy:.60,neoncity:.75,volcano:.85,arctic:.45,themepark:.68};
     const f0=F0[this.style]||210,f1=F1[this.style]||42;
     const v=vol||V[this.style]||.72;
     const o=ctx.createOscillator(),g=ctx.createGain();
@@ -587,8 +580,8 @@ class RaceMusic{
   _snare(t,v=.24){
     const ctx=this.ctx;
     // Noise body
-    const NL={grandprix:.12,space:.17,deepsea:.08,candy:.10,neoncity:.14,volcano:.09,arctic:.22,themepark:.11};
-    const BF={grandprix:1600,space:1200,deepsea:800,candy:1900,neoncity:1400,volcano:1750,arctic:1100,themepark:1500};
+    const NL={space:.17,deepsea:.08,candy:.10,neoncity:.14,volcano:.09,arctic:.22,themepark:.11};
+    const BF={space:1200,deepsea:800,candy:1900,neoncity:1400,volcano:1750,arctic:1100,themepark:1500};
     const noiseLen=NL[this.style]||.12,bpFreq=BF[this.style]||1600;
     const sz=Math.ceil(ctx.sampleRate*noiseLen),buf=ctx.createBuffer(1,sz,ctx.sampleRate);
     const d=buf.getChannelData(0);for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;
@@ -611,7 +604,7 @@ class RaceMusic{
     const sz=Math.ceil(this.ctx.sampleRate*dur),buf=this.ctx.createBuffer(1,sz,this.ctx.sampleRate);
     const d=buf.getChannelData(0);for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;
     const src=this.ctx.createBufferSource(),hf=this.ctx.createBiquadFilter(),g=this.ctx.createGain();
-    const HF={grandprix:9000,space:7000,deepsea:5500,candy:9500,neoncity:8500,volcano:9200,arctic:6500,themepark:8200};
+    const HF={space:7000,deepsea:5500,candy:9500,neoncity:8500,volcano:9200,arctic:6500,themepark:8200};
     hf.type='highpass';hf.frequency.value=HF[this.style]||9000;
     g.gain.setValueAtTime(vel,t);g.gain.exponentialRampToValueAtTime(.001,t+dur);
     src.buffer=buf;src.connect(hf);hf.connect(g);g.connect(this._out);src.start(t);src.stop(t+dur+.01);
@@ -631,15 +624,8 @@ class RaceMusic{
       const urgent=this.finalLap||this.intensity>0.5;
       const hv=.022+intLevel*.014;
 
-      // ── GRAND PRIX: driving techno, kick every beat ──
-      if(this.style==='grandprix'){
-        this._kick(t);
-        if(bi===4||bi===12)this._snare(t);
-        this._hat(t,hv,bi===6||bi===14);this._hat(t+bd*.5,hv*.58);
-        if(this.bar%2===0||this.finalLap){this._hat(t+bd*.25,hv*.42);this._hat(t+bd*.75,hv*.42);}
-      }
       // ── SPACE: synthwave — kick on 1&3 ──
-      else if(this.style==='space'){
+      if(this.style==='space'){
         if(bi===0||bi===8)this._kick(t);
         if(bi===4||bi===12)this._snare(t,.20);
         this._hat(t,hv*.85,bi===2||bi===6||bi===10||bi===14);
@@ -713,16 +699,7 @@ class RaceMusic{
       // ── LEAD SYNTH (every 2 beats) ──
       if(bi%2===0){
         const lfreq=this.lead[bi/2];
-        if(this.style==='grandprix'){
-          [-5,5].forEach(det=>{
-            const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();
-            o.type='sawtooth';o.frequency.value=lfreq;o.detune.value=det;
-            f.type='lowpass';f.frequency.setValueAtTime(900,t);f.frequency.linearRampToValueAtTime(2800,t+.018);f.frequency.exponentialRampToValueAtTime(700,t+bd*1.8);f.Q.value=2.5;
-            g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.034,t+.012);
-            g.gain.setValueAtTime(.034,t+bd*1.65);g.gain.exponentialRampToValueAtTime(.001,t+bd*2.0);
-            o.connect(f);f.connect(g);g.connect(this._out);o.start(t);o.stop(t+bd*2+.04);
-          });
-        }else if(this.style==='space'){
+        if(this.style==='space'){
           const o=ctx.createOscillator(),g=ctx.createGain(),f=ctx.createBiquadFilter();
           o.type='triangle';o.frequency.value=lfreq;f.type='lowpass';f.frequency.value=2600;
           g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.052,t+.02);
