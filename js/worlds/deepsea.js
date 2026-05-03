@@ -12,7 +12,8 @@ let _dsaBioEdges=[];
 let _dsaCreatures={manta:null,whale:null,fishSchools:[]};
 let _dsaTreasures=[];
 let _dsaCurrentDir=0; // flowing current angle for physics
-const _wpCurrentStreams=[],_wpAbyssCracks=[],_wpTreasureTrail=[];
+// var (niet const) — script-globaal voor cross-script reset in core/scene.js.
+var _wpCurrentStreams=[],_wpAbyssCracks=[],_wpTreasureTrail=[];
 
 function buildCurrentStreams(){
   const defs=[{t:.20,side:1},{t:.45,side:-1},{t:.70,side:1}];

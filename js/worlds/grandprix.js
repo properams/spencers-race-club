@@ -4,7 +4,10 @@
 'use strict';
 
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
-const _wpWaterPuddles=[],_wpDrsZones=[];
+// var i.p.v. const zodat de arrays als window-properties cross-script bereikbaar
+// zijn vanuit core/scene.js's reset-block. const heeft script-lexical-scope en
+// is niet zichtbaar voor andere classic scripts → ReferenceError bij buildScene.
+var _wpWaterPuddles=[],_wpDrsZones=[];
 let _drsTimer=0,_drsBoostUsed=false,_drsActive=false;
 
 function buildWaterPuddles(){
