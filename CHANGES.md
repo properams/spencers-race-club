@@ -1,5 +1,149 @@
 # CHANGES
 
+## Car Visual Overhaul (sessie 6) — clearcoat paint + tier-based premium pattern
+
+> Cars currently feel blocky and flat compared to the worlds they drive
+> through.
+
+12-car procedurele upgrade die de bestaande `js/cars/brands.js` builders
+naar AAA-arcade-level pusht zonder GLB models, build-tools, of
+module-migration. r134-only feature-set (geen iridescence — gedeferd tot
+r135+ migratie).
+
+### Phase 1 — Material foundation (uniform across all 12 cars)
+
+- **Procedural envMap fallback** (`core/scene.js:_buildProceduralEnvMap`):
+  512×256 sky→horizon→ground gradient + 2 sun-hotspots, via `PMREMGenerator`
+  → cubemap. Eén singleton, `_sharedAsset` flagged. Vereiste prerequisite
+  voor clearcoat — zonder envMap zou `MeshPhysicalMaterial.clearcoat` dof
+  renderen i.p.v. wet-paint look. Werkt parallel aan de bestaande HDRI
+  loader; echte HDRI overschrijft scene.environment indien ooit beschikbaar.
+- **Paint upgrade** (`car-parts.js:makePaintMats`): desktop paint nu
+  `MeshPhysicalMaterial` met `clearcoat:1.0, clearcoatRoughness:0.05`.
+  Accent: `clearcoat:0.6`. Mobile pad onveranderd (Phong/Lambert).
+  Signature uitgebreid naar `(def, opts)` waar `opts.flake` r135+ ready is.
+- **Carbon-fiber shared material**: nieuwe `mats.carbon` met procedurele
+  256×256 weave-textuur als diffuse map. Opt-in voor builders; momenteel
+  alleen geregistreerd in `_carShared`, niet door builders aangeroepen.
+- **Chrome upgrade**: `mats.chrome` van Standard naar Physical met
+  `clearcoat:0.5`.
+- **`_disposeMat` slot-coverage** (`core/scene.js`): refactored van 3
+  hardcoded slots naar 16-slot array (`map`, `normalMap`, `roughnessMap`,
+  `metalnessMap`, `aoMap`, `emissiveMap`, `bumpMap`, `displacementMap`,
+  `alphaMap`, `lightMap`, `clearcoatMap`, `clearcoatNormalMap`,
+  `clearcoatRoughnessMap`, `transmissionMap`, `thicknessMap`, `envMap`).
+  `_shared()` guard preserved zodat shared textures (procEnv, _carbonTex,
+  _softHeadlightTex) overleven.
+- **Snap-scene env wiring** (`ui/select.js`): `_snapScene.environment`
+  hergebruikt nu `window._buildProceduralEnvMap()` zodat car-select
+  previews ook clearcoat-reflecties hebben.
+
+### Phase 2 — Bugatti Chiron pilot (geometry pattern)
+
+Pattern dat in Phase 3 werd uitgerold:
+- **Body-subgroup wrap**: `body = new THREE.Group(); g.add(body)`. Alle
+  body-meshes hangen aan body i.p.v. direct aan g. Wheels blijven op g
+  (physics raakt enkel `g.userData.wheels`).
+- **`_crownedSlabGeo(w, h, d)`** (`car-parts.js`): vervangt platte
+  BoxGeometry voor hood/roof/engine cover met subtiel gewelfde 3×3 grid van
+  vertices — leest als "auto met crown" i.p.v. "blokkige shoebox".
+- **`buildPremiumHeadlights(group, mats, opts)`** (`car-parts.js`): inner
+  emissive box + 4 LED-segment strip + transparante `MeshPhysicalMaterial`
+  lens met `transmission:0.9, ior:1.4`. Mobile valt terug op de regular
+  `buildHeadlights`.
+- **Drilled brake disc + branded caliper** (`car-parts.js:buildWheel`): high
+  LOD gebruikt RingGeometry met 8 hole-meshes geneest in de disc, plus
+  caliper kleur via `g.userData._wheelOpts.caliperMatKey` (defaults naar
+  `brakeRed`, premium tiers gebruiken `accent`).
+- **Chrome window-trim**: dunne BoxGeometry strips langs cabin perimeter.
+- **Player underbody glow**: additive disc onder de player car met
+  `g.userData._signature.underglow` color. Leest als brand-accent halo.
+
+### Phase 3 — Tiered rollout naar 11 cars
+
+Generaliseerde de Phase 2 patroon over alle resterende builders, met
+intentioneel verschillende coverage per tier:
+
+| Tier | Cars | Pattern |
+|---|---|---|
+| **S/A** | Bugatti, Ferrari, Lamborghini, Porsche, McLaren, Koenigsegg | Volledig pattern: body-subgroup + crowned slabs + premium headlights + chrome trim + drilled discs + accent caliper + underglow |
+| **B** | Audi, Maserati | Body-subgroup + crowned slabs + chrome trim. Geen premium headlights, geen drilled disc, geen underglow (Audi's "understated" karakter) |
+| **C** | Mustang, Tesla | Body-subgroup wrap only. Muscle/smooth-sedan silhouette is karakter, niet een tekortkoming |
+| **F1** | Red Bull, Mercedes | `_buildF1Common` refactored: returnt body-subgroup, beide team-builders gebruiken die. Crowned engine cover toegevoegd. Geen drilled disc, geen underglow — F1 heeft een aparte matte race-aesthetic distinct van glossy road cars |
+
+`build.js:makeAllCars` underglow-pad gegeneraliseerd: van `def.brand === 'BUGATTI'` hardcode naar `mesh.userData._signature.underglow` flag-check. Cleaner extension point.
+
+Porsche is een special-case: behoudt z'n custom round-cylinder headlights
+(GT3 RS signature visual) + voegt 4 LED-accent boxes onder elke koplamp toe
+i.p.v. `buildPremiumHeadlights` direct aan te roepen. Pattern-match met de
+LED-strip uit de helper, behoud van de iconische ronde shape.
+
+### Phase 4 — Polish & verification
+
+- **Headlight beam vs premium lens** geverifieerd geen clipping issue:
+  beam-cone base (radius 2.6, centered z=-1.9 in car-local) overlapt
+  geometrisch met premium headlight lens (z=-1.95), maar dit is by-design.
+  Lens heeft `opacity:0.4` (zichtbaar door additive cone heen), de cone
+  representeert de glow OUT van de koplamp.
+- **`syncHeadlights` flow** geverifieerd correct met nieuwe LED-strips:
+  premium headlights gebruiken dezelfde `mats.head` shared material
+  instance als regular headlights, dus night-mode bump van
+  `emissiveIntensity` 0.4→1.2 raakt ze allemaal tegelijk.
+
+### Mobile fallback (alle phases)
+
+- `_carMat` mobile branch: `MeshLambertMaterial` (geen PBR-shader-cost).
+- `makePaintMats` mobile branch: `MeshPhongMaterial` paint + Lambert accent.
+- `carLOD()='low'` skipt: drilled disc holes, branded caliper, premium
+  headlight lens, chrome window-trim, hood/roof/engine crown vertex-count
+  bump.
+- Procedurele envMap wel gebouwd op mobile (~5MB GPU) zodat eventuele
+  PBR-meshes elders in de scene reflecties hebben — car-paint zelf is op
+  mobile geen Physical en sampelt de env niet.
+
+### Disposal hygiene
+
+- Nieuwe shared assets met `_sharedAsset:true` flag: `_proceduralEnv` cubemap,
+  `_carbonTex` weave canvas, `mats.carbon` material, `mats.chrome` (al
+  flagged via `_carShared` loop).
+- `_disposeMat` 16-slot loop catcht texture-leaks die Phase 1's `clearcoat`,
+  Phase 2's `transmission` (lens), of toekomstige `transmissionMap` /
+  `thicknessMap` zouden kunnen veroorzaken.
+- `disposeSharedCarMats()` extended om `_carbonTex` apart vrij te geven.
+
+### Files touched
+
+| File | Lines | Functie |
+|---|---|---|
+| `js/core/scene.js` | +75 | `_buildProceduralEnvMap` + `_disposeMat` 16-slot |
+| `js/cars/car-parts.js` | +200 | `_carbonTex`, `_crownedSlabGeo`, `buildPremiumHeadlights`, `buildWheel` upgrade, `makePaintMats(def, opts)`, materials |
+| `js/cars/brands.js` | +431/-293 | All 12 builders restructured, body-subgroup pattern, tier features |
+| `js/cars/build.js` | +12 | `_signature.underglow` underglow pattern |
+| `js/ui/select.js` | +9 | Snap-scene env wiring |
+
+### Acceptance gates passed (user-verified)
+
+- 12 cars rebuild on desktop and mobile.
+- Tier S/A visibly distinct from Tier B/C/F1 in the car-select preview.
+- Bugatti race lap clean: no console errors, no `dbg.error` ringbuffer
+  entries, no FPS regression, drilled discs spin met wheels.
+- Mobile spotcheck: cars look ~unchanged from pre-Phase-1 (low-LOD pad
+  slaat alle premium-features over).
+
+### Known acceptable trade-offs
+
+- **Visueel verschil per material-only Phase 1 is subtiel**. Procedural
+  envMap zonder echte HDRI levert mild wet-paint look op, niet de dramatic
+  studio-shine van real HDRI. Gedocumenteerd; als ooit echte HDRI assets
+  worden toegevoegd, neemt asset-bridge.applyHDRI() automatisch over.
+- **Iridescent paintFlake (originele Tier S feature) deferred** tot r135+
+  migratie. `makePaintMats(def, opts)` signature is r135-ready.
+- **Shader-program count** stijgt op desktop (MeshPhysicalMaterial vs
+  Standard, plus per-instance lens material op Tier S/A). Niet gemeten
+  in dit phase; voorzien voor follow-up als FPS-issues opduiken.
+
+---
+
 ## Track Realism Overhaul (sessie 5d) — DeepSea / Space / Candy ook in pipeline
 
 > "Is er toch niet een andere manier waarop je die op een veilige manier
