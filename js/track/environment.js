@@ -732,14 +732,17 @@ function buildGodRays(){
   _godRays.length=0;
   if(!_sunBillboard)return;
   const tex=_godRayTex();
-  // 4 beams op licht verschillende offsets rond de zon-positie
+  // 4 beams op licht verschillende offsets rond de zon-positie.
+  // Hotspot #5 fix: gedeelde texture — voorheen `tex.clone()` per sprite
+  // wat een orphan'd `tex` per build achterliet (clones delen het canvas
+  // niet met origineel). SpriteMaterial-instances mogen prima één texture
+  // delen; opacity zit op de material, niet de texture.
   const offsets=[[0,0],[40,12],[-30,-8],[10,-22]];
   offsets.forEach(([dx,dz])=>{
     const mat=new THREE.SpriteMaterial({
-      map:tex.clone(),blending:THREE.AdditiveBlending,
+      map:tex,blending:THREE.AdditiveBlending,
       transparent:true,opacity:.32,depthWrite:false
     });
-    mat.map.needsUpdate=true;
     const beam=new THREE.Sprite(mat);
     beam.position.copy(_sunBillboard.position);
     beam.position.x+=dx;beam.position.z+=dz;
