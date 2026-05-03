@@ -427,8 +427,9 @@
 <div id="fpsOverlay" style="position:fixed;top:8px;left:8px;font-family:monospace;font-size:12px;color:#0f0;background:rgba(0,0,0,.7);padding:6px 10px;border-radius:6px;z-index:var(--z-toast);display:none;pointer-events:none"></div>
 <div id="ctxLostOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.88);color:#fff;font-family:Orbitron,sans-serif;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;z-index:var(--z-critical);text-align:center;padding:24px">
   <div style="font-size:20px;letter-spacing:3px;color:#ffb800">⚠ GRAPHICS RESET</div>
-  <div style="font-size:13px;color:#ccc;max-width:320px;line-height:1.5">De WebGL context is verloren. Probeer te herstellen…</div>
-  <div style="font-size:11px;color:#888">Als dit langer duurt, wordt de pagina opnieuw geladen.</div>
+  <div id="ctxLostMsg" style="font-size:13px;color:#ccc;max-width:320px;line-height:1.5">De WebGL context is verloren. Probeer te herstellen…</div>
+  <button id="ctxLostReload" style="display:none;background:#ff6600;color:#fff;border:none;padding:12px 28px;border-radius:8px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:12px;letter-spacing:2px;margin-top:8px" onclick="location.reload()">🔄 HERLAAD PAGINA</button>
+  <div style="font-size:11px;color:#888">Tik op herladen als het langer duurt dan een paar seconden.</div>
 </div>
 <canvas id="glCanvas"></canvas>
 <!-- ── Three.js r160 staat inline ge-embed in het volgende <script>-blok. ─────────
