@@ -26,13 +26,22 @@ let _pcContactPopupCD=0;
 function checkPropCollisions(dt){
   if(_pcContactPopupCD>0)_pcContactPopupCD-=dt;
   if(!_propColliders.length)return;
+  // Cooldowns ticken **onafhankelijk** van player-state. Anders bevriest
+  // een trigger-cooldown tijdens een lange luchttijd of recovery, en
+  // wordt een legitieme bump na de landing onbedoeld geskipped omdat
+  // dezelfde cooldown nog actief is. Dit is goedkoper dan een Set van
+  // active cooldowns bijhouden (270 add-ops/frame is verwaarloosbaar).
+  for(let i=0;i<_propColliders.length;i++){
+    const c=_propColliders[i];
+    if(c.cooldown>0)c.cooldown-=dt;
+  }
   if(typeof recoverActive!=='undefined'&&recoverActive)return;
   const player=carObjs[playerIdx];if(!player||player.finished)return;
   if(player.inAir)return; // overspringen vermijdt onverwachte boom-bumps in de lucht
   const px=player.mesh.position.x, pz=player.mesh.position.z;
   for(let i=0;i<_propColliders.length;i++){
     const c=_propColliders[i];
-    if(c.cooldown>0){c.cooldown-=dt;continue;}
+    if(c.cooldown>0)continue;
     const dx=px-c.x, dz=pz-c.z;
     const d2=dx*dx+dz*dz;
     if(d2>_PC_VIEW_R_SQ)continue;
