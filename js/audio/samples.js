@@ -24,7 +24,6 @@ const MUSIC_MANIFEST = {
   },
   // Andere werelden: lege slots = automatische fallback naar procedural.
   // Vul aan zodra Suno-tracks per wereld zijn opgeleverd.
-  grandprix: {},
   space:     {},
   deepsea:   {},
   candy:     {},
@@ -81,9 +80,8 @@ const AMBIENT_MANIFEST = {
 };
 
 // Per-wereld default tire-surface. Override via getCurrentSurface() als
-// later per-zone surfaces gewenst zijn (bv. ice patch op grandprix).
+// later per-zone surfaces gewenst zijn (bv. ice patch op arctic).
 const WORLD_DEFAULT_SURFACE = {
-  grandprix: 'asphalt',
   space:     'metal',
   deepsea:   'water',
   candy:     'asphalt',

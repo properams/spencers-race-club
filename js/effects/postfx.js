@@ -203,7 +203,6 @@ const _BLOOM_WORLD_MUL = {
   candy:    0.55,   // 44 lollipops + 22 candles + 48 lampposts = bloom flood
   themepark:0.70,   // sunset + ride lights stack
   arctic:   0.75,   // bright snow ground reflects bloom
-  grandprix:0.85,   // grass is fine; only curb lights bloom
   neoncity: 1.00,   // intentionally heavy bloom — neon look
   volcano:  1.00,   // lava emissives are the show
   space:    1.00,   // deliberate cosmic bloom
@@ -266,8 +265,7 @@ function setWorldGrading(world){
     neoncity:  [1.05, 0.85, 1.15, 0.18, 0.60],
     volcano:   [1.20, 0.92, 0.78, 0.16, 0.55],
     arctic:    [0.92, 1.00, 1.18, 0.14, 0.50],
-    themepark: [1.18, 0.92, 1.05, 0.14, 0.55],
-    grandprix: [1.05, 1.00, 0.95, 0.08, 0.45]
+    themepark: [1.18, 0.92, 1.05, 0.14, 0.55]
   }[world] || [1,1,1, 0.0, 0.45];
   _postfx.matComposite.uniforms.tint.value.set(cfg[0], cfg[1], cfg[2]);
   _postfx.matComposite.uniforms.gradeAmount.value = cfg[3];

@@ -61,15 +61,6 @@
     <button class="worldSelBack" onclick="goToTitle()">← BACK</button>
   </div>
   <div class="worldGrid">
-    <div class="worldBigCard" data-world="grandprix">
-      <div class="worldCardBg worldBgGP"></div>
-      <div class="worldCardContent">
-        <div class="worldCardIcon">🏎️</div>
-        <div class="worldCardName">GRAND PRIX</div>
-        <div class="worldCardDesc">Classic racing through mountains and forests. Chicanes, hairpins, big jumps.</div>
-      </div>
-      <div class="worldCardSel">✓ SELECTED</div>
-    </div>
     <div class="worldBigCard" data-world="space">
       <div class="worldCardBg worldBgSpace"></div>
       <div class="worldCardContent">
@@ -139,7 +130,7 @@
       <div class="selSubtitle" id="selSubtitle">— of 12 unlocked · — coins</div>
     </div>
     <div class="selHeaderRight">
-      <button id="worldIndicator" onclick="goToWorldSelect()">⬢ GRAND PRIX</button>
+      <button id="worldIndicator" onclick="goToWorldSelect()">⬢ COSMIC</button>
       <button class="selBack" id="btnBackTitle">← BACK</button>
     </div>
   </div>
@@ -150,8 +141,8 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       </button>
       <button class="selM-trackPill" id="selMTrack">
-        <span class="selM-trackEmoji" id="selMTrackEmoji">🏎️</span>
-        <span id="selMTrackName">GRAND PRIX</span>
+        <span class="selM-trackEmoji" id="selMTrackEmoji">🚀</span>
+        <span id="selMTrackName">COSMIC</span>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
       </button>
       <div class="selM-coinsPill">
@@ -420,7 +411,7 @@
 <div id="driftBar"><div id="driftBarFill"></div></div>
 <div id="driftLabel">DRIFT</div>
 <div id="ghostLabel">👻 GHOST</div>
-<div id="f1Lights"><div class="f1-gantry"><div class="f1-gantry-label">Spencer Grand Prix</div><div class="f1-panel"><div class="f1-light-unit"><div class="f1Light" id="fl1"></div></div><div class="f1-light-unit"><div class="f1Light" id="fl2"></div></div><div class="f1-light-unit"><div class="f1Light" id="fl3"></div></div><div class="f1-light-unit"><div class="f1Light" id="fl4"></div></div><div class="f1-light-unit"><div class="f1Light" id="fl5"></div></div></div></div></div>
+<div id="f1Lights"><div class="f1-gantry"><div class="f1-gantry-label">Spencer's Race Club</div><div class="f1-panel"><div class="f1-light-unit"><div class="f1Light" id="fl1"></div></div><div class="f1-light-unit"><div class="f1Light" id="fl2"></div></div><div class="f1-light-unit"><div class="f1Light" id="fl3"></div></div><div class="f1-light-unit"><div class="f1Light" id="fl4"></div></div><div class="f1-light-unit"><div class="f1Light" id="fl5"></div></div></div></div></div>
 <div id="rstBar"><div id="rstFill"></div></div>
 <div id="rstLabel">HOLD R — RESTART</div>
 <div id="colFlash"></div>
@@ -472,8 +463,6 @@
 <script src="js/audio/ambient.js"></script>
 
 <!-- Worlds (8 stuks — elk een build/update/checks set) -->
-<script src="js/worlds/grandprix-storm.js"></script>
-<script src="js/worlds/grandprix.js?v=2"></script>
 <script src="js/worlds/volcano-bridge.js"></script>
 <script src="js/worlds/volcano.js"></script>
 <script src="js/worlds/arctic-iceshelf.js"></script>

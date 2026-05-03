@@ -74,7 +74,6 @@ function buildSpinPads(){
   const spinDefs=[{t:.18},{t:.50},{t:.84}];
   // Per-world palette — hazard theme
   const SP={
-    grandprix:{disc:0x8800ff,emit:0x5500cc,ring:0xdd44ff,cone:0xffdd00,marker:0xcc9900},
     space:    {disc:0x0033cc,emit:0x001188,ring:0x00aaff,cone:0x8866ff,marker:0x4422cc},
     deepsea:  {disc:0x005566,emit:0x003344,ring:0x00ddcc,cone:0x44ffcc,marker:0x00aa88},
     candy:    {disc:0xff3388,emit:0xcc0066,ring:0xff66bb,cone:0xffdd44,marker:0xffaa00},
@@ -83,7 +82,7 @@ function buildSpinPads(){
     arctic:   {disc:0x336699,emit:0x113366,ring:0x66ccff,cone:0xbbeeff,marker:0x4488cc},
     themepark:{disc:0xcc2266,emit:0x991144,ring:0xff88bb,cone:0xffdd33,marker:0xff5599},
   };
-  const pal=SP[activeWorld]||SP.grandprix;
+  const pal=SP[activeWorld]||SP.space;
 
   spinDefs.forEach(def=>{
     const p=trackCurve.getPoint(def.t).clone();p.y=.015;
@@ -137,7 +136,6 @@ function buildSpinPads(){
 function buildBoostPads(){
   // Per-world palette
   const BP={
-    grandprix:{pad:0x00aaff,emit:0x0077cc,chev:0xffffff,glow:0x88ddff,light:0x00ccff},
     space:    {pad:0xcc00ff,emit:0x8800cc,chev:0xffccff,glow:0xff88ff,light:0xff44ff},
     deepsea:  {pad:0x00cc88,emit:0x007744,chev:0xaaffdd,glow:0x00ffaa,light:0x00ffaa},
     candy:    {pad:0xff55aa,emit:0xcc2277,chev:0xffddee,glow:0xff88cc,light:0xff66bb},
@@ -146,7 +144,7 @@ function buildBoostPads(){
     arctic:   {pad:0x66ddff,emit:0x2288cc,chev:0xe8f5ff,glow:0x99ddff,light:0x88ccff},
     themepark:{pad:0xffcc22,emit:0xff6600,chev:0xffeecc,glow:0xff9933,light:0xffaa00},
   };
-  const pal=BP[activeWorld]||BP.grandprix;
+  const pal=BP[activeWorld]||BP.space;
 
   const boostDefs=[
     {t:.04},{t:.22},{t:.43},{t:.48},{t:.53},{t:.71},{t:.80},{t:.93},

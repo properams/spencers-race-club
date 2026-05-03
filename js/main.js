@@ -12,7 +12,7 @@
 // ══ DATA — gevuld door loadGameData() (zie boot) ══════════════════════════
 var CAR_DEFS=[];        // var: ES-modules lezen window.CAR_DEFS
 let TRACK_WP=[];        // active world waypoints (muteerbaar in buildScene)
-let _GP_WP=[];          // snapshot grand prix waypoints
+let _DEFAULT_WP=[];     // snapshot waypoints voor default world (space)
 let _TRACKS={};         // alle werelden keyed by name
 // CAR_PRICES + WORLD_PRICES komen verderop — na persistence helpers
 
@@ -24,15 +24,15 @@ async function loadGameData(){
   ]);
   CAR_DEFS=cars.map(c=>({...c,color:parseInt(c.color,16),accent:parseInt(c.accent,16)}));
   _TRACKS=tracks;
-  _GP_WP=_TRACKS.grandprix.map(wp=>[wp[0],wp[1]]);
+  _DEFAULT_WP=_TRACKS.space.map(wp=>[wp[0],wp[1]]);
   TRACK_WP.length=0;
-  _TRACKS.grandprix.forEach(wp=>TRACK_WP.push(wp));
+  _TRACKS.space.forEach(wp=>TRACK_WP.push(wp));
   CAR_PRICES={};
   Object.keys(prices.cars).forEach(k=>{CAR_PRICES[Number(k)]=prices.cars[k];});
   WORLD_PRICES=prices.worlds;
 }
 // ── World state ───────────────────────────────
-var activeWorld='grandprix';  // var: ES-modules schrijven window.activeWorld
+var activeWorld='space';  // var: ES-modules schrijven window.activeWorld
 // Per-world arrays (_space*, _dsa*, _kelp*, _jellyfish*, _volcano*, _arctic*,
 // _tp*, _sprinkle*, _gummy*, _candy*, _neon*, _holo*) verhuisd naar
 // js/worlds/<world>.js — zie de "Per-world state" blokken bovenaan elk wereld-bestand.
@@ -150,8 +150,9 @@ let _contactPopupCD=0; // collision popup cooldown — max once per 3s
 var _overallFastestLap=Infinity; // var: persistence cross-script
 // _nearMissCooldown → js/cars/ai.js
 // Pit-stop state → js/gameplay/pitstop.js
-// DRS indicator state — _drsActive verhuisd naar worlds/grandprix.js,
-// _drsEl DOM-ref verhuisd naar js/ui/hud.js (groep met andere _el*).
+// DRS indicator state — _drsActive en _drsEl DOM-ref → js/ui/hud.js
+// (groep met andere _el*). DRS bleef GP-specifiek; bij verwijderen
+// van die wereld is DRS dead code maar de variabelen zijn elders.
 // _aiPersonality / _reverseLights → js/cars/ai.js
 // Close battle indicator
 let _closeBattleTimer=0;
@@ -190,7 +191,7 @@ var _lastRaceCoins=0,_comboMult=1.0; // var: ES-modules schrijven beide
 // ACHIEVEMENTS + DAILY_CHALLENGES → js/gameplay/achievements.js (top of file).
 // _totalNitroUses / _winStreak waren dead code — verwijderd in race.js extractie.
 var _todayChallenge=null,_challengeCompleted=false,_todayRaces=0;
-var _worldsUnlocked=new Set(['grandprix']); // var: persistence cross-script
+var _worldsUnlocked=new Set(['space']); // var: persistence cross-script
 var _trackRecords={}; // var: persistence cross-script
 
 // ── PERSISTENCE FUNCTIONS — verplaatst naar js/persistence/save.js + progression.js ──

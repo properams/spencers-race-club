@@ -4,7 +4,7 @@
 // Afhankelijkheden (script-globals, grotendeels in main.js gedeclareerd):
 //   renderer, scene, camera, camPos, mirrorCamera, clock
 //   sunLight, ambientLight, hemiLight
-//   activeWorld, _TRACKS, _GP_WP, TRACK_WP
+//   activeWorld, _TRACKS, _DEFAULT_WP, TRACK_WP
 //   trackLightList, trackPoles, _trackFlags, _aiHeadPool
 //   jumpRamps, spinPads, boostPads, collectibles, skidMarks
 //   stars, plHeadL, plHeadR, plTail, _boostLight, _trackMesh, _sunBillboard
@@ -320,28 +320,6 @@ function makeThemeparkSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
-// Grand Prix — soft cloud-streaks + warm sun glow on right
-function makeGPSkyTex(){
-  const {c,g}=_newSkyCanvas('#1e5292','#b8d8ee');
-  // Soft sun (right)
-  const sun=g.createRadialGradient(820,140,0,820,140,200);
-  sun.addColorStop(0,'rgba(255,240,200,0.65)');
-  sun.addColorStop(.4,'rgba(255,220,160,0.25)');
-  sun.addColorStop(1,'rgba(255,220,160,0)');
-  g.fillStyle=sun;g.fillRect(0,0,1024,400);
-  // Stretched cloud streaks
-  for(let i=0;i<10;i++){
-    const x=Math.random()*1024,y=80+Math.random()*220;
-    const w=120+Math.random()*180,h=18+Math.random()*22;
-    const gr=g.createRadialGradient(x,y,0,x,y,w);
-    gr.addColorStop(0,'rgba(255,255,255,0.8)');
-    gr.addColorStop(1,'rgba(255,255,255,0)');
-    g.fillStyle=gr;
-    g.save();g.translate(x,y);g.scale(1,h/w);g.beginPath();g.arc(0,0,w,0,Math.PI*2);g.fill();g.restore();
-  }
-  return _skyTexFromCanvas(c);
-}
-
 function buildScene(){
   window.dbg&&dbg.log('scene','buildScene start — world='+activeWorld);
   if(window.Breadcrumb)Breadcrumb.push('buildScene',{world:activeWorld});
@@ -360,7 +338,7 @@ function buildScene(){
     catch(e){ if(window.dbg)dbg.warn('scene','evictAllExcept failed: '+(e&&e.message||e)); }
   }
   // ── Swap TRACK_WP data for active world ───────────────────────
-  {const src=(_TRACKS&&_TRACKS[activeWorld])||_GP_WP;
+  {const src=(_TRACKS&&_TRACKS[activeWorld])||_DEFAULT_WP;
    TRACK_WP.length=0;src.forEach(wp=>TRACK_WP.push(wp));}
   // ── Reset global arrays populated during scene build ──────────
   trackLightList.length=0;trackPoles.length=0;_trackFlags.length=0;_aiHeadPool.length=0;
@@ -443,9 +421,11 @@ function buildScene(){
     scene.fog=new THREE.FogExp2(0x1a3050,.0035);
     _fogColorDay.setHex(0x1a3050);_fogColorNight.setHex(0x162e48);
   }else{
-    scene.background=makeGPSkyTex();
-    scene.fog=new THREE.FogExp2(0xb8d8ee,.0017);
-    _fogColorDay.setHex(0xb8d8ee);_fogColorNight.setHex(0x162842);
+    // Onbekende world — val terug op space-sky zodat de scene niet crasht.
+    if(window.dbg)dbg.warn('scene','unknown world '+activeWorld+' — falling back to space sky');
+    scene.background=makeSpaceSkyTex();
+    scene.fog=new THREE.FogExp2(0x010018,.0014);
+    _fogColorDay.setHex(0x10085a);_fogColorNight.setHex(0x0a0a30);
   }
   // Per-world color grading + vignette in postfx composite.
   if(typeof setWorldGrading==='function')setWorldGrading(activeWorld);
@@ -500,34 +480,7 @@ function buildScene(){
     buildThemeparkEnvironment();
     buildBackgroundLayers();
   }else{
-    buildGround();buildClouds();buildBarriers();buildGantry();
-    buildMountains();buildBackgroundLayers();buildLake();
-    buildGravelTraps();buildEnvironmentTrees();
-    // buildSpectators removed for GP — the colourful flag-row grandstands
-    // were the source of the long-running "rainbow shimmer along track
-    // edges" issue (PR #71/#72 had the wrong root-cause). Themepark keeps
-    // its own buildSpectators() call so its cheering crowd stays.
-    buildNightObjects();buildSunBillboard();
-    buildAdvertisingBoards();buildCornerBoards();buildTrackFlags();
-    buildGPTrackProps();
-    // Bushes track-side + ground clutter (mushrooms / flowers / ferns)
-    // in the infield. spawnRoadsideProps walks the track curve;
-    // spawnGroundClutter scatters more freely. Both no-op if cache
-    // is empty so the procedural look is preserved.
-    if (window.spawnRoadsideProps){
-      window.spawnRoadsideProps('grandprix',{
-        propKeys:['bush'],
-        count:8, sizeHint:1.4, clusterSize:2,
-        offsetMin: BARRIER_OFF + 4, offsetMax: BARRIER_OFF + 10,
-      });
-    }
-    if (window.spawnGroundClutter && !window._isMobile){
-      window.spawnGroundClutter('grandprix',{
-        propKeys:['ground_mushroom','ground_flower','ground_fern'],
-        count:38, sizeHint:0.6,
-        offsetMin: BARRIER_OFF + 8, offsetMax: BARRIER_OFF + 38,
-      });
-    }
+    if(window.dbg)dbg.warn('scene','unknown world '+activeWorld+' — no environment builder, scene will be sparse');
   }
   if(window.perfMark){perfMark('build:world:end');perfMeasure('build.world','build:world:start','build:world:end');}
   if(window.perfMark)perfMark('build:gameplayObjects:start');

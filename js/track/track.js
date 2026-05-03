@@ -283,7 +283,7 @@ function _drawGantryFrame(idx){
   const worldCol={
     space:'#8866ff',deepsea:'#00ddcc',candy:'#ff66cc',
     neoncity:'#00ffee',volcano:'#ff6622',arctic:'#88ccff',
-    themepark:'#ff44aa',grandprix:'#ffaa66'
+    themepark:'#ff44aa'
   }[activeWorld]||'#cc66ff';
   ctx.font='bold 28px Orbitron,Arial';ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillStyle=worldCol;
@@ -297,7 +297,7 @@ function _gantryFrameText(idx){
   const worldName={
     space:'COSMIC CIRCUIT',deepsea:'DEEP SEA CIRCUIT',candy:'CANDY KINGDOM',
     neoncity:'NEON CITY GP',volcano:'VOLCANO RUSH',arctic:'ARCTIC PEAKS',
-    themepark:'THEME PARK BLAST',grandprix:"SPENCER'S RACE CLUB"
+    themepark:'THEME PARK BLAST'
   }[activeWorld]||"SPENCER'S RACE CLUB";
   const car=carObjs[playerIdx];
   const lap=car?Math.max(1,Math.min(3,car.lap+1)):1;

@@ -133,8 +133,8 @@ function showFinish(){
     const dmgEl=document.getElementById('finStats');
     if(dmgEl){const d=pCar2.hitCount>=6?'🔥 HEAVY':'⚠ LIGHT';dmgEl.textContent+=' · '+d+' DAMAGE';}
   }
-  var _wfBg={grandprix:'radial-gradient(ellipse at 50% 40%,#140030,#070018,#000007)',space:'radial-gradient(ellipse at 50% 40%,#000818,#00041a,#000005)',deepsea:'radial-gradient(ellipse at 50% 40%,#001828,#00081a,#000005)',candy:'radial-gradient(ellipse at 50% 40%,#280018,#14000c,#050002)',neoncity:'radial-gradient(ellipse at 50% 40%,#000818,#00041a,#000005)',volcano:'radial-gradient(ellipse at 50% 40%,#1a0800,#0a0400,#000000)',arctic:'radial-gradient(ellipse at 50% 40%,#061428,#020a18,#000005)',themepark:'radial-gradient(ellipse at 50% 40%,#2a0840,#1a0428,#050010)'};
-  var _sfEl=document.getElementById('sFinish');if(_sfEl)_sfEl.style.background=_wfBg[activeWorld]||_wfBg.grandprix;
+  var _wfBg={space:'radial-gradient(ellipse at 50% 40%,#000818,#00041a,#000005)',deepsea:'radial-gradient(ellipse at 50% 40%,#001828,#00081a,#000005)',candy:'radial-gradient(ellipse at 50% 40%,#280018,#14000c,#050002)',neoncity:'radial-gradient(ellipse at 50% 40%,#000818,#00041a,#000005)',volcano:'radial-gradient(ellipse at 50% 40%,#1a0800,#0a0400,#000000)',arctic:'radial-gradient(ellipse at 50% 40%,#061428,#020a18,#000005)',themepark:'radial-gradient(ellipse at 50% 40%,#2a0840,#1a0428,#050010)'};
+  var _sfEl=document.getElementById('sFinish');if(_sfEl)_sfEl.style.background=_wfBg[activeWorld]||_wfBg.space;
   document.getElementById('sFinish').classList.remove('hidden');
   // Staggered reveal animations
   ['finTitle','finMsg','finPos','finScore','finStats','finLapTimes','finPodium','leaderBody'].forEach((id,i)=>{

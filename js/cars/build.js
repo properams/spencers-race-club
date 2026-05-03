@@ -70,10 +70,9 @@ function makeAllCars(){
   const orderedDefs=[playerDef,...CAR_DEFS.filter(d=>d.id!==selCarId)];
 
   // ── Per-world start T: always on the main straight approaching S/F ──────
-  // Each world's straight is different. We use t=0.93..0.99 range for GP,
-  // and similar near-0 ranges for other worlds — but always on straight sections.
+  // Each world's straight is different — use t≈0.94 range so the grid sits
+  // on the final straight before t=0.
   const _worldGridT={
-    grandprix:0.955,  // GP final straight approaching t=0
     space:0.940,      // Space: last WP at ~0.94, straight into t=0
     deepsea:0.940,    // DeepSea: last WP at ~0.94, straight into t=0
     candy:0.940,      // Candy: last WP at ~0.96, straight into t=0
@@ -88,7 +87,7 @@ function makeAllCars(){
     const mesh=makeCar(def);
     const row=Math.floor(i/2),col=i%2;
     // t decreases as we go further behind the S/F line
-    const baseT=_worldGridT[activeWorld]||0.955;
+    const baseT=_worldGridT[activeWorld]||0.940;
     const t0=((baseT - row*_rowGap)+1)%1;
     const pt=trackCurve.getPoint(t0);
     const tg=trackCurve.getTangent(t0).normalize();
@@ -121,7 +120,7 @@ function makeAllCars(){
       const livery={
         space:0x4488ff,deepsea:0x00ffaa,candy:0xff66cc,
         neoncity:0xff00cc,volcano:0xff5500,arctic:0x88ccff,
-        themepark:0xff44aa,grandprix:0xffaa44
+        themepark:0xff44aa
       }[activeWorld]||0xffaa44;
       const ugMat=new THREE.MeshBasicMaterial({
         color:livery,transparent:true,opacity:.42,
