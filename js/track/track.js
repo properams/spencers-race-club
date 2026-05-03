@@ -90,15 +90,26 @@ function eline(N,off,y,hw){
 
 function buildCurbs(N){
   const CW=2.1;
+  // Stripe count: 36 (was 72). Bij oblique camera-angles op iOS Safari's
+  // lage-precision depth-buffer geeft de oude 72-stripe alternatie ~5
+  // segments per stripe — onder de Nyquist-grens van het device-pixel
+  // grid → moiré shimmer / "regenboog" artefact langs de track-randen.
+  // 36 stripes verdubbelt de stripe-lengte → robuuster tegen aliasing
+  // zonder dat het visuele kerb-patroon verandert.
+  const STRIPES=36;
+  // Y omhoog van .045 → .065: physical separation van edge-line (y=.008)
+  // is nu groot genoeg dat polygonOffset niet meer alle z-werk hoeft te
+  // doen, ook niet op low-precision depth buffers.
+  const CY=.065;
   [-1,1].forEach(side=>{
     const eo=side*(TW+CW*.5),pos=[],col=[],idx=[];
     for(let i=0;i<=N;i++){
       const t=i/N,p=trackCurve.getPoint(t),tg=trackCurve.getTangent(t).normalize();
       const nr=new THREE.Vector3(-tg.z,0,tg.x);
-      const L=p.clone().addScaledVector(nr,eo-CW*.5);L.y=.045;
-      const R=p.clone().addScaledVector(nr,eo+CW*.5);R.y=.045;
+      const L=p.clone().addScaledVector(nr,eo-CW*.5);L.y=CY;
+      const R=p.clone().addScaledVector(nr,eo+CW*.5);R.y=CY;
       pos.push(L.x,L.y,L.z,R.x,R.y,R.z);
-      const s=Math.floor(t*72)%2;
+      const s=Math.floor(t*STRIPES)%2;
       const [r,g,b]=activeWorld==='space'?(s===0?[0,.9,.9]:[.7,0,.9]):activeWorld==='deepsea'?(s===0?[0,.9,.7]:[0,.5,1]):activeWorld==='candy'?(s===0?[1,.2,.6]:[1,.95,.1]):activeWorld==='themepark'?(s===0?[1,.3,.8]:[1,.9,.2]):(s===0?[.82,.07,.03]:[1,1,1]);
       col.push(r,g,b,r,g,b);
       if(i<N){const a=i*2,b2=a+1,c=a+2,d=a+3;idx.push(a,b2,c,b2,d,c);}
@@ -108,7 +119,11 @@ function buildCurbs(N){
     geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
     geo.setIndex(idx);
     const cMat=new THREE.MeshLambertMaterial({vertexColors:true});
-    cMat.polygonOffset=true;cMat.polygonOffsetFactor=-1;cMat.polygonOffsetUnits=-1;
+    // polygonOffset matched to edge-lines (-2/-2). Eerder -1/-1 was zwakker
+    // dan edge-lines (-2/-2) waardoor edge-line strepen DOOR de curb heen
+    // konden zetten op grazing angles. Gelijke offset + grotere Y-separatie
+    // (.065 vs edge-line .008) lost dit op.
+    cMat.polygonOffset=true;cMat.polygonOffsetFactor=-2;cMat.polygonOffsetUnits=-2;
     // Per-world emissive accents — vertexColors zijn al gezet per world, maar
     // emissive geeft daarbovenop een gloed die door bloom oppikt wordt.
     if(activeWorld==='space'){cMat.emissive=new THREE.Color(0x4422aa);cMat.emissiveIntensity=.7;}
