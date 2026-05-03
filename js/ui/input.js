@@ -41,6 +41,12 @@ window.addEventListener('keydown',e=>{
     window._leaderExpanded=!window._leaderExpanded;
     showPopup(window._leaderExpanded?'LEADERBOARD: FULL':'LEADERBOARD: COMPACT','#88ddff',900);
   }
+  if(e.code==='KeyJ'&&gameState==='RACE'){
+    // Day/night toggle — niet KeyN want die triggert nitro (cars/physics.js).
+    // toggleNight() doet zelf de smooth fog-blend + headlight-sync + bloom-
+    // tweak, dus geen extra werk hier.
+    if(typeof toggleNight==='function')toggleNight();
+  }
   if(e.code==='KeyH'&&gameState==='RACE'){
     const car=carObjs[playerIdx];
     if(car&&!_pitStopActive&&!_pitStopUsed){
