@@ -179,6 +179,45 @@ function _buildProceduralEnvMap(){
 // De buildScene-aanroeppath werkt onafhankelijk van deze export.
 window._buildProceduralEnvMap=_buildProceduralEnvMap;
 
+// Per-world envMap — gebruikt het bestaande make<World>SkyTex() canvas als
+// equirectangular bron en runt PMREM erover voor cubemap-reflecties.
+// Skybox canvases zijn 1024×512 (of 512×256 op mobile) = 2:1 ratio = al
+// equirect-compatible. Cars sampelen scene.environment en krijgen daardoor
+// per-wereld thematische reflecties: sun-spot op GP, neon haze op NeonCity,
+// ember glow op Volcano, aurora op Arctic, etc. Veel rijker dan de
+// generieke procedural gradient.
+//
+// Niet gecached per-world: rebuild bij elke world-switch (PMREM ~50ms,
+// acceptabel binnen de ~500ms world-switch budget). Cubemap krijgt GEEN
+// _sharedAsset flag, zodat disposeScene'm bij de volgende switch netjes
+// vrijgeeft. Procedural env blijft als fallback wanneer PMREM faalt.
+function _buildWorldEnvFromSky(skytex){
+  if(!renderer || typeof THREE.PMREMGenerator!=='function' || !skytex || !skytex.image){
+    return null;
+  }
+  // Wrap dezelfde canvas (skytex.image) als equirect-projectie texture.
+  // Geen pixel-copy nodig — alleen een tweede THREE.CanvasTexture wrapper
+  // met andere mapping. PMREM kopieert pixels naar GPU cubemap-faces.
+  const equirect=new THREE.CanvasTexture(skytex.image);
+  equirect.mapping=THREE.EquirectangularReflectionMapping;
+  equirect.needsUpdate=true;
+  let envMap=null;
+  try{
+    const pmrem=new THREE.PMREMGenerator(renderer);
+    pmrem.compileEquirectangularShader();
+    envMap=pmrem.fromEquirectangular(equirect).texture;
+    pmrem.dispose();
+  }catch(e){
+    if(window.dbg) dbg.error('scene',e,'world envMap build failed');
+    else console.error('world envMap build failed',e);
+  }
+  equirect.dispose();
+  if(envMap && window.dbg){
+    dbg.log('scene','world envMap built — '+activeWorld+' skybox → PMREM cube');
+  }
+  return envMap;
+}
+
 // Helper: dispose previous background + return a sky canvas with vertical
 // gradient as base. Per-world sky functions paint on top of this.
 // Mobile gebruikt een halve fysieke resolutie (512×256) maar context.scale
@@ -498,12 +537,11 @@ function buildScene(){
   const isVolcano=activeWorld==='volcano';
   const isArctic=activeWorld==='arctic';
   scene=new THREE.Scene();
-  // Procedural envMap fallback zodat MeshPhysicalMaterial.clearcoat reflecties
-  // heeft te samplen. maybeUpgradeWorld() (verderop) overschrijft scene.environment
-  // als er ooit een echte HDRI cached is voor deze world; tot die tijd blijft
-  // procedureel actief. _sharedAsset-flag op de cubemap zorgt dat disposeScene
-  // 'm tijdens world-switch niet vrijgeeft.
-  {const _procEnv=_buildProceduralEnvMap();if(_procEnv)scene.environment=_procEnv;}
+  // scene.environment wordt per-world gezet ná het skybox-block hieronder
+  // (zie _buildWorldEnvFromSky aanroep). Dit was eerder een generieke
+  // procedural gradient direct na new Scene(), maar per-world PMREM-cubemap
+  // van het bestaande skybox canvas geeft dramatisch betere reflecties op
+  // car clearcoat (sun, neon, embers, aurora — wereld-specifiek).
   // Fog color is matched to the skybox horizon (sky-bottom gradient stop) per world,
   // so fogged distant geometry blends seamlessly into the sky instead of producing a
   // visible "kleurverschil" band where the fogged scene meets the skybox.
@@ -544,6 +582,16 @@ function buildScene(){
     scene.background=makeGPSkyTex();
     scene.fog=new THREE.FogExp2(0xb8d8ee,.0017);
     _fogColorDay.setHex(0xb8d8ee);_fogColorNight.setHex(0x162842);
+  }
+  // World-themed envMap: PMREM het skybox canvas voor cubemap-reflecties op
+  // car clearcoat. Vervangt de generic procedural gradient die in een eerder
+  // commit als scene.environment werd gezet (vlak na new Scene()). Per-world
+  // envs zijn dramatisch rijker: sun-spot reflectie op GP, neon haze op
+  // NeonCity, ember glow op Volcano. Procedural blijft fallback voor het
+  // geval PMREM faalt.
+  {
+    const _worldEnv=_buildWorldEnvFromSky(scene.background);
+    scene.environment=_worldEnv||_buildProceduralEnvMap();
   }
   // Per-world color grading + vignette in postfx composite.
   if(typeof setWorldGrading==='function')setWorldGrading(activeWorld);
