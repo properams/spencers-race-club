@@ -57,7 +57,10 @@ function makeCar(def){
   const paintMats = makePaintMats(def);
   const mats = Object.assign({}, shared, paintMats);
   brandBuilder(g, def, mats, lod);
-  buildAllWheels(g, def, mats, lod);
+  // Brand-builders kunnen wheel-style opts (drilled disc, branded caliper)
+  // op g.userData._wheelOpts zetten — buildAllWheels leest die door. Pilot
+  // gebruikt dit voor Bugatti; Phase 3 rolt het uit naar Tier S/A.
+  buildAllWheels(g, def, mats, lod, undefined, g.userData && g.userData._wheelOpts);
   return g;
 }
 
@@ -128,6 +131,20 @@ function makeAllCars(){
         blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
       });
       const ug=new THREE.Mesh(new THREE.CircleGeometry(2.0,16),ugMat);
+      ug.rotation.x=-Math.PI/2;ug.position.y=-.32;
+      mesh.add(ug);
+    }
+    // Phase 2.6 pilot — Bugatti player krijgt op alle worlds een accent-
+    // colored underglow (zelfde additive disc-pattern als AI). Branded
+    // signature die de pilot car onderscheidt van de andere 11 cars op het
+    // grid. Phase 3 generaliseert via Tier S/A flag op def.
+    if(isPlayer && def.brand === 'BUGATTI'){
+      const accentColor = (typeof def.accent === 'string') ? parseInt(def.accent,16) : def.accent;
+      const ugMat=new THREE.MeshBasicMaterial({
+        color:accentColor,transparent:true,opacity:.35,
+        blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
+      });
+      const ug=new THREE.Mesh(new THREE.CircleGeometry(2.2,16),ugMat);
       ug.rotation.x=-Math.PI/2;ug.position.y=-.32;
       mesh.add(ug);
     }

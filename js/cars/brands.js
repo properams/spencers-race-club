@@ -96,60 +96,91 @@ function buildFerrariSF90(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildBugattiChiron(g, def, mats, lod){
   const lo = lod === 'low';
+  // Phase 2 pilot — body-subgroup zodat toekomstige per-car effects (boost
+  // squat, hard-corner roll) de body kunnen kantelen onafhankelijk van de
+  // wheels. Wheels worden later door build.js → buildAllWheels op `g` zelf
+  // gehangen, niet op `body`, zodat de spin-update op wheelGroups blijft
+  // werken. Reverse-light, beam-cones en underglow worden ook op `g`
+  // gehangen door build.js. night.js:196 filtert mesh.children op
+  // userData.isHeadBeam dus de extra body-Group wordt overgeslagen.
+  const body = new THREE.Group();
+  body.userData = body.userData || {};
+  body.userData._isBody = true;
+  g.add(body);
   // Wide chassis (W=2.05) — Chiron is broader than the Ferrari
-  addPart(g, new THREE.BoxGeometry(2.05, .44, 4.05), mats.paint, 0, .26, 0);
+  addPart(body, new THREE.BoxGeometry(2.05, .44, 4.05), mats.paint, 0, .26, 0);
   // Rounded front clamshell — sphere-quarter front for the signature shape
   const fb = new THREE.Mesh(new THREE.SphereGeometry(.50, 12, 8, 0, Math.PI*2, 0, Math.PI/2), mats.paint);
   fb.scale.set(2.05, .50, 1.20); fb.rotation.x = Math.PI;
-  fb.position.set(0, .22, -1.85); g.add(fb);
+  fb.position.set(0, .22, -1.85); body.add(fb);
   // Front splitter
-  addPart(g, new THREE.BoxGeometry(1.85, .06, .26), mats.matBlk, 0, .10, -2.05);
-  // Hood
-  addPart(g, new THREE.BoxGeometry(1.78, .08, 1.30), mats.paint, 0, .54, -1.00);
+  addPart(body, new THREE.BoxGeometry(1.85, .06, .26), mats.matBlk, 0, .10, -2.05);
+  // Hood — crowned slab i.p.v. flat box (Phase 2.2). Lichte aerodynamische
+  // welling op de bovenkant; subtiel maar leesbaar tegen het cabin-volume.
+  addPart(body, _crownedSlabGeo(1.78, .08, 1.30), mats.paint, 0, .54, -1.00);
   // Horseshoe-style grille (signature Bugatti)
-  addPart(g, new THREE.BoxGeometry(.55, .22, .12), mats.grille, 0, .30, -2.00);
+  addPart(body, new THREE.BoxGeometry(.55, .22, .12), mats.grille, 0, .30, -2.00);
   if(!lo){
-    addPart(g, new THREE.BoxGeometry(.42, .14, .04), mats.accent, 0, .30, -2.06); // gold horseshoe rim
+    addPart(body, new THREE.BoxGeometry(.42, .14, .04), mats.accent, 0, .30, -2.06); // gold horseshoe rim
   }
-  buildHeadlights(g, mats, {spread:.78, y:.46, z:-1.92, w:.34, h:.10, d:.07});
+  // Premium headlights (Phase 2.3) — emissive kern + glas-lens (transmission)
+  // + 4-LED accent strip. Vervangt de standaard buildHeadlights call.
+  buildPremiumHeadlights(body, mats, {spread:.78, y:.46, z:-1.92, w:.34, h:.10, d:.07});
   // Cabin — slightly raised dome. Tonal split livery: cabin shell in
   // accent color (gold) instead of paint to evoke the iconic Chiron
   // two-tone look. Roof also uses accent for the same reason.
-  addPart(g, new THREE.BoxGeometry(1.66, .40, 1.50), mats.accent, 0, .76, .00);
-  addPart(g, new THREE.BoxGeometry(1.54, .48, .08), mats.glass, 0, .82, -.78, -.35);
-  [-.83, .83].forEach(s=>addPart(g, new THREE.BoxGeometry(.06, .30, 1.30), mats.glass, s, .82, .00));
-  addPart(g, new THREE.BoxGeometry(1.46, .30, .08), mats.glassDark, 0, .82, .80, .38);
-  addPart(g, new THREE.BoxGeometry(1.40, .04, 1.20), mats.accent, 0, 1.00, -.10);
-  // Engine cover (rear paint section)
-  addPart(g, new THREE.BoxGeometry(1.65, .20, 1.10), mats.paint, 0, .68, .92);
+  addPart(body, new THREE.BoxGeometry(1.66, .40, 1.50), mats.accent, 0, .76, .00);
+  addPart(body, new THREE.BoxGeometry(1.54, .48, .08), mats.glass, 0, .82, -.78, -.35);
+  [-.83, .83].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, 1.30), mats.glass, s, .82, .00));
+  addPart(body, new THREE.BoxGeometry(1.46, .30, .08), mats.glassDark, 0, .82, .80, .38);
+  // Roof — crowned slab in accent material (Phase 2.2).
+  addPart(body, _crownedSlabGeo(1.40, .04, 1.20), mats.accent, 0, 1.00, -.10);
+  // Engine cover (rear paint section) — crowned slab (Phase 2.2).
+  addPart(body, _crownedSlabGeo(1.65, .20, 1.10), mats.paint, 0, .68, .92);
+  // Chrome window-trim strips (Phase 2.5) — dunne strips langs de bovenkant
+  // van de side windows + voor- en achterkant van het glass-canopy.
+  // Geeft het premium "vernist metaal rond glas" effect dat MeshStandard-
+  // chrome zonder envMap niet kon waarmaken.
+  if(!lo){
+    [-0.86, 0.86].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(.025, .025, 1.30), mats.chrome, s, .67, .00);
+    });
+    addPart(body, new THREE.BoxGeometry(1.30, .025, .025), mats.chrome, 0, .67, -.65);
+    addPart(body, new THREE.BoxGeometry(1.30, .025, .025), mats.chrome, 0, .67,  .65);
+  }
   // C-shape side accent — Chiron signature: dark inset arc on the door
   if(!lo){
     [-1.01, 1.01].forEach(s=>{
-      addPart(g, new THREE.BoxGeometry(.04, .30, 1.10), mats.matBlk, s, .50, -.05);
-      addPart(g, new THREE.BoxGeometry(.05, .12, .12), mats.accent, s, .65, -.55); // upper accent dot
-      addPart(g, new THREE.BoxGeometry(.05, .12, .12), mats.accent, s, .35, -.55); // lower accent dot
+      addPart(body, new THREE.BoxGeometry(.04, .30, 1.10), mats.matBlk, s, .50, -.05);
+      addPart(body, new THREE.BoxGeometry(.05, .12, .12), mats.accent, s, .65, -.55); // upper accent dot
+      addPart(body, new THREE.BoxGeometry(.05, .12, .12), mats.accent, s, .35, -.55); // lower accent dot
     });
   }
-  buildWheelArches(g, mats.paint, {positions:[
+  buildWheelArches(body, mats.paint, {positions:[
     [-1.02, .42, -1.40], [1.02, .42, -1.40], [-1.02, .42, 1.40], [1.02, .42, 1.40]
   ]});
   // Rear bumper + diffuser
-  addPart(g, new THREE.BoxGeometry(1.95, .22, .30), mats.paint, 0, .32, 1.95);
+  addPart(body, new THREE.BoxGeometry(1.95, .22, .30), mats.paint, 0, .32, 1.95);
   if(!lo){
-    addPart(g, new THREE.BoxGeometry(1.70, .10, .28), mats.matBlk, 0, .14, 2.00);
+    addPart(body, new THREE.BoxGeometry(1.70, .10, .28), mats.matBlk, 0, .14, 2.00);
   }
   // Modest spoiler — Chiron has retractable wing, suggested by short fixed plate
-  addPart(g, new THREE.BoxGeometry(1.60, .04, .26), mats.matBlk, 0, .96, 1.78);
+  addPart(body, new THREE.BoxGeometry(1.60, .04, .26), mats.matBlk, 0, .96, 1.78);
   // Tail lights — Bugatti signature: full-width LED bar (suggested with two segments)
-  buildTaillights(g, mats, {spread:.50, y:.58, z:1.99, w:.46, h:.08, d:.05});
+  buildTaillights(body, mats, {spread:.50, y:.58, z:1.99, w:.46, h:.08, d:.05});
   // Centre single large exhaust (Chiron signature)
   const ex = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .35, 10), mats.chrome);
-  ex.rotation.x = Math.PI/2; ex.position.set(0, .30, 2.06); g.add(ex);
+  ex.rotation.x = Math.PI/2; ex.position.set(0, .30, 2.06); body.add(ex);
   if(!lo){
     const exRing = new THREE.Mesh(new THREE.TorusGeometry(.15, .02, 5, 12), mats.chrome);
-    exRing.rotation.y = Math.PI/2; exRing.position.set(0, .30, 2.06); g.add(exRing);
+    exRing.rotation.y = Math.PI/2; exRing.position.set(0, .30, 2.06); body.add(exRing);
   }
-  buildSideSkirts(g, mats, {spread:1.02, y:.10, z:0, length:2.6});
+  buildSideSkirts(body, mats, {spread:1.02, y:.10, z:0, length:2.6});
+  // Phase 2.4 — markeer wheel-style opties op de top-level group zodat
+  // build.js → buildAllWheels gedrilde discs + accent-gold calipers krijgt.
+  // Brand-builders zonder _wheelOpts vallen terug op brakeRed + standard.
+  g.userData = g.userData || {};
+  g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

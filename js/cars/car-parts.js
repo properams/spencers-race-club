@@ -227,12 +227,53 @@ function addPart(group, geo, mat, x, y, z, rx, ry, rz){
   return m;
 }
 
+// "Crowned slab" — a low-poly extruded panel met een lichte dome op de
+// bovenkant. Visueel leest het als een hood/roof met aerodynamische welving
+// in plaats van een vlakke box. Cross-section ligt in X-Y, lengte loopt
+// langs Z (zelfde as-conventie als de BoxGeometry's die het vervangt zodat
+// position en rotation in builders ongewijzigd blijven).
+//
+// Triangle-budget: ~36 tris per slab (vs 12 voor BoxGeometry). Drie slabs
+// per Bugatti = +72 tris t.o.v. baseline. Onder de Phase 2 limiet van 200.
+function _crownedSlabGeo(width, height, depth){
+  const halfW = width * 0.5;
+  const baseY = -height * 0.5;
+  const peakY =  height * 0.5;
+  const crownY = peakY + height * 0.4; // 40% extra dome op het midden
+  const shape = new THREE.Shape();
+  shape.moveTo(-halfW, baseY);
+  shape.lineTo( halfW, baseY);
+  shape.lineTo( halfW, peakY);
+  // Dome via quadratic curve — control point boven het midden, eindpunt
+  // weer op peakY links. Geeft een vloeiende boog over de top.
+  shape.quadraticCurveTo(0, crownY, -halfW, peakY);
+  shape.lineTo(-halfW, baseY);
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: depth,
+    bevelEnabled: false,
+    curveSegments: 6,
+    steps: 1
+  });
+  // ExtrudeGeometry extrudet vanaf z=0 naar +depth — center op Z zodat de
+  // builder-position het midden van de slab aanstuurt (zelfde semantiek als
+  // BoxGeometry).
+  geo.translate(0, 0, -depth * 0.5);
+  return geo;
+}
+
 // One wheel assembly: a sub-group at (x,y,z) containing tire + rim + spokes
 // + caliper + brake disc. The sub-group spins as one unit (physics.spinWheels
 // rotates everything in userData.wheels[]). Caliper is added as a sibling so
 // it stays static while the wheel spins.
 // Returns the spinning sub-group.
-function buildWheel(group, x, y, z, radius, width, mats, lod){
+//
+// opts (optional, default {}):
+//   brakeStyle: 'standard' | 'drilled' — drilled adds 8 dark holes op de
+//                                        disc-face voor premium tier cars.
+//   caliperMatKey: string — naam van een mat in `mats` om i.p.v. brakeRed
+//                           te gebruiken (bv. 'accent' voor branded calipers).
+function buildWheel(group, x, y, z, radius, width, mats, lod, opts){
+  opts = opts || {};
   const tireSegs = lod==='low' ? 8 : 16;
   const wheelGroup = new THREE.Group();
   wheelGroup.position.set(x, y, z);
@@ -261,14 +302,34 @@ function buildWheel(group, x, y, z, radius, width, mats, lod){
       sp.rotation.y = (s/5)*Math.PI*2;
       wheelGroup.add(sp);
     }
-    // Brake disc — same axis as wheel
+    // Brake disc — same axis as wheel. Drilled style krijgt extra segmenten
+    // op de cylinder + 8 zwarte "gaten" op de disc-face. Mobile valt terug
+    // op standard voor consistentie met de premium-headlights LOD-filosofie
+    // (extra-detail features alleen op desktop).
+    const drilled = opts.brakeStyle === 'drilled' && !window._isMobile;
     const disc = new THREE.Mesh(
-      new THREE.CylinderGeometry(radius*.55, radius*.55, .03, 12),
+      new THREE.CylinderGeometry(radius*.55, radius*.55, .03, drilled ? 16 : 12),
       mats.brakeDisc
     );
     wheelGroup.add(disc);
-    // Caliper as sibling (stays static while wheel spins)
-    const cal = new THREE.Mesh(new THREE.BoxGeometry(.08, .18, .22), mats.brakeRed);
+    if (drilled){
+      // Disc face ligt in wheelGroup's lokale XZ-vlak (Y is de spin-as).
+      // 8 holes verdeeld langs een cirkel met radius 40% van wheel-radius.
+      const holeGeo = new THREE.BoxGeometry(.025, .035, .025);
+      const holeMat = mats.matBlk;
+      const holeR = radius * 0.40;
+      for (let i=0; i<8; i++){
+        const a = (i/8) * Math.PI * 2;
+        const hole = new THREE.Mesh(holeGeo, holeMat);
+        hole.position.set(Math.cos(a)*holeR, 0, Math.sin(a)*holeR);
+        wheelGroup.add(hole);
+      }
+    }
+    // Caliper as sibling (stays static while wheel spins). caliperMatKey
+    // override staat brand-builders toe een gebrande caliper-kleur te
+    // forceren (bv. Bugatti accent gold).
+    const calMat = (opts.caliperMatKey && mats[opts.caliperMatKey]) || mats.brakeRed;
+    const cal = new THREE.Mesh(new THREE.BoxGeometry(.08, .18, .22), calMat);
     cal.position.set(x, y-.08, z);
     group.add(cal);
   }
@@ -278,7 +339,8 @@ function buildWheel(group, x, y, z, radius, width, mats, lod){
 // Builds 4 wheels at the standard sedan/super positions and registers them
 // on group.userData.wheels for spin animation.
 // posOverride lets F1 / specific shapes pass their own [[x,y,z],...] array.
-function buildAllWheels(group, def, mats, lod, posOverride){
+// wheelOpts wordt doorgegeven aan buildWheel — zie buildWheel voor opties.
+function buildAllWheels(group, def, mats, lod, posOverride, wheelOpts){
   const isF1 = def.type === 'f1';
   const isMuscle = def.type === 'muscle';
   const positions = posOverride || (isF1
@@ -290,7 +352,7 @@ function buildAllWheels(group, def, mats, lod, posOverride){
   const width = isF1 ? .42 : .26;
   group.userData.wheels = [];
   positions.forEach(([wx,wy,wz])=>{
-    const wheelGrp = buildWheel(group, wx, wy, wz, radius, width, mats, lod);
+    const wheelGrp = buildWheel(group, wx, wy, wz, radius, width, mats, lod, wheelOpts);
     group.userData.wheels.push(wheelGrp);
   });
   // Map to FL/FR/RL/RR for engine.js / physics.js consumers.
@@ -318,6 +380,58 @@ function buildHeadlights(group, mats, opts){
     const hl = new THREE.Mesh(geo, mats.head);
     hl.position.set(s, y, z);
     group.add(hl);
+  });
+}
+
+// Premium headlights — emissive inner unit + transmissive lens cover + 4-element
+// LED accent strip. Gebruikt door tier-S/A builders die meer detail in het
+// front nodig hebben. Op mobile is de transmission lens een no-op (PBR-only)
+// en valt het terug op buildHeadlights-stijl emissive-only.
+//
+// Per-call mat-allocatie: één MeshPhysicalMaterial (lens) per call — kost
+// minimal want premium-cars zijn opt-in en komen 1× per race voor.
+function buildPremiumHeadlights(group, mats, opts){
+  opts = opts || {};
+  const sx = opts.spread || 0.78;
+  const y  = opts.y      || .42;
+  const z  = opts.z      || -1.95;
+  const w  = opts.w      || .26;
+  const h  = opts.h      || .12;
+  const d  = opts.d      || .08;
+  // Inner emissive box — kern van de koplamp, zelfde mats.head als regular.
+  const innerGeo = new THREE.BoxGeometry(w*0.85, h*0.85, d*0.85);
+  // 4-segment LED strip onder de hoofdlamp (DRL accent).
+  const ledGeo = new THREE.BoxGeometry(w*0.18, h*0.20, d*0.40);
+  // Outer lens — alleen op desktop met MeshPhysicalMaterial.transmission.
+  const useLens = !window._isMobile;
+  let lensGeo = null, lensMat = null;
+  if (useLens){
+    lensGeo = new THREE.BoxGeometry(w, h, d);
+    lensMat = new THREE.MeshPhysicalMaterial({
+      color: 0xeef0ff,
+      metalness: 0.0, roughness: 0.05,
+      transmission: 0.9, ior: 1.4, thickness: 0.05,
+      transparent: true, opacity: 0.4,
+      envMapIntensity: 1.0,
+    });
+    lensMat.userData = { _carPBR: true };
+  }
+  [-sx, sx].forEach(s=>{
+    const inner = new THREE.Mesh(innerGeo, mats.head);
+    inner.position.set(s, y, z);
+    inner.castShadow = true;
+    group.add(inner);
+    if (useLens){
+      const lens = new THREE.Mesh(lensGeo, lensMat);
+      lens.position.set(s, y, z);
+      group.add(lens);
+    }
+    // 4 LED-segmenten horizontaal verdeeld onder de koplamp.
+    for (let i=0; i<4; i++){
+      const led = new THREE.Mesh(ledGeo, mats.head);
+      led.position.set(s + (i - 1.5) * w * 0.20, y - h * 0.55, z + d * 0.05);
+      group.add(led);
+    }
   });
 }
 
@@ -412,7 +526,9 @@ window.addPart = addPart;
 window.buildWheel = buildWheel;
 window.buildAllWheels = buildAllWheels;
 window.buildHeadlights = buildHeadlights;
+window.buildPremiumHeadlights = buildPremiumHeadlights;
 window.buildTaillights = buildTaillights;
+window._crownedSlabGeo = _crownedSlabGeo;
 window.buildExhausts = buildExhausts;
 window.buildSideVents = buildSideVents;
 window.buildWheelArches = buildWheelArches;
