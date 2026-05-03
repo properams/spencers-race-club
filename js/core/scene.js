@@ -60,6 +60,16 @@ function disposeScene(){
     }
   });
   while(scene.children.length>0)scene.remove(scene.children[0]);
+  // Reset world-prop colliders zodat een wereld zonder bomen geen stale
+  // tree-bumps van de vorige wereld behoudt. Wereld-builders vullen het
+  // weer in tijdens buildScene() (alleen GP doet dat momenteel).
+  if(window._propColliders)window._propColliders.length=0;
+  // Reset _crowdMaterials hier ook (defense-in-depth): buildTrack() doet
+  // dit ook al, maar als buildSpectators voor de actieve wereld vroeg
+  // returned (zoals nu voor GP) en buildTrack-volgorde ooit verandert,
+  // blijven de materials in disposeScene gegarandeerd geleegd. Anders
+  // zou updateCrowd() naar disposed CanvasTextures schrijven.
+  if(typeof _crowdMaterials!=='undefined')_crowdMaterials.length=0;
   if(scene.background&&scene.background.isTexture && !_shared(scene.background)) scene.background.dispose();
   scene.background=null;
   if(scene.environment&&scene.environment.isTexture && !_shared(scene.environment)) scene.environment.dispose();
@@ -475,7 +485,11 @@ function buildScene(){
     buildGround();buildClouds();buildBarriers();buildGantry();
     buildMountains();buildBackgroundLayers();buildLake();
     buildGravelTraps();buildEnvironmentTrees();
-    buildNightObjects();buildSpectators();buildSunBillboard();
+    // buildSpectators removed for GP — the colourful flag-row grandstands
+    // were the source of the long-running "rainbow shimmer along track
+    // edges" issue (PR #71/#72 had the wrong root-cause). Themepark keeps
+    // its own buildSpectators() call so its cheering crowd stays.
+    buildNightObjects();buildSunBillboard();
     buildAdvertisingBoards();buildCornerBoards();buildTrackFlags();
     buildGPTrackProps();
     // Bushes track-side + ground clutter (mushrooms / flowers / ferns)
@@ -500,7 +514,11 @@ function buildScene(){
   if(window.perfMark){perfMark('build:world:end');perfMeasure('build.world','build:world:start','build:world:end');}
   if(window.perfMark)perfMark('build:gameplayObjects:start');
   buildJumpRamps();
-  buildCenterlineArrows();
+  // buildCenterlineArrows() disabled — it produced 110 white X marks
+  // (two bars rotated ±27° around the same point) every ~7m down the
+  // centerline, which the user reported as "stray X decals on the
+  // racing surface". Edge-lines + curbs are sufficient for navigation;
+  // wrong-way detection is independent.
   buildSpinPads();
   buildBoostPads();
   buildCollectibles();

@@ -404,7 +404,30 @@ function _buildTreePlacements(){
       });
     }
   });
-  return out;
+  // Track-safety post-filter: alle drie de loops hierboven kunnen trees
+  // op het asfalt plaatsen wanneer de layout een hairpin / S-curve heeft
+  // (een offset langs de tangent op waypoint A kan binnen het curve-pad
+  // bij waypoint B liggen). Filter elke placement die binnen TW+5m van
+  // ENIG curve-punt zit.
+  //
+  // Hergebruik curvePts (600 samples, gevuld door buildTrack vlak vóór
+  // buildEnvironmentTrees in core/scene.js). 600 samples geeft worst-
+  // case sample-spacing van ~3.75m op de 2253m perimeter → midpoint-
+  // afstand ~1.9m, ruim binnen SAFE_MARGIN=18m. Fallback naar
+  // getPoints(240) als curvePts uitzonderlijk niet bestaat (bv. cold
+  // pre-build code path).
+  const SAFE_MARGIN_SQ=(TW+5)*(TW+5);
+  const samples=(typeof curvePts!=='undefined'&&curvePts&&curvePts.length)
+    ? curvePts
+    : trackCurve.getPoints(240);
+  return out.filter(pl=>{
+    for(let i=0;i<samples.length;i++){
+      const p=samples[i];
+      const dx=pl.x-p.x, dz=pl.z-p.z;
+      if(dx*dx+dz*dz<SAFE_MARGIN_SQ)return false;
+    }
+    return true;
+  });
 }
 
 function _spawnInstancedTreesGLTF(protos, placements){
@@ -540,6 +563,16 @@ function _spawnInstancedTreesProcedural(placements){
 
 function buildEnvironmentTrees(){
   const placements=_buildTreePlacements();
+  // Register trunk colliders voor propcollisions.js. Reset eerst de array
+  // (zelfde patroon als _trackFlags / _crowdMaterials reset). Trunk-radius
+  // schaalt mee met de tree-scale (placement.s ∈ 0.7..1.4); 0.7m base ≈
+  // realistische trunk-thickness incl. car-radius slop.
+  if(window._propColliders){
+    window._propColliders.length=0;
+    placements.forEach(pl=>{
+      window._propColliders.push({x:pl.x,z:pl.z,r:0.7*pl.s,cooldown:0});
+    });
+  }
   // Try GLTF prototypes first. getGLTFVariants returns ALL loaded
   // variants per slot (vs getGLTF which random-picks one), so the
   // instanced spawner can balance tree variants across the forest

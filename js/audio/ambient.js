@@ -45,8 +45,18 @@ function updateThunder(dt){
   if(_thunderTimer<=0){Audio.playThunder();_thunderTimer=9+Math.random()*20;}
 }
 
+// World-aware crowd-audio gate: returns true if the active world has any
+// visible spectators (registered via _crowdMaterials in track/collectibles
+// or in worlds/themepark.js). Worlds without spectators (currently GP) get
+// no ambient crowd-loop and no per-event cheers — silence matches the
+// visual scene.
+function _hasVisibleCrowd(){
+  return typeof _crowdMaterials!=='undefined' && _crowdMaterials.length>0;
+}
+
 function initCrowdNoise(){
   if(!audioCtx||_crowdGain)return;
+  if(!_hasVisibleCrowd())return; // skip: no spectators in this world
   // Sample-pad: gebruik crowdLoop buffer als geladen (en niet force-procedural).
   if(!window._forceProceduralAudio&&window._hasAmbientSample&&window._hasAmbientSample('crowdLoop')){
     const buf=window._getAmbientBuffer('crowdLoop');
@@ -130,6 +140,7 @@ function stopAmbientWind(){
 
 function playCrowdCheer(){
   if(!audioCtx)return;
+  if(!_hasVisibleCrowd())return; // skip: no spectators in this world
   if(_playAmbientOneShot('crowdCheer',0.65))return;
   const sz=Math.ceil(audioCtx.sampleRate*.55);
   const buf=audioCtx.createBuffer(1,sz,audioCtx.sampleRate);
