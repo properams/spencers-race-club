@@ -590,11 +590,14 @@ function _initCarPreviewSwipe(){
   function cancel(){active=false;}
   // passive:true op down/move zodat verticaal page-scrollen niet wordt
   // geblokkeerd. preventDefault is niet nodig — we tappen niet op een
-  // scroll-element.
+  // scroll-element. lostpointercapture vuurt altijd als capture eindigt
+  // (incl. iOS Safari scroll-gesture-steal en tab-blur), dus het is de
+  // betrouwbare reset terwijl pointerleave onderdrukt blijft door capture.
   target.addEventListener('pointerdown',down,{passive:true});
   target.addEventListener('pointerup',up,{passive:true});
   target.addEventListener('pointercancel',cancel,{passive:true});
   target.addEventListener('pointerleave',cancel,{passive:true});
+  target.addEventListener('lostpointercapture',cancel,{passive:true});
 }
 
 function buildCarSelectUI(){
