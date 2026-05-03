@@ -57,8 +57,10 @@ function cacheHUDRefs(){
   if(window._isMobile){
     // hudLeader stays a CSS-only hide so the L-hotkey can still un-hide it
     // via the .lShow override (handy on tablets with external keyboards).
+    // hudNightBtn blijft op mobile staan — user wil de day/night toggle
+    // expliciet beschikbaar tijdens race op alle device-types.
     ['sectorPanel','hudCarStatus',
-     'hudRainBtn','hudNightBtn','hudMuteBtn','ghostLabel','drsIndicator',
+     'hudRainBtn','hudMuteBtn','ghostLabel','drsIndicator',
      'closeBattleEl','speedTrapEl','mirrorFrame','mirrorLabel','speedLines'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
     });
