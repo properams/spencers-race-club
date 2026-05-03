@@ -375,7 +375,11 @@ function rebuildWorld(newWorld){
   // is synchronous and falls back to procedural if cache is empty at race-start.
   if(window.Assets&&window.Assets.preloadWorld){
     window.Assets.preloadWorld(newWorld).then(()=>{
-      if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(newWorld);
+      try{ if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(newWorld); }
+      catch(e){ if(window.dbg)dbg.error('select',e,'maybeUpgradeWorld failed (rebuild)'); else console.error('maybeUpgradeWorld failed:',e); }
+    }).catch(e=>{
+      if(window.dbg)dbg.error('select',e,'Assets.preloadWorld rejected (rebuild)');
+      else console.error('Assets.preloadWorld rejected:',e);
     });
   }
   const _wasDark=isDark;

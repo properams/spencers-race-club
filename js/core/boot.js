@@ -170,7 +170,14 @@ async function boot(){
     // via maybeUpgradeWorld().
     if(window.Assets&&window.Assets.preloadWorld&&window.activeWorld){
       window.Assets.preloadWorld(window.activeWorld).then(()=>{
-        if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(window.activeWorld);
+        // maybeUpgradeWorld can throw on PMREM/HDRI apply OOM; surface
+        // the error to dbg + the inline overlay instead of leaking it
+        // as an unhandled rejection that the user can't act on.
+        try{ if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(window.activeWorld); }
+        catch(e){ if(window.dbg)dbg.error('boot',e,'maybeUpgradeWorld failed (initial)'); else console.error('maybeUpgradeWorld failed:',e); }
+      }).catch(e=>{
+        if(window.dbg)dbg.error('boot',e,'Assets.preloadWorld rejected (initial)');
+        else console.error('Assets.preloadWorld rejected:',e);
       });
     }
     try{buildScene();}
