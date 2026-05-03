@@ -868,6 +868,17 @@ function buildCornerBoards(){
     cx.fillStyle='#ffffff';cx.font='bold 26px Arial';cx.textAlign='center';cx.textBaseline='middle';
     cx.fillText(name,32,26);
     const tex=new THREE.CanvasTexture(cvs);
+    // Mip-mapping + anisotropy: zonder dit aliasen de 8 bonte corner-
+    // boards (regenboog rood→paars rond de track) op middenafstand op
+    // iOS Safari → "regenboog-shimmer langs de track-randen". Power-of-
+    // two canvas (64×52, niet PoT) → forceer NPOT-vriendelijke filtering
+    // en genereer mips alsnog. anisotropy beperkt door renderer caps.
+    tex.minFilter=THREE.LinearMipmapLinearFilter;
+    tex.magFilter=THREE.LinearFilter;
+    tex.generateMipmaps=true;
+    if(window.renderer&&window.renderer.capabilities)
+      tex.anisotropy=Math.min(8,window.renderer.capabilities.getMaxAnisotropy()||1);
+    tex.needsUpdate=true;
     const board=new THREE.Mesh(new THREE.BoxGeometry(3.2,2.0,.14),
       new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
     board.position.set(bPos.x,3.4,bPos.z);
@@ -900,6 +911,15 @@ function buildAdvertisingBoards(){
     text.forEach((line,i)=>cx.fillText(line,128,startY+i*lineH));
     cx.strokeStyle=fg;cx.lineWidth=5;cx.strokeRect(4,4,248,120);
     const tex=new THREE.CanvasTexture(cv);
+    // Mip-mapping voor advertising boards — voorkomt high-contrast text
+    // aliasing op middenafstand op iOS Safari (zelfde reden als corner
+    // boards: bonte vlakken in een rij langs de track-rand).
+    tex.minFilter=THREE.LinearMipmapLinearFilter;
+    tex.magFilter=THREE.LinearFilter;
+    tex.generateMipmaps=true;
+    if(window.renderer&&window.renderer.capabilities)
+      tex.anisotropy=Math.min(8,window.renderer.capabilities.getMaxAnisotropy()||1);
+    tex.needsUpdate=true;
     const board=new THREE.Mesh(new THREE.PlaneGeometry(10,5),
       new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
     board.position.copy(pos);board.position.y=4.0;
