@@ -475,7 +475,11 @@ function buildScene(){
     buildGround();buildClouds();buildBarriers();buildGantry();
     buildMountains();buildBackgroundLayers();buildLake();
     buildGravelTraps();buildEnvironmentTrees();
-    buildNightObjects();buildSpectators();buildSunBillboard();
+    // buildSpectators removed for GP — the colourful flag-row grandstands
+    // were the source of the long-running "rainbow shimmer along track
+    // edges" issue (PR #71/#72 had the wrong root-cause). Themepark keeps
+    // its own buildSpectators() call so its cheering crowd stays.
+    buildNightObjects();buildSunBillboard();
     buildAdvertisingBoards();buildCornerBoards();buildTrackFlags();
     buildGPTrackProps();
     // Bushes track-side + ground clutter (mushrooms / flowers / ferns)
