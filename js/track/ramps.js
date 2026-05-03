@@ -241,12 +241,20 @@ function checkJumps(){
 
 function checkSpinPads(dt){
   const car=carObjs[playerIdx];if(!car||recoverActive)return;
+  // Visual update onafhankelijk van trigger-state — pulse blijft draaien
+  // ook als de speler in de lucht is. Trigger-check is daaronder.
   spinPads.forEach(pad=>{
-    // Animate disc + ring pulse
     pad.disc.rotation.y+=2.5*dt;
     const _rs=1+.08*Math.sin(_nowSec*3+pad.pos.x*.1);
     pad.ring.scale.setScalar(_rs);
     pad.ring.material.emissiveIntensity=.5+.5*Math.sin(_nowSec*2.5+pad.pos.z*.1);
+  });
+  // Airborne suppression: spin-pads zijn een grond-hazard. Een auto die
+  // er overheen vliegt na een ramp moet niet plotseling rondtollen in de
+  // lucht. car.inAir wordt gezet door buildJumpRamps + het space/deepsea
+  // fall-pad en gereset bij landing in cars/physics.js.
+  if(car.inAir)return;
+  spinPads.forEach(pad=>{
     const dx=car.mesh.position.x-pad.pos.x,dz=car.mesh.position.z-pad.pos.z;
     if(dx*dx+dz*dz<pad.radius*pad.radius&&car.spinTimer<=0){
       car.spinTimer=1.0;
@@ -262,6 +270,10 @@ function checkBoostPads(){
   const pulse=.5+.5*Math.sin(_nowSec*4);
   boostPads.forEach(pad=>{pad.strip.material.emissiveIntensity=.4+.9*pulse;pad.strip.material.opacity=.58+.24*pulse;});
   const car=carObjs[playerIdx];if(!car||recoverActive)return;
+  // Airborne suppression — boost-pads zijn ground-hazards (zelfde reden
+  // als spin-pads). Auto's die over een pad heen springen na een jump-ramp
+  // moeten geen onverwachte boost krijgen.
+  if(car.inAir)return;
   boostPads.forEach(pad=>{
     const dx=car.mesh.position.x-pad.pos.x,dz=car.mesh.position.z-pad.pos.z;
     const bR=pad.radius*.8,bR2=bR*bR;
