@@ -504,7 +504,11 @@ function buildScene(){
   if(window.perfMark){perfMark('build:world:end');perfMeasure('build.world','build:world:start','build:world:end');}
   if(window.perfMark)perfMark('build:gameplayObjects:start');
   buildJumpRamps();
-  buildCenterlineArrows();
+  // buildCenterlineArrows() disabled — it produced 110 white X marks
+  // (two bars rotated ±27° around the same point) every ~7m down the
+  // centerline, which the user reported as "stray X decals on the
+  // racing surface". Edge-lines + curbs are sufficient for navigation;
+  // wrong-way detection is independent.
   buildSpinPads();
   buildBoostPads();
   buildCollectibles();
