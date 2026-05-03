@@ -67,8 +67,9 @@
 #hudPauseBtn{top:18px;right:18px}
 #hudMuteBtn{top:60px;right:18px}
 /* Subtiel: lagere rust-opacity zodat de toggle niet domineert; volledig
-   op hover/active. Iets kleinere font dan PAUSE want langere label. */
-#hudNightBtn{top:102px;right:18px;font-size:11px;letter-spacing:1.5px;opacity:.55}
+   op hover/active. Icon-only (☀/🌙) → vierkant tap-target, geen tekst-
+   overlap met PAUSE label. Padding gelijk H/V zodat het icoon centreert. */
+#hudNightBtn{top:102px;right:18px;font-size:16px;letter-spacing:0;opacity:.55;padding:7px 10px;line-height:1}
 #hudNightBtn:hover,#hudNightBtn:active{opacity:1}
 .hintBox{font-family:'Rajdhani',sans-serif;font-size:13px;color:rgba(255,255,255,.65);background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 22px;letter-spacing:2px;white-space:nowrap}
 #speedOverlay{position:fixed;inset:0;pointer-events:none;z-index:9;
@@ -118,16 +119,18 @@
   }
   /* Mute is hidden on mobile (zie hud.js cacheHUDRefs), dus night-knop
      pakt een veilige plek vlak onder pause: top = pause-top(16) +
-     pause-min-height(44) + 8 gap = 68px. 44px tap-target voor i.p.v.
-     Apple HIG-min. */
+     pause-min-height(44) + 8 gap = 68px. Icon-only (☀/🌙) → vierkant
+     44×44 tap-target zonder tekst-overlap met PAUSE. */
 #hudNightBtn{
     top:calc(68px + env(safe-area-inset-top,0px))!important;
     right:calc(16px + env(safe-area-inset-right,0px))!important;
-    padding:8px 12px!important;font-size:11px!important;
-    letter-spacing:1px!important;
+    padding:0!important;font-size:20px!important;
+    letter-spacing:0!important;line-height:1!important;
     min-height:44px!important;min-width:44px!important;
+    width:44px!important;
     border-radius:10px!important;
     opacity:.6!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;
   }
 #hudNightBtn:active{opacity:1!important}
 #hudMap{
@@ -202,8 +205,9 @@
 #hudPauseBtn{top:auto!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;right:auto!important;left:50%!important;transform:translateX(-50%)!important;padding:7px 14px!important;font-size:11px!important}
 /* Landscape phone: hudInstruments verhuist naar top-right, dus night btn
    moet rechts onderin om geen overlap te krijgen. Rechts onder past
-   naast hudPauseBtn (bottom-center) en hudMuteBtn (rechts boven). */
-#hudNightBtn{top:auto!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;right:calc(10px + env(safe-area-inset-right,0px))!important;padding:6px 10px!important;font-size:10px!important;letter-spacing:1px!important;min-height:36px!important;min-width:36px!important;border-radius:8px!important;opacity:.55!important}
+   naast hudPauseBtn (bottom-center) en hudMuteBtn (rechts boven).
+   Icon-only met vierkant 36×36 tap-target. */
+#hudNightBtn{top:auto!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;right:calc(10px + env(safe-area-inset-right,0px))!important;padding:0!important;font-size:18px!important;letter-spacing:0!important;line-height:1!important;min-height:36px!important;min-width:36px!important;width:36px!important;border-radius:8px!important;opacity:.55!important;display:flex!important;align-items:center!important;justify-content:center!important}
 #tcSteer{display:none!important}
 #tcLeft,#tcRight{display:flex!important;width:76px!important;height:60px!important;font-size:36px!important;border-radius:30px!important;bottom:calc(50px + env(safe-area-inset-bottom,0px))!important}
 #tcLeft{left:calc(10px + env(safe-area-inset-left,0px))!important}

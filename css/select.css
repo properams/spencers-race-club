@@ -641,7 +641,11 @@
     height:100%;gap:14px;
     padding:0 calc(50% - 130px);
     scrollbar-width:none;-ms-overflow-style:none;
-    -webkit-overflow-scrolling:touch
+    -webkit-overflow-scrolling:touch;
+    /* Expliciet pan-x toestaan: iOS Safari claimt anders soms de
+       horizontale pointer voor page-back-gesture of zoom; deze hint
+       verzekert dat de carousel zelf de horizontale touches krijgt. */
+    touch-action:pan-x pan-y
   }
   .selM-carousel::-webkit-scrollbar{display:none}
   .selM-card{

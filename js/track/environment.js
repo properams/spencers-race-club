@@ -651,7 +651,7 @@ function buildSunBillboard(){
   cCtx.fillStyle=cGr;cCtx.fillRect(0,0,64,64);
   const coreSprite=new THREE.Sprite(new THREE.SpriteMaterial({
     map:new THREE.CanvasTexture(coreCv),blending:THREE.AdditiveBlending,
-    transparent:true,opacity:.95,depthWrite:false
+    transparent:true,opacity:.65,depthWrite:false
   }));
   coreSprite.scale.set(80,80,1);
   _sunBillboard.add(coreSprite);
@@ -737,14 +737,16 @@ function buildGodRays(){
   offsets.forEach(([dx,dz])=>{
     const mat=new THREE.SpriteMaterial({
       map:tex.clone(),blending:THREE.AdditiveBlending,
-      transparent:true,opacity:.32,depthWrite:false
+      transparent:true,opacity:.18,depthWrite:false
     });
     mat.map.needsUpdate=true;
     const beam=new THREE.Sprite(mat);
     beam.position.copy(_sunBillboard.position);
     beam.position.x+=dx;beam.position.z+=dz;
     beam.position.y-=120; // beam center hangt onder zon → lijkt naar beneden te schijnen
-    beam.scale.set(80,360,1);
+    beam.scale.set(60,220,1);
+    // baseOpacity stash voor updateLensFlare in-frame fade
+    beam.userData.baseOpacity=.18;
     beam.renderOrder=998; // vóór ghosts (999) maar na rest
     scene.add(beam);
     _godRays.push(beam);
@@ -807,15 +809,36 @@ function buildLensFlareGhosts(){
 const _lfNDC=new THREE.Vector3();
 const _lfFwd=new THREE.Vector3(),_lfUp=new THREE.Vector3(),_lfRight=new THREE.Vector3();
 function updateLensFlare(){
-  if(!_sunBillboard||!camera||!_lensGhosts.length)return;
+  if(!_sunBillboard||!camera)return;
   if(!_sunBillboard.visible){
-    _lensGhosts.forEach(g=>{g.visible=false;});return;
+    _lensGhosts.forEach(g=>{g.visible=false;});
+    _godRays.forEach(b=>{b.visible=false;});
+    return;
   }
   _lfNDC.copy(_sunBillboard.position).project(camera);
   // Achter camera or far off-screen → hide
-  if(_lfNDC.z>1||Math.abs(_lfNDC.x)>1.4||Math.abs(_lfNDC.y)>1.4){
-    _lensGhosts.forEach(g=>{g.visible=false;});return;
+  const offscreen=(_lfNDC.z>1||Math.abs(_lfNDC.x)>1.4||Math.abs(_lfNDC.y)>1.4);
+  if(offscreen){
+    _lensGhosts.forEach(g=>{g.visible=false;});
+    // God-rays blijven zichtbaar offscreen — daar zijn ze juist subtiel
+    // background-detail dat geen gameplay-blocker is. Reset naar baseOp.
+    _godRays.forEach(b=>{b.visible=true;b.material.opacity=b.userData.baseOpacity||.18;});
+    return;
   }
+  // ── In-frame whiteout suppressie ────────────────────────────────────
+  // Wanneer de zon binnen ~50% van het scherm-centrum zit (frontal in
+  // beeld), verlaag god-ray opacity drastisch. Dit voorkomt dat de
+  // verticale beams als witte/gele balken uit de grond schijnen op het
+  // rechte stuk waar de speler de track moet zien. Bij sun-aan-de-rand
+  // (offscreen-naderend) lossen ze geleidelijk weer op.
+  const sunCenterDist=Math.max(Math.abs(_lfNDC.x),Math.abs(_lfNDC.y));
+  // 0..0.5 NDC = volledige whiteout-zone; 0.5..1.0 = lerp terug naar normaal
+  const grayFade=sunCenterDist<0.5?0.20:Math.min(1,(sunCenterDist-0.5)/0.5);
+  _godRays.forEach(b=>{
+    b.visible=true;
+    b.material.opacity=(b.userData.baseOpacity||.18)*grayFade;
+  });
+  if(!_lensGhosts.length)return;
   camera.getWorldDirection(_lfFwd);
   _lfRight.set(1,0,0).applyQuaternion(camera.quaternion);
   _lfUp.set(0,1,0).applyQuaternion(camera.quaternion);
@@ -824,6 +847,9 @@ function updateLensFlare(){
   const fW=fH*camera.aspect;
   const dEdge=Math.max(Math.abs(_lfNDC.x),Math.abs(_lfNDC.y));
   const fadeBase=Math.max(0,1-dEdge*0.65);
+  // Lens ghost opacity wordt ook in-frame iets gedempt — niet zo hard als
+  // godrays want ghosts zijn visueel pleasing en niet blokkerend.
+  const ghostInFrameMul=sunCenterDist<0.5?0.55:1.0;
   _lensGhosts.forEach(g=>{
     const f=g.userData.factor;
     const px=_lfNDC.x*(1-f), py=_lfNDC.y*(1-f);
@@ -832,10 +858,22 @@ function updateLensFlare(){
       .addScaledVector(_lfRight,px*fW*0.5)
       .addScaledVector(_lfUp,py*fH*0.5);
     g.visible=true;
-    g.material.opacity=fadeBase*g.userData.baseOpacity*_sunBillboard.material.opacity;
+    g.material.opacity=fadeBase*g.userData.baseOpacity*_sunBillboard.material.opacity*ghostInFrameMul;
   });
 }
 
+
+// Shared mip-filter setup voor canvas-board-textures langs de track-rand.
+// Texture moet PoT zijn (WebGL1 op iOS Safari rejecteert mip-generatie op
+// NPOT met silent black-texture fallback). Anisotropy gecapt door renderer.
+function _applyBoardTexFiltering(tex){
+  tex.minFilter=THREE.LinearMipmapLinearFilter;
+  tex.magFilter=THREE.LinearFilter;
+  tex.generateMipmaps=true;
+  if(window.renderer&&window.renderer.capabilities)
+    tex.anisotropy=Math.min(8,window.renderer.capabilities.getMaxAnisotropy()||1);
+  tex.needsUpdate=true;
+}
 
 function buildCornerBoards(){
   // Numbered boards T1-T8 at each major corner entry, outside of track
@@ -860,14 +898,21 @@ function buildCornerBoards(){
     const post=new THREE.Mesh(new THREE.BoxGeometry(.28,3.2,.28),
       new THREE.MeshLambertMaterial({color:0xffffff}));
     post.position.set(bPos.x,1.6,bPos.z);scene.add(post);
-    // Colored board with canvas texture number
-    const cvs=document.createElement('canvas');cvs.width=64;cvs.height=52;
+    // Colored board with canvas texture number. PoT (64×64): nodig
+    // omdat iOS Safari WebGL1 mip-generatie op NPOT silent failt → black
+    // texture. We voegen 6px verticale padding toe boven het 64×52
+    // tekst-blok zodat de letter centered blijft.
+    const cvs=document.createElement('canvas');cvs.width=64;cvs.height=64;
     const cx=cvs.getContext('2d');
-    cx.fillStyle='#'+col.toString(16).padStart(6,'0');cx.fillRect(0,0,64,52);
-    cx.strokeStyle='rgba(255,255,255,0.6)';cx.lineWidth=3;cx.strokeRect(2,2,60,48);
+    cx.fillStyle='#'+col.toString(16).padStart(6,'0');cx.fillRect(0,0,64,64);
+    cx.strokeStyle='rgba(255,255,255,0.6)';cx.lineWidth=3;cx.strokeRect(2,2,60,60);
     cx.fillStyle='#ffffff';cx.font='bold 26px Arial';cx.textAlign='center';cx.textBaseline='middle';
-    cx.fillText(name,32,26);
+    cx.fillText(name,32,32);
     const tex=new THREE.CanvasTexture(cvs);
+    // Mip-mapping + anisotropy: zonder dit aliasen de 8 bonte corner-
+    // boards (regenboog rood→paars rond de track) op middenafstand op
+    // iOS Safari → "regenboog-shimmer langs de track-randen".
+    _applyBoardTexFiltering(tex);
     const board=new THREE.Mesh(new THREE.BoxGeometry(3.2,2.0,.14),
       new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
     board.position.set(bPos.x,3.4,bPos.z);
@@ -900,6 +945,8 @@ function buildAdvertisingBoards(){
     text.forEach((line,i)=>cx.fillText(line,128,startY+i*lineH));
     cx.strokeStyle=fg;cx.lineWidth=5;cx.strokeRect(4,4,248,120);
     const tex=new THREE.CanvasTexture(cv);
+    // 256×128 is PoT; mip-filtering veilig. Helper voorkomt duplicatie.
+    _applyBoardTexFiltering(tex);
     const board=new THREE.Mesh(new THREE.PlaneGeometry(10,5),
       new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide}));
     board.position.copy(pos);board.position.y=4.0;
