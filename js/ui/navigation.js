@@ -52,7 +52,21 @@ function goToRace(){
   if(typeof disposeSnapshotBakery==='function')disposeSnapshotBakery();
 document.getElementById('sSelect').classList.add('hidden');document.getElementById('hud').style.display='block';
   if(window.perfMark)perfMark('goToRace:makeAllCars:start');
-  makeAllCars();
+  // makeAllCars() can throw on car-builder OOM (iOS Safari memory pressure).
+  // Without this guard, gameState stays at 'SELECT' (the transition to
+  // 'COUNTDOWN' below is skipped) and the re-entry guard at the top of
+  // goToRace turns every following tap into a silent no-op.
+  try{ makeAllCars(); }
+  catch(e){
+    if(window.dbg) dbg.error('navigation', e, 'makeAllCars failed');
+    else console.error('makeAllCars failed:', e);
+    // Restore the SELECT screen so the user has a way back instead of an
+    // empty HUD over the (now disposed) world.
+    document.getElementById('hud').style.display='none';
+    document.getElementById('sSelect').classList.remove('hidden');
+    if(window.Notify) Notify.banner('⚠ Race kon niet starten — probeer opnieuw','#ff6644',3500);
+    return;
+  }
   if(window.perfMark){perfMark('goToRace:makeAllCars:end');perfMeasure('goToRace.makeAllCars','goToRace:makeAllCars:start','goToRace:makeAllCars:end');}
   cacheHUDRefs();applyWorldHUDTint(activeWorld);
   // Start camera directly behind car at ground level — no overhead swoop

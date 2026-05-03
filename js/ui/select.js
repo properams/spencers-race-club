@@ -379,7 +379,16 @@ function rebuildWorld(newWorld){
     });
   }
   const _wasDark=isDark;
-  buildScene(); // resets isDark=false then calls toggleNight() → sets isDark=true
+  // buildScene() can throw on iOS under memory pressure (texture upload,
+  // shader compile). Surface the error visibly instead of leaving the user
+  // on a half-built scene with no feedback.
+  try{ buildScene(); }
+  catch(e){
+    if(window.dbg) dbg.error('select', e, 'rebuildWorld buildScene crashed');
+    else console.error('rebuildWorld buildScene crashed:', e);
+    if(window.Notify) Notify.banner('⚠ Wereld kon niet laden — probeer opnieuw','#ff6644',3500);
+    return;
+  }
   if(!_wasDark)toggleNight(); // if was day, flip back to day
   if(_weatherMode!=='clear')setWeather(_weatherMode);
   // Snap fog color immediately
