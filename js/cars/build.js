@@ -134,15 +134,15 @@ function makeAllCars(){
       ug.rotation.x=-Math.PI/2;ug.position.y=-.32;
       mesh.add(ug);
     }
-    // Phase 2.6 pilot — Bugatti player krijgt op alle worlds een accent-
-    // colored underglow (zelfde additive disc-pattern als AI). Branded
-    // signature die de pilot car onderscheidt van de andere 11 cars op het
-    // grid. Phase 3 generaliseert via Tier S/A flag op def.
-    if(isPlayer && def.brand === 'BUGATTI'){
-      // def.accent is door main.js:25 al naar integer geparsed; geen
-      // string-branch nodig zoals in oudere code-paden.
+    // Player premium-tier underglow — accent-colored additive disc onder
+    // de player car, op alle worlds. Brand-builders (Tier S/A) zetten hun
+    // eigen signature via g.userData._signature.underglow op de top-level
+    // group; non-premium tiers laten dat veld leeg en krijgen geen glow.
+    // Phase 3 patroon — vervangt de Bugatti-only hardcode uit Phase 2.
+    const sig=mesh.userData&&mesh.userData._signature;
+    if(isPlayer && sig && sig.underglow!=null){
       const ugMat=new THREE.MeshBasicMaterial({
-        color:def.accent,transparent:true,opacity:.35,
+        color:sig.underglow,transparent:true,opacity:.35,
         blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
       });
       const ug=new THREE.Mesh(new THREE.CircleGeometry(2.2,16),ugMat);
