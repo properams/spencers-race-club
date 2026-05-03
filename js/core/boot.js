@@ -84,8 +84,15 @@ function _wireMenuButtons(){
   document.getElementById('btnRace').addEventListener('click',goToRace);
   document.getElementById('btnBackTitle').addEventListener('click',()=>goToWorldSelect());
   // Wereld-cards: kies wereld, herbouw scene als 'm verandert, ga door naar car-select.
+  // Debounce: rebuildWorld is een 1-3s synchrone build. Een tweede card-tap die
+  // tijdens of vlak na de eerste binnenkomt veroorzaakt een dubbele
+  // disposeScene+buildScene cyclus die op iOS de WebGL context kan kapot drukken.
+  let _worldCardLock=0;
   document.querySelectorAll('.worldBigCard').forEach(card=>{
     card.addEventListener('click',()=>{
+      const _now=performance.now();
+      if(_now-_worldCardLock<400)return; // 400ms cooldown — ruim langer dan de UI-flip-setTimeout (220ms)
+      _worldCardLock=_now;
       const newWorld=card.dataset.world;
       document.querySelectorAll('.worldBigCard').forEach(c=>c.classList.remove('wBigSel'));
       card.classList.add('wBigSel');
