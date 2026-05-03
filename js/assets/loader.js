@@ -467,6 +467,69 @@
     return out;
   }
 
+  // ── Eviction (Phase 2 Fix B.3) ──────────────────────────────────────
+  // De caches groeiden voorheen monotoon — elke world-switch voegde toe maar
+  // niets werd verwijderd. Op iOS na 5-8 world-switches kruipt de totaal-VRAM
+  // over de tab-kill threshold. Eviction policy: alleen het ACTIEVE world's
+  // assets behouden, alle andere disposen. De disposal moet pas gebeuren
+  // NADAT disposeScene de oude scene heeft leeggemaakt (anders disposen we
+  // nog actief gerefereerde textures). buildScene roept evictAllExcept ná
+  // disposeScene aan.
+  function _disposeCachedTexture(t){ if (t && t.dispose) try{ t.dispose(); }catch(_){} }
+  function _disposeCachedModel(gltf){
+    if (!gltf || !gltf.scene) return;
+    try{
+      gltf.scene.traverse(o=>{
+        if (o.geometry) try{ o.geometry.dispose(); }catch(_){}
+        if (o.material){
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          for (const m of mats){
+            if (!m) continue;
+            if (m.map) try{ m.map.dispose(); }catch(_){}
+            if (m.normalMap) try{ m.normalMap.dispose(); }catch(_){}
+            if (m.roughnessMap) try{ m.roughnessMap.dispose(); }catch(_){}
+            if (m.dispose) try{ m.dispose(); }catch(_){}
+          }
+        }
+      });
+    }catch(_){}
+  }
+  function _collectKeepPaths(worldId){
+    const out = new Set();
+    const w = _manifest.worlds && _manifest.worlds[worldId];
+    if (!w) return out;
+    if (w.hdri) out.add(w.hdri);
+    if (w.hdri_mobile) out.add(w.hdri_mobile);
+    if (w.ground) for (const k in w.ground) if (w.ground[k]) out.add(w.ground[k]);
+    if (w.props) for (const k in w.props){
+      const v = w.props[k];
+      if (Array.isArray(v)) v.forEach(p=>{ if (p) out.add(p); });
+      else if (v) out.add(v);
+    }
+    if (w.skybox_layers) for (const k in w.skybox_layers) if (w.skybox_layers[k]) out.add(w.skybox_layers[k]);
+    return out;
+  }
+  function evictAllExcept(worldId){
+    if (!_manifestLoaded || !_manifest || !_manifest.worlds) return { evicted: 0 };
+    const keep = _collectKeepPaths(worldId);
+    let evicted = 0;
+    for (const [path, t] of _textureCache){
+      if (!keep.has(path)){ _disposeCachedTexture(t); _textureCache.delete(path); evicted++; }
+    }
+    for (const [path, env] of _hdriCache){
+      if (!keep.has(path)){ _disposeCachedTexture(env); _hdriCache.delete(path); evicted++; }
+    }
+    for (const [path, gltf] of _modelCache){
+      if (!keep.has(path)){ _disposeCachedModel(gltf); _modelCache.delete(path); evicted++; }
+    }
+    // Andere worlds zijn niet meer geprealoaded — bij volgende switch terug-laden.
+    for (const wId of Array.from(_worldPreloaded)){
+      if (wId !== worldId) _worldPreloaded.delete(wId);
+    }
+    if (evicted && window.dbg) dbg.log('assets','evictAllExcept('+worldId+') — '+evicted+' assets disposed');
+    return { evicted };
+  }
+
   // ── Init: load manifest eager so listProps works pre-preload ────────
   function init(){ return _loadManifest(); }
 
@@ -478,7 +541,7 @@
     // callers don't break; loadModel is the new canonical name.
     loadModel, loadGLTF,
     getHDRI, getTexture, getGroundSet, getGLTF, getGLTFVariants, listProps,
-    status,
+    status, evictAllExcept,
   };
 
   // Boot manifest fetch (non-blocking).

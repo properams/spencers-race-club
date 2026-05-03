@@ -351,6 +351,14 @@ function buildScene(){
   if(window.perfMark)perfMark('build:disposeScene:start');
   disposeScene();
   if(window.perfMark){perfMark('build:disposeScene:end');perfMeasure('build.disposeScene','build:disposeScene:start','build:disposeScene:end');}
+  // Asset-cache eviction (Phase 2 Fix B.3): scene is leeg na disposeScene,
+  // dus geen actieve refs naar non-current world textures/models. Dispose
+  // alles dat niet bij de actieve world hoort om cumulatieve VRAM-leak
+  // over meerdere world-switches te voorkomen (Phase 1 bevinding 1.1).
+  if(window.Assets&&window.Assets.evictAllExcept){
+    try{ Assets.evictAllExcept(activeWorld); }
+    catch(e){ if(window.dbg)dbg.warn('scene','evictAllExcept failed: '+(e&&e.message||e)); }
+  }
   // ── Swap TRACK_WP data for active world ───────────────────────
   {const src=(_TRACKS&&_TRACKS[activeWorld])||_GP_WP;
    TRACK_WP.length=0;src.forEach(wp=>TRACK_WP.push(wp));}
