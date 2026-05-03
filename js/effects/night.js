@@ -161,9 +161,13 @@ function toggleNight(){
   // shared head material brightens at night and dims by day. Brand cars
   // register their headlight material with the registry in car-parts.js.
   if(typeof syncHeadlights==='function')syncHeadlights(isDark?1.2:0.4);
-  const lbl=isDark?'☀ DAY':'🌙 NIGHT';
-  const _tnb=document.getElementById('titleNightBtn');if(_tnb)_tnb.textContent=lbl;
-  const _hnb=document.getElementById('hudNightBtn');if(_hnb)_hnb.textContent=lbl;
+  // HUD-knop: alleen icoon (geen tekst) zodat hij niet visueel met PAUSE
+  // overlapt op kleine viewports. Icoon toont waar je naartoe gaat:
+  // donker → tap voor zon, licht → tap voor maan.
+  const iconOnly=isDark?'☀':'🌙';
+  const titleLbl=isDark?'☀ DAY':'🌙 NIGHT';
+  const _tnb=document.getElementById('titleNightBtn');if(_tnb)_tnb.textContent=titleLbl;
+  const _hnb=document.getElementById('hudNightBtn');if(_hnb)_hnb.textContent=iconOnly;
 }
 
 
