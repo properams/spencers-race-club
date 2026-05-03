@@ -860,6 +860,54 @@ function _selMRenderCarousel(){
   _selMWireScroll();
 }
 
+// Expliciete pointer-event swipe handler op de mobile carousel-wrap.
+// Reden: native CSS scroll-snap werkt niet altijd betrouwbaar op iOS
+// Safari (vooral als de outer page scrollable is, dan claimt iOS de
+// pointer voor page-scroll i.p.v. de carousel). Door zelf de scroll te
+// drijven via `scrollBy()` op horizontale swipe-detectie omzeilen we
+// dat gevecht. Native scroll blijft als fallback werken (we gebruiken
+// `scrollBy`, niet `preventDefault`, dus de gebruiker kan ook nog op
+// de manier van eerder swipen). Idempotent via _selMSwipeWired.
+let _selMSwipeWired=false;
+function _initMobileCarouselSwipe(){
+  if(_selMSwipeWired)return;
+  if(!window._isTouch&&!window._isMobile)return; // iPhone-only situatie
+  const wrap=document.querySelector('.selM-carouselWrap');
+  const carousel=document.getElementById('selMCarousel');
+  if(!wrap||!carousel)return;
+  _selMSwipeWired=true;
+  const TH_X=35, MAX_Y=30; // iets lager dan legacy threshold (45) want
+                            // de carousel-cards zijn smaller dan de
+                            // legacy preview, korte swipes voelen
+                            // natuurlijker.
+  let startX=0,startY=0,active=false,pointerId=-1;
+  function down(e){
+    if(!e.isPrimary)return;
+    active=true;pointerId=e.pointerId;
+    startX=e.clientX;startY=e.clientY;
+  }
+  function up(e){
+    if(!active||e.pointerId!==pointerId)return;
+    active=false;
+    const dx=e.clientX-startX,dy=e.clientY-startY;
+    if(Math.abs(dx)<TH_X||Math.abs(dy)>MAX_Y)return;
+    // Bepaal cardWidth + gap dynamisch (260+14 default, maar respecteer
+    // computed style voor robuustheid bij CSS-aanpassing).
+    const card=carousel.querySelector('.selM-card');
+    if(!card)return;
+    const step=card.clientWidth+14; // gap is 14px in CSS
+    const dir=dx<0?+1:-1; // swipe-left → next card (iOS-conventie)
+    carousel.scrollBy({left:dir*step,behavior:'smooth'});
+    _selMVibrate(8);
+  }
+  function cancel(){active=false;}
+  // passive:true zodat verticale page-scroll niet wordt geblokkeerd.
+  wrap.addEventListener('pointerdown',down,{passive:true});
+  wrap.addEventListener('pointerup',up,{passive:true});
+  wrap.addEventListener('pointercancel',cancel,{passive:true});
+  wrap.addEventListener('pointerleave',cancel,{passive:true});
+}
+
 // One-time scroll listener — debounced, finds the centered card and
 // updates state via _selMSetActiveDef. We re-bind as needed because
 // _selMRenderCarousel rebuilds carousel children on tier change but
@@ -1094,6 +1142,10 @@ function _buildMobileSelect(){
   _selMSyncTabs();
   _selMSyncChips();
   _selMRenderCarousel();
+  // Expliciete swipe-handler bovenop de native scroll-snap; nodig op
+  // iOS Safari waar page-vertical-scroll soms de carousel-horizontal
+  // pointer-events steelt.
+  _initMobileCarouselSwipe();
   const def=CAR_DEFS.find(d=>d.id===selCarId)||CAR_DEFS[0];
   if(def)_selMRenderInfo(def);
 }
