@@ -532,6 +532,70 @@ function _renderHeaderSubtitle(){
   if(bar)bar.style.width=(t>0?(u/t)*100:0)+'%';
 }
 
+// Horizontal-swipe car cycling on the legacy preview area. Op mobile
+// portrait toont een aparte selM-carousel met native scroll-snap (al
+// swipebaar via CSS); deze handler dekt iPhone landscape, iPad en alle
+// touch-devices die de legacy `.prevCanvasWrap` zien. Cycle gaat alleen
+// door **unlocked** cars zodat een swipe altijd een nuttige preview
+// oplevert. Hergebruikt _selectPreviewCar voor state-mutatie + sync
+// met carCard `.sel` markup. Idempotent (guard tegen dubbele wires
+// bij goToWorldSelect → terug naar select).
+let _swipeWired=false;
+function _initCarPreviewSwipe(){
+  if(_swipeWired)return;
+  // Alleen op touch-capable devices; muis-drag op desktop zou anders
+  // onbedoeld cars wisselen.
+  if(!window._isTouch&&!window._isMobile&&!window._isTablet)return;
+  const wrap=document.getElementById('carPreviewCvs');
+  if(!wrap||!wrap.parentNode)return;
+  const target=wrap.parentNode; // .prevCanvasWrap
+  _swipeWired=true;
+  const TH_X=45, MAX_Y=25;
+  let startX=0,startY=0,active=false,pointerId=-1;
+  function unlockedList(){
+    return (window.CAR_DEFS||[]).filter(d=>_unlockedCars.has(d.id));
+  }
+  function step(dir){
+    const list=unlockedList();
+    if(list.length<2)return;
+    let idx=list.findIndex(d=>d.id===selCarId);
+    if(idx<0)idx=0;
+    idx=(idx+dir+list.length)%list.length;
+    const def=list[idx];
+    if(!def)return;
+    _selectPreviewCar(def.id);
+    // Mirror selection in carCard list (.sel marker) for visual sync.
+    document.querySelectorAll('.carCard').forEach(el=>{
+      el.classList.toggle('sel',el.dataset.defId===String(def.id));
+    });
+    // Haptic tick op succesful swipe — match's _selMVibrate(8) pattern.
+    try{if(navigator.vibrate)navigator.vibrate(10);}catch(_){ }
+  }
+  function down(e){
+    if(!e.isPrimary)return;
+    active=true;pointerId=e.pointerId;
+    startX=e.clientX;startY=e.clientY;
+    try{target.setPointerCapture(e.pointerId);}catch(_){ }
+  }
+  function up(e){
+    if(!active||e.pointerId!==pointerId)return;
+    active=false;
+    const dx=e.clientX-startX,dy=e.clientY-startY;
+    if(Math.abs(dx)>=TH_X&&Math.abs(dy)<=MAX_Y){
+      // Swipe-left → next car (iOS-conventie); swipe-right → previous.
+      step(dx<0?+1:-1);
+    }
+  }
+  function cancel(){active=false;}
+  // passive:true op down/move zodat verticaal page-scrollen niet wordt
+  // geblokkeerd. preventDefault is niet nodig — we tappen niet op een
+  // scroll-element.
+  target.addEventListener('pointerdown',down,{passive:true});
+  target.addEventListener('pointerup',up,{passive:true});
+  target.addEventListener('pointercancel',cancel,{passive:true});
+  target.addEventListener('pointerleave',cancel,{passive:true});
+}
+
 function buildCarSelectUI(){
   loadPersistent();
   // Restore race-config voorkeuren uit localStorage. loadPersistent zelf
@@ -621,6 +685,10 @@ function buildCarSelectUI(){
     };
   }
   _updateSelectSummary();
+  // Touch-swipe op de legacy preview canvas — dekt iPhone landscape,
+  // iPad en andere touch-devices waar de mobile-portrait carousel niet
+  // gerenderd wordt.
+  _initCarPreviewSwipe();
   // Build the parallel mobile-portrait UI. CSS keeps it hidden on
   // desktop/landscape; on portrait phones it replaces the legacy layout.
   _buildMobileSelect();
