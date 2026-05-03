@@ -64,6 +64,12 @@ function disposeScene(){
   // tree-bumps van de vorige wereld behoudt. Wereld-builders vullen het
   // weer in tijdens buildScene() (alleen GP doet dat momenteel).
   if(window._propColliders)window._propColliders.length=0;
+  // Reset _crowdMaterials hier ook (defense-in-depth): buildTrack() doet
+  // dit ook al, maar als buildSpectators voor de actieve wereld vroeg
+  // returned (zoals nu voor GP) en buildTrack-volgorde ooit verandert,
+  // blijven de materials in disposeScene gegarandeerd geleegd. Anders
+  // zou updateCrowd() naar disposed CanvasTextures schrijven.
+  if(typeof _crowdMaterials!=='undefined')_crowdMaterials.length=0;
   if(scene.background&&scene.background.isTexture && !_shared(scene.background)) scene.background.dispose();
   scene.background=null;
   if(scene.environment&&scene.environment.isTexture && !_shared(scene.environment)) scene.environment.dispose();
