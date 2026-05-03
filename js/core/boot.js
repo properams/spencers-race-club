@@ -143,6 +143,43 @@ function _restoreUserPrefs(){
   }
 }
 
+// ── Memory-budget warning bij boot ───────────────────────────────────
+// Probeert te detecteren of het device kandidaat is voor crashes onder
+// memory-druk. Triggert alleen op mobiel + lage device-memory; logt
+// altijd via dbg zodat het in Ctrl+Shift+E ringbuffer zichtbaar is.
+function _checkMemoryBudget(){
+  let _msg=null;
+  try{
+    const _dm=navigator.deviceMemory; // Chrome — typically 0.25, 0.5, 1, 2, 4, 8
+    if(window._isMobile && typeof _dm==='number' && _dm>0 && _dm<2){
+      _msg='Low device memory ('+_dm+'GB) — verminder achtergrond-apps voor stabiele performance.';
+    }
+    if(performance.memory){ // Chrome only
+      const _lim=performance.memory.jsHeapSizeLimit/1048576;
+      if(_lim<800){
+        _msg=(_msg?_msg+' ':'')+'JS heap limit '+_lim.toFixed(0)+'MB — krap voor deze game.';
+      }
+    }
+  }catch(_){}
+  if(_msg){
+    if(window.dbg)dbg.warn('boot','memory budget '+_msg);
+    if(window.Breadcrumb)Breadcrumb.push('memBudgetWarn',{msg:_msg.slice(0,80)});
+    // Subtiele non-blocking title-screen note. Geen modal die de user moet
+    // dismissen — alleen informatief zodat tester zonder dbg-flag toch ziet
+    // dat we op een krap device draaien.
+    try{
+      const _hint=document.createElement('div');
+      _hint.id='memBudgetHint';
+      _hint.style.cssText='position:fixed;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(180,90,0,.85);color:#fff;font-family:monospace;font-size:10px;padding:6px 12px;border-radius:6px;z-index:99996;max-width:90vw;text-align:center;line-height:1.3;pointer-events:auto;cursor:pointer';
+      _hint.textContent='⚠ '+_msg+' (tik om te verbergen)';
+      _hint.addEventListener('click',()=>_hint.remove());
+      // Pas inhaken na DOM ready zodat <body> bestaat.
+      if(document.body)document.body.appendChild(_hint);
+      else document.addEventListener('DOMContentLoaded',()=>document.body.appendChild(_hint));
+    }catch(_){}
+  }
+}
+
 async function boot(){
   window.dbg&&dbg.log('boot','start');
   // SW disabled for file:// compat.
@@ -224,6 +261,7 @@ async function boot(){
     loadPersistent();updateTitleHighScore();
     initDailyChallenge();
     _restoreUserPrefs();
+    _checkMemoryBudget();
     loop();
     window.dbg&&dbg.log('boot','done');
     // Perf Phase A: signaalvlag voor headless test-runner. Pas zetten na
