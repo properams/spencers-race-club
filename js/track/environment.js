@@ -555,6 +555,16 @@ function _spawnInstancedTreesProcedural(placements){
 
 function buildEnvironmentTrees(){
   const placements=_buildTreePlacements();
+  // Register trunk colliders voor propcollisions.js. Reset eerst de array
+  // (zelfde patroon als _trackFlags / _crowdMaterials reset). Trunk-radius
+  // schaalt mee met de tree-scale (placement.s ∈ 0.7..1.4); 0.7m base ≈
+  // realistische trunk-thickness incl. car-radius slop.
+  if(window._propColliders){
+    window._propColliders.length=0;
+    placements.forEach(pl=>{
+      window._propColliders.push({x:pl.x,z:pl.z,r:0.7*pl.s,cooldown:0});
+    });
+  }
   // Try GLTF prototypes first. getGLTFVariants returns ALL loaded
   // variants per slot (vs getGLTF which random-picks one), so the
   // instanced spawner can balance tree variants across the forest

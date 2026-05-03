@@ -60,6 +60,10 @@ function disposeScene(){
     }
   });
   while(scene.children.length>0)scene.remove(scene.children[0]);
+  // Reset world-prop colliders zodat een wereld zonder bomen geen stale
+  // tree-bumps van de vorige wereld behoudt. Wereld-builders vullen het
+  // weer in tijdens buildScene() (alleen GP doet dat momenteel).
+  if(window._propColliders)window._propColliders.length=0;
   if(scene.background&&scene.background.isTexture && !_shared(scene.background)) scene.background.dispose();
   scene.background=null;
   if(scene.environment&&scene.environment.isTexture && !_shared(scene.environment)) scene.environment.dispose();
