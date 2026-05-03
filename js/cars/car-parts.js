@@ -414,7 +414,8 @@ function buildPremiumHeadlights(group, mats, opts){
       transparent: true, opacity: 0.4,
       envMapIntensity: 1.0,
     });
-    lensMat.userData = { _carPBR: true };
+    lensMat.userData = lensMat.userData || {};
+    lensMat.userData._carPBR = true;
   }
   [-sx, sx].forEach(s=>{
     const inner = new THREE.Mesh(innerGeo, mats.head);
