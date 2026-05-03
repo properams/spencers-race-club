@@ -192,7 +192,10 @@ function buildGPTrackProps(){
     }
   });
 
-  // Marshal posts (orange flag on pole) every ~20%
+  // Marshal posts (orange flag on pole) every ~20%. Vlag oriënteert nu
+  // langs de track-tangent zoals buildTrackFlags doet — eerder had de
+  // vlag random rotation.y + .4m X-offset waardoor hij visueel los van
+  // de pole hing in de lucht.
   [0.18,0.42,0.68,0.95].forEach((tt,i)=>{
     const p=trackCurve.getPoint(tt),tg=trackCurve.getTangent(tt).normalize();
     const nr=new THREE.Vector3(-tg.z,0,tg.x);
@@ -203,26 +206,42 @@ function buildGPTrackProps(){
     pole.position.set(px,1.9,pz);scene.add(pole);
     const flag=new THREE.Mesh(new THREE.PlaneGeometry(.8,.55),
       new THREE.MeshLambertMaterial({color:0xff6622,side:THREE.DoubleSide}));
-    flag.position.set(px+.4,3.2,pz);
-    flag.rotation.y=Math.random()*Math.PI;
+    // Plaats vlag direct aan pole, .4m omhoog en gecentreerd op pole-x/z;
+    // oriëntatie volgt track-tangent zodat de vlag visueel "wappert" in
+    // race-richting i.p.v. random.
+    flag.position.set(px,3.2,pz);
+    flag.rotation.y=Math.atan2(tg.x,tg.z)+Math.PI*.5;
     scene.add(flag);
   });
 
-  // Row of pit-boards on the main straight side
+  // Row of pit-boards on the main straight side. Boards op y=1.6 leek
+  // zwevend zonder ondersteuning; voeg twee posts toe per board (zelfde
+  // patroon als buildAdvertisingBoards) zodat de board op zijn poles
+  // staat. Ground-level grijs-zwart pole, height 1.6 → top exact onder
+  // het bord.
   const boardM=new THREE.MeshLambertMaterial({color:0x222222});
   const accentM=new THREE.MeshLambertMaterial({color:0xffee00,emissive:0xff8800,emissiveIntensity:.4});
+  const postM=new THREE.MeshLambertMaterial({color:0x444444});
   [0.95,0.97,0.99].forEach((tt,i)=>{
     const p=trackCurve.getPoint(tt),tg=trackCurve.getTangent(tt).normalize();
     const nr=new THREE.Vector3(-tg.z,0,tg.x);
     const side=-1*(BARRIER_OFF+4);
+    const bx=p.x+nr.x*side, bz=p.z+nr.z*side;
     const board=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.2,.1),boardM);
-    board.position.set(p.x+nr.x*side,1.6,p.z+nr.z*side);
+    board.position.set(bx,1.6,bz);
     board.rotation.y=Math.atan2(tg.x,tg.z);
     scene.add(board);
     const stripe=new THREE.Mesh(new THREE.BoxGeometry(2.4,.12,.11),accentM);
     stripe.position.copy(board.position);stripe.position.y-=.55;
     stripe.rotation.y=board.rotation.y;
     scene.add(stripe);
+    // Twee support posts onder het bord langs de track-tangent (board's
+    // local X-axis), zodat het bord rechtop staat op pit-wall hoogte.
+    [-0.95,0.95].forEach(ox=>{
+      const post=new THREE.Mesh(new THREE.CylinderGeometry(.07,.07,1.0,6),postM);
+      post.position.set(bx+tg.x*ox,0.5,bz+tg.z*ox);
+      scene.add(post);
+    });
   });
 }
 
