@@ -135,6 +135,23 @@ function _buildProceduralEnvMap(){
   grad.addColorStop(0.55,'#807468'); // soft horizon line
   grad.addColorStop(1.00,'#3a3a3a'); // ground
   g.fillStyle=grad;g.fillRect(0,0,W,H);
+  // Sun hotspot — zonder een lokaal-fel-punt geeft de gradient alleen een
+  // zachte ambient-reflectie en blijft clearcoat onmerkbaar op een chase-cam
+  // achteraanzicht. Een radiale highlight in het bovenste derde van de
+  // equirect map zorgt voor een scherp specular spotje dat met de car-
+  // oriëntatie meebeweegt — het "wet paint" effect dat clearcoat hoort te
+  // produceren. Twee kleinere secundaire hotspots zorgen dat de auto vanuit
+  // élke hoek een hint van reflectie pakt (anders alleen wanneer de camera
+  // toevallig de zon recht ziet).
+  const sun=g.createRadialGradient(W*0.28,H*0.22,0,W*0.28,H*0.22,H*0.42);
+  sun.addColorStop(0.0,'rgba(255,250,230,1.00)');
+  sun.addColorStop(0.25,'rgba(255,240,200,0.55)');
+  sun.addColorStop(1.0,'rgba(255,240,200,0.00)');
+  g.fillStyle=sun;g.fillRect(0,0,W,H);
+  const sun2=g.createRadialGradient(W*0.74,H*0.30,0,W*0.74,H*0.30,H*0.30);
+  sun2.addColorStop(0.0,'rgba(240,235,255,0.40)');
+  sun2.addColorStop(1.0,'rgba(240,235,255,0.00)');
+  g.fillStyle=sun2;g.fillRect(0,0,W,H);
   const tex=new THREE.CanvasTexture(c);
   tex.mapping=THREE.EquirectangularReflectionMapping;
   tex.needsUpdate=true;
@@ -157,6 +174,10 @@ function _buildProceduralEnvMap(){
   _proceduralEnv=envMap;
   return envMap;
 }
+// Geëxposeerd zodat ui/select.js (en eventuele toekomstige off-screen
+// preview-scenes) dezelfde envMap kunnen gebruiken voor clearcoat-reflecties.
+// De buildScene-aanroeppath werkt onafhankelijk van deze export.
+window._buildProceduralEnvMap=_buildProceduralEnvMap;
 
 // Helper: dispose previous background + return a sky canvas with vertical
 // gradient as base. Per-world sky functions paint on top of this.
