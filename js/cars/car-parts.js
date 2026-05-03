@@ -199,10 +199,18 @@ function makePaintMats(def, opts){
     // effect dat MeshStandardMaterial alleen niet kan reproduceren. Vereist
     // een scene.environment envMap — fallback procedural envMap zit in
     // core/scene.js (_buildProceduralEnvMap) zodat dit ook werkt zonder HDRI.
+    //
+    // Per-def overrides voor matte rally / studio finishes: als def-velden
+    // paintClearcoat / paintRoughness / paintMetalness gezet zijn, gebruiken
+    // we die i.p.v. de gloss-defaults. Bestaande 12 cars hebben deze velden
+    // niet → fallback naar de showroom-supercar tuning, gedrag ongewijzigd.
+    const cc = (typeof def.paintClearcoat === 'number') ? def.paintClearcoat : 1.0;
+    const rg = (typeof def.paintRoughness  === 'number') ? def.paintRoughness  : 0.30;
+    const mt = (typeof def.paintMetalness  === 'number') ? def.paintMetalness  : 0.85;
     paint = new THREE.MeshPhysicalMaterial({
       color: color,
-      metalness: 0.85, roughness: 0.30,
-      clearcoat: 1.0, clearcoatRoughness: 0.05,
+      metalness: mt, roughness: rg,
+      clearcoat: cc, clearcoatRoughness: 0.05,
       envMapIntensity: 1.0,
     });
     accentMat = new THREE.MeshPhysicalMaterial({
@@ -343,13 +351,18 @@ function buildWheel(group, x, y, z, radius, width, mats, lod, opts){
 function buildAllWheels(group, def, mats, lod, posOverride, wheelOpts){
   const isF1 = def.type === 'f1';
   const isMuscle = def.type === 'muscle';
+  // Group B Rally pilot — oversized wheels (.42 radius vs .33 default) +
+  // bredere stance. Bestaande non-rally types blijven ongewijzigd.
+  const isRally = def.type === 'rally';
   const positions = posOverride || (isF1
     ? [[-1.06,.30,-1.80],[1.06,.30,-1.80],[-1.06,.30,1.62],[1.06,.30,1.62]]
     : isMuscle
       ? [[-0.99,.33,-1.50],[0.99,.33,-1.50],[-0.99,.33,1.50],[0.99,.33,1.50]]
-      : [[-0.98,.33,-1.40],[0.98,.33,-1.40],[-0.98,.33,1.40],[0.98,.33,1.40]]);
-  const radius = isF1 ? .36 : .33;
-  const width = isF1 ? .42 : .26;
+      : isRally
+        ? [[-1.00,.36,-1.50],[1.00,.36,-1.50],[-1.00,.36,1.50],[1.00,.36,1.50]]
+        : [[-0.98,.33,-1.40],[0.98,.33,-1.40],[-0.98,.33,1.40],[0.98,.33,1.40]]);
+  const radius = isF1 ? .36 : isRally ? .42 : .33;
+  const width  = isF1 ? .42 : isRally ? .30 : .26;
   group.userData.wheels = [];
   positions.forEach(([wx,wy,wz])=>{
     const wheelGrp = buildWheel(group, wx, wy, wz, radius, width, mats, lod, wheelOpts);
@@ -515,6 +528,123 @@ function buildSideSkirts(group, mats, opts){
   });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Group B Rally pilot helpers (Stap 2a/2b/2c uit PILOT_GROUPB prompt)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Build een gewelfde body-shell via een 2D side-profile shape die over de
+// breedte wordt geëxtrudeerd. Caller positioneert de mesh in z'n eigen
+// coördinatenruimte.
+//
+// As-conventie: shape in X-Y waar X=length (front=0, back=L), Y=height
+// (bottom=0, top=H). Extrude langs +Z over `width`. Na centreren + rotateY
+// komt de length op de Z-as (codebase-conventie front=-Z) en width op X.
+//
+// Caller verantwoordelijk voor LOD-check; deze helper neemt geen LOD-fallback.
+// Zie buildGroupBRally voor de high/low pad-keuze.
+function buildExtrudedBody(width, length, height, opts){
+  opts = opts || {};
+  const mat = opts.mat;
+  const bevelSize    = (opts.bevelSize    != null) ? opts.bevelSize    : 0.04;
+  const bevelSegs    = (opts.bevelSegments!= null) ? opts.bevelSegments: 2;
+  const bevelThick   = (opts.bevelThickness!=null) ? opts.bevelThickness: 0.04;
+  const W = width, L = length, H = height;
+  // Side profile — Group B / Lancia Delta Integrale / Audi Quattro silhouet.
+  // Long flat hood, short greenhouse, hatchback-stijl rear. Alle punten
+  // angular (geen curves) voor low-poly Art-of-Rally feel.
+  const shape = new THREE.Shape();
+  shape.moveTo(0,         0.15 * H); // front-bumper-bottom
+  shape.lineTo(0,         0.35 * H); // front-bumper-top
+  shape.lineTo(0.05 * L,  0.45 * H); // hood front edge
+  shape.lineTo(0.30 * L,  0.48 * H); // hood end (slight rise)
+  shape.lineTo(0.40 * L,  0.85 * H); // windshield top (raked back)
+  shape.lineTo(0.55 * L,  0.95 * H); // roof front
+  shape.lineTo(0.65 * L,  0.95 * H); // roof rear (kort dak)
+  shape.lineTo(0.80 * L,  0.55 * H); // rear hatchback bottom (steile slope)
+  shape.lineTo(L,         0.45 * H); // rear bumper top
+  shape.lineTo(L,         0.15 * H); // rear bumper bottom
+  shape.lineTo(0,         0.15 * H); // close along bottom
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: W,
+    bevelEnabled: true,
+    bevelSize: bevelSize,
+    bevelThickness: bevelThick,
+    bevelSegments: bevelSegs,
+    bevelOffset: 0,
+    curveSegments: 4,
+    steps: 1
+  });
+  // Center op X (length) en Z (width). Y blijft op 0..H zodat caller met
+  // mesh.position.y de body kan optillen tot wheel-axle-niveau.
+  geo.translate(-L * 0.5, 0, -W * 0.5);
+  // Roteer zodat length op Z komt (codebase-conventie). rotateY(-π/2) maps
+  // X→-Z, dus shape-front (X=-L/2 na translate) eindigt op Z=-L/2 = codebase-front.
+  geo.rotateY(-Math.PI / 2);
+  return new THREE.Mesh(geo, mat);
+}
+
+// Half-torus arch die over een wiel "drapeert" als fender flare. Wheel-axis
+// is X (zie buildWheel: wheelGroup.rotation.z=π/2 orienteert tire-cylinder
+// zodat as=X), dus we roteren de torus zodat z'n centrale as ook=X komt.
+// Default TorusGeometry heeft as=Z, arc in X-Y vlak; rotateY(π/2) zwaait
+// Z→X waardoor de half-arc verticaal in Y-Z vlak komt te staan.
+function buildLatheFenderArch(radius, width, opts){
+  opts = opts || {};
+  const tubeR = width * 0.15;
+  const geo = new THREE.TorusGeometry(radius, tubeR, 6, 12, Math.PI);
+  geo.rotateY(Math.PI / 2);
+  return new THREE.Mesh(geo, opts.mat);
+}
+
+// Group B rally light pod — mounting bar + 4 ronde lampen naast elkaar.
+// Lens-mat is per-instance (caller maakt aan en geeft door) — geen registratie
+// in window._headlightMats[] zodat de yellow rally lights niet meebumpen met
+// night-mode (rally lights staan altijd aan, day en night).
+//
+// LOD-fallback inline: 'low' gebruikt boxen voor housing+lens i.p.v. cylinders.
+function buildRallyLightPod(opts){
+  opts = opts || {};
+  const W = (opts.width  != null) ? opts.width  : 0.9;
+  const lightR = (opts.lightR != null) ? opts.lightR : 0.10;
+  const mat    = opts.mat;
+  const lensMat= opts.lensMat;
+  const isLow  = !!window._isMobile;
+  const pod = new THREE.Group();
+  // Mounting bar across the front
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(W, 0.06, 0.04), mat);
+  pod.add(bar);
+  // 4 lampen, evenly spaced
+  for (let i = 0; i < 4; i++){
+    const x = -W * 0.5 + (i + 0.5) * (W / 4);
+    if (isLow){
+      const housing = new THREE.Mesh(
+        new THREE.BoxGeometry(lightR * 1.6, lightR * 1.6, 0.06), mat
+      );
+      housing.position.set(x, 0, 0.02);
+      pod.add(housing);
+      const lens = new THREE.Mesh(
+        new THREE.BoxGeometry(lightR * 1.4, lightR * 1.4, 0.02), lensMat
+      );
+      lens.position.set(x, 0, 0.05);
+      pod.add(lens);
+    } else {
+      const housing = new THREE.Mesh(
+        new THREE.CylinderGeometry(lightR, lightR, 0.05, 16), mat
+      );
+      housing.rotation.x = Math.PI / 2;
+      housing.position.set(x, 0, 0.02);
+      pod.add(housing);
+      const lens = new THREE.Mesh(
+        new THREE.CylinderGeometry(lightR * 0.95, lightR * 0.95, 0.02, 16), lensMat
+      );
+      lens.rotation.x = Math.PI / 2;
+      lens.position.set(x, 0, 0.06);
+      pod.add(lens);
+    }
+  }
+  return pod;
+}
+
 // Detect mobile / low-quality LOD — used by build.js to skip details.
 function carLOD(){
   return (window._isMobile || window._lowQuality) ? 'low' : 'high';
@@ -534,4 +664,7 @@ window.buildExhausts = buildExhausts;
 window.buildSideVents = buildSideVents;
 window.buildWheelArches = buildWheelArches;
 window.buildSideSkirts = buildSideSkirts;
+window.buildExtrudedBody = buildExtrudedBody;
+window.buildLatheFenderArch = buildLatheFenderArch;
+window.buildRallyLightPod = buildRallyLightPod;
 window.carLOD = carLOD;

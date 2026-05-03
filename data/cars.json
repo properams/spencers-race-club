@@ -142,5 +142,21 @@
     "accel": 0.024,
     "hdlg": 0.055,
     "nitro": 10
+  },
+  {
+    "id": 12,
+    "brand": "GROUPB",
+    "name": "Group B",
+    "color": "0xd83b3b",
+    "color2": "0x1f2540",
+    "accent": "0xffd84d",
+    "type": "rally",
+    "topSpd": 1.10,
+    "accel": 0.020,
+    "hdlg": 0.058,
+    "nitro": 7,
+    "paintClearcoat": 0.30,
+    "paintRoughness": 0.55,
+    "paintMetalness": 0.40
   }
 ]
