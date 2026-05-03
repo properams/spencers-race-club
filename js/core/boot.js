@@ -84,8 +84,15 @@ function _wireMenuButtons(){
   document.getElementById('btnRace').addEventListener('click',goToRace);
   document.getElementById('btnBackTitle').addEventListener('click',()=>goToWorldSelect());
   // Wereld-cards: kies wereld, herbouw scene als 'm verandert, ga door naar car-select.
+  // Debounce: rebuildWorld is een 1-3s synchrone build. Een tweede card-tap die
+  // tijdens of vlak na de eerste binnenkomt veroorzaakt een dubbele
+  // disposeScene+buildScene cyclus die op iOS de WebGL context kan kapot drukken.
+  let _worldCardLock=0;
   document.querySelectorAll('.worldBigCard').forEach(card=>{
     card.addEventListener('click',()=>{
+      const _now=performance.now();
+      if(_now-_worldCardLock<400)return; // 400ms cooldown — ruim langer dan de UI-flip-setTimeout (220ms)
+      _worldCardLock=_now;
       const newWorld=card.dataset.world;
       document.querySelectorAll('.worldBigCard').forEach(c=>c.classList.remove('wBigSel'));
       card.classList.add('wBigSel');
@@ -118,12 +125,11 @@ function _wireMenuButtons(){
 }
 
 // ── User preferences uit localStorage terugzetten ────────────────────
+// World-restore is verhuisd naar _restoreSavedWorld() die VÓÓR de eerste
+// buildScene draait — anders bouwen we de scene 2x op boot wanneer de
+// saved world afwijkt van default. Phase 1 bevinding 1.4: 2x synchrone
+// buildScene op boot is een serieuze CPU-piek op trage iPhones.
 function _restoreUserPrefs(){
-  const _savedWorld=localStorage.getItem('src_world');
-  if(_savedWorld==='space'){
-    activeWorld='space';
-    buildScene(); // rebuild voor space-wereld
-  }
   // Night default ON ('1') als nooit gezet.
   const _savedNight=localStorage.getItem('src_night');
   if(_savedNight==='0'){if(isDark)toggleNight();}else{if(!isDark)toggleNight();}
@@ -134,6 +140,34 @@ function _restoreUserPrefs(){
       // Re-apply night lighting (setWeather overwrites light intensities).
       if(isDark){sunLight.intensity=.04;ambientLight.intensity=.10;hemiLight.intensity=.07;trackLightList.forEach(l=>l.intensity=2.8);}
     },100);
+  }
+}
+
+// ── Memory-budget warning bij boot ───────────────────────────────────
+// Probeert te detecteren of het device kandidaat is voor crashes onder
+// memory-druk. Triggert alleen op mobiel + lage device-memory; logt
+// altijd via dbg zodat het in Ctrl+Shift+E ringbuffer zichtbaar is.
+function _checkMemoryBudget(){
+  let _msg=null;
+  try{
+    const _dm=navigator.deviceMemory; // Chrome — typically 0.25, 0.5, 1, 2, 4, 8
+    if(window._isMobile && typeof _dm==='number' && _dm>0 && _dm<2){
+      _msg='Low device memory ('+_dm+'GB) — verminder achtergrond-apps voor stabiele performance.';
+    }
+    if(performance.memory){ // Chrome only
+      const _lim=performance.memory.jsHeapSizeLimit/1048576;
+      if(_lim<800){
+        _msg=(_msg?_msg+' ':'')+'JS heap limit '+_lim.toFixed(0)+'MB — krap voor deze game.';
+      }
+    }
+  }catch(_){}
+  if(_msg){
+    if(window.dbg)dbg.warn('boot','memory budget '+_msg);
+    if(window.Breadcrumb)Breadcrumb.push('memBudgetWarn',{msg:_msg.slice(0,80)});
+    // Subtiele non-blocking warning via bestaande Notify-facade. dur=4500 zodat
+    // de melding lang genoeg leesbaar is om gezien te worden zonder de title
+    // permanent te bedekken. Notify.banner valt op TITLE-state in OOB-slot.
+    if(window.Notify)Notify.banner('⚠ '+_msg,'#ffaa55',4500);
   }
 }
 
@@ -164,13 +198,36 @@ async function boot(){
       }
       return;
     }
+    // Restore saved world VÓÓR de eerste buildScene zodat we niet 2x bouwen.
+    // Vroeger: _restoreUserPrefs deed activeWorld='space' + buildScene() ná
+    // de initial buildScene op default world. Nu: één enkele build met de
+    // juiste wereld. Alleen werelden die _wireMenuButtons als data-world
+    // values bevat zijn valid; onbekende waarden vallen terug op default.
+    try{
+      const _savedWorld=localStorage.getItem('src_world');
+      if(_savedWorld){
+        // CSS.escape voorkomt selector-syntax breken op gemanipuleerde
+        // localStorage-waarden met aanhalingstekens of brackets.
+        const _esc=(window.CSS&&CSS.escape)?CSS.escape(_savedWorld):_savedWorld.replace(/[^\w-]/g,'');
+        if(document.querySelector('.worldBigCard[data-world="'+_esc+'"]')){
+          activeWorld=_savedWorld;
+        }
+      }
+    }catch(_){}
     // Visual asset preload for default world (HDRI/textures/GLTF). Fire-
     // and-forget; buildScene below uses procedural fallback if not ready in
     // time. When preload finishes we re-apply HDRI to the current scene
     // via maybeUpgradeWorld().
     if(window.Assets&&window.Assets.preloadWorld&&window.activeWorld){
       window.Assets.preloadWorld(window.activeWorld).then(()=>{
-        if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(window.activeWorld);
+        // maybeUpgradeWorld can throw on PMREM/HDRI apply OOM; surface
+        // the error to dbg + the inline overlay instead of leaking it
+        // as an unhandled rejection that the user can't act on.
+        try{ if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(window.activeWorld); }
+        catch(e){ if(window.dbg)dbg.error('boot',e,'maybeUpgradeWorld failed (initial)'); else console.error('maybeUpgradeWorld failed:',e); }
+      }).catch(e=>{
+        if(window.dbg)dbg.error('boot',e,'Assets.preloadWorld rejected (initial)');
+        else console.error('Assets.preloadWorld rejected:',e);
       });
     }
     try{buildScene();}
@@ -200,6 +257,7 @@ async function boot(){
     loadPersistent();updateTitleHighScore();
     initDailyChallenge();
     _restoreUserPrefs();
+    _checkMemoryBudget();
     loop();
     window.dbg&&dbg.log('boot','done');
     // Perf Phase A: signaalvlag voor headless test-runner. Pas zetten na

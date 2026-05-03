@@ -364,6 +364,7 @@ function _selectPreviewCar(defId){
 function rebuildWorld(newWorld){
   if(newWorld===activeWorld)return;
   if(window.perfMark)perfMark('transition:start');
+  if(window.Breadcrumb)Breadcrumb.push('rebuildWorld',{from:activeWorld,to:newWorld});
   activeWorld=newWorld;
   localStorage.setItem('src_world',newWorld);
   // Preload muziek-stems + surface voor deze wereld (fire-and-forget). Als
@@ -375,11 +376,24 @@ function rebuildWorld(newWorld){
   // is synchronous and falls back to procedural if cache is empty at race-start.
   if(window.Assets&&window.Assets.preloadWorld){
     window.Assets.preloadWorld(newWorld).then(()=>{
-      if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(newWorld);
+      try{ if(typeof maybeUpgradeWorld==='function')maybeUpgradeWorld(newWorld); }
+      catch(e){ if(window.dbg)dbg.error('select',e,'maybeUpgradeWorld failed (rebuild)'); else console.error('maybeUpgradeWorld failed:',e); }
+    }).catch(e=>{
+      if(window.dbg)dbg.error('select',e,'Assets.preloadWorld rejected (rebuild)');
+      else console.error('Assets.preloadWorld rejected:',e);
     });
   }
   const _wasDark=isDark;
-  buildScene(); // resets isDark=false then calls toggleNight() → sets isDark=true
+  // buildScene() can throw on iOS under memory pressure (texture upload,
+  // shader compile). Surface the error visibly instead of leaving the user
+  // on a half-built scene with no feedback.
+  try{ buildScene(); }
+  catch(e){
+    if(window.dbg) dbg.error('select', e, 'rebuildWorld buildScene crashed');
+    else console.error('rebuildWorld buildScene crashed:', e);
+    if(window.Notify) Notify.banner('⚠ Wereld kon niet laden — probeer opnieuw','#ff6644',3500);
+    return;
+  }
   if(!_wasDark)toggleNight(); // if was day, flip back to day
   if(_weatherMode!=='clear')setWeather(_weatherMode);
   // Snap fog color immediately

@@ -153,8 +153,11 @@ function buildNeonSkyscrapers(){
       stripe.position.set(bx,sy,bz);scene.add(stripe);
       _neonEmissives.push({mesh:stripe,phase:Math.random()*Math.PI*2,baseInt:2.2});
     }
-    // Window grid via canvas texture (80% of buildings)
-    if(Math.random()>.2){
+    // Window grid via canvas texture (80% desktop, 40% mobile — Phase 1
+    // bevinding 1.1: window-canvases zijn de zwaarste extra texture-class
+    // van NeonCity, halveren hun count op mobile bespaart ~160KB GPU
+    // zonder dat de visuele dichtheid kapot gaat).
+    if(Math.random()>(window._isMobile?.6:.2)){
       const cvs=document.createElement('canvas');cvs.width=64;cvs.height=128;
       const ctx=cvs.getContext('2d');
       ctx.fillStyle='#000000';ctx.fillRect(0,0,64,128);

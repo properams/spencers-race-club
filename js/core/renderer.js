@@ -17,24 +17,49 @@ function initRenderer(){
   if(!renderer)try{renderer=new THREE.WebGLRenderer({canvas,antialias:false});}
   catch(e){lastError=e;renderer=null;}
   if(!renderer)throw new Error('WebGL mislukt: '+lastError?.message);
-  // WebGL context-loss recovery: pause the render loop, show an overlay, and attempt
-  // graceful restore. If the browser never fires 'restored' within the grace window, reload.
-  const CTX_LOSS_RELOAD_MS=6000;
+  // WebGL context-loss recovery: pause render loop, show overlay with user-
+  // tikbare reload-knop. Geen automatische location.reload meer — die was de
+  // primaire silent-to-title vector op iOS (na 6s timeout zat de user
+  // ineens op title zonder feedback). Phase 1 bevinding 1.2 / 1.3 pad B.
+  // Na een grace-window verschijnt de reload-knop; daarvoor laten we de
+  // restore-handler de scene proberen te rebuilden.
+  const CTX_LOSS_OFFER_RELOAD_MS=6000;
   canvas.addEventListener('webglcontextlost',e=>{
     e.preventDefault();
     _ctxLost=true;
-    window.dbg&&dbg.warn('renderer','webglcontextlost — pauzeren + reload-timer '+CTX_LOSS_RELOAD_MS+'ms');
+    if(window.Breadcrumb)Breadcrumb.push('webglcontextlost');
+    window.dbg&&dbg.warn('renderer','webglcontextlost — pauzeren, reload-knop verschijnt na '+CTX_LOSS_OFFER_RELOAD_MS+'ms');
     const ov=document.getElementById('ctxLostOverlay');if(ov)ov.style.display='flex';
     if(audioCtx&&audioCtx.state==='running')audioCtx.suspend().catch(()=>{});
-    _ctxLostReloadTimer=setTimeout(()=>{if(_ctxLost)location.reload();},CTX_LOSS_RELOAD_MS);
+    // Show the manual reload button after a grace window so the user has an
+    // explicit recovery action when the browser doesn't fire 'restored'.
+    _ctxLostReloadTimer=setTimeout(()=>{
+      if(!_ctxLost)return;
+      const btn=document.getElementById('ctxLostReload');
+      if(btn)btn.style.display='inline-block';
+      const msg=document.getElementById('ctxLostMsg');
+      if(msg)msg.textContent='Het herstel duurt langer dan verwacht. Tik op de knop om de pagina opnieuw te laden.';
+    },CTX_LOSS_OFFER_RELOAD_MS);
   });
   canvas.addEventListener('webglcontextrestored',()=>{
     window.dbg&&dbg.log('renderer','webglcontextrestored — scene rebuild');
+    if(window.Breadcrumb)Breadcrumb.push('webglcontextrestored');
     if(_ctxLostReloadTimer){clearTimeout(_ctxLostReloadTimer);_ctxLostReloadTimer=null;}
     _ctxLost=false;
     const ov=document.getElementById('ctxLostOverlay');if(ov)ov.style.display='none';
+    const btn=document.getElementById('ctxLostReload');if(btn)btn.style.display='none';
     if(audioCtx&&audioCtx.state==='suspended')audioCtx.resume().catch(()=>{});
-    try{if(scene&&activeWorld)buildScene();}catch(err){window.dbg&&dbg.error('renderer',err,'ctx restore rebuild failed');location.reload();}
+    // Restore-rebuild kan zelf throwen (texture upload OOM op iOS). Toon dan
+    // de overlay opnieuw mét reload-knop ipv silent location.reload.
+    try{if(scene&&activeWorld)buildScene();}
+    catch(err){
+      if(window.dbg)dbg.error('renderer',err,'ctx restore rebuild failed');
+      else console.error('ctx restore rebuild failed:',err);
+      if(ov)ov.style.display='flex';
+      if(btn)btn.style.display='inline-block';
+      const msg=document.getElementById('ctxLostMsg');
+      if(msg)msg.textContent='Scene-rebuild faalde na context-herstel. Tik op herladen om opnieuw te starten.';
+    }
   });
   window.addEventListener('beforeunload',()=>{try{renderer.dispose();renderer.forceContextLoss();}catch(e){}});
   document.addEventListener('visibilitychange',()=>{if(audioCtx)document.hidden?audioCtx.suspend():audioCtx.resume();});
