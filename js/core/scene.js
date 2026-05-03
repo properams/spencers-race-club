@@ -134,7 +134,7 @@ function makeSpaceSkyTex(){
     const x=Math.random()*1024,y=Math.random()*420;
     const a=Math.random()*0.7+0.25;
     g.fillStyle=`rgba(255,255,255,${a.toFixed(2)})`;
-    g.fillRect(x,y,1,1);
+    g.fillRect(x,y,2,2);
   }
   for(let i=0;i<40;i++){
     const x=Math.random()*1024,y=Math.random()*380;
@@ -167,7 +167,7 @@ function makeDeepSeaSkyTex(){
     const x=Math.random()*1024,y=80+Math.random()*380;
     const a=Math.random()*0.35+0.1;
     g.fillStyle=`rgba(180,230,255,${a.toFixed(2)})`;
-    g.fillRect(x,y,1,1);
+    g.fillRect(x,y,2,2);
   }
   return _skyTexFromCanvas(c);
 }
@@ -227,7 +227,7 @@ function makeNeonCitySkyTex(){
   for(let i=0;i<150;i++){
     const sx=Math.random()*1024,sy=Math.random()*200;
     g.fillStyle=`rgba(180,200,255,${(Math.random()*0.5+0.25).toFixed(2)})`;
-    g.fillRect(sx,sy,1,1);
+    g.fillRect(sx,sy,2,2);
   }
   return _skyTexFromCanvas(c);
 }
@@ -255,7 +255,7 @@ function makeVolcanoSkyTex(){
     const x=Math.random()*1024,y=180+Math.random()*320;
     const a=Math.random()*0.7+0.3;
     g.fillStyle=`rgba(255,${(120+Math.random()*80)|0},${(20+Math.random()*40)|0},${a.toFixed(2)})`;
-    g.fillRect(x,y,1,1);
+    g.fillRect(x,y,2,2);
   }
   return _skyTexFromCanvas(c);
 }
@@ -283,7 +283,7 @@ function makeArcticSkyTex(){
   for(let i=0;i<80;i++){
     const x=Math.random()*1024,y=Math.random()*100;
     g.fillStyle=`rgba(220,230,255,${(Math.random()*0.5+0.3).toFixed(2)})`;
-    g.fillRect(x,y,1,1);
+    g.fillRect(x,y,2,2);
   }
   // Distant snow fog at horizon
   const fog=g.createLinearGradient(0,360,0,512);
@@ -315,7 +315,7 @@ function makeThemeparkSkyTex(){
   for(let i=0;i<40;i++){
     const x=Math.random()*1024,y=Math.random()*120;
     g.fillStyle=`rgba(255,240,200,${(Math.random()*0.4+0.3).toFixed(2)})`;
-    g.fillRect(x,y,1,1);
+    g.fillRect(x,y,2,2);
   }
   return _skyTexFromCanvas(c);
 }
