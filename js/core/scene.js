@@ -87,12 +87,21 @@ function makeSkyTex(top,bot){
   const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
 }
 
-// Helper: dispose previous background + return a 1024×512 canvas with vertical
+// Helper: dispose previous background + return a sky canvas with vertical
 // gradient as base. Per-world sky functions paint on top of this.
+// Mobile gebruikt een halve fysieke resolutie (512×256) maar context.scale
+// past het 1024×512 logische coordinatensysteem toe — alle per-world sky
+// functies kunnen ongewijzigd in de oorspronkelijke ruimte blijven tekenen.
+// Bespaart ~1.5MB GPU per skybox, materiële winst over 8 worlds.
+// Phase 1 bevinding 1.1: sky textures waren overal 1024×512 zonder mobile cap.
 function _newSkyCanvas(top,bot){
   if(scene&&scene.background&&scene.background.isTexture)scene.background.dispose();
-  const c=document.createElement('canvas');c.width=1024;c.height=512;
-  const g=c.getContext('2d'),gr=g.createLinearGradient(0,0,0,512);
+  const _scale=window._isMobile?0.5:1;
+  const c=document.createElement('canvas');
+  c.width=Math.round(1024*_scale);c.height=Math.round(512*_scale);
+  const g=c.getContext('2d');
+  if(_scale!==1)g.scale(_scale,_scale);
+  const gr=g.createLinearGradient(0,0,0,512);
   gr.addColorStop(0,top);gr.addColorStop(1,bot);g.fillStyle=gr;g.fillRect(0,0,1024,512);
   return {c,g};
 }
