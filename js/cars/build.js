@@ -139,9 +139,10 @@ function makeAllCars(){
     // signature die de pilot car onderscheidt van de andere 11 cars op het
     // grid. Phase 3 generaliseert via Tier S/A flag op def.
     if(isPlayer && def.brand === 'BUGATTI'){
-      const accentColor = (typeof def.accent === 'string') ? parseInt(def.accent,16) : def.accent;
+      // def.accent is door main.js:25 al naar integer geparsed; geen
+      // string-branch nodig zoals in oudere code-paden.
       const ugMat=new THREE.MeshBasicMaterial({
-        color:accentColor,transparent:true,opacity:.35,
+        color:def.accent,transparent:true,opacity:.35,
         blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide
       });
       const ug=new THREE.Mesh(new THREE.CircleGeometry(2.2,16),ugMat);
