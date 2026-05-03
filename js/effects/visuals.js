@@ -267,17 +267,20 @@ function updateCollisionFlash(dt){
 }
 
 
+// Hotspot #1 fix: scratch Vector3 hoist — voorheen per-emit allocation
+// in updateDamageSmoke (~22 alloc/sec bij ≥6 hits, rest van de race).
+const _dmgFwd = new THREE.Vector3();
 function updateDamageSmoke(){
   const car=carObjs[playerIdx];if(!car||!car.hitCount)return;
   const hits=car.hitCount;
   if(hits<3)return;
   const rate=hits>=6?0.38:0.18; // heavier smoke at more damage
   if(Math.random()<rate){
-    const fwd=new THREE.Vector3(0,0,-1).applyQuaternion(car.mesh.quaternion);
+    _dmgFwd.set(0,0,-1).applyQuaternion(car.mesh.quaternion);
     exhaustSystem.emit(
-      car.mesh.position.x-fwd.x*1.2,
+      car.mesh.position.x-_dmgFwd.x*1.2,
       car.mesh.position.y+0.9,
-      car.mesh.position.z-fwd.z*1.2,
+      car.mesh.position.z-_dmgFwd.z*1.2,
       (Math.random()-.5)*.02,0.025+Math.random()*.02,(Math.random()-.5)*.02,
       1,0.28,0.28,0.28,0.5
     );

@@ -9,6 +9,10 @@
 //   _rainIntensity, _rainTarget — smooth rain visual transition
 //   _snowParticles, _snowGeo — Three.js Points + BufferGeometry voor snow
 //   _weatherForecastTimer/Fired — mid-race forecast popup
+
+// Hotspot #2 fix: scratch Color hoist — voorheen per-frame `new THREE.Color(base)`
+// in updateWeather (60 alloc/sec onvoorwaardelijk bij elke RACE frame).
+const _wxBaseColor = (typeof THREE !== 'undefined') ? new THREE.Color() : null;
 // Cross-script: ui/select.js leest _weatherMode pre-race; gameplay/race.js
 // reset _weatherForecast*. setWeather() onder gebruikt + muteert ze allemaal.
 let _weatherMode='clear';
@@ -202,10 +206,9 @@ function updateWeather(dt){
     const w=_rainIntensity;
     const base=_trackMesh.material.userData.baseColor;
     if(base!==undefined){
-      const bc=new THREE.Color(base);
-      // Wet track is 45% darker than dry
-      bc.multiplyScalar(1.0-w*0.45);
-      _trackMesh.material.color.copy(bc);
+      // Reuse module-scratch Color (Hotspot #2 fix).
+      _wxBaseColor.set(base).multiplyScalar(1.0-w*0.45);
+      _trackMesh.material.color.copy(_wxBaseColor);
     }else{
       // Fallback for tracks without baseColor stashed
       const dryL=0x26/255,wetL=0x18/255;
