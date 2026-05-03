@@ -125,12 +125,11 @@ function _wireMenuButtons(){
 }
 
 // ── User preferences uit localStorage terugzetten ────────────────────
+// World-restore is verhuisd naar _restoreSavedWorld() die VÓÓR de eerste
+// buildScene draait — anders bouwen we de scene 2x op boot wanneer de
+// saved world afwijkt van default. Phase 1 bevinding 1.4: 2x synchrone
+// buildScene op boot is een serieuze CPU-piek op trage iPhones.
 function _restoreUserPrefs(){
-  const _savedWorld=localStorage.getItem('src_world');
-  if(_savedWorld==='space'){
-    activeWorld='space';
-    buildScene(); // rebuild voor space-wereld
-  }
   // Night default ON ('1') als nooit gezet.
   const _savedNight=localStorage.getItem('src_night');
   if(_savedNight==='0'){if(isDark)toggleNight();}else{if(!isDark)toggleNight();}
@@ -171,6 +170,17 @@ async function boot(){
       }
       return;
     }
+    // Restore saved world VÓÓR de eerste buildScene zodat we niet 2x bouwen.
+    // Vroeger: _restoreUserPrefs deed activeWorld='space' + buildScene() ná
+    // de initial buildScene op default world. Nu: één enkele build met de
+    // juiste wereld. Alleen werelden die _wireMenuButtons als data-world
+    // values bevat zijn valid; onbekende waarden vallen terug op default.
+    try{
+      const _savedWorld=localStorage.getItem('src_world');
+      if(_savedWorld&&document.querySelector('.worldBigCard[data-world="'+_savedWorld+'"]')){
+        activeWorld=_savedWorld;
+      }
+    }catch(_){}
     // Visual asset preload for default world (HDRI/textures/GLTF). Fire-
     // and-forget; buildScene below uses procedural fallback if not ready in
     // time. When preload finishes we re-apply HDRI to the current scene
