@@ -34,11 +34,34 @@
 // material can still wrap a shared texture (e.g. cloned headlight beam
 // material wrapping the cached alpha-mask).
 function _shared(x){ return !!(x && x.userData && x.userData._sharedAsset); }
+// Alle texture-slots die op een r134 MeshPhysicalMaterial kunnen voorkomen.
+// _disposeMat itereert deze lijst zodat per-instance physical materials uit
+// Phase 2/3 (transmission lenses, Tesla glass roof, Mustang stripe-canvas)
+// niet hun texture-uploads lekken bij world-switch. Shared textures
+// (userData._sharedAsset) worden overgeslagen — zo overleven de procedurele
+// envMap, _carbonTex en _softHeadlightTex de rebuild.
+const _MAT_TEX_SLOTS = [
+  'map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap',
+  'emissiveMap', 'bumpMap', 'displacementMap', 'alphaMap', 'lightMap',
+  'clearcoatMap', 'clearcoatNormalMap', 'clearcoatRoughnessMap',
+  'transmissionMap', 'thicknessMap', 'envMap'
+];
 function _disposeMat(m){
   if (!m) return;
-  if (m.map && !_shared(m.map)) m.map.dispose();
-  if (m.normalMap && !_shared(m.normalMap)) m.normalMap.dispose();
-  if (m.roughnessMap && !_shared(m.roughnessMap)) m.roughnessMap.dispose();
+  for (let i=0; i<_MAT_TEX_SLOTS.length; i++){
+    const k = _MAT_TEX_SLOTS[i];
+    const t = m[k];
+    if (!t || _shared(t)) continue;
+    if (typeof t.dispose !== 'function'){
+      // Slot bevat geen Texture-object — kan ontstaan als toekomstige three-
+      // upgrades een slot-naam hergebruiken voor een ander type (bv. r136+
+      // sheenColor werd Color i.p.v. number). Defensieve skip i.p.v. crash.
+      if (window.dbg) dbg.warn('cars','non-Texture in material slot: '+k);
+      else if (typeof console !== 'undefined') console.warn('non-Texture in material slot:', k);
+      continue;
+    }
+    t.dispose();
+  }
   if (!_shared(m)) m.dispose();
 }
 function disposeScene(){
