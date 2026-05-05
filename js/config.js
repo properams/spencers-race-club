@@ -9,7 +9,13 @@
 // Race
 let TOTAL_LAPS=3; // muteerbaar via lap-count selectie
 
-// Track geometry
+// Track geometry. TW = half-track-width used by track.js to build the asphalt
+// ribbon and by tracklimits.js to detect off-track. Single global across all
+// worlds — sandstorm's "slot canyon" is visual-only (cliff walls placed via
+// _ssBuildCanyonCliffs at BARRIER_OFF + 6 outside the standard width); the
+// detection band stays uniform so ai.js / tracklimits behave identically
+// across the 9 worlds and the AI's per-track racing-line offsets continue
+// to use a stable reference width.
 const TW=13, BARRIER_OFF=16, RECOVER_DIST=30, WARN_DIST=22;
 
 // Difficulty multiplier (0=easy 1=normal 2=hard)
