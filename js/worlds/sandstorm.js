@@ -163,54 +163,6 @@ function _ssScarabSignTex(){
   const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
 }
 
-// Mesa silhouette canvas — used by background mesa props for the alpha-
-// punched horizon shape. Wrap on S, clamp on T. Layered strata baked into
-// the alpha so the mesa reads as a stepped-rock formation against the sky.
-function _ssMesaTex(){
-  const W=512,H=192,c=document.createElement('canvas');c.width=W;c.height=H;
-  const g=c.getContext('2d');
-  g.clearRect(0,0,W,H);
-  // 3 horizontal strata: top tier (smaller), mid tier, base tier (widest)
-  const tiers=[
-    {y0:30, y1:75,  alpha:0.95}, // top tier
-    {y0:75, y1:130, alpha:1.00}, // mid tier
-    {y0:130,y1:H,   alpha:1.00}, // base tier
-  ];
-  tiers.forEach((tier,ti)=>{
-    // Tier color: top is lightest (sun-bleached), base darkest
-    const baseR=[180,150,110][ti];
-    const baseG=[130,100,75][ti];
-    const baseB=[80,60,45][ti];
-    // Procedural mesa-silhouette shape — random walker top, flat base.
-    g.fillStyle='rgba('+baseR+','+baseG+','+baseB+','+tier.alpha+')';
-    g.beginPath();
-    g.moveTo(0,tier.y1);
-    let y=tier.y0+15;
-    for(let x=0;x<=W;x+=8){
-      // Step-wise mesa profile: occasional vertical drops
-      if(Math.random()<0.04)y+=Math.random()*15-3;
-      else y+=Math.random()*4-2;
-      y=Math.max(tier.y0+5,Math.min(tier.y1-5,y));
-      g.lineTo(x,y);
-    }
-    g.lineTo(W,tier.y1);g.closePath();g.fill();
-  });
-  // Crack lines on the lower tiers (subtle)
-  g.strokeStyle='rgba(40,20,12,0.45)';g.lineWidth=1;
-  for(let i=0;i<8;i++){
-    const x=Math.random()*W,y=120+Math.random()*60;
-    g.beginPath();g.moveTo(x,y);
-    for(let j=0;j<4;j++){
-      g.lineTo(x+(Math.random()-.5)*15,y+10*(j+1));
-    }
-    g.stroke();
-  }
-  const t=new THREE.CanvasTexture(c);
-  t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.ClampToEdgeWrapping;t.needsUpdate=true;
-  if(window.ThreeCompat&&ThreeCompat.applyTextureColorSpace)ThreeCompat.applyTextureColorSpace(t);
-  return t;
-}
-
 // Roughens a PlaneGeometry's vertex positions in-place along local Z.
 // Heightfactor weights: more displacement near the top, less at the foot
 // (so the cliff's base reads "carved" vs. its weathered upper face).
@@ -239,34 +191,22 @@ let _sandstormPalmLeaves=[];     // [{im, baseAng, amp}] for wind-sway animation
 
 // ── Section builders ──────────────────────────────────────────────────────
 
-// 2 layered horizon mesas — atmospheric perspective via heavy fog-tint.
-// Far layer dissolves into the sand-haze; near layer is darker rust/sand.
-function _ssBuildBackgroundMesas(){
-  const mesaTex=_ssMesaTex();
-  // FAR layer — wraps the horizon in a sun-bleached stratified ridge
-  const farMat=new THREE.MeshBasicMaterial({
-    map:mesaTex,color:0xc89070,transparent:true,opacity:0.65,
-    side:THREE.DoubleSide,depthWrite:false,fog:true
-  });
-  const farGeo=new THREE.CylinderGeometry(640,640,90,48,1,true);
-  const farMesh=new THREE.Mesh(farGeo,farMat);
-  farMesh.position.y=8+45;farMesh.renderOrder=-9; // behind silhouettes
-  scene.add(farMesh);
-  // NEAR layer — darker rust strata, smaller radius for parallax depth
-  const nearMat=new THREE.MeshBasicMaterial({
-    map:mesaTex.clone(),color:0x8b3a1d,transparent:true,opacity:0.85,
-    side:THREE.DoubleSide,depthWrite:false,fog:true
-  });
-  nearMat.map.repeat.set(1.4,1);nearMat.map.offset.x=0.12;
-  nearMat.map.needsUpdate=true;
-  const nearGeo=new THREE.CylinderGeometry(420,420,72,40,1,true);
-  const nearMesh=new THREE.Mesh(nearGeo,nearMat);
-  nearMesh.position.y=4+36;nearMesh.renderOrder=-8;
-  scene.add(nearMesh);
-}
+// (Background mesas removed in post-review fix. core/scene.js calls the
+// shared buildBackgroundLayers() helper for sandstorm, which already emits
+// 2 cylinder horizon-layers via _SILHOUETTE_PALETTES.sandstorm in
+// track/environment.js. Adding our own mesa-rings would have produced
+// FOUR redundant cylinders around the horizon. The bespoke mesa-strata
+// canvas-look is sacrificed to avoid the duplication; if needed, extend
+// _SILHOUETTE_PALETTES with an optional customTex callback — that's a
+// cross-world helper change and out-of-scope for this rebuild.)
 
 // Canyon cliffs — gestapelde strata (3 layers), elk met eigen displacement
 // + per-layer color shift. 8 segments × 2 sides on the slot-canyon t-range.
+//
+// Materials are hoisted ONCE per strata layer (3 mats total instead of 48
+// unique mats — one per panel as the previous draft did). Geometry stays
+// per-panel because each panel needs unique vertex displacement to avoid
+// the wall reading as a tiled-canvas-texture.
 function _ssBuildCanyonCliffs(){
   const mob=window._isMobile;
   const SEGS=mob?5:8;
@@ -274,10 +214,12 @@ function _ssBuildCanyonCliffs(){
   const SUB_Y=mob?4:8;
   const tex=_ssRockTex();
   // 3 strata layers — bottom (dark), mid (rust), top (sun-bleached).
+  // Materials shared across all panels (perf-budget review fix: cuts
+  // unique-material count from 48 → 3).
   const strataDefs=[
-    {y0:0,    h:7,  color:0x6a3018, ampl:0.5}, // bottom (carved foot)
-    {y0:7,    h:8,  color:0xa86839, ampl:0.7}, // mid (rust face)
-    {y0:15,   h:6,  color:0xc89070, ampl:0.4}, // top (sun-bleached)
+    {y0:0,    h:7,  mat:new THREE.MeshLambertMaterial({color:0x6a3018,map:tex}), ampl:0.5},
+    {y0:7,    h:8,  mat:new THREE.MeshLambertMaterial({color:0xa86839,map:tex}), ampl:0.7},
+    {y0:15,   h:6,  mat:new THREE.MeshLambertMaterial({color:0xc89070,map:tex}), ampl:0.4},
   ];
   const [tStart,tEnd]=_SS_SLOT_T_RANGE;
   // Lager talud (afgekalfde rotsen) — instanced rocks aan de voet van de cliffs
@@ -298,14 +240,14 @@ function _ssBuildCanyonCliffs(){
     [-1,1].forEach(side=>{
       const off=BARRIER_OFF+6;
       const wallX=p.x+side*off*lxX,wallZ=p.z+side*off*lxZ;
-      // Stack 3 strata at increasing Y. Each layer gets its own material
-      // (color shift) and its own displaced geometry (different seed per
-      // layer so strata don't read as a single texture with bands).
+      // Stack 3 strata at increasing Y. Each layer gets its own displaced
+      // geometry (different seed per layer + per-segment so strata don't
+      // tile visibly), but the material is shared across all panels of the
+      // same strata layer (3 mats serve all 48 desktop panels).
       strataDefs.forEach((s,si)=>{
         const geo=new THREE.PlaneGeometry(panelL,s.h,SUB_X,SUB_Y);
         _ssDisplaceCliffGeometry(geo,s.ampl,1337+i*7+(side+1)*131+si*53);
-        const mat=new THREE.MeshLambertMaterial({color:s.color,map:tex});
-        const wall=new THREE.Mesh(geo,mat);
+        const wall=new THREE.Mesh(geo,s.mat);
         wall.position.set(wallX,s.y0+s.h*0.5-1,wallZ);
         wall.rotation.y=yaw+(side>0?Math.PI:0);
         scene.add(wall);
@@ -627,7 +569,9 @@ function _ssBuildCamels(){
   if(window._isMobile)return;
   const camelMat=new THREE.MeshLambertMaterial({color:0x6a4628});
   // Build prototype meshes, then merge their geometries into a single
-  // BufferGeometry so the camel is a single InstancedMesh draw.
+  // BufferGeometry so the camel renders as one InstancedMesh draw.
+  // Uses THREE.BufferGeometryUtils.mergeBufferGeometries from the
+  // bundled three-r160 build (verified present in vendor blob).
   const parts=[];
   const _box=(w,h,d,x,y,z,rx,ry,rz)=>{
     const g=new THREE.BoxGeometry(w,h,d);
@@ -655,31 +599,12 @@ function _ssBuildCamels(){
   _box(0.25,1.6,0.25, 1,0.8,-0.3);
   _box(0.25,1.6,0.25,-1,0.8, 0.3);
   _box(0.25,1.6,0.25, 1,0.8, 0.3);
-  // Merge — small inline mergeBufferGeometries because the codebase
-  // doesn't ship BufferGeometryUtils. Concatenates positions+normals+indices.
-  const merged=new THREE.BufferGeometry();
-  let posCount=0,idxCount=0;
-  parts.forEach(g=>{
-    posCount+=g.attributes.position.count;
-    if(g.index)idxCount+=g.index.count;
-  });
-  const mPos=new Float32Array(posCount*3),mNor=new Float32Array(posCount*3);
-  const mIdx=new Uint32Array(idxCount);
-  let pOff=0,iOff=0;
-  parts.forEach(g=>{
-    const p=g.attributes.position.array,n=g.attributes.normal.array;
-    mPos.set(p,pOff*3);mNor.set(n,pOff*3);
-    if(g.index){
-      const ix=g.index.array;
-      for(let i=0;i<ix.length;i++)mIdx[iOff+i]=ix[i]+pOff;
-      iOff+=ix.length;
-    }
-    pOff+=g.attributes.position.count;
-    g.dispose();
-  });
-  merged.setAttribute('position',new THREE.BufferAttribute(mPos,3));
-  merged.setAttribute('normal',new THREE.BufferAttribute(mNor,3));
-  merged.setIndex(new THREE.BufferAttribute(mIdx,1));
+  // Merge via the three-r160 utility. All parts use position+normal only
+  // (no UV — MeshLambertMaterial without map doesn't sample UVs), so
+  // attribute-set is consistent across parts.
+  const merged=THREE.BufferGeometryUtils.mergeBufferGeometries(parts);
+  // Free the source part-geometries; the merged buffer owns all data now.
+  parts.forEach(g=>g.dispose());
   // Place 4 instances on far dunes — beyond the cliff-line so they read
   // as distant scale cues, never a hazard.
   const positions=[[210,-280],[-180,-310],[-260,80],[280,180]];
@@ -787,9 +712,9 @@ function buildSandstormEnvironment(){
     scene.add(_sandstormFlecks);_sandstormFlecksGeo=geo;
   }
   // ── World props (Phase 3 visual upgrade) ────────────────
-  // Order matters: background mesas first (renderOrder=-9/-8 puts them
-  // behind silhouette layers + foreground), then near props.
-  _ssBuildBackgroundMesas();
+  // Background horizon comes from track/environment.js's shared
+  // buildBackgroundLayers() — invoked by core/scene.js for sandstorm
+  // via _SILHOUETTE_PALETTES.sandstorm. We don't add our own mesa-rings.
   _ssBuildCanyonCliffs();
   _ssBuildSandDunes();
   _ssBuildSphinxMonument();
