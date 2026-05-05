@@ -219,36 +219,51 @@
 
   // ── 5. beveledBox ─────────────────────────────────────────────────────
   // Box met beveled edges — sphinx-blokken die niet als rechthoek aanvoelen.
-  // Implemented door BoxGeometry + per-corner-vertex contraction.
+  // Eerste implementatie probeerde BoxGeometry-corners inward te trekken,
+  // maar dat distorteerde de face-planes (puffy-pillow effect want corners
+  // op een face delen niet via index). Nu via ExtrudeGeometry: een vierkant
+  // Shape met bevelEnabled levert echte rounded corners in alle 12 edges.
+  // Triangle-cost is hoger dan een ruwe BoxGeometry (ruwweg ~120 tris ipv 12)
+  // maar acceptabel voor hero-props (sphinx). Caller kan `bevel:0` zetten
+  // om gewoon een box te krijgen (skip de extrude path).
   function beveledBox(opts){
     opts=opts||{};
     const w=opts.w||1, h=opts.h||1, d=opts.d||1;
     const bevel=opts.bevel!=null?opts.bevel:0.1;
-    // Use 2 segments per axis so bevel can pull corner vertices inward
-    // without losing the box silhouette.
-    const geo=new THREE.BoxGeometry(w,h,d, 2, 2, 2);
-    const pos=geo.attributes.position;
-    const v=new THREE.Vector3();
-    const halfW=w*0.5, halfH=h*0.5, halfD=d*0.5;
-    for(let i=0;i<pos.count;i++){
-      v.fromBufferAttribute(pos,i);
-      // For each axis where the vertex is at the extreme face, contract
-      // by `bevel` toward the box center along that axis. This rounds
-      // the corners.
-      if(Math.abs(v.x) > halfW - 0.001){
-        // Edge or corner vertex — pull X inward by bevel*sign
-        // Only for vertices that are also at extreme y or z (corners)
-        const onYExtreme = Math.abs(v.y) > halfH - 0.001;
-        const onZExtreme = Math.abs(v.z) > halfD - 0.001;
-        if(onYExtreme && onZExtreme){
-          v.x -= Math.sign(v.x) * bevel;
-          v.y -= Math.sign(v.y) * bevel;
-          v.z -= Math.sign(v.z) * bevel;
-        }
-      }
-      pos.setXYZ(i, v.x, v.y, v.z);
+    // Bevel:0 → fast path, return plain BoxGeometry without segments.
+    if(bevel<=0){
+      return new THREE.BoxGeometry(w,h,d);
     }
-    pos.needsUpdate=true;
+    // Clamp bevel so it can't exceed half of the smallest in-plane dim.
+    const cb=Math.min(bevel, w*0.4, d*0.4, h*0.45);
+    // Build a square shape (top-down view of the box) inset by `cb` so
+    // the extruded bevel lands at the original w×d outline.
+    const hw=w*0.5 - cb, hd=d*0.5 - cb;
+    const shape=new THREE.Shape();
+    shape.moveTo(-hw, -hd);
+    shape.lineTo( hw, -hd);
+    shape.lineTo( hw,  hd);
+    shape.lineTo(-hw,  hd);
+    shape.lineTo(-hw, -hd);
+    const geo=new THREE.ExtrudeGeometry(shape, {
+      depth: h - cb*2,        // total height includes bevel-thickness on both ends
+      bevelEnabled: true,
+      bevelSegments: 2,        // 2 = good quality without huge tri-cost
+      bevelSize: cb,
+      bevelThickness: cb,
+      steps: 1,
+      curveSegments: 4
+    });
+    // ExtrudeGeometry extrudes along +Z; rotate so box stands along Y.
+    geo.rotateX(-Math.PI/2);
+    // Re-center vertically. ExtrudeGeometry's exact bevel-vertex placement
+    // depends on internals; just compute the actual bounding box and shift
+    // so the geometry is symmetric around y=0 (matching what BoxGeometry
+    // would have given).
+    geo.computeBoundingBox();
+    const _bb=geo.boundingBox;
+    const _cy=(_bb.min.y + _bb.max.y) * 0.5;
+    if(Math.abs(_cy) > 1e-4) geo.translate(0, -_cy, 0);
     geo.computeVertexNormals();
     return geo;
   }

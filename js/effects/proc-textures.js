@@ -27,23 +27,23 @@
 
   // ── LRU cache + key-builder ────────────────────────────────────────────
 
-  // key-builder: deterministic JSON-like serialization with sorted keys so
-  // the same opts in different shape produce the same cache hit. Cheap;
-  // 5-key opts hashes in ~3µs.
+  // key-builder: deterministic serialization with sorted keys (recursive)
+  // so the same opts in different shape produce the same cache hit.
+  // Implementation: JSON.stringify with a replacer that returns nested
+  // objects with sorted keys. This avoids the delimiter-collision class
+  // that a custom string-concat builder is prone to (a value containing
+  // `:` or `|` would have hashed identically to a different opts shape).
   function _keyOf(opts){
-    if(!opts) return '~';
-    if(typeof opts!=='object') return String(opts);
-    const keys=Object.keys(opts).sort();
-    let s='';
-    for(let i=0;i<keys.length;i++){
-      const k=keys[i],v=opts[k];
-      s+=k+':';
-      if(Array.isArray(v))s+='['+v.join(',')+']';
-      else if(v&&typeof v==='object')s+=_keyOf(v);
-      else s+=String(v);
-      s+='|';
-    }
-    return s;
+    if(opts==null) return '~null';
+    if(typeof opts!=='object') return JSON.stringify(opts);
+    return JSON.stringify(opts, function(key, value){
+      if(value && typeof value==='object' && !Array.isArray(value)){
+        const sorted={};
+        Object.keys(value).sort().forEach(k=>{ sorted[k]=value[k]; });
+        return sorted;
+      }
+      return value;
+    });
   }
 
   // Per-generator LRU. Map preserves insertion order — re-set on hit to
@@ -66,6 +66,7 @@
           if(oldTex&&typeof oldTex.dispose==='function')oldTex.dispose();
         }
       },
+      size(){ return m.size; },
       disposeAll(){
         m.forEach(tex=>{ if(tex&&typeof tex.dispose==='function'){try{tex.dispose();}catch(_){}}});
         m.clear();
@@ -297,6 +298,14 @@
   // ── 4. palmLeaf — alpha-shape texture + alpha-mask ────────────────────
   // Returns { texture, alphaMap } pair so caller can use Lambert + alphaTest
   // on the leaf material.
+  //
+  // NOTE: this generator does NOT call _finalize() on its outputs — anisotropy
+  // is set explicitly to 4 (no mobile-halve) and wrapping is ClampToEdge (not
+  // Repeat). Reason: a palm-leaf texture should never tile across an entire
+  // mesh, and lower anisotropy on the alpha-mask hurts edge crispness. The
+  // wrapper exposes a `dispose` method that disposes BOTH the texture and the
+  // alphaMap so LRU eviction and `disposeAll()` both work via the standard
+  // `tex.dispose()` path.
   function palmLeaf(opts){
     opts=opts||{};
     const cached=_caches.palmLeaf.get(_keyOf(opts));
@@ -561,12 +570,13 @@
   }
 
   // ── Debug snapshot ───────────────────────────────────────────────────
+  // Returns a per-generator count of currently-cached textures. Useful in
+  // browser console (`ProcTextures._debug()`) to confirm cache eviction
+  // working under load.
   function _debug(){
     const out={};
     Object.keys(_caches).forEach(k=>{
-      // Map.size isn't directly exposed by our cache wrapper; we'd need
-      // to track count separately — skip for now and just report names.
-      out[k]='cached';
+      out[k]=_caches[k].size();
     });
     return out;
   }
