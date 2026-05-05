@@ -918,7 +918,7 @@ function _initMobileCarouselSwipe(){
     // computed style voor robuustheid bij CSS-aanpassing).
     const card=carousel.querySelector('.selM-card');
     if(!card)return;
-    const step=card.clientWidth+14; // gap is 14px in CSS
+    const step=card.clientWidth+12; // gap is 12px in CSS
     const dir=dx<0?+1:-1; // swipe-left → next card (iOS-conventie)
     carousel.scrollBy({left:dir*step,behavior:'smooth'});
     _selMVibrate(8);

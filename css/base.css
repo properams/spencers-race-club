@@ -39,7 +39,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
 }
 #glCanvas{position:fixed;top:0;left:0;width:100%;height:100%}
 .screen{position:fixed;inset:0;z-index:var(--z-screen);display:flex;flex-direction:column;align-items:center;justify-content:center}
-#sTitle{background:radial-gradient(ellipse at 50% 55%,#250a00 0%,#050000 55%,#000 100%)}
+/* #sTitle background → .neon-bg class (shared with #loadingScreen). */
 #titleFlames{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .flame{position:absolute;bottom:-10px;border-radius:50% 50% 30% 30%;animation:flameRise linear infinite;filter:blur(1px)}
 @keyframes flameRise{0%{transform:translateY(0) scaleX(1);opacity:.9}100%{transform:translateY(-110vh) scaleX(.2);opacity:0}}
@@ -48,7 +48,30 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
   filter:drop-shadow(0 0 22px #ff6a00aa);animation:lglow 2.2s ease-in-out infinite;position:relative;z-index:2}
 @keyframes lglow{0%,100%{filter:drop-shadow(0 0 22px #ff6a00aa)}50%{filter:drop-shadow(0 0 40px #ffa500cc)}}
-.tStart{font-family:'Orbitron',sans-serif;font-size:clamp(12px,1.8vw,18px);color:#ff7700;letter-spacing:5px;margin-top:48px;cursor:pointer;z-index:2;animation:blink 1.15s ease-in-out infinite}
+.tStart{font-family:'Orbitron',sans-serif;font-size:clamp(12px,1.8vw,18px);color:#ff7700;letter-spacing:5px;margin-top:48px;cursor:pointer;z-index:2;
+  display:inline-flex;align-items:center;gap:14px;
+  background:transparent;border:none;padding:14px 22px;min-height:48px;
+  -webkit-tap-highlight-color:transparent;font-weight:700
+}
+.tStartLabel{
+  background:linear-gradient(168deg,#ffffff 0%,#00eeff 18%,#ff22cc 55%,#ff6600 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  filter:drop-shadow(0 0 12px rgba(204,68,255,.55));
+  animation:tStartPulse 1.8s ease-in-out infinite
+}
+.tStartBracket{
+  font-family:'Orbitron',sans-serif;font-weight:900;font-size:1.15em;
+  background:linear-gradient(168deg,#ffffff 0%,#00eeff 18%,#ff22cc 55%,#ff6600 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  filter:drop-shadow(0 0 10px rgba(0,238,255,.55));
+  animation:tStartPulse 1.8s ease-in-out infinite
+}
+@keyframes tStartPulse{
+  0%,100%{filter:drop-shadow(0 0 10px rgba(204,68,255,.5));opacity:.92}
+  50%{filter:drop-shadow(0 0 22px rgba(204,68,255,.95));opacity:1}
+}
 @keyframes starDrift{from{background-position:0 0,70px 40px,150px 90px}to{background-position:220px 180px,210px 200px,450px 340px}}
 /* .tSub/.tTip/.tRow/.tBtn/.weatherBtn/.wSel waren dead — verwijderd */
 #sTitle::before{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,150,30,.04) 48%,rgba(255,200,80,.10) 50%,rgba(255,150,30,.04) 52%,transparent 70%);animation:titleSweep 4.5s ease-in-out infinite;pointer-events:none;z-index:1}
@@ -179,7 +202,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
 .carBrand{font-family:'Rajdhani',sans-serif;font-size:8px;color:#664488;letter-spacing:2px;text-transform:uppercase}
 .carName{font-family:'Orbitron',sans-serif;font-size:10px;color:#ccbbdd;font-weight:700;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .carTypeBadge{font-family:'Orbitron',sans-serif;font-size:7px;color:#886699;letter-spacing:1px;margin-top:1px}
-#sTitle{background:radial-gradient(ellipse at 50% 42%,#140030 0%,#070018 45%,#030010 80%,#000007 100%)!important}
+/* #sTitle neon override consolidated into .neon-bg (see end of file). */
 .tLogo{
   background:linear-gradient(168deg,#ffffff 0%,#00eeff 18%,#ff22cc 55%,#ff6600 100%)!important;
   -webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important;
@@ -190,7 +213,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
 @keyframes lglow{0%,100%{filter:drop-shadow(0 0 28px #aa44ffcc) drop-shadow(0 2px 35px #ff22ccaa)}50%{filter:drop-shadow(0 0 52px #cc66ffee) drop-shadow(0 2px 60px #ff44ddcc)}}
 .flame{background:linear-gradient(to top,#aa00ff,#ff00aa,#00eeff)!important}
 #sTitle::before{background:linear-gradient(105deg,transparent 30%,rgba(140,60,255,.04) 48%,rgba(180,80,255,.09) 50%,rgba(100,200,255,.04) 52%,transparent 70%)!important}
-.tStart{color:#cc66ff!important;animation:blink 1.15s ease-in-out infinite}
+/* .tStart animation now lives on child .tStartLabel/.tStartBracket. */
 @media(max-width:600px){
 .setLabel{margin-bottom:5px!important}
 .colorDot{width:36px!important;height:36px!important}
@@ -227,3 +250,57 @@ html,body{width:100%;height:100%;overflow:hidden;background:#000;position:fixed;
 .tStart{margin-top:28px!important;letter-spacing:3px!important}
 }
 @keyframes loadAnim{from{width:10%}to{width:100%}}
+
+/* ── Reusable neon backdrop ─────────────────────────────────────────────
+   Shared by #sTitle and #loadingScreen so both screens share one visual
+   language. Pure-CSS: no JS spawn required, safe to render before boot. */
+.neon-bg{
+  background:radial-gradient(ellipse at 50% 42%,#140030 0%,#070018 45%,#030010 80%,#000007 100%);
+  overflow:hidden;position:fixed;inset:0
+}
+.neon-stars{
+  position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    radial-gradient(circle,rgba(255,255,255,.9) 1px,transparent 1px),
+    radial-gradient(circle,rgba(200,150,255,.7) 1px,transparent 1px),
+    radial-gradient(circle,rgba(150,200,255,.6) 1px,transparent 1px);
+  background-size:220px 180px,140px 160px,300px 250px;
+  animation:starDrift 25s linear infinite
+}
+@media(max-width:600px){
+  /* Lower density on phones to keep the boot paint cheap. */
+  .neon-stars{background-size:320px 240px,220px 200px,420px 320px}
+}
+
+/* ── Loading screen ─────────────────────────────────────────────────────
+   Uses the shared .neon-bg + .neon-stars. The .tLogo class on the title
+   gives us the gradient + glow already; .loadLogo just shrinks it. */
+#loadingScreen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  z-index:var(--z-modal);font-family:'Orbitron',sans-serif;gap:18px
+}
+#loadingScreen .loadLogo{
+  font-size:clamp(22px,4.6vw,42px);position:relative;z-index:2;margin:0
+}
+.loadStatus{
+  font-family:'Rajdhani',sans-serif;font-size:12px;letter-spacing:5px;
+  color:#9bd9ff;text-shadow:0 0 8px rgba(0,238,255,.45);
+  position:relative;z-index:2;text-align:center
+}
+.loadDots{display:inline-block;animation:loadDots 1.4s ease-in-out infinite}
+@keyframes loadDots{
+  0%,100%{opacity:.35}
+  50%{opacity:1}
+}
+.loadBarTrack{
+  width:min(240px,60vw);height:3px;
+  background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.04);
+  position:relative;z-index:2
+}
+.loadBarFill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,#00eeff 0%,#cc44ff 60%,#ff22cc 100%);
+  box-shadow:0 0 10px rgba(204,68,255,.7),0 0 18px rgba(255,34,204,.35);
+  animation:loadAnim 1.2s ease-in-out infinite alternate
+}

@@ -589,16 +589,16 @@
   }
 
   /* ── TITLE BLOCK ─────────────────────────────────────────────────── */
-  .selM-titleBlock{padding:6px 18px 12px}
+  .selM-titleBlock{padding:4px 18px 8px}
   .selM-title{
-    font-family:'Orbitron',sans-serif;font-weight:900;font-size:26px;
+    font-family:'Orbitron',sans-serif;font-weight:900;font-size:22px;
     line-height:1;letter-spacing:.02em;margin:0;
     background:linear-gradient(135deg,#ff2d8a 0%,#d946ef 100%);
     -webkit-background-clip:text;background-clip:text;
     color:transparent
   }
   .selM-subtitle{
-    margin-top:6px;font-size:11px;color:#6b5b8c;
+    margin-top:5px;font-size:10px;color:#6b5b8c;
     letter-spacing:.08em;display:flex;align-items:center;gap:8px;
     font-family:'Orbitron',sans-serif;font-weight:700
   }
@@ -634,12 +634,12 @@
   }
 
   /* ── CAROUSEL ────────────────────────────────────────────────────── */
-  .selM-carouselWrap{position:relative;margin-top:14px;height:300px}
+  .selM-carouselWrap{position:relative;margin-top:10px;height:260px}
   .selM-carousel{
     display:flex;overflow-x:auto;
     scroll-snap-type:x mandatory;scroll-behavior:smooth;
-    height:100%;gap:14px;
-    padding:0 calc(50% - 130px);
+    height:100%;gap:12px;
+    padding:0 calc(50% - 115px);
     scrollbar-width:none;-ms-overflow-style:none;
     -webkit-overflow-scrolling:touch;
     /* Expliciet pan-x toestaan: iOS Safari claimt anders soms de
@@ -649,9 +649,9 @@
   }
   .selM-carousel::-webkit-scrollbar{display:none}
   .selM-card{
-    flex-shrink:0;width:260px;height:260px;
+    flex-shrink:0;width:230px;height:230px;
     scroll-snap-align:center;position:relative;
-    border-radius:26px;overflow:hidden;
+    border-radius:24px;overflow:hidden;
     transform:scale(.88);opacity:.5;
     transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .3s;
     cursor:pointer;
@@ -740,28 +740,31 @@
   }
 
   /* ── STATS STRIP ─────────────────────────────────────────────────── */
+  /* Compact 3-up strip: tighter padding, smaller numerals, thinner bar.
+     Whole strip caps at ~62px high to leave room for chips + CTA on
+     iPhone-14-class viewports without scrolling. */
   .selM-stats{
-    display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
-    margin:14px 14px 0
+    display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;
+    margin:10px 14px 0
   }
   .selM-stat{
     background:rgba(255,255,255,.03);
     border:1px solid rgba(167,139,250,.12);
-    border-radius:14px;padding:9px 10px;text-align:center
+    border-radius:11px;padding:6px 8px 7px;text-align:center
   }
   .selM-statLbl{
-    font-family:'Orbitron',sans-serif;font-size:8.5px;font-weight:700;
-    letter-spacing:.18em;color:#6b5b8c;margin-bottom:4px
+    font-family:'Orbitron',sans-serif;font-size:8px;font-weight:700;
+    letter-spacing:.16em;color:#6b5b8c;margin-bottom:2px
   }
   .selM-statVal{
-    font-family:'Orbitron',sans-serif;font-size:15px;font-weight:900;
+    font-family:'Orbitron',sans-serif;font-size:13px;font-weight:900;
     color:#f5f3ff;line-height:1
   }
   .selM-statUnit{
-    font-size:9px;color:#a89cc7;margin-left:2px;font-weight:600
+    font-size:8px;color:#a89cc7;margin-left:2px;font-weight:600
   }
   .selM-statBar{
-    margin-top:6px;height:3px;background:rgba(255,255,255,.06);
+    margin-top:4px;height:2px;background:rgba(255,255,255,.05);
     border-radius:999px;overflow:hidden
   }
   .selM-statBarFill{
@@ -771,82 +774,95 @@
   }
 
   /* ── OPTIONS ─────────────────────────────────────────────────────── */
+  /* Tighter rows + smaller chips so LAPS / DIFF / MODE collectively eat
+     ~120px instead of ~150px. Chips drop from 34→30px; the surrounding
+     row is 38px tall, still finger-friendly. */
   .selM-options{
-    margin-top:16px;padding:0 14px;
-    display:flex;flex-direction:column;gap:10px
+    margin-top:12px;padding:0 14px;
+    display:flex;flex-direction:column;gap:8px
   }
-  .selM-optionRow{display:flex;align-items:center;gap:10px}
+  .selM-optionRow{display:flex;align-items:center;gap:8px}
   .selM-optionLabel{
-    width:60px;flex-shrink:0;
-    font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;
+    width:50px;flex-shrink:0;
+    font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;
     letter-spacing:.18em;color:#6b5b8c
   }
   .selM-chips{
-    flex:1;display:flex;gap:4px;
+    flex:1;display:flex;gap:3px;
     background:rgba(255,255,255,.03);
     border:1px solid rgba(167,139,250,.12);
-    border-radius:12px;padding:4px
+    border-radius:10px;padding:3px
   }
   .selM-chip{
-    flex:1;height:34px;border-radius:8px;
+    flex:1;height:30px;border-radius:8px;
     background:transparent;border:none;color:#a89cc7;
-    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:13px;
-    letter-spacing:.05em;cursor:pointer;transition:all .18s;
+    font-family:'Rajdhani',sans-serif;font-weight:700;font-size:12.5px;
+    letter-spacing:.04em;cursor:pointer;transition:all .18s;
     display:flex;align-items:center;justify-content:center;gap:4px;
-    padding:0 6px
+    padding:0 4px
   }
   .selM-chip.selM-chipActive{
     background:linear-gradient(135deg,#ff2d8a,#d946ef);color:#fff;
-    box-shadow:0 4px 14px rgba(255,45,138,.4)
+    box-shadow:0 3px 10px rgba(255,45,138,.35)
   }
-  .selM-chipIcon{font-size:14px;line-height:1}
+  .selM-chipIcon{font-size:13px;line-height:1}
 
   /* ── CTA BAR (sticky bottom) ─────────────────────────────────────── */
+  /* Slimmer button, capped width (~70% of phone), summary integrated as
+     a sub-label inside the button — replaces the previous pair of "big
+     CTA + duplicate summary line beneath it". */
   .selM-ctaBar{
     position:fixed;left:0;right:0;bottom:0;z-index:5;
-    padding:10px 14px max(env(safe-area-inset-bottom),12px);
+    padding:8px 14px max(env(safe-area-inset-bottom),10px);
     background:linear-gradient(180deg,transparent 0%,rgba(10,6,18,.92) 30%,#0a0612 100%);
     -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)
   }
-  .selM-ctaBarInner{max-width:480px;margin:0 auto}
+  .selM-ctaBarInner{
+    max-width:320px;margin:0 auto;display:flex;flex-direction:column
+  }
   .selM-ctaBtn{
-    width:100%;height:56px;border:none;border-radius:16px;
+    width:100%;min-height:54px;border:none;border-radius:14px;
+    padding:7px 16px;
     background:linear-gradient(135deg,#ff2d8a 0%,#d946ef 60%,#6d28d9 100%);
     color:#fff;cursor:pointer;position:relative;overflow:hidden;
-    font-family:'Orbitron',sans-serif;font-weight:900;font-size:16px;
-    letter-spacing:.18em;
-    box-shadow:0 8px 26px rgba(255,45,138,.4),
-               0 2px 8px rgba(217,70,239,.3),
-               inset 0 1px 0 rgba(255,255,255,.2);
-    display:flex;align-items:center;justify-content:center;gap:10px;
-    transition:transform .15s
+    box-shadow:0 6px 18px rgba(255,45,138,.32),
+               0 2px 6px rgba(217,70,239,.22),
+               inset 0 1px 0 rgba(255,255,255,.18);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:2px;transition:transform .15s
   }
   .selM-ctaBtn:active{transform:scale(.97)}
   .selM-ctaBtn::before{
-    content:'';position:absolute;inset:0;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);
     transform:translateX(-100%);
-    animation:selMShine 3s ease-in-out infinite
+    animation:selMShine 3.4s ease-in-out infinite
   }
+  .selM-ctaBtnMain{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    font-family:'Orbitron',sans-serif;font-weight:900;font-size:15px;
+    letter-spacing:.16em;line-height:1
+  }
+  .selM-ctaBtnLbl{line-height:1}
   @keyframes selMShine{
     0%,60%{transform:translateX(-100%)}
     100%{transform:translateX(100%)}
   }
   .selM-ctaSummary{
-    display:flex;justify-content:center;align-items:center;gap:6px;
-    margin-top:7px;font-size:10.5px;color:#6b5b8c;
+    display:flex;justify-content:center;align-items:center;gap:5px;
+    font-size:9.5px;color:rgba(255,255,255,.78);
     letter-spacing:.08em;text-transform:uppercase;
     font-family:'Rajdhani',sans-serif;font-weight:700;
-    flex-wrap:wrap
+    flex-wrap:wrap;line-height:1.1
   }
-  .selM-ctaSummary .selM-sep{opacity:.4}
+  .selM-ctaSummary .selM-sep{opacity:.45}
 }
 
 /* Smaller Android phones — 360px viewport, shorter screens. */
 @media (orientation:portrait) and (max-width:380px){
-  .selM-card{width:228px;height:228px}
-  .selM-carousel{padding:0 calc(50% - 114px)}
-  .selM-carouselWrap{height:264px}
-  .selM-title{font-size:22px}
+  .selM-card{width:208px;height:208px}
+  .selM-carousel{padding:0 calc(50% - 104px)}
+  .selM-carouselWrap{height:236px}
+  .selM-title{font-size:20px}
   .selM-cardModel{font-size:18px}
 }
