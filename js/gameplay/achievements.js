@@ -32,7 +32,23 @@ const ACHIEVEMENTS=[
   {id:'fl',icon:'💜',title:'PURPLE RIBBON',desc:'Set fastest lap',check:function(p,s){return s.fl;}},
   {id:'podium5',icon:'🥇',title:'VETERAN',desc:'5 podium finishes',check:function(){return _podiumCount>=5;}},
   {id:'combo4',icon:'🔥',title:'ON FIRE',desc:'4x combo in a race',check:function(){return _comboCount>=4;}},
+  // Sandstorm Canyon — only triggerable on that world. _sandstormLap3CleanFlag
+  // is set true when the player enters lap 3 in the sandstorm world and
+  // cleared on any recoverActive while still on lap 3 (see updateAchievements).
+  {id:'sandstorm_eye',icon:'🏜',title:'EYE OF THE STORM',desc:'Finish lap 3 of Sandstorm without going off-track',
+    check:function(){return activeWorld==='sandstorm'&&_sandstormLap3CleanFlag;}},
+  {id:'sandstorm_mirage',icon:'🌅',title:'MIRAGE MASTER',desc:'Win Sandstorm Canyon on Normal+',
+    check:function(p){return activeWorld==='sandstorm'&&p===1&&difficulty>=1;}},
 ];
+
+// Sandstorm Eye-of-the-Storm tracker. Cross-script (race.js resets it on
+// _resetRaceState), updateAchievements below reads/writes it. Defaults to
+// true so that if the player does manage a clean lap-3, the flag is set
+// at the moment the off-track-during-lap-3 condition is invalidated.
+// Specifically: starts false, becomes true when reaching lap 3 in sandstorm,
+// becomes false again on any recoverActive while still in lap 3.
+var _sandstormLap3CleanFlag=false;
+var _sandstormPrevLap=0;
 var DAILY_CHALLENGES=[
   {id:'win',text:'Win een race',reward:150,check:function(p){return p===1;}},
   {id:'clean',text:'Finish zonder schade',reward:200,check:function(p,s){return s.hits===0;}},
@@ -75,6 +91,17 @@ function updateAchievements(dt){
   if(_raceOvertakes>=5)unlockAchievement('OVERTAKER');
   // Clean lap — reset on recovery
   if(recoverActive)_cleanLapFlag=false;
+  // Sandstorm Eye-of-the-Storm tracker. Latch the flag on first frame of
+  // lap 3 in the sandstorm world; clear it if the player ever goes off-track
+  // (recoverActive) while still on lap 3. Only watched in sandstorm so other
+  // worlds don't pay the lap-edge cost.
+  if(activeWorld==='sandstorm'){
+    if(car.lap===3&&_sandstormPrevLap!==3){
+      _sandstormLap3CleanFlag=true;
+    }
+    if(recoverActive&&car.lap===3)_sandstormLap3CleanFlag=false;
+    _sandstormPrevLap=car.lap;
+  }
   // Nitro junkie tracked via activations in updatePlayer
 }
 
