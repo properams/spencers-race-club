@@ -101,92 +101,73 @@ function buildFerrariSF90(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildBugattiChiron(g, def, mats, lod){
   const lo = lod === 'low';
-  // Phase 2 pilot — body-subgroup zodat toekomstige per-car effects (boost
-  // squat, hard-corner roll) de body kunnen kantelen onafhankelijk van de
-  // wheels. Wheels worden later door build.js → buildAllWheels op `g` zelf
-  // gehangen, niet op `body`, zodat de spin-update op wheelGroups blijft
-  // werken. Reverse-light, beam-cones en underglow worden ook op `g`
-  // gehangen door build.js. night.js:196 filtert mesh.children op
-  // userData.isHeadBeam dus de extra body-Group wordt overgeslagen.
+  // Art-of-Rally restyle (Interpretatie A) — extruded super-archetype body.
+  // Bugatti signatures (horseshoe grille, two-tone gold accent, C-shape side
+  // accent, centre exhaust) blijven als overlays.
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  // Wide chassis (W=2.05) — Chiron is broader than the Ferrari
-  addPart(body, new THREE.BoxGeometry(2.05, .44, 4.05), mats.paint, 0, .26, 0);
-  // Rounded front clamshell — sphere-quarter front for the signature shape
-  const fb = new THREE.Mesh(new THREE.SphereGeometry(.50, 12, 8, 0, Math.PI*2, 0, Math.PI/2), mats.paint);
-  fb.scale.set(2.05, .50, 1.20); fb.rotation.x = Math.PI;
-  fb.position.set(0, .22, -1.85); body.add(fb);
+  const W = 2.05, L = 4.05, H = 1.10;
+  if (lo){
+    addPart(body, new THREE.BoxGeometry(W, .44, L), mats.paint, 0, .26, 0);
+    addPart(body, new THREE.BoxGeometry(W*.81, .40, L*.37), mats.accent, 0, .76, .00);
+    addPart(body, new THREE.BoxGeometry(W*.68, .04, L*.30), mats.accent, 0, .89, -.10);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'super' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
+  }
   // Front splitter
-  addPart(body, new THREE.BoxGeometry(1.85, .06, .26), mats.matBlk, 0, .10, -2.05);
-  // Hood — crowned slab i.p.v. flat box (Phase 2.2). Lichte aerodynamische
-  // welling op de bovenkant; subtiel maar leesbaar tegen het cabin-volume.
-  addPart(body, _crownedSlabGeo(1.78, .08, 1.30), mats.paint, 0, .54, -1.00);
+  addPart(body, new THREE.BoxGeometry(W*0.90, .06, .26), mats.matBlk, 0, .10, -L*0.51);
   // Horseshoe-style grille (signature Bugatti)
-  addPart(body, new THREE.BoxGeometry(.55, .22, .12), mats.grille, 0, .30, -2.00);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(.42, .14, .04), mats.accent, 0, .30, -2.06); // gold horseshoe rim
+  addPart(body, new THREE.BoxGeometry(.55, .22, .12), mats.grille, 0, H*0.27, -L*0.49);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(.42, .14, .04), mats.accent, 0, H*0.27, -L*0.51); // gold horseshoe rim
   }
-  // Premium headlights (Phase 2.3) — emissive kern + glas-lens (transmission)
-  // + 4-LED accent strip. Vervangt de standaard buildHeadlights call.
-  buildPremiumHeadlights(body, mats, {spread:.78, y:.46, z:-1.92, w:.34, h:.10, d:.07});
-  // Cabin — slightly raised dome. Tonal split livery: cabin shell in
-  // accent color (gold) instead of paint to evoke the iconic Chiron
-  // two-tone look. Roof also uses accent for the same reason.
-  addPart(body, new THREE.BoxGeometry(1.66, .40, 1.50), mats.accent, 0, .76, .00);
-  addPart(body, new THREE.BoxGeometry(1.54, .48, .08), mats.glass, 0, .82, -.78, -.35);
-  [-.83, .83].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, 1.30), mats.glass, s, .82, .00));
-  addPart(body, new THREE.BoxGeometry(1.46, .30, .08), mats.glassDark, 0, .82, .80, .38);
-  // Roof — crowned slab in accent material (Phase 2.2).
-  addPart(body, _crownedSlabGeo(1.40, .04, 1.20), mats.accent, 0, 1.00, -.10);
-  // Engine cover (rear paint section) — crowned slab (Phase 2.2).
-  addPart(body, _crownedSlabGeo(1.65, .20, 1.10), mats.paint, 0, .68, .92);
-  // Chrome window-trim strips (Phase 2.5) — dunne strips langs de bovenkant
-  // van de side windows + voor- en achterkant van het glass-canopy.
-  // Geeft het premium "vernist metaal rond glas" effect dat MeshStandard-
-  // chrome zonder envMap niet kon waarmaken.
-  if(!lo){
-    [-0.86, 0.86].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.025, .025, 1.30), mats.chrome, s, .67, .00);
-    });
-    addPart(body, new THREE.BoxGeometry(1.30, .025, .025), mats.chrome, 0, .67, -.65);
-    addPart(body, new THREE.BoxGeometry(1.30, .025, .025), mats.chrome, 0, .67,  .65);
+  // Simple bumper-mounted headlights
+  buildHeadlights(body, mats, {spread: W*0.38, y: H*0.42, z: -L*0.475, w: .34, h: .10, d: .07});
+  // Cabin glass
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.75, 0.48, 0.08), mats.glass, 0, H*0.75, -L*0.20, -0.35);
+    [-W*0.40, +W*0.40].forEach(s=>addPart(body, new THREE.BoxGeometry(0.06, 0.30, L*0.32), mats.glass, s, H*0.75, 0));
+    addPart(body, new THREE.BoxGeometry(W*0.71, 0.30, 0.08), mats.glassDark, 0, H*0.75, L*0.20, 0.38);
   }
-  // C-shape side accent — Chiron signature: dark inset arc on the door
-  if(!lo){
-    [-1.01, 1.01].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.04, .30, 1.10), mats.matBlk, s, .50, -.05);
-      addPart(body, new THREE.BoxGeometry(.05, .12, .12), mats.accent, s, .65, -.55); // upper accent dot
-      addPart(body, new THREE.BoxGeometry(.05, .12, .12), mats.accent, s, .35, -.55); // lower accent dot
+  // C-shape side accent — Chiron signature
+  if (!lo){
+    [-W*0.49, +W*0.49].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(.04, .30, 1.10), mats.matBlk, s, H*0.45, -.05);
+      addPart(body, new THREE.BoxGeometry(.05, .12, .12), mats.accent, s, H*0.59, -.55);
+      addPart(body, new THREE.BoxGeometry(.05, .12, .12), mats.accent, s, H*0.32, -.55);
     });
   }
   buildWheelArches(body, mats.paint, {positions:[
-    [-1.02, .42, -1.40], [1.02, .42, -1.40], [-1.02, .42, 1.40], [1.02, .42, 1.40]
+    [-W*0.50, .42, -L*0.345], [W*0.50, .42, -L*0.345], [-W*0.50, .42, L*0.345], [W*0.50, .42, L*0.345]
   ]});
   // Rear bumper + diffuser
-  addPart(body, new THREE.BoxGeometry(1.95, .22, .30), mats.paint, 0, .32, 1.95);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.70, .10, .28), mats.matBlk, 0, .14, 2.00);
+  addPart(body, new THREE.BoxGeometry(W*0.95, .22, .30), mats.paint, 0, .32, L*0.48);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.83, .10, .28), mats.matBlk, 0, .14, L*0.49);
   }
-  // Modest spoiler — Chiron has retractable wing, suggested by short fixed plate
-  addPart(body, new THREE.BoxGeometry(1.60, .04, .26), mats.matBlk, 0, .96, 1.78);
-  // Tail lights — Bugatti signature: full-width LED bar (suggested with two segments)
-  buildTaillights(body, mats, {spread:.50, y:.58, z:1.99, w:.46, h:.08, d:.05});
+  // Modest fixed-position spoiler
+  addPart(body, new THREE.BoxGeometry(W*0.78, .04, .26), mats.matBlk, 0, H*0.87, L*0.44);
+  // Tail lights — Bugatti signature: full-width LED bar
+  buildTaillights(body, mats, {spread: W*0.24, y: H*0.53, z: L*0.49, w: .46, h: .08, d: .05});
   // Centre single large exhaust (Chiron signature)
   const ex = new THREE.Mesh(new THREE.CylinderGeometry(.13, .13, .35, 10), mats.chrome);
-  ex.rotation.x = Math.PI/2; ex.position.set(0, .30, 2.06); body.add(ex);
-  if(!lo){
+  ex.rotation.x = Math.PI/2; ex.position.set(0, .30, L*0.51); body.add(ex);
+  if (!lo){
     const exRing = new THREE.Mesh(new THREE.TorusGeometry(.15, .02, 5, 12), mats.chrome);
-    exRing.rotation.y = Math.PI/2; exRing.position.set(0, .30, 2.06); body.add(exRing);
+    exRing.rotation.y = Math.PI/2; exRing.position.set(0, .30, L*0.51); body.add(exRing);
   }
-  buildSideSkirts(body, mats, {spread:1.02, y:.10, z:0, length:2.6});
-  // Tier S/A signature — drilled discs + accent-gold calipers + accent-
-  // colored player underbody glow. build.js leest _wheelOpts in
-  // buildAllWheels en _signature in makeAllCars (player-only underglow).
+  // Single accent stripe (rally livery — gold over Bugatti blue)
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(0.22, 0.025, L*0.85), mats.accent, 0, H*0.93, 0);
+  }
+  buildSideSkirts(body, mats, {spread: W*0.50, y:.10, z:0, length: L*0.65});
   g.userData = g.userData || {};
   g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
-  g.userData._signature = { underglow: def.accent };
+  // Geen _signature.underglow — AOR-style heeft geen ground glow.
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -195,86 +176,75 @@ function buildBugattiChiron(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildLamborghiniHuracan(g, def, mats, lod){
   const lo = lod === 'low';
+  // Art-of-Rally restyle — extruded super-archetype + Lambo overlays.
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  // Lower chassis — angular, slightly narrower than Bugatti
-  addPart(body, new THREE.BoxGeometry(1.96, .38, 4.10), mats.paint, 0, .24, 0);
-  // Sharp pointed front (no rounded clamshell)
-  addPart(body, new THREE.BoxGeometry(1.80, .26, .80), mats.paint, 0, .30, -1.85);
-  // Triangular front splitter (Lambo's hex/triangular language)
-  addPart(body, new THREE.BoxGeometry(1.75, .06, .30), mats.matBlk, 0, .08, -2.10);
-  // Hood — crowned slab (subtle dome — Lambo's hood is normally flatter dan
-  // andere supers, dus de welving is licht maar leesbaar)
-  addPart(body, _crownedSlabGeo(1.78, .08, 1.30), mats.paint, 0, .50, -1.00);
-  if(!lo){
-    // Hood crease — a thin paint ridge running down centre
-    addPart(body, new THREE.BoxGeometry(.04, .04, 1.20), mats.matBlk, 0, .56, -1.00);
+  const W = 1.96, L = 4.10, H = 1.05;
+  if (lo){
+    addPart(body, new THREE.BoxGeometry(W, .38, L), mats.paint, 0, .24, 0);
+    addPart(body, new THREE.BoxGeometry(W*.82, .34, L*.34), mats.paint, 0, .68, -.05);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'super' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
   }
-  // Front lower intakes — hex shape suggested with two angular blocks
-  if(!lo){
-    [-.55, .55].forEach(s=>addPart(body, new THREE.BoxGeometry(.40, .10, .14), mats.grille, s, .18, -2.02));
+  // Triangular front splitter
+  addPart(body, new THREE.BoxGeometry(W*0.89, .06, .30), mats.matBlk, 0, .08, -L*0.51);
+  // Front lower intakes — hex
+  if (!lo){
+    [-.55, .55].forEach(s=>addPart(body, new THREE.BoxGeometry(.40, .10, .14), mats.grille, s, H*0.17, -L*0.49));
   }
-  buildPremiumHeadlights(body, mats, {spread:.72, y:.40, z:-1.95, w:.28, h:.08, d:.06});
-  // Cabin — VERY low and flat (Lambo signature)
-  addPart(body, new THREE.BoxGeometry(1.60, .34, 1.40), mats.paint, 0, .68, -.05);
-  // Sloped windscreen (steeper than Ferrari)
-  addPart(body, new THREE.BoxGeometry(1.50, .42, .07), mats.glass, 0, .76, -.78, -.50);
-  [-.81, .81].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .26, 1.20), mats.glass, s, .76, -.05));
-  // Rear glass — short, almost flat
-  addPart(body, new THREE.BoxGeometry(1.42, .22, .07), mats.glassDark, 0, .76, .68, .48);
-  // Flat low roof — crowned slab (zeer subtiel; Lambo roof is bijna vlak)
-  addPart(body, _crownedSlabGeo(1.34, .03, 1.05), mats.paint, 0, .90, -.20);
-  // Engine cover — crowned slab (Lambo has BIG visible engine bay)
-  addPart(body, _crownedSlabGeo(1.62, .22, 1.10), mats.paint, 0, .60, .92);
-  if(!lo){
-    // Hexagonal engine bay vents
-    [[-.42, .82], [.42, .82], [0, .92]].forEach(p=>{
-      addPart(body, new THREE.BoxGeometry(.18, .04, .35), mats.matBlk, p[0], .73, p[1]);
+  buildHeadlights(body, mats, {spread: W*0.37, y: H*0.38, z: -L*0.476, w: .28, h: .08, d: .06});
+  // Cabin glass
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.76, 0.42, 0.07), mats.glass, 0, H*0.72, -L*0.20, -0.50);
+    [-W*0.41, +W*0.41].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .26, L*0.29), mats.glass, s, H*0.72, -L*0.012));
+    addPart(body, new THREE.BoxGeometry(W*0.72, 0.22, 0.07), mats.glassDark, 0, H*0.72, L*0.17, 0.48);
+  }
+  // Hexagonal engine bay vents (Lambo signature)
+  if (!lo){
+    [[-.42, L*0.20], [.42, L*0.20], [0, L*0.22]].forEach(p=>{
+      addPart(body, new THREE.BoxGeometry(.18, .04, .35), mats.matBlk, p[0], H*0.71, p[1]);
     });
   }
-  // Chrome window-trim
-  if(!lo){
-    [-0.83, 0.83].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.025, .025, 1.20), mats.chrome, s, .59, -.05);
-    });
-  }
-  // Aggressive side intakes — Lambo signature, large angular vents
-  if(!lo){
-    [-1.00, 1.00].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.05, .26, .80), mats.matBlk, s, .48, .25);
-      addPart(body, new THREE.BoxGeometry(.04, .14, .65), mats.accent, s, .48, .25);
+  // Aggressive side intakes — Lambo angular vents
+  if (!lo){
+    [-W*0.51, +W*0.51].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(.05, .26, .80), mats.matBlk, s, H*0.46, L*0.06);
+      addPart(body, new THREE.BoxGeometry(.04, .14, .65), mats.accent, s, H*0.46, L*0.06);
     });
   }
   buildWheelArches(body, mats.paint, {positions:[
-    [-1.00, .40, -1.40], [1.00, .40, -1.40], [-1.00, .40, 1.40], [1.00, .40, 1.40]
+    [-W*0.51, .40, -L*0.34], [W*0.51, .40, -L*0.34], [-W*0.51, .40, L*0.34], [W*0.51, .40, L*0.34]
   ]});
-  // Rear bumper + AGGRESSIVE diffuser (Lambo signature)
-  addPart(body, new THREE.BoxGeometry(1.90, .24, .30), mats.paint, 0, .32, 1.95);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.75, .14, .32), mats.matBlk, 0, .12, 2.00);
-    // 5 diffuser fins
-    [-.65, -.32, 0, .32, .65].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .18, .30), mats.blk, s, .12, 2.00));
+  // Rear bumper + AGGRESSIVE diffuser
+  addPart(body, new THREE.BoxGeometry(W*0.97, .24, .30), mats.paint, 0, .32, L*0.475);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.89, .14, .32), mats.matBlk, 0, .12, L*0.49);
+    [-.65, -.32, 0, .32, .65].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .18, .30), mats.blk, s, .12, L*0.49));
   }
-  // Tail lights — hex/Y-shape suggested with angular blocks
-  buildTaillights(body, mats, {spread:.72, y:.55, z:1.98, w:.30, h:.10, d:.05});
-  // Quad exhausts (Lambo signature) — two pairs
-  if(!lo){
+  buildTaillights(body, mats, {spread: W*0.37, y: H*0.52, z: L*0.49, w: .30, h: .10, d: .05});
+  // Quad exhausts (Lambo signature)
+  if (!lo){
     [-.55, -.30, .30, .55].forEach(s=>{
       const ex = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, .25, 8), mats.chrome);
-      ex.rotation.x = Math.PI/2; ex.position.set(s, .26, 2.05); body.add(ex);
+      ex.rotation.x = Math.PI/2; ex.position.set(s, .26, L*0.50); body.add(ex);
     });
   } else {
-    buildExhausts(body, mats, {spread:.40, y:.26, z:2.05, radius:.06, length:.25});
+    buildExhausts(body, mats, {spread:.40, y:.26, z: L*0.50, radius:.06, length:.25});
   }
   // Rear spoiler — sharp wedge
-  [-.65, .65].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .20, .10), mats.matBlk, s, .82, 1.78));
-  addPart(body, new THREE.BoxGeometry(1.62, .04, .28), mats.paint, 0, .94, 1.78);
-  buildSideSkirts(body, mats, {spread:.99, y:.10, z:0, length:2.6});
+  [-.65, .65].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .20, .10), mats.matBlk, s, H*0.78, L*0.43));
+  addPart(body, new THREE.BoxGeometry(W*0.83, .04, .28), mats.paint, 0, H*0.90, L*0.43);
+  // Single accent stripe over hood + roof
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(0.22, 0.025, L*0.85), mats.accent, 0, H*0.95, 0);
+  }
+  buildSideSkirts(body, mats, {spread: W*0.50, y:.10, z:0, length: L*0.65});
   g.userData = g.userData || {};
   g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
-  g.userData._signature = { underglow: def.accent };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -283,63 +253,58 @@ function buildLamborghiniHuracan(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildMaseratiMC20(g, def, mats, lod){
   const lo = lod === 'low';
-  // Phase 3 Tier B — body-subgroup, crowned hood/roof/engine, chrome trim.
+  // Art-of-Rally restyle — extruded super-archetype + Maserati overlays.
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  // Slim chassis — slightly longer than super average
-  addPart(body, new THREE.BoxGeometry(1.92, .40, 4.25), mats.paint, 0, .25, 0);
-  // Long, low front
-  addPart(body, new THREE.BoxGeometry(1.74, .24, 1.00), mats.paint, 0, .30, -1.95);
-  addPart(body, new THREE.BoxGeometry(1.60, .06, .26), mats.matBlk, 0, .12, -2.20);
-  // Trident grille suggestion (3-slat horizontal bar)
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(.70, .14, .10), mats.grille, 0, .26, -2.10);
-    [-.18, 0, .18].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .10, .04), mats.accent, s, .26, -2.16));
+  const W = 1.92, L = 4.25, H = 1.05;
+  if (lo){
+    addPart(body, new THREE.BoxGeometry(W, .40, L), mats.paint, 0, .25, 0);
+    addPart(body, new THREE.BoxGeometry(W*.84, .42, L*.30), mats.paint, 0, .76, .25);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'super' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
   }
-  // Hood — crowned slab
-  addPart(body, _crownedSlabGeo(1.72, .08, 1.50), mats.paint, 0, .54, -1.10);
-  buildHeadlights(body, mats, {spread:.74, y:.42, z:-2.00, w:.28, h:.08, d:.06});
-  // Cabin — set further back (signature MC20 proportion)
-  addPart(body, new THREE.BoxGeometry(1.62, .42, 1.25), mats.paint, 0, .76, .25);
-  addPart(body, new THREE.BoxGeometry(1.48, .50, .08), mats.glass, 0, .82, -.50, -.40);
-  [-.81, .81].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, 1.05), mats.glass, s, .82, .25));
-  // Tapered rear glass — fastback
-  addPart(body, new THREE.BoxGeometry(1.40, .42, .08), mats.glassDark, 0, .80, 1.05, .55);
-  // Roof — crowned slab
-  addPart(body, _crownedSlabGeo(1.36, .04, 1.00), mats.paint, 0, 1.00, .15);
-  // Engine cover — crowned slab
-  addPart(body, _crownedSlabGeo(1.55, .16, .85), mats.paint, 0, .68, 1.20);
-  // Chrome window-trim
-  if(!lo){
-    [-0.83, 0.83].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.025, .025, 1.05), mats.chrome, s, .65, .25);
-    });
+  addPart(body, new THREE.BoxGeometry(W*0.83, .06, .26), mats.matBlk, 0, .12, -L*0.518);
+  // Trident grille (3-slat)
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(.70, .14, .10), mats.grille, 0, H*0.25, -L*0.494);
+    [-.18, 0, .18].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .10, .04), mats.accent, s, H*0.25, -L*0.508));
   }
-  // Door-line accent — single white stripe (def.accent often white)
-  if(!lo){
-    [-1.00, 1.00].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.04, .04, 2.20), mats.accent, s, .42, 0);
+  buildHeadlights(body, mats, {spread: W*0.39, y: H*0.40, z: -L*0.471, w: .28, h: .08, d: .06});
+  // Cabin glass
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.77, 0.50, 0.08), mats.glass, 0, H*0.78, -L*0.12, -0.40);
+    [-W*0.42, +W*0.42].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, L*0.25), mats.glass, s, H*0.78, L*0.06));
+    addPart(body, new THREE.BoxGeometry(W*0.73, 0.42, 0.08), mats.glassDark, 0, H*0.76, L*0.25, 0.55);
+  }
+  // Door-line accent stripe (Maserati signature, single white)
+  if (!lo){
+    [-W*0.51, +W*0.51].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(.04, .04, L*0.55), mats.accent, s, H*0.40, 0);
     });
     // Subtle side intake
-    [-.99, .99].forEach(s=>addPart(body, new THREE.BoxGeometry(.05, .14, .60), mats.matBlk, s, .55, .55));
+    [-W*0.50, +W*0.50].forEach(s=>addPart(body, new THREE.BoxGeometry(.05, .14, .60), mats.matBlk, s, H*0.52, L*0.13));
   }
   buildWheelArches(body, mats.paint, {positions:[
-    [-1.00, .42, -1.45], [1.00, .42, -1.45], [-1.00, .42, 1.45], [1.00, .42, 1.45]
+    [-W*0.50, .42, -L*0.34], [W*0.50, .42, -L*0.34], [-W*0.50, .42, L*0.34], [W*0.50, .42, L*0.34]
   ]});
-  // Rear bumper + simple diffuser
-  addPart(body, new THREE.BoxGeometry(1.85, .22, .28), mats.paint, 0, .32, 2.05);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.55, .10, .26), mats.matBlk, 0, .14, 2.10);
+  addPart(body, new THREE.BoxGeometry(W*0.96, .22, .28), mats.paint, 0, .32, L*0.482);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.81, .10, .26), mats.matBlk, 0, .14, L*0.494);
   }
-  // Modest fixed-position spoiler integrated into rear deck
-  addPart(body, new THREE.BoxGeometry(1.50, .04, .22), mats.matBlk, 0, .85, 1.84);
-  // Slim taillights
-  buildTaillights(body, mats, {spread:.72, y:.54, z:2.08, w:.28, h:.07, d:.05});
-  // Dual symmetric exhausts (wider stance than Ferrari)
-  buildExhausts(body, mats, {spread:.65, y:.24, z:2.16, radius:.065, length:.30});
-  buildSideSkirts(body, mats, {spread:.99, y:.10, z:0, length:2.7});
+  addPart(body, new THREE.BoxGeometry(W*0.78, .04, .22), mats.matBlk, 0, H*0.81, L*0.43);
+  buildTaillights(body, mats, {spread: W*0.37, y: H*0.51, z: L*0.49, w: .28, h: .07, d: .05});
+  buildExhausts(body, mats, {spread:.65, y:.24, z: L*0.51, radius:.065, length:.30});
+  // Single accent stripe over hood + roof
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(0.20, 0.025, L*0.85), mats.accent, 0, H*0.95, 0);
+  }
+  buildSideSkirts(body, mats, {spread: W*0.50, y:.10, z:0, length: L*0.65});
+  g.userData = g.userData || {};
+  g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -348,70 +313,65 @@ function buildMaseratiMC20(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildAudiR8(g, def, mats, lod){
   const lo = lod === 'low';
-  // Phase 3 Tier B — body-subgroup, crowned hood/roof/engine, chrome trim.
-  // Geen premium headlights, geen drilled disc, geen player underglow —
-  // Audi's "understated" karakter zou door premium-features verstoord worden.
+  // Art-of-Rally restyle — extruded super-archetype + Audi side-blade signature.
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  // Long chassis (longest wheelbase among supers)
-  addPart(body, new THREE.BoxGeometry(1.96, .42, 4.30), mats.paint, 0, .25, 0);
-  // Squared low front
-  addPart(body, new THREE.BoxGeometry(1.80, .26, .85), mats.paint, 0, .30, -1.95);
-  addPart(body, new THREE.BoxGeometry(1.78, .06, .26), mats.matBlk, 0, .10, -2.20);
-  // Single-frame grille (Audi signature) — wide hex shape
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.20, .20, .10), mats.grille, 0, .26, -2.18);
-    addPart(body, new THREE.BoxGeometry(1.16, .04, .04), mats.accent, 0, .26, -2.24);
+  const W = 1.96, L = 4.30, H = 1.10;
+  if (lo){
+    addPart(body, new THREE.BoxGeometry(W, .42, L), mats.paint, 0, .25, 0);
+    addPart(body, new THREE.BoxGeometry(W*.85, .42, L*.30), mats.paint, 0, .76, 0);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'super' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
   }
-  // Hood — crowned slab
-  addPart(body, _crownedSlabGeo(1.74, .08, 1.45), mats.paint, 0, .54, -1.05);
-  // Quad LED suggestion (Audi signature) — stretched headlights (standaard,
-  // niet premium — zie tier-rationale boven).
-  buildHeadlights(body, mats, {spread:.78, y:.42, z:-1.98, w:.36, h:.08, d:.06});
-  // Cabin
-  addPart(body, new THREE.BoxGeometry(1.66, .42, 1.30), mats.paint, 0, .76, .00);
-  addPart(body, new THREE.BoxGeometry(1.52, .50, .08), mats.glass, 0, .82, -.78, -.42);
-  [-.83, .83].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, 1.10), mats.glass, s, .82, .00));
-  addPart(body, new THREE.BoxGeometry(1.42, .32, .08), mats.glassDark, 0, .82, .80, .40);
-  // Roof — crowned slab
-  addPart(body, _crownedSlabGeo(1.36, .04, 1.10), mats.paint, 0, 1.00, -.10);
-  // Engine cover — crowned slab
-  addPart(body, _crownedSlabGeo(1.62, .20, 1.05), mats.paint, 0, .68, 1.05);
-  // Chrome window-trim
-  if(!lo){
-    [-0.85, 0.85].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.025, .025, 1.10), mats.chrome, s, .65, .00);
-    });
+  addPart(body, new THREE.BoxGeometry(W*0.91, .06, .26), mats.matBlk, 0, .10, -L*0.512);
+  // Single-frame grille (Audi signature)
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(1.20, .20, .10), mats.grille, 0, H*0.24, -L*0.507);
+    addPart(body, new THREE.BoxGeometry(1.16, .04, .04), mats.accent, 0, H*0.24, -L*0.521);
   }
-  // Side blade (R8 SIGNATURE) — large vertical inset on the door, in accent color
-  if(!lo){
-    [-1.01, 1.01].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.04, .55, 1.10), mats.matBlk, s, .55, .15);
-      addPart(body, new THREE.BoxGeometry(.05, .45, 1.00), mats.accent, s, .55, .15);
+  buildHeadlights(body, mats, {spread: W*0.40, y: H*0.38, z: -L*0.460, w: .36, h: .08, d: .06});
+  // Cabin glass
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.78, 0.50, 0.08), mats.glass, 0, H*0.74, -L*0.18, -0.42);
+    [-W*0.42, +W*0.42].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, L*0.26), mats.glass, s, H*0.74, 0));
+    addPart(body, new THREE.BoxGeometry(W*0.72, 0.32, 0.08), mats.glassDark, 0, H*0.74, L*0.19, 0.40);
+  }
+  // Side blade (R8 SIGNATURE)
+  if (!lo){
+    [-W*0.51, +W*0.51].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(.04, .55, 1.10), mats.matBlk, s, H*0.50, L*0.04);
+      addPart(body, new THREE.BoxGeometry(.05, .45, 1.00), mats.accent, s, H*0.50, L*0.04);
     });
   }
   buildWheelArches(body, mats.paint, {positions:[
-    [-1.00, .44, -1.50], [1.00, .44, -1.50], [-1.00, .44, 1.50], [1.00, .44, 1.50]
+    [-W*0.51, .44, -L*0.35], [W*0.51, .44, -L*0.35], [-W*0.51, .44, L*0.35], [W*0.51, .44, L*0.35]
   ]});
-  addPart(body, new THREE.BoxGeometry(1.86, .24, .30), mats.paint, 0, .32, 2.00);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.70, .10, .28), mats.matBlk, 0, .14, 2.06);
+  addPart(body, new THREE.BoxGeometry(W*0.95, .24, .30), mats.paint, 0, .32, L*0.465);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.87, .10, .28), mats.matBlk, 0, .14, L*0.479);
   }
-  // Modest rear spoiler — integrated lip (Audi prefers subtle)
-  addPart(body, new THREE.BoxGeometry(1.62, .04, .22), mats.matBlk, 0, .82, 1.85);
-  buildTaillights(body, mats, {spread:.74, y:.55, z:2.04, w:.36, h:.08, d:.05});
+  addPart(body, new THREE.BoxGeometry(W*0.83, .04, .22), mats.matBlk, 0, H*0.75, L*0.43);
+  buildTaillights(body, mats, {spread: W*0.38, y: H*0.50, z: L*0.474, w: .36, h: .08, d: .05});
   // Dual oval exhausts (Audi signature)
-  if(!lo){
+  if (!lo){
     [-.42, .42].forEach(s=>{
       const ex = new THREE.Mesh(new THREE.CylinderGeometry(.075, .075, .30, 10), mats.chrome);
-      ex.rotation.x = Math.PI/2; ex.scale.x = 1.4; ex.position.set(s, .26, 2.08); body.add(ex);
+      ex.rotation.x = Math.PI/2; ex.scale.x = 1.4; ex.position.set(s, .26, L*0.484); body.add(ex);
     });
   } else {
-    buildExhausts(body, mats, {spread:.42, y:.26, z:2.08, radius:.075, length:.28});
+    buildExhausts(body, mats, {spread:.42, y:.26, z: L*0.484, radius:.075, length:.28});
   }
-  buildSideSkirts(body, mats, {spread:.99, y:.10, z:0, length:2.7});
+  // Single accent stripe over hood + roof
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(0.20, 0.025, L*0.85), mats.accent, 0, H*0.93, 0);
+  }
+  buildSideSkirts(body, mats, {spread: W*0.50, y:.10, z:0, length: L*0.65});
+  g.userData = g.userData || {};
+  g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -421,78 +381,68 @@ function buildAudiR8(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildPorscheGT3RS(g, def, mats, lod){
   const lo = lod === 'low';
+  // Art-of-Rally restyle — extruded super-archetype + Porsche signatures
+  // (round headlights, BIG rear wing, side-blade).
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  addPart(body, new THREE.BoxGeometry(1.92, .44, 4.10), mats.paint, 0, .26, 0);
-  // Rounded clamshell front (Porsche signature)
-  const fb = new THREE.Mesh(new THREE.SphereGeometry(.50, 12, 8, 0, Math.PI*2, 0, Math.PI/2), mats.paint);
-  fb.scale.set(1.92, .58, 1.10); fb.rotation.x = Math.PI;
-  fb.position.set(0, .22, -1.85); body.add(fb);
-  // Aggressive front splitter (GT3 RS)
-  addPart(body, new THREE.BoxGeometry(1.95, .06, .40), mats.matBlk, 0, .08, -2.10);
-  if(!lo){
-    [-.55, .55].forEach(s=>addPart(body, new THREE.BoxGeometry(.30, .14, .14), mats.grille, s, .22, -2.08));
+  const W = 1.92, L = 4.10, H = 1.10;
+  if (lo){
+    addPart(body, new THREE.BoxGeometry(W, .44, L), mats.paint, 0, .26, 0);
+    addPart(body, new THREE.BoxGeometry(W*.86, .40, L*.34), mats.paint, 0, .72, -.10);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'super' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
   }
-  // Round headlights — Porsche-specifieke cylinders i.p.v. de standaard
-  // BoxGeometry koplampen. Houd de bestaande cylinder-geometry; voeg LED-
-  // accent eronder toe (premium-pattern's LED-strip equivalent).
-  if(!lo){
+  // Aggressive front splitter (GT3 RS)
+  addPart(body, new THREE.BoxGeometry(W*1.02, .06, .40), mats.matBlk, 0, .08, -L*0.512);
+  if (!lo){
+    [-.55, .55].forEach(s=>addPart(body, new THREE.BoxGeometry(.30, .14, .14), mats.grille, s, H*0.20, -L*0.507));
+  }
+  // Round headlights — Porsche signature (cylinder i.p.v. box)
+  if (!lo){
     [-.74, .74].forEach(s=>{
       const hl = new THREE.Mesh(new THREE.CylinderGeometry(.16, .16, .08, 12), mats.head);
-      hl.rotation.x = Math.PI/2; hl.position.set(s, .46, -1.92); body.add(hl);
-      // 4 LED-segmenten onder de ronde koplamp (pattern match met
-      // buildPremiumHeadlights LED-strip).
-      for (let i=0; i<4; i++){
-        addPart(body, new THREE.BoxGeometry(.05, .024, .032), mats.head,
-                s + (i-1.5)*.07, .30, -1.92);
-      }
+      hl.rotation.x = Math.PI/2; hl.position.set(s, H*0.42, -L*0.468); body.add(hl);
     });
   } else {
-    buildHeadlights(body, mats, {spread:.74, y:.46, z:-1.92, w:.30, h:.16, d:.06});
+    buildHeadlights(body, mats, {spread:.74, y: H*0.42, z: -L*0.468, w: .30, h: .16, d: .06});
   }
-  // Cabin — rounded teardrop (Porsche fastback)
-  addPart(body, new THREE.BoxGeometry(1.66, .40, 1.40), mats.paint, 0, .72, -.10);
-  addPart(body, new THREE.BoxGeometry(1.52, .48, .08), mats.glass, 0, .80, -.78, -.45);
-  [-.83, .83].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, 1.20), mats.glass, s, .80, -.10));
-  // Long sloping rear glass (fastback)
-  addPart(body, new THREE.BoxGeometry(1.46, .42, .08), mats.glassDark, 0, .80, .85, .58);
-  // Roof — crowned slab
-  addPart(body, _crownedSlabGeo(1.36, .04, 1.05), mats.paint, 0, .94, -.20);
-  // Rear deck — crowned slab (engine cover equivalent)
-  addPart(body, _crownedSlabGeo(1.65, .14, 1.10), mats.paint, 0, .60, 1.10);
-  // Chrome window-trim
-  if(!lo){
-    [-0.85, 0.85].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.025, .025, 1.20), mats.chrome, s, .63, -.10);
-    });
+  // Cabin glass
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.79, 0.48, 0.08), mats.glass, 0, H*0.73, -L*0.19, -0.45);
+    [-W*0.43, +W*0.43].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, L*0.29), mats.glass, s, H*0.73, -L*0.024));
+    addPart(body, new THREE.BoxGeometry(W*0.76, 0.42, 0.08), mats.glassDark, 0, H*0.73, L*0.21, 0.58);
   }
   // Side blade (smaller than Audi)
-  if(!lo){
-    [-1.00, 1.00].forEach(s=>addPart(body, new THREE.BoxGeometry(.05, .14, .60), mats.accent, s, .50, .35));
+  if (!lo){
+    [-W*0.51, +W*0.51].forEach(s=>addPart(body, new THREE.BoxGeometry(.05, .14, .60), mats.accent, s, H*0.45, L*0.085));
   }
   buildWheelArches(body, mats.paint, {positions:[
-    [-1.00, .44, -1.40], [1.00, .44, -1.40], [-1.00, .44, 1.40], [1.00, .44, 1.40]
+    [-W*0.50, .44, -L*0.34], [W*0.50, .44, -L*0.34], [-W*0.50, .44, L*0.34], [W*0.50, .44, L*0.34]
   ]});
-  addPart(body, new THREE.BoxGeometry(1.86, .22, .28), mats.paint, 0, .32, 1.95);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.65, .10, .26), mats.matBlk, 0, .14, 2.00);
+  addPart(body, new THREE.BoxGeometry(W*0.97, .22, .28), mats.paint, 0, .32, L*0.475);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.86, .10, .26), mats.matBlk, 0, .14, L*0.488);
   }
   // BIG REAR WING (GT3 RS signature) — tall stands + wide plate
-  [-.70, .70].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .50, .12), mats.matBlk, s, 1.05, 1.65));
-  addPart(body, new THREE.BoxGeometry(1.85, .06, .42), mats.paint, 0, 1.32, 1.65);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.85, .03, .12), mats.matBlk, 0, 1.28, 1.55); // wing underside lip
-    [-.92, .92].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .12, .42), mats.matBlk, s, 1.26, 1.65)); // endplates
+  [-.70, .70].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .50, .12), mats.matBlk, s, H*0.95, L*0.40));
+  addPart(body, new THREE.BoxGeometry(W*0.96, .06, .42), mats.paint, 0, H*1.20, L*0.40);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.96, .03, .12), mats.matBlk, 0, H*1.16, L*0.378);
+    [-.92, .92].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .12, .42), mats.matBlk, s, H*1.145, L*0.40));
   }
-  buildTaillights(body, mats, {spread:.74, y:.56, z:1.99, w:.34, h:.08, d:.05});
-  // Twin centre exhausts (GT3 RS)
-  buildExhausts(body, mats, {spread:.18, y:.24, z:2.03, radius:.075, length:.30});
-  buildSideSkirts(body, mats, {spread:.99, y:.10, z:0, length:2.6});
+  buildTaillights(body, mats, {spread: W*0.39, y: H*0.51, z: L*0.485, w: .34, h: .08, d: .05});
+  buildExhausts(body, mats, {spread:.18, y:.24, z: L*0.495, radius:.075, length:.30});
+  // Single accent stripe over hood + roof
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(0.20, 0.025, L*0.85), mats.accent, 0, H*0.90, 0);
+  }
+  buildSideSkirts(body, mats, {spread: W*0.50, y:.10, z:0, length: L*0.65});
   g.userData = g.userData || {};
   g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
-  g.userData._signature = { underglow: def.accent };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -502,73 +452,74 @@ function buildPorscheGT3RS(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildMcLarenP1(g, def, mats, lod){
   const lo = lod === 'low';
+  // Art-of-Rally restyle — extruded super-archetype + McLaren signatures
+  // (nose-cut, hood vents, high side intakes, high rear wing).
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  addPart(body, new THREE.BoxGeometry(1.90, .40, 4.10), mats.paint, 0, .25, 0);
-  // Pointed low nose with central nose-cut (P1 signature)
-  addPart(body, new THREE.BoxGeometry(1.74, .22, .85), mats.paint, 0, .28, -1.90);
-  // Nose-cut (V-shape suggested with two angled black blocks)
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(.40, .18, .30), mats.matBlk, 0, .26, -2.04);
+  const W = 1.90, L = 4.10, H = 1.05;
+  if (lo){
+    addPart(body, new THREE.BoxGeometry(W, .40, L), mats.paint, 0, .25, 0);
+    addPart(body, new THREE.BoxGeometry(W*.83, .40, L*.29), mats.paint, 0, .70, -.15);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'super' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
   }
-  addPart(body, new THREE.BoxGeometry(1.85, .06, .35), mats.matBlk, 0, .08, -2.10);
-  if(!lo){
-    [-.50, .50].forEach(s=>addPart(body, new THREE.BoxGeometry(.36, .16, .12), mats.grille, s, .20, -2.06));
+  // Nose-cut (P1 signature)
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(.40, .18, .30), mats.matBlk, 0, H*0.25, -L*0.498);
   }
-  buildPremiumHeadlights(body, mats, {spread:.70, y:.40, z:-1.95, w:.28, h:.10, d:.06});
-  // Hood — crowned slab met aggressieve vents bovenop (P1 signature)
-  addPart(body, _crownedSlabGeo(1.74, .08, 1.30), mats.paint, 0, .50, -1.00);
-  if(!lo){
-    [-.50, .50].forEach(s=>addPart(body, new THREE.BoxGeometry(.30, .04, .35), mats.matBlk, s, .56, -.90));
+  addPart(body, new THREE.BoxGeometry(W*0.97, .06, .35), mats.matBlk, 0, .08, -L*0.512);
+  if (!lo){
+    [-.50, .50].forEach(s=>addPart(body, new THREE.BoxGeometry(.36, .16, .12), mats.grille, s, H*0.19, -L*0.502));
   }
-  // Cabin — aerodynamic teardrop, narrow
-  addPart(body, new THREE.BoxGeometry(1.58, .40, 1.20), mats.paint, 0, .70, -.15);
-  addPart(body, new THREE.BoxGeometry(1.46, .50, .08), mats.glass, 0, .80, -.85, -.45);
-  [-.79, .79].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, 1.00), mats.glass, s, .80, -.15));
-  addPart(body, new THREE.BoxGeometry(1.32, .35, .08), mats.glassDark, 0, .80, .55, .50);
-  // Roof — crowned slab
-  addPart(body, _crownedSlabGeo(1.30, .04, .95), mats.paint, 0, .94, -.20);
-  // Engine cover — crowned slab met carbon-look slats
-  addPart(body, _crownedSlabGeo(1.62, .22, 1.20), mats.paint, 0, .60, .95);
-  if(!lo){
-    [-.45, -.15, .15, .45].forEach(s=>addPart(body, new THREE.BoxGeometry(.08, .04, 1.10), mats.matBlk, s, .73, .95));
+  buildHeadlights(body, mats, {spread: W*0.37, y: H*0.38, z: -L*0.476, w: .28, h: .10, d: .06});
+  // Hood vents (P1 signature)
+  if (!lo){
+    [-.50, .50].forEach(s=>addPart(body, new THREE.BoxGeometry(.30, .04, .35), mats.matBlk, s, H*0.53, -L*0.22));
   }
-  // Chrome window-trim
-  if(!lo){
-    [-0.81, 0.81].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.025, .025, 1.00), mats.chrome, s, .61, -.15);
-    });
+  // Cabin glass
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.77, 0.50, 0.08), mats.glass, 0, H*0.76, -L*0.21, -0.45);
+    [-W*0.42, +W*0.42].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .30, L*0.24), mats.glass, s, H*0.76, -L*0.037));
+    addPart(body, new THREE.BoxGeometry(W*0.69, 0.35, 0.08), mats.glassDark, 0, H*0.76, L*0.13, 0.50);
   }
-  // Side intakes positioned HIGH on the doors (McLaren signature)
-  if(!lo){
-    [-1.00, 1.00].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.05, .18, .80), mats.matBlk, s, .62, .25);
-      addPart(body, new THREE.BoxGeometry(.04, .10, .65), mats.accent, s, .62, .25);
+  // Engine cover slats (carbon-look — McLaren signature)
+  if (!lo){
+    [-.45, -.15, .15, .45].forEach(s=>addPart(body, new THREE.BoxGeometry(.08, .04, 1.10), mats.matBlk, s, H*0.69, L*0.23));
+  }
+  // High side intakes (McLaren signature)
+  if (!lo){
+    [-W*0.51, +W*0.51].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(.05, .18, .80), mats.matBlk, s, H*0.59, L*0.06);
+      addPart(body, new THREE.BoxGeometry(.04, .10, .65), mats.accent, s, H*0.59, L*0.06);
     });
   }
   buildWheelArches(body, mats.paint, {positions:[
-    [-.99, .42, -1.40], [.99, .42, -1.40], [-.99, .42, 1.40], [.99, .42, 1.40]
+    [-W*0.51, .42, -L*0.34], [W*0.51, .42, -L*0.34], [-W*0.51, .42, L*0.34], [W*0.51, .42, L*0.34]
   ]});
-  addPart(body, new THREE.BoxGeometry(1.85, .22, .30), mats.paint, 0, .32, 1.95);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.65, .12, .32), mats.matBlk, 0, .12, 2.00);
-    [-.40, 0, .40].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .16, .28), mats.blk, s, .14, 2.02));
+  addPart(body, new THREE.BoxGeometry(W*0.97, .22, .30), mats.paint, 0, .32, L*0.475);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.87, .12, .32), mats.matBlk, 0, .12, L*0.488);
+    [-.40, 0, .40].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .16, .28), mats.blk, s, .14, L*0.493));
   }
   // High mounted active rear wing (P1 signature) — taller stands
-  [-.62, .62].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .42, .14), mats.matBlk, s, 1.00, 1.72));
-  addPart(body, new THREE.BoxGeometry(1.78, .06, .38), mats.paint, 0, 1.24, 1.72);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.78, .03, .12), mats.matBlk, 0, 1.20, 1.62);
+  [-.62, .62].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .42, .14), mats.matBlk, s, H*0.95, L*0.42));
+  addPart(body, new THREE.BoxGeometry(W*0.94, .06, .38), mats.paint, 0, H*1.18, L*0.42);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.94, .03, .12), mats.matBlk, 0, H*1.14, L*0.395);
   }
-  buildTaillights(body, mats, {spread:.70, y:.56, z:1.99, w:.32, h:.08, d:.05});
-  // Single low-mounted exhaust pair (P1 has top-mounted exhausts but we keep low for silhouette readability)
-  buildExhausts(body, mats, {spread:.30, y:.30, z:2.04, radius:.07, length:.28});
-  buildSideSkirts(body, mats, {spread:.98, y:.10, z:0, length:2.6});
+  buildTaillights(body, mats, {spread: W*0.37, y: H*0.53, z: L*0.485, w: .32, h: .08, d: .05});
+  buildExhausts(body, mats, {spread:.30, y:.30, z: L*0.498, radius:.07, length:.28});
+  // Single accent stripe over hood + roof
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(0.20, 0.025, L*0.85), mats.accent, 0, H*0.92, 0);
+  }
+  buildSideSkirts(body, mats, {spread: W*0.50, y:.10, z:0, length: L*0.65});
   g.userData = g.userData || {};
   g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
-  g.userData._signature = { underglow: def.accent };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -577,76 +528,76 @@ function buildMcLarenP1(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildKoenigseggJesko(g, def, mats, lod){
   const lo = lod === 'low';
+  // Art-of-Rally restyle — extruded super-archetype + Koenigsegg signatures
+  // (roof scoop, very high rear wing, quad exhausts).
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  addPart(body, new THREE.BoxGeometry(1.90, .40, 4.20), mats.paint, 0, .25, 0);
-  // Pointed sharp front
-  addPart(body, new THREE.BoxGeometry(1.70, .22, .90), mats.paint, 0, .28, -1.95);
-  addPart(body, new THREE.BoxGeometry(1.92, .08, .40), mats.matBlk, 0, .08, -2.15);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(.55, .14, .12), mats.grille, 0, .22, -2.08);
-    [-.30, -.10, .10, .30].forEach(s=>addPart(body, new THREE.BoxGeometry(.08, .06, .04), mats.accent, s, .22, -2.14));
+  const W = 1.90, L = 4.20, H = 1.10;
+  if (lo){
+    addPart(body, new THREE.BoxGeometry(W, .40, L), mats.paint, 0, .25, 0);
+    addPart(body, new THREE.BoxGeometry(W*.85, .42, L*.31), mats.paint, 0, .72, -.10);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'super' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
   }
-  buildPremiumHeadlights(body, mats, {spread:.72, y:.42, z:-1.98, w:.30, h:.08, d:.06});
-  // Hood — crowned slab
-  addPart(body, _crownedSlabGeo(1.72, .08, 1.40), mats.paint, 0, .50, -1.05);
-  // Cabin — fastback teardrop
-  addPart(body, new THREE.BoxGeometry(1.62, .42, 1.30), mats.paint, 0, .72, -.10);
-  addPart(body, new THREE.BoxGeometry(1.50, .50, .08), mats.glass, 0, .80, -.82, -.45);
-  [-.81, .81].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .32, 1.10), mats.glass, s, .80, -.10));
-  addPart(body, new THREE.BoxGeometry(1.42, .42, .08), mats.glassDark, 0, .80, .80, .55);
-  // Roof — crowned slab
-  addPart(body, _crownedSlabGeo(1.32, .04, 1.05), mats.paint, 0, .96, -.18);
-  // ROOF SCOOP (Jesko signature) — visible vertical intake on the roof
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(.40, .18, .55), mats.matBlk, 0, 1.06, -.05);
-    addPart(body, new THREE.BoxGeometry(.32, .12, .45), mats.accent, 0, 1.06, -.05);
+  addPart(body, new THREE.BoxGeometry(W*1.01, .08, .40), mats.matBlk, 0, .08, -L*0.512);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(.55, .14, .12), mats.grille, 0, H*0.20, -L*0.495);
+    [-.30, -.10, .10, .30].forEach(s=>addPart(body, new THREE.BoxGeometry(.08, .06, .04), mats.accent, s, H*0.20, -L*0.510));
   }
-  // Engine cover — crowned slab
-  addPart(body, _crownedSlabGeo(1.62, .20, 1.10), mats.paint, 0, .60, 1.05);
-  // Chrome window-trim
-  if(!lo){
-    [-0.83, 0.83].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.025, .025, 1.10), mats.chrome, s, .63, -.10);
-    });
+  buildHeadlights(body, mats, {spread: W*0.38, y: H*0.38, z: -L*0.471, w: .30, h: .08, d: .06});
+  // Cabin glass
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.79, 0.50, 0.08), mats.glass, 0, H*0.73, -L*0.20, -0.45);
+    [-W*0.43, +W*0.43].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .32, L*0.26), mats.glass, s, H*0.73, -L*0.024));
+    addPart(body, new THREE.BoxGeometry(W*0.75, 0.42, 0.08), mats.glassDark, 0, H*0.73, L*0.19, 0.55);
+  }
+  // ROOF SCOOP (Jesko signature)
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(.40, .18, .55), mats.matBlk, 0, H*0.96, -L*0.012);
+    addPart(body, new THREE.BoxGeometry(.32, .12, .45), mats.accent, 0, H*0.96, -L*0.012);
   }
   // Side intakes
-  if(!lo){
-    [-1.00, 1.00].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.05, .22, .70), mats.matBlk, s, .55, .30);
+  if (!lo){
+    [-W*0.51, +W*0.51].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(.05, .22, .70), mats.matBlk, s, H*0.50, L*0.07);
     });
   }
   buildWheelArches(body, mats.paint, {positions:[
-    [-1.00, .42, -1.45], [1.00, .42, -1.45], [-1.00, .42, 1.45], [1.00, .42, 1.45]
+    [-W*0.51, .42, -L*0.345], [W*0.51, .42, -L*0.345], [-W*0.51, .42, L*0.345], [W*0.51, .42, L*0.345]
   ]});
-  addPart(body, new THREE.BoxGeometry(1.86, .22, .28), mats.paint, 0, .32, 2.00);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.66, .14, .30), mats.matBlk, 0, .12, 2.05);
-    [-.50, -.20, .20, .50].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .18, .28), mats.blk, s, .12, 2.05));
+  addPart(body, new THREE.BoxGeometry(W*0.98, .22, .28), mats.paint, 0, .32, L*0.476);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.87, .14, .30), mats.matBlk, 0, .12, L*0.488);
+    [-.50, -.20, .20, .50].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .18, .28), mats.blk, s, .12, L*0.488));
   }
-  // VERY HIGH REAR WING (Jesko signature) — tallest stands of any car
-  [-.72, .72].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .60, .14), mats.matBlk, s, 1.10, 1.65));
-  addPart(body, new THREE.BoxGeometry(1.92, .06, .42), mats.paint, 0, 1.42, 1.65);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.90, .03, .12), mats.matBlk, 0, 1.38, 1.55);
-    [-.96, .96].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .14, .42), mats.matBlk, s, 1.36, 1.65));
+  // VERY HIGH REAR WING (Jesko signature) — tallest stands
+  [-.72, .72].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .60, .14), mats.matBlk, s, H*1.00, L*0.39));
+  addPart(body, new THREE.BoxGeometry(W*1.01, .06, .42), mats.paint, 0, H*1.29, L*0.39);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*1.00, .03, .12), mats.matBlk, 0, H*1.25, L*0.369);
+    [-.96, .96].forEach(s=>addPart(body, new THREE.BoxGeometry(.04, .14, .42), mats.matBlk, s, H*1.24, L*0.39));
   }
-  buildTaillights(body, mats, {spread:.74, y:.55, z:2.04, w:.30, h:.08, d:.05});
+  buildTaillights(body, mats, {spread: W*0.39, y: H*0.50, z: L*0.486, w: .30, h: .08, d: .05});
   // Quad exhausts (Jesko signature)
-  if(!lo){
+  if (!lo){
     [-.45, -.18, .18, .45].forEach(s=>{
       const ex = new THREE.Mesh(new THREE.CylinderGeometry(.058, .058, .26, 8), mats.chrome);
-      ex.rotation.x = Math.PI/2; ex.position.set(s, .28, 2.10); body.add(ex);
+      ex.rotation.x = Math.PI/2; ex.position.set(s, .28, L*0.50); body.add(ex);
     });
   } else {
-    buildExhausts(body, mats, {spread:.40, y:.28, z:2.10, radius:.06, length:.26});
+    buildExhausts(body, mats, {spread:.40, y:.28, z: L*0.50, radius:.06, length:.26});
   }
-  buildSideSkirts(body, mats, {spread:.99, y:.10, z:0, length:2.7});
+  // Single accent stripe over hood + roof
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(0.20, 0.025, L*0.85), mats.accent, 0, H*0.92, 0);
+  }
+  buildSideSkirts(body, mats, {spread: W*0.50, y:.10, z:0, length: L*0.65});
   g.userData = g.userData || {};
   g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
-  g.userData._signature = { underglow: def.accent };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -791,85 +742,71 @@ function buildMercedesW14F1(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildFordMustang(g, def, mats, lod){
   const lo = lod === 'low';
-  // Phase 3 Tier C — body-subgroup wrap. Mustang's muscle silhouette blijft
-  // bewust onverfijnd (geen crowned slabs, geen premium headlights, geen
-  // chrome trim) — de blokkige boxer stance is karakter, niet een tekortkoming.
+  // Art-of-Rally restyle — extruded muscle-archetype + Mustang signatures
+  // (big rectangular grille, hood scoop, three-bar tail lights, dual stripes).
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  // Wider, taller chassis (muscle stance)
-  addPart(body, new THREE.BoxGeometry(2.06, .56, 4.40), mats.paint, 0, .32, 0);
-  // Squared front bumper
-  addPart(body, new THREE.BoxGeometry(2.04, .42, .60), mats.paint, 0, .35, -2.10);
-  addPart(body, new THREE.BoxGeometry(2.00, .08, .26), mats.matBlk, 0, .12, -2.30);
+  const W = 2.06, L = 4.40, H = 1.30;
+  if (lo){
+    addPart(body, new THREE.BoxGeometry(W, .56, L), mats.paint, 0, .32, 0);
+    addPart(body, new THREE.BoxGeometry(W*.90, .50, L*.39), mats.paint, 0, .85, .25);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'muscle' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
+  }
+  addPart(body, new THREE.BoxGeometry(W*0.97, .08, .26), mats.matBlk, 0, .12, -L*0.523);
   // Big rectangular grille (Mustang signature)
-  addPart(body, new THREE.BoxGeometry(1.40, .26, .12), mats.grille, 0, .42, -2.20);
-  if(!lo){
-    // Pony badge suggestion (small accent block on grille)
-    addPart(body, new THREE.BoxGeometry(.20, .14, .04), mats.accent, 0, .42, -2.26);
-    // Grille horizontal slats
-    [-.40, 0, .40].forEach(s=>addPart(body, new THREE.BoxGeometry(.36, .03, .04), mats.matBlk, s, .42, -2.26));
+  addPart(body, new THREE.BoxGeometry(1.40, .26, .12), mats.grille, 0, H*0.32, -L*0.500);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(.20, .14, .04), mats.accent, 0, H*0.32, -L*0.514);
+    [-.40, 0, .40].forEach(s=>addPart(body, new THREE.BoxGeometry(.36, .03, .04), mats.matBlk, s, H*0.32, -L*0.514));
   }
-  // Square headlights (pairs)
-  buildHeadlights(body, mats, {spread:.78, y:.50, z:-2.18, w:.32, h:.16, d:.08});
-  if(!lo){
-    // Inner secondary lights (Mustang triple-bar DRL)
+  // Square headlights (rally-style — keep Mustang's chunky look)
+  buildHeadlights(body, mats, {spread: W*0.38, y: H*0.38, z: -L*0.495, w: .32, h: .16, d: .08});
+  if (!lo){
     [-.78, .78].forEach(s=>{
-      [.40, .50, .60].forEach(y=>addPart(body, new THREE.BoxGeometry(.30, .02, .04), mats.head, s, y, -2.22));
+      [.40, .50, .60].forEach(y=>addPart(body, new THREE.BoxGeometry(.30, .02, .04), mats.head, s, y, -L*0.504));
     });
+    // Hood scoop (centre raised bump — Mustang signature)
+    addPart(body, new THREE.BoxGeometry(.55, .14, .80), mats.paint, 0, H*0.62, -L*0.25);
+    addPart(body, new THREE.BoxGeometry(.50, .04, .12), mats.matBlk, 0, H*0.66, -L*0.32);
   }
-  // LONG hood with prominent scoop (muscle signature)
-  addPart(body, new THREE.BoxGeometry(1.92, .12, 1.60), mats.paint, 0, .66, -1.10);
-  if(!lo){
-    // Hood scoop (centre raised bump)
-    addPart(body, new THREE.BoxGeometry(.55, .14, .80), mats.paint, 0, .76, -1.10);
-    addPart(body, new THREE.BoxGeometry(.50, .04, .12), mats.matBlk, 0, .82, -1.40); // scoop opening
+  // Cabin glass
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.83, 0.56, 0.08), mats.glass, 0, H*0.71, -L*0.14, -0.36);
+    [-W*0.45, +W*0.45].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .40, L*0.34), mats.glass, s, H*0.71, L*0.057));
+    addPart(body, new THREE.BoxGeometry(W*0.79, 0.50, 0.08), mats.glass, 0, H*0.71, L*0.24, 0.30);
   }
-  // Cabin — boxier than super, shorter
-  addPart(body, new THREE.BoxGeometry(1.86, .50, 1.70), mats.paint, 0, .85, .25);
-  addPart(body, new THREE.BoxGeometry(1.70, .56, .08), mats.glass, 0, .92, -.62, -.36);
-  [-.93, .93].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .40, 1.50), mats.glass, s, .92, .25));
-  // Rear glass — more vertical (fastback but less aggressive than super)
-  addPart(body, new THREE.BoxGeometry(1.62, .50, .08), mats.glass, 0, .92, 1.06, .30);
-  addPart(body, new THREE.BoxGeometry(1.60, .04, 1.40), mats.paint, 0, 1.16, .25);
-  // Trunk lid
-  addPart(body, new THREE.BoxGeometry(1.84, .14, 1.05), mats.paint, 0, .68, 1.55);
   // Wheel arches (muscle: bigger flares)
   buildWheelArches(body, mats.paint, {positions:[
-    [-1.06, .50, -1.50], [1.06, .50, -1.50], [-1.06, .50, 1.50], [1.06, .50, 1.50]
+    [-W*0.51, .50, -L*0.34], [W*0.51, .50, -L*0.34], [-W*0.51, .50, L*0.34], [W*0.51, .50, L*0.34]
   ]});
-  // Rear bumper
-  addPart(body, new THREE.BoxGeometry(2.00, .30, .30), mats.paint, 0, .38, 2.10);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.85, .10, .28), mats.matBlk, 0, .14, 2.16);
+  addPart(body, new THREE.BoxGeometry(W*0.97, .30, .30), mats.paint, 0, .38, L*0.477);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.90, .10, .28), mats.matBlk, 0, .14, L*0.491);
   }
-  // Three-bar tail lights (Mustang signature) — three vertical segments per side
-  if(!lo){
+  // Three-bar tail lights (Mustang signature)
+  if (!lo){
     [-.78, .78].forEach(s=>{
-      [-.18, 0, .18].forEach(zo=>addPart(body, new THREE.BoxGeometry(.22, .14, .05), mats.tail, s + zo*.0, .50, 2.16));
+      [-.18, 0, .18].forEach(zo=>addPart(body, new THREE.BoxGeometry(.22, .14, .05), mats.tail, s + zo*.0, H*0.38, L*0.491));
     });
   } else {
-    buildTaillights(body, mats, {spread:.80, y:.50, z:2.16, w:.36, h:.14, d:.05});
+    buildTaillights(body, mats, {spread:.80, y: H*0.38, z: L*0.491, w: .36, h: .14, d: .05});
   }
-  // Wide-stance dual exhausts (muscle car signature)
-  buildExhausts(body, mats, {spread:.78, y:.22, z:2.20, radius:.085, length:.34});
-  // ICONIC dual centre racing stripes (Mustang heritage). Three segments
-  // per stripe so they ride the body shape — over the hood, over the roof,
-  // over the trunk — instead of clipping inside the bodywork. Two parallel
-  // stripes spaced ±.20 from centre. Width .22 makes them clearly visible
-  // (the previous .10-wide stripes were lost on the white paint).
-  if(!lo){
+  // Wide-stance dual exhausts (muscle signature)
+  buildExhausts(body, mats, {spread:.78, y:.22, z: L*0.50, radius:.085, length:.34});
+  // ICONIC dual centre racing stripes (Mustang heritage)
+  if (!lo){
     [-.20, .20].forEach(s=>{
-      // Hood segment — sits on top of the hood scoop area
-      addPart(body, new THREE.BoxGeometry(.22, .04, 1.60), mats.accent, s, .73, -1.10);
-      // Roof segment — over the cabin peak
-      addPart(body, new THREE.BoxGeometry(.22, .04, 1.50), mats.accent, s, 1.18, .25);
-      // Trunk segment — across the rear deck
-      addPart(body, new THREE.BoxGeometry(.22, .04, 1.05), mats.accent, s, .76, 1.55);
+      addPart(body, new THREE.BoxGeometry(.22, .04, L*0.85), mats.accent, s, H*0.78, 0);
     });
   }
-  buildSideSkirts(body, mats, {spread:1.04, y:.16, z:0, length:2.8});
+  buildSideSkirts(body, mats, {spread: W*0.51, y:.16, z:0, length: L*0.65});
+  g.userData = g.userData || {};
+  g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
