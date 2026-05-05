@@ -261,12 +261,20 @@ function _ssBuildSphinxMonument(){
 
 function _ssBuildTempleRuins(){
   // 4-6 staande pilaren, 2-3 omgevallen, 1 architrave-fragment.
-  // Posities langs plaza-segment, op de buitenkant.
+  // Standing pillars use InstancedMesh per part-type so 5×3 separate
+  // meshes collapse into 3 draw calls regardless of pillar count.
   const COUNT_STANDING=_mobCount(5);
   const COUNT_FALLEN=_mobCount(3);
   const stoneMat=new THREE.MeshLambertMaterial({color:0xb89370});
   const stoneDarkMat=new THREE.MeshLambertMaterial({color:0x8c6f50});
-  // Standing pillars
+  const _dummy=new THREE.Object3D();
+  // Standing pillars: 3 InstancedMesh (shaft / capital / base) — 1 draw call each
+  const shaftGeo=new THREE.CylinderGeometry(0.9,1.1,8,12);
+  const capGeo=new THREE.BoxGeometry(2.6,0.8,2.6);
+  const baseGeo=new THREE.BoxGeometry(2.4,0.5,2.4);
+  const shaftIM=new THREE.InstancedMesh(shaftGeo,stoneMat,COUNT_STANDING);
+  const capIM=new THREE.InstancedMesh(capGeo,stoneDarkMat,COUNT_STANDING);
+  const baseIM=new THREE.InstancedMesh(baseGeo,stoneDarkMat,COUNT_STANDING);
   for(let i=0;i<COUNT_STANDING;i++){
     const t=_SS_PLAZA_T_RANGE[0]+(i+0.5)/COUNT_STANDING*(_SS_PLAZA_T_RANGE[1]-_SS_PLAZA_T_RANGE[0]);
     const p=trackCurve.getPoint(t);
@@ -275,20 +283,19 @@ function _ssBuildTempleRuins(){
     const side=i%2===0?1:-1;
     const off=BARRIER_OFF+9+Math.random()*8;
     const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
-    // Pillar shaft
-    const shaft=new THREE.Mesh(new THREE.CylinderGeometry(0.9,1.1,8,12),stoneMat);
-    shaft.position.set(cx,4,cz);
-    scene.add(shaft);
-    // Capital (top block)
-    const cap=new THREE.Mesh(new THREE.BoxGeometry(2.6,0.8,2.6),stoneDarkMat);
-    cap.position.set(cx,8.4,cz);
-    scene.add(cap);
-    // Base
-    const base=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.5,2.4),stoneDarkMat);
-    base.position.set(cx,0.25,cz);
-    scene.add(base);
+    _dummy.position.set(cx,4,cz);_dummy.rotation.set(0,0,0);_dummy.updateMatrix();
+    shaftIM.setMatrixAt(i,_dummy.matrix);
+    _dummy.position.set(cx,8.4,cz);_dummy.updateMatrix();
+    capIM.setMatrixAt(i,_dummy.matrix);
+    _dummy.position.set(cx,0.25,cz);_dummy.updateMatrix();
+    baseIM.setMatrixAt(i,_dummy.matrix);
   }
-  // Fallen pillars (rotated cylinders on the ground)
+  shaftIM.instanceMatrix.needsUpdate=true;scene.add(shaftIM);
+  capIM.instanceMatrix.needsUpdate=true;scene.add(capIM);
+  baseIM.instanceMatrix.needsUpdate=true;scene.add(baseIM);
+  // Fallen pillars: InstancedMesh on a separate cylinder geometry (rotated)
+  const fallenGeo=new THREE.CylinderGeometry(0.85,1.05,7,10);
+  const fallenIM=new THREE.InstancedMesh(fallenGeo,stoneMat,COUNT_FALLEN);
   for(let i=0;i<COUNT_FALLEN;i++){
     const t=_SS_PLAZA_T_RANGE[0]+0.05+Math.random()*(_SS_PLAZA_T_RANGE[1]-_SS_PLAZA_T_RANGE[0]-0.10);
     const p=trackCurve.getPoint(t);
@@ -297,12 +304,12 @@ function _ssBuildTempleRuins(){
     const side=(i+1)%2===0?1:-1;
     const off=BARRIER_OFF+12+Math.random()*10;
     const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
-    const fallen=new THREE.Mesh(new THREE.CylinderGeometry(0.85,1.05,7,10),stoneMat);
-    fallen.position.set(cx,1,cz);
-    fallen.rotation.z=Math.PI/2;
-    fallen.rotation.y=Math.random()*Math.PI*2;
-    scene.add(fallen);
+    _dummy.position.set(cx,1,cz);
+    _dummy.rotation.set(0,Math.random()*Math.PI*2,Math.PI/2);
+    _dummy.updateMatrix();
+    fallenIM.setMatrixAt(i,_dummy.matrix);
   }
+  fallenIM.instanceMatrix.needsUpdate=true;scene.add(fallenIM);
   // Single architrave fragment — broken horizontal beam
   {
     const tMid=(_SS_PLAZA_T_RANGE[0]+_SS_PLAZA_T_RANGE[1])*0.5;
@@ -344,8 +351,10 @@ function _ssBuildObelisks(){
 }
 
 function _ssBuildPalmTrees(){
-  // 8-12 palms langs plaza-rand. Use shared trunk material; leaves are
-  // 6 planes per palm with the same shared canvas-texture material.
+  // 8-12 palms langs plaza-rand. Trunks are individual Mesh because each
+  // has a unique scale (height varies). Leaves are batched into a single
+  // InstancedMesh of (COUNT × 6) fronds — biggest perf win in this pass
+  // (60 draw calls → 1).
   const COUNT=_mobCount(10);
   const trunkMat=new THREE.MeshLambertMaterial({color:0x6a4a28});
   const leafTex=_ssPalmLeafTex();
@@ -353,6 +362,14 @@ function _ssBuildPalmTrees(){
     map:leafTex,transparent:true,alphaTest:0.35,
     side:THREE.DoubleSide,depthWrite:false
   });
+  const frondGeo=new THREE.PlaneGeometry(3.2,1.2);
+  // Shared trunk geometry — height variance comes from per-trunk scale.y.
+  // Geometry y is normalized [0..1] (height=1) and centered at 0.5; per-mesh
+  // scale.y produces the right physical height while sharing one buffer.
+  const trunkGeo=new THREE.CylinderGeometry(0.18,0.30,1,7);
+  const frondIM=new THREE.InstancedMesh(frondGeo,leafMat,COUNT*6);
+  const _dummy=new THREE.Object3D();
+  let frondIdx=0;
   for(let i=0;i<COUNT;i++){
     const t=_SS_PLAZA_T_RANGE[0]+(i/COUNT)*(_SS_PLAZA_T_RANGE[1]-_SS_PLAZA_T_RANGE[0]);
     const p=trackCurve.getPoint(t);
@@ -362,21 +379,23 @@ function _ssBuildPalmTrees(){
     const off=BARRIER_OFF+3+Math.random()*7;
     const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
     const h=4+Math.random()*1.5;
-    // Trunk — slight curve via two stacked tapered cylinders
-    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.30,h,7),trunkMat);
+    // Trunk — share geometry, scale to per-tree height.
+    const trunk=new THREE.Mesh(trunkGeo,trunkMat);
     trunk.position.set(cx,h*0.5,cz);
+    trunk.scale.y=h;
     trunk.rotation.z=(Math.random()-0.5)*0.1;
     scene.add(trunk);
-    // 6 leaf fronds at the top, fanned out
+    // 6 leaf fronds at the top — written into the shared InstancedMesh.
     for(let l=0;l<6;l++){
       const ang=(l/6)*Math.PI*2;
-      const frond=new THREE.Mesh(new THREE.PlaneGeometry(3.2,1.2),leafMat);
-      frond.position.set(cx+Math.cos(ang)*1.0,h+0.2,cz+Math.sin(ang)*1.0);
-      frond.rotation.y=ang;
-      frond.rotation.z=-0.32; // droop angle
-      scene.add(frond);
+      _dummy.position.set(cx+Math.cos(ang)*1.0,h+0.2,cz+Math.sin(ang)*1.0);
+      _dummy.rotation.set(-0.32,ang,0,'YXZ');
+      _dummy.updateMatrix();
+      frondIM.setMatrixAt(frondIdx++,_dummy.matrix);
     }
   }
+  frondIM.instanceMatrix.needsUpdate=true;
+  scene.add(frondIM);
 }
 
 function _ssBuildCamels(){
@@ -422,13 +441,17 @@ function _ssBuildCamels(){
 }
 
 function _ssBuildBedouinTents(){
-  // 2-3 striped tents at the plaza. Simple cone-shape with tent canvas.
+  // 2-3 striped tents at the plaza. Hoist pole material (was per-iteration
+  // alloc) — review fix from Phase 3 perf-budget pass.
   const COUNT=_mobCount(3);
   const stripeTex=_ssTentStripeTex();
   stripeTex.repeat.set(2,2);
   const tentMat=new THREE.MeshLambertMaterial({
     map:stripeTex,side:THREE.DoubleSide
   });
+  const poleMat=new THREE.MeshLambertMaterial({color:0x4a3018});
+  const tentGeo=new THREE.ConeGeometry(2.2,3.0,6);
+  const poleGeo=new THREE.CylinderGeometry(0.06,0.06,3.6,5);
   for(let i=0;i<COUNT;i++){
     const t=_SS_PLAZA_T_RANGE[0]+0.04+i*((_SS_PLAZA_T_RANGE[1]-_SS_PLAZA_T_RANGE[0]-0.08)/Math.max(1,COUNT-1));
     const p=trackCurve.getPoint(t);
@@ -437,14 +460,11 @@ function _ssBuildBedouinTents(){
     const side=i%2===0?-1:1;
     const off=BARRIER_OFF+15+Math.random()*4;
     const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
-    // Cone tent
-    const tent=new THREE.Mesh(new THREE.ConeGeometry(2.2,3.0,6),tentMat);
+    const tent=new THREE.Mesh(tentGeo,tentMat);
     tent.position.set(cx,1.3,cz);
     tent.rotation.y=Math.random()*Math.PI*2;
     scene.add(tent);
-    // Center pole peeking through top
-    const poleMat=new THREE.MeshLambertMaterial({color:0x4a3018});
-    const pole=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,3.6,5),poleMat);
+    const pole=new THREE.Mesh(poleGeo,poleMat);
     pole.position.set(cx,1.6,cz);
     scene.add(pole);
   }
