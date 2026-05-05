@@ -244,6 +244,9 @@ function _ssBuildCanyonCliffs(){
     });
     // Per-cliff material clone — required for atmospheric perspective
     // (Variant A: applyAtmosphericPerspective mutates material.color).
+    // Note: baseCliffMat is freshly `new MeshStandardMaterial(...)` and
+    // carries no userData._sharedAsset flag, so the clone is correctly
+    // disposed by disposeScene's _disposeMat traversal on world-switch.
     const cliffMat=baseCliffMat.clone();
     const cliff=new THREE.Mesh(cliffGeo, cliffMat);
     cliff.position.set(cx, 0, cz);
@@ -340,7 +343,8 @@ function _ssBuildBackgroundMesas(){
       });
       // Per-mesa unique material so atmospheric perspective lerp can
       // target each independently. Slight per-instance color jitter
-      // breaks up the "stamped" look.
+      // breaks up the "stamped" look. baseMat is freshly `new` (no
+      // userData._sharedAsset), so clones are disposable on world-switch.
       const mesaMat=baseMat.clone();
       mesaMat.color.multiplyScalar(0.92+Math.random()*0.16);
       const mesa=new THREE.Mesh(mesaGeo, mesaMat);
@@ -414,9 +418,11 @@ function _ssBuildSandDunes(){
   }
 }
 
-// Sphinx hero monument — Phase-3A rebuild per spec §3.5. 14+ sub-meshes
-// op desktop (12 op mobile na skip uraeus + baard + achterpoten). Volledig
-// op `ProcGeometry.beveledBox` zodat geen scherpe doos-kanten ogen kartonachtig.
+// Sphinx hero monument — Phase-3A rebuild per spec §3.5. 19 sub-meshes
+// + decorative sand mound op desktop = 20 meshes; 15 op mobile (skips
+// rear paws ×2, uraeus base + head, baard). Spec asked for 14+, so well
+// covered. Volledig op `ProcGeometry.beveledBox` zodat geen scherpe doos-
+// kanten ogen kartonachtig.
 //
 // Material zones (3 distinct):
 //   • body         — warm sandstone via ProcTextures.weatheredStone(ageWear:0.7)
@@ -612,14 +618,18 @@ function _ssBuildSphinxMonument(){
   mound.position.y=-1.5;
   sphinx.add(mound);
 
-  // ── PLACEMENT: half-buried beside finish-line, facing the track
-  // -1.2 Y-offset on the whole group sinks the sokkel into the mound.
+  // ── PLACEMENT: half-buried beside finish-line, facing the track.
+  // Group Y-offset is 0 (NOT -1.2 like an earlier draft tried — that
+  // mis-aligned the sokkel-low under ground while the body floated 0.9u
+  // above the sokkel-hi top, leaving a visible gap. The mound at sphinx-
+  // local y=-1.5 already buries its bottom half below ground, providing
+  // the half-buried look without offsetting the rest of the group.)
   const t=0.96;
   const p=trackCurve.getPoint(t);
   const tg=trackCurve.getTangent(t).normalize();
   const nr=new THREE.Vector3(-tg.z,0,tg.x);
   const off=BARRIER_OFF+14;
-  sphinx.position.set(p.x+nr.x*off, -1.2, p.z+nr.z*off);
+  sphinx.position.set(p.x+nr.x*off, 0, p.z+nr.z*off);
   sphinx.rotation.y=Math.atan2(tg.x,tg.z)+Math.PI*0.5;
   scene.add(sphinx);
 }
