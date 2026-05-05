@@ -78,6 +78,13 @@ function _resetRaceState(){
   if(_safetyCar){scene.remove(_safetyCar.mesh);_safetyCar=null;}
   // Volcano/Arctic cleanup
   _volcanoLavaRivers.length=0;_volcanoGeisers.length=0;_volcanoEruption=null;_volcanoEruptionTimer=3;_volcanoEmbers=null;_volcanoEmberGeo=null;_volcanoGlowLight=null;
+  // Sandstorm cleanup — mirror volcano's pattern. disposeScene() releases
+  // the actual Three resources; here we drop our refs so the next build
+  // doesn't accidentally read into freed memory.
+  if(typeof _sandstormSandSwept!=='undefined')_sandstormSandSwept=null;
+  if(typeof _sandstormFlecksGeo!=='undefined')_sandstormFlecksGeo=null;
+  if(typeof _sandstormFlecks!=='undefined')_sandstormFlecks=null;
+  if(typeof _sandstormPalmLeaves!=='undefined')_sandstormPalmLeaves.length=0;
   if(typeof disposeVolcanoBridge==='function')disposeVolcanoBridge();
   if(typeof disposeArcticIceShelf==='function')disposeArcticIceShelf();
   if(typeof disposeCandyChocoBridge==='function')disposeCandyChocoBridge();
