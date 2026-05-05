@@ -124,6 +124,13 @@ const Audio = {
   stopWind()          { return window.stopAmbientWind && window.stopAmbientWind(); },
   playCrowdCheer()    { return window.playCrowdCheer && window.playCrowdCheer(); },
 
+  // Sandstorm-specific wind ambient. The hazard's update() calls this every
+  // frame with a 0..1 intensity; routing into ambient.js (initialized lazily)
+  // is wired in audio/ambient.js. No-op until the implementation lands.
+  initSandstormWind()           { return window.initSandstormWind && window.initSandstormWind(); },
+  setSandstormIntensity(level)  { return window.updateSandstormWind && window.updateSandstormWind(level); },
+  stopSandstormWind()           { return window.stopSandstormWind && window.stopSandstormWind(); },
+
   // ── Placeholder voor toekomst ───────────────────
   play3D(soundId, position){
     if(window.dbg)dbg.warn('audio','play3D niet geïmplementeerd (fallback)');
