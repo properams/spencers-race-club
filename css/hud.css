@@ -10,7 +10,15 @@
 #hudRaceInfo .riLapRow{margin-top:4px;display:flex;gap:8px;align-items:baseline}
 #hudRaceInfo .riLabel{font-size:8px;color:var(--hud-text-dim);letter-spacing:3px}
 #hudRaceInfo .riLap{font-size:14px;font-weight:700;color:var(--hud-text);letter-spacing:2px}
-#hudRaceInfo .riTimeRow{margin-top:4px;font-family:'Orbitron','SFMono-Regular',monospace;font-size:10px;color:var(--hud-text-dim);letter-spacing:.5px;min-height:13px}
+#hudRaceInfo .riTimeRow{margin-top:4px;font-family:'Orbitron','SFMono-Regular',monospace;font-size:10px;color:var(--hud-text-dim);letter-spacing:.5px;min-height:13px;display:flex;gap:6px;align-items:baseline}
+/* Stable widths: tabular numerals + reserved slots prevent the race-info block
+   from "breathing" as digits, decimals and +/- signs change every frame. */
+#hudRaceInfo{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+#hudRaceInfo .riPos{min-width:3ch;display:inline-block}
+#hudRaceInfo .riPosOf{min-width:3ch;display:inline-block}
+#hudRaceInfo .riLap{min-width:7ch;display:inline-block}
+#hudRaceInfo #hdLapTime{min-width:15ch;display:inline-block}
+#hudRaceInfo #hdLapDelta{min-width:6ch;display:inline-block;text-align:right;margin-left:0}
 /* .hLabel/.hBig/.hSm — verwijderd; alleen race-info-panel had ze, en die gebruikt
    nu eigen .ri* classes. */
 /* Driving instruments: gear + speed in one shared-background unit. */
