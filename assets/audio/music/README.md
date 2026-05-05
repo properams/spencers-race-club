@@ -52,19 +52,6 @@ Perturbator, Cyberpunk 2077 OST, Hotline Miami.
 | `final-lap.ogg` | cyberpunk drop stinger in D minor, 128 bpm, intense buildup with cymbal crash, instrumental |
 | `nitro-fx.ogg` | synth riser whoosh sweep, cyberpunk, 1 second, instrumental |
 
-### Grand Prix — 150 BPM, A minor *(nog te genereren)*
-
-Driving big-beat / electro-rock. Refs: Justice "Genesis", F1 game intro's.
-
-| Slot | Prompt |
-|---|---|
-| `intro.ogg` | aggressive electro-rock buildup, 150 bpm, A minor, distorted guitar power chord ending, instrumental |
-| `base.ogg` | driving big-beat drum loop with rock kick and live snare, 150 bpm, A minor, distorted bass guitar, no melody, loopable, no fade |
-| `mid.ogg` | analog synth chord stabs and pad in A minor, 150 bpm, Justice style, no drums no bass, loopable, no fade |
-| `lead.ogg` | aggressive analog synth lead in A minor, 150 bpm, Justice "Genesis" style, no drums no bass, loopable, no fade |
-| `final-lap.ogg` | electro-rock drop stinger A minor, 150 bpm, distorted guitar and cymbal crash, instrumental |
-| `nitro-fx.ogg` | electro turbine whoosh, 1 second, instrumental |
-
 ### Space — 132 BPM, E minor *(nog te genereren)*
 
 Outrun synthwave. Refs: Kavinsky "Nightcall", Mitch Murder, Daft Punk.

@@ -69,7 +69,7 @@ var audioCtx=null; // var: music ES-module leest window.audioCtx
 
 // Special track objects
 const jumpRamps=[],spinPads=[],boostPads=[],collectibles=[];
-// Per-world track elements (_wp*, _drs*) verhuisd naar js/worlds/<world>.js.
+// Per-world track elements (_wp*) verhuisd naar js/worlds/<world>.js.
 // Per-car vertical velocity stored on car.vy
 // (_nowSec → core/loop.js; _posCache + _posTick → ui/hud.js;
 //  _ai* scratch vectors → cars/ai.js)
@@ -150,9 +150,6 @@ let _contactPopupCD=0; // collision popup cooldown — max once per 3s
 var _overallFastestLap=Infinity; // var: persistence cross-script
 // _nearMissCooldown → js/cars/ai.js
 // Pit-stop state → js/gameplay/pitstop.js
-// DRS indicator state — _drsActive en _drsEl DOM-ref → js/ui/hud.js
-// (groep met andere _el*). DRS bleef GP-specifiek; bij verwijderen
-// van die wereld is DRS dead code maar de variabelen zijn elders.
 // _aiPersonality / _reverseLights → js/cars/ai.js
 // Close battle indicator
 let _closeBattleTimer=0;

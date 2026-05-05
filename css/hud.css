@@ -88,7 +88,6 @@
 #rpmFill{position:absolute;bottom:0;width:100%;border-radius:6px;transition:height .06s}
 #driftBar{position:fixed;bottom:52px;left:50%;transform:translateX(-50%);width:180px;height:8px;background:rgba(0,0,0,.55);border:1px solid rgba(255,136,0,.4);border-radius:4px;display:none;overflow:hidden;z-index:12}
 #driftBarFill{height:100%;width:0%;background:linear-gradient(90deg,#ff6600,#ffee00,#ffffff);border-radius:4px;transition:width .06s}
-#drsIndicator{position:absolute;top:34%;left:50%;transform:translateX(-50%);font-family:'Orbitron',sans-serif;font-size:clamp(14px,2.5vw,28px);font-weight:900;letter-spacing:6px;color:#00ccff;text-shadow:0 0 18px #00ccff;pointer-events:none;display:none}
 #fastestLapFlash{position:fixed;inset:0;pointer-events:none;z-index:var(--z-flash);opacity:0;background:radial-gradient(ellipse 80% 60% at 50% 35%,rgba(160,0,255,.38) 0%,rgba(100,0,200,.15) 55%,transparent 100%);transition:opacity .18s}
 /* CLOSE BATTLE staat op top:12% zodat showPopup() events (zoals
    NEAR MISS, P-positie wisselingen) op top:5%-9% er niet bovenop
@@ -154,7 +153,7 @@
 #hudInstruments .hiSpdLbl{font-size:7px!important}
 #nitroBar{display:none!important} /* replaced by #tcNitro indicator on mobile */
 #nitroLbl{display:none!important}
-#hudLeader:not(.lShow),#hudCarStatus,#sectorPanel,#drsIndicator,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines,#hudRpm{display:none!important}
+#hudLeader:not(.lShow),#hudCarStatus,#sectorPanel,#closeBattleEl,#speedTrapEl,#mirrorFrame,#mirrorLabel,#speedLines,#hudRpm{display:none!important}
 /* When expanded via L-hotkey, the leaderboard returns even on small viewports. */
 #hudLeader.lShow{display:block!important;top:calc(60px + env(safe-area-inset-top,0px))!important;right:calc(12px + env(safe-area-inset-right,0px))!important;font-size:10px!important;max-height:60vh!important;overflow:hidden!important}
 #tcSteer{display:none!important}

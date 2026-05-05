@@ -88,7 +88,7 @@ varieert filter freq + Q + gain per surface (zie `SURFACE_PARAMS` in
 
 | Slot | Wereld-default | Karakter |
 |---|---|---|
-| `asphalt.ogg` | grandprix, candy, neoncity, themepark | Standaard rolling tarmac |
+| `asphalt.ogg` | candy, neoncity, themepark | Standaard rolling tarmac |
 | `metal.ogg` | space | Metalen plaat / grating |
 | `water.ogg` | deepsea | Water-spray onder banden |
 | `sand.ogg` | volcano | Zand / dirt rommelig |

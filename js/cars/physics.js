@@ -193,12 +193,8 @@ function updatePlayer(dt){
   if(slipping){
     car.speed=Math.min(MAX*1.12,car.speed+.004);
     if(_elSlip)_elSlip.style.display='block';
-    _drsActive=true;
-    if(_drsEl)_drsEl.style.display='block';
   }else{
     if(_elSlip)_elSlip.style.display='none';
-    _drsActive=false;
-    if(_drsEl)_drsEl.style.display='none';
   }
   // Near-miss bonus: close pass without collision
   if(_raceStartGrace<=0){

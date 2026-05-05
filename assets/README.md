@@ -10,7 +10,7 @@ The pipeline mirrors the audio overhaul:
 1. `assets/manifest.json` lists every asset slot per world.
 2. `js/assets/loader.js` (`window.Assets`) reads the manifest, lazy-loads
    `RGBELoader` / `GLTFLoader` from CDN only when needed, and caches results.
-3. World code asks `Assets.getHDRI('grandprix')` etc. synchronously at
+3. World code asks `Assets.getHDRI('neoncity')` etc. synchronously at
    build time. Cache miss → fallback to the procedural canvas / cone /
    `MeshLambertMaterial` path.
 
@@ -21,8 +21,9 @@ assets/
 ├── audio/         (already in use — see audio/README.md)
 ├── hdri/          .hdr equirectangular files (Radiance HDR / RGBE)
 ├── textures/
-│   └── grandprix/ ground_color.jpg, ground_normal.jpg, ground_rough.jpg,
+│   └── neoncity/  ground_color.jpg, ground_normal.jpg, ground_rough.jpg,
 │                  mountains_far.png, mountains_near.png
+│                  (parallel folders for volcano / arctic / themepark / deepsea)
 ├── models/
 │   ├── nature/    Quaternius Stylized Nature MegaKit — trees, plants,
 │   │              rocks, mushrooms, flowers, grass. Shared bark / leaf
@@ -34,7 +35,7 @@ assets/
 │   ├── space/     Kenney Space Kit — meteors, rocks, crystal formations,
 │   │              craters, satellite dishes.
 │   ├── arctic/    iceberg_small.glb (standalone CC0)
-│   └── landmarks/ mountain_cabin.glb (held for a future GP track-side
+│   └── landmarks/ mountain_cabin.glb (held for a future track-side
 │                  landmark slot)
 └── CREDITS.md     (per-pack attribution + licence stamps)
 ```
@@ -81,10 +82,10 @@ a one-shot script that fetches all recommended Poly Haven CC0 assets into
 the right paths:
 
 ```bash
-bash assets/download_assets.sh           # everything (~140MB)
+bash assets/download_assets.sh           # everything (~120MB)
 bash assets/download_assets.sh hdri      # only HDRIs (2K + 1K)
 bash assets/download_assets.sh ground    # only PBR ground sets
-bash assets/download_assets.sh grandprix # one specific world
+bash assets/download_assets.sh neoncity  # one specific world
 ```
 
 The script is idempotent: existing files are skipped, individual failures
@@ -99,7 +100,7 @@ as zips. Manual extraction steps below.
    at the paths listed in `manifest.json`.
 2. Hard refresh the browser (Ctrl+Shift+R / Cmd+Shift+R).
 3. Open pause overlay during a race. The line below "FX ON" should read:
-   `ASSETS [GRANDPRIX]   HDRI ✓   GROUND 3/3   PROPS 5/5   LAYERS 2/2`
+   `ASSETS [NEONCITY]   HDRI ✓   GROUND 3/3   PROPS 5/5   LAYERS 2/2`
 4. If a slot stays `✗`, open the error viewer (Ctrl+Shift+E) — the asset
    loader logs the failed path under channel `assets`.
 
@@ -110,7 +111,6 @@ upgrades. Drop matching files in the paths listed in `manifest.json`:
 
 | World      | HDRI | Ground PBR | Procedural silhouettes | Textured silhouettes | GLTF props |
 |------------|:---:|:---:|:---:|:---:|---|
-| grandprix  | ✓ | ✓ | ✓ | ✓ | trees + haybales + rocks |
 | neoncity   | ✓ | ✓ (wet asphalt) | ✓ (deep blue-purple) | ✓ (skyline) | trash bin / bollard / roadblock |
 | volcano    | ✓ | ✓ (lava rock) | ✓ (rust-red) | ✓ | basalt rocks / lava chunk |
 | arctic     | ✓ | ✓ (snow/ice) | ✓ (cold blue) | ✓ (ice peaks) | iceberg s/m / snow rock |
@@ -121,7 +121,6 @@ upgrades. Drop matching files in the paths listed in `manifest.json`:
 
 ### Recommended HDRI variants per world
 
-- **grandprix**: Poly Haven `kloofendal_48d_partly_cloudy_puresky` 2K, or `meadow_2`
 - **neoncity**: Poly Haven `urban_alley_01` 2K (night-tinted), or `dikhololo_night`
 - **volcano**: Poly Haven `lonely_road_afternoon_puresky` (warm), or any dusk HDRI
 - **arctic**: Poly Haven `snowy_park_01` 2K
@@ -158,16 +157,6 @@ distributors ship them as zips. **Easiest source for individual GLBs:**
 where every model has a one-click GLB download (no zip extraction).
 
 #### Per-world recommendations (verified URLs)
-
-**Grand Prix** — [Quaternius "Stylized Nature MegaKit"](https://quaternius.itch.io/stylized-nature-megakit)
-(110+ models, CC0, "Pay what you want" → free download):
-- Pine tree variant   → `assets/models/vegetation/pine_low.glb`
-- Birch / oak variant → `assets/models/vegetation/birch_low.glb`
-- Small rock          → `assets/models/props/rock_small.glb`
-- Medium rock         → `assets/models/props/rock_medium.glb`
-
-For haybales, search [poly.pizza](https://poly.pizza/search/haystack)
-for "haystack" or "haybale" → `assets/models/props/haybale.glb`.
 
 **Volcano** — [Quaternius "Stylized Nature MegaKit"](https://quaternius.itch.io/stylized-nature-megakit)
 (same pack, different rocks); or
@@ -237,8 +226,6 @@ manifest if you find a better source:
 
 | Slot | What we want | Suggested search |
 |---|---|---|
-| `grandprix.haybale` | Single haystack/haybale model | [poly.pizza/search/haystack](https://poly.pizza/search/haystack), Quaternius Farm pack |
-| `grandprix.ground_*` extras | Additional groundcover types (twigs, sticks, logs) | poly.pizza CC0 |
 | `arctic.iceberg_medium` | Larger iceberg variant — current has only one size | [poly.pizza/search/iceberg](https://poly.pizza/search/iceberg) |
 | `themepark.traffic_cone` | Orange traffic cone | [poly.pizza/search/traffic+cone](https://poly.pizza/search/traffic+cone) |
 | `volcano.real_lava_chunk` | Glowing lava rock (current uses crystal substitute) | Stylized fire/lava packs on itch.io |
@@ -269,7 +256,7 @@ prefiltering, so visual quality on mobile is barely affected.
   trade — drop a matching HDRI or stick to procedural.
 - Procedural background silhouettes are tuned per world to sit *behind*
   the existing rich horizons (volcano embers, neon skyscrapers, arctic
-  auroras, themepark fireworks). They render automatically on grandprix /
+  auroras, themepark fireworks). They render automatically on
   neoncity / volcano / arctic / themepark; deepsea / space / candy stay
   pure procedural.
 - GLTF roadside prop dispatchers run on all worlds with prop slots.
