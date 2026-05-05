@@ -532,6 +532,43 @@ function buildSideSkirts(group, mats, opts){
 // Group B Rally pilot helpers (Stap 2a/2b/2c uit PILOT_GROUPB prompt)
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Side-profile shape registry voor buildExtrudedBody. Elk profile is een
+// array van [normX, normY] punten waar normX∈[0,1] = front→back en
+// normY∈[0,1] = bottom→top. Builder vermenigvuldigt met L en H. Alle
+// profielen sluiten zichzelf langs de bodem.
+//
+// Voeg een profile toe wanneer je een nieuw archetype-silhouet nodig hebt.
+// Bestaande car-builders verwijzen via opts.profile naar de key hieronder.
+const _BODY_PROFILES = {
+  // Group B / Lancia Delta — long flat hood, korte greenhouse, hatchback rear.
+  rally: [
+    [0.00, 0.15], [0.00, 0.35], [0.05, 0.45], [0.30, 0.48],
+    [0.40, 0.85], [0.55, 0.95], [0.65, 0.95], [0.80, 0.55],
+    [1.00, 0.45], [1.00, 0.15]
+  ],
+  // Mid-engine super (Ferrari/Lambo/McLaren) — laag wedgy front, korte cabin,
+  // gedaalde engine cover, abrupte rear bumper. Lager + meer swept dan rally.
+  super: [
+    [0.00, 0.18], [0.00, 0.30], [0.05, 0.36], [0.20, 0.42],
+    [0.30, 0.78], [0.45, 0.92], [0.55, 0.92], [0.70, 0.55],
+    [0.85, 0.45], [1.00, 0.40], [1.00, 0.18]
+  ],
+  // Sedan / Tesla Model S — long hood, ruime greenhouse, fastback rear,
+  // korte trunk. Hoogste dak van alle profielen.
+  sedan: [
+    [0.00, 0.20], [0.00, 0.40], [0.05, 0.48], [0.25, 0.52],
+    [0.32, 0.92], [0.45, 1.00], [0.65, 1.00], [0.85, 0.55],
+    [1.00, 0.50], [1.00, 0.20]
+  ],
+  // Muscle / Mustang — long flat hood, vertical windshield, lange flat roof,
+  // matig sloped fastback, lange trunk. Beefy stance.
+  muscle: [
+    [0.00, 0.20], [0.00, 0.45], [0.05, 0.55], [0.32, 0.58],
+    [0.36, 0.95], [0.42, 0.98], [0.65, 0.98], [0.78, 0.78],
+    [0.92, 0.50], [1.00, 0.45], [1.00, 0.20]
+  ]
+};
+
 // Build een gewelfde body-shell via een 2D side-profile shape die over de
 // breedte wordt geëxtrudeerd. Caller positioneert de mesh in z'n eigen
 // coördinatenruimte.
@@ -540,30 +577,26 @@ function buildSideSkirts(group, mats, opts){
 // (bottom=0, top=H). Extrude langs +Z over `width`. Na centreren + rotateY
 // komt de length op de Z-as (codebase-conventie front=-Z) en width op X.
 //
+// opts.profile: 'rally' | 'super' | 'sedan' | 'muscle' (default 'rally').
+//
 // Caller verantwoordelijk voor LOD-check; deze helper neemt geen LOD-fallback.
 // Zie buildGroupBRally voor de high/low pad-keuze.
 function buildExtrudedBody(width, length, height, opts){
   opts = opts || {};
   const mat = opts.mat;
+  const profileKey = opts.profile || 'rally';
+  const profile = _BODY_PROFILES[profileKey] || _BODY_PROFILES.rally;
   const bevelSize    = (opts.bevelSize    != null) ? opts.bevelSize    : 0.04;
   const bevelSegs    = (opts.bevelSegments!= null) ? opts.bevelSegments: 2;
   const bevelThick   = (opts.bevelThickness!=null) ? opts.bevelThickness: 0.04;
   const W = width, L = length, H = height;
-  // Side profile — Group B / Lancia Delta Integrale / Audi Quattro silhouet.
-  // Long flat hood, short greenhouse, hatchback-stijl rear. Alle punten
-  // angular (geen curves) voor low-poly Art-of-Rally feel.
   const shape = new THREE.Shape();
-  shape.moveTo(0,         0.15 * H); // front-bumper-bottom
-  shape.lineTo(0,         0.35 * H); // front-bumper-top
-  shape.lineTo(0.05 * L,  0.45 * H); // hood front edge
-  shape.lineTo(0.30 * L,  0.48 * H); // hood end (slight rise)
-  shape.lineTo(0.40 * L,  0.85 * H); // windshield top (raked back)
-  shape.lineTo(0.55 * L,  0.95 * H); // roof front
-  shape.lineTo(0.65 * L,  0.95 * H); // roof rear (kort dak)
-  shape.lineTo(0.80 * L,  0.55 * H); // rear hatchback bottom (steile slope)
-  shape.lineTo(L,         0.45 * H); // rear bumper top
-  shape.lineTo(L,         0.15 * H); // rear bumper bottom
-  shape.lineTo(0,         0.15 * H); // close along bottom
+  shape.moveTo(profile[0][0] * L, profile[0][1] * H);
+  for (let i = 1; i < profile.length; i++){
+    shape.lineTo(profile[i][0] * L, profile[i][1] * H);
+  }
+  // Sluit shape langs de bodem terug naar het start-punt
+  shape.lineTo(profile[0][0] * L, profile[0][1] * H);
   const geo = new THREE.ExtrudeGeometry(shape, {
     depth: W,
     bevelEnabled: true,
