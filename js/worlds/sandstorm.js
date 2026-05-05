@@ -15,49 +15,22 @@ const _SS_DUNES_T_RANGES = [[0.00,0.28],[0.88,1.00]];
 const _SS_SLOT_T_RANGE   = [0.32,0.62];
 const _SS_PLAZA_T_RANGE  = [0.70,0.86];
 
-// ── Procedural canvas textures (recycled from sandstorm.old.js) ──
+// ── Procedural canvas textures (sandstorm-local helpers) ──
 //
-// Phase-3A swap: cliffs + mesas now use ProcTextures.rockStrata
-// (centralised in js/effects/proc-textures.js). The old _ssRockTex inline
-// canvas — and _ssDisplaceCliffGeometry helper that went with the per-
-// panel cliff approach — were removed in this commit; their consumers
-// migrated to ProcGeometry.strataStack which embeds displacement.
-// Sandstone _ssSandstoneTex below stays for now — Phase 3B (pillaren +
-// obelisken) is its only remaining caller and will swap it.
-
-// Sandstone canvas with soft horizontal weathering — used by tempel ruins,
-// obelisks, sphinx body. Lighter base than canyon rock; subtle vertical
-// fluting + age-staining.
-function _ssSandstoneTex(){
-  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
-  const g=c.getContext('2d');
-  g.fillStyle='#b89370';g.fillRect(0,0,S,S);
-  // Pixel noise (light)
-  const id=g.getImageData(0,0,S,S),d=id.data;
-  for(let i=0;i<d.length;i+=4){
-    const n=Math.random()*40-20|0;
-    d[i]=Math.max(0,Math.min(255,d[i]+n));
-    d[i+1]=Math.max(0,Math.min(255,d[i+1]+n*.85|0));
-    d[i+2]=Math.max(0,Math.min(255,d[i+2]+n*.6|0));
-  }
-  g.putImageData(id,0,0);
-  // Vertical fluting (subtle, every 32px)
-  for(let x=0;x<S;x+=32){
-    g.fillStyle='rgba(80,55,35,0.18)';
-    g.fillRect(x,0,2,S);
-  }
-  // Age-staining: a few darker streaks running down
-  for(let i=0;i<6;i++){
-    const x=Math.random()*S,wd=8+Math.random()*16;
-    const grd=g.createLinearGradient(x,0,x,S);
-    grd.addColorStop(0,'rgba(60,38,22,0.0)');
-    grd.addColorStop(0.4,'rgba(60,38,22,0.30)');
-    grd.addColorStop(1,'rgba(60,38,22,0.05)');
-    g.fillStyle=grd;g.fillRect(x,0,wd,S);
-  }
-  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
-  t.repeat.set(1,2);t.anisotropy=window._isMobile?2:4;t.needsUpdate=true;return t;
-}
+// Phase-3A swap: cliffs + mesas migrated to ProcTextures.rockStrata
+// (centralised in js/effects/proc-textures.js). The legacy _ssRockTex
+// inline canvas + _ssDisplaceCliffGeometry helper were removed; their
+// consumers now use ProcGeometry.strataStack which embeds displacement.
+//
+// Phase-3B swap: tempel ruins + obelisken migrated to
+// ProcTextures.weatheredStone (with optional flutes flag) and
+// ProcTextures.pseudoGlyphs (obelisk shafts). The legacy _ssSandstoneTex
+// inline canvas is removed too — sphinx still uses weatheredStone but
+// via ProcTextures, not the inline copy.
+//
+// Phase-3C will swap the remaining inline canvases (_ssPalmLeafTex,
+// _ssTentStripeTex, _ssScarabSignTex) for ProcTextures.palmLeaf /
+// stripedFabric / pseudoGlyphs.
 
 function _ssPalmLeafTex(){
   const W=128,H=64,c=document.createElement('canvas');c.width=W;c.height=H;
@@ -627,25 +600,75 @@ function _ssBuildSphinxMonument(){
   scene.add(sphinx);
 }
 
-// Tempel ruins — 5 standing pillars + 3 fallen + 1 architrave fragment.
-// Each standing = base + shaft + capital + abacus (4 sub-meshes).
-// Implemented via 4 InstancedMeshes per part-type to keep draw-calls low.
+// Tempel ruins — Phase-3B rebuild per spec §3.6.
+//
+// Each standing pillar = 5 sub-meshes (base + entasis-shaft + capital echinus
+// + abacus + decoratie-ring). 24 sides on shaft (12 mobile) for a properly
+// round read from any camera angle. Entasis = the subtle mid-shaft bulge of
+// classical pilaren — `ProcGeometry.entasisShaft` bakes the lathe-curve.
+//
+// Shared materials per surface-zone (shaft / accent / dark) so a 5-pillar
+// scene yields 5 InstancedMesh-style draw calls (not 25 individual). The
+// `decoratie-ring` is a TorusGeometry shared across pillars — also instanced.
+// Mobile drops the decoratie-ring entirely (per spec).
+//
+// Fallen pillars: 3 stuks elk samengesteld uit 3 gebroken-stuk-cilinders
+// rotated to lie on the ground (suggests "in 3 stukken gevallen") in
+// position-clusters per pillar.
+//
+// Architrave: 1 main beam + 2 relief blocks via beveledBox (Phase-2 helper).
 function _ssBuildTempleRuins(){
+  const mob=window._isMobile;
   const COUNT_STANDING=_mobCount(5);
   const COUNT_FALLEN=_mobCount(3);
-  const stoneTex=_ssSandstoneTex();
-  const stoneMat=new THREE.MeshLambertMaterial({color:0xb89370,map:stoneTex});
-  const stoneAccentMat=new THREE.MeshLambertMaterial({color:0x8c6f50});
+  // PBR materials with weatheredStone canvas. ageWear:0.6 puts visible AO
+  // blobs + crack lines on each part. flutes:true on shaft adds the
+  // vertical grooves typical of greek-style pilaren (mobile skips flutes
+  // by passing flutes:false).
+  const shaftTex=ProcTextures.weatheredStone({
+    baseColor:'#b89370', crackColor:'#3a2418', crackCount:6,
+    ageWear:0.6, flutes: !mob, repeatX:1, repeatY:1
+  });
+  const accentTex=ProcTextures.weatheredStone({
+    baseColor:'#8c6f50', crackColor:'#2a1810', crackCount:5,
+    ageWear:0.55, repeatX:1, repeatY:1
+  });
+  const shaftMat =new THREE.MeshStandardMaterial({map:shaftTex,  roughness:0.92, metalness:0});
+  const accentMat=new THREE.MeshStandardMaterial({map:accentTex, roughness:0.94, metalness:0});
+
+  // Standing pillar parts — built once, reused via InstancedMesh per part.
+  // entasisShaft baked at desktop sides:24 / mobile sides:12 per spec.
+  const baseGeo=ProcGeometry.organicCylinder({
+    topRadius:0.7, bottomRadius:0.85, height:0.5,
+    sides: mob?12:16, displaceAmount:0.02, seed:101
+  });
+  const shaftGeo=ProcGeometry.entasisShaft({
+    baseRadius:0.65, midRadius:0.7, topRadius:0.55,
+    height:5, sides: mob?12:24
+  });
+  const echinusGeo=ProcGeometry.organicCylinder({
+    topRadius:0.65, bottomRadius:0.55, height:0.3,
+    sides: mob?12:16, displaceAmount:0.02, seed:131
+  });
+  const abacusGeo=ProcGeometry.beveledBox({
+    w:1.5, h:0.3, d:1.5, bevel:0.05,
+    bevelSegments: mob?1:2, curveSegments: mob?2:4
+  });
+
+  const baseIM   =new THREE.InstancedMesh(baseGeo,    accentMat, COUNT_STANDING);
+  const shaftIM  =new THREE.InstancedMesh(shaftGeo,   shaftMat,  COUNT_STANDING);
+  const echinusIM=new THREE.InstancedMesh(echinusGeo, accentMat, COUNT_STANDING);
+  const abacusIM =new THREE.InstancedMesh(abacusGeo,  accentMat, COUNT_STANDING);
+
+  // Decoratie-ring — kleine TorusGeometry tussen echinus en abacus.
+  // Mobile skips this part entirely per spec §3.6.
+  let ringIM=null;
+  if(!mob){
+    const ringGeo=new THREE.TorusGeometry(0.55, 0.06, 8, 16);
+    ringIM=new THREE.InstancedMesh(ringGeo, accentMat, COUNT_STANDING);
+  }
+
   const _dummy=new THREE.Object3D();
-  // Standing pillar parts: base block, fluted shaft, capital block, abacus top.
-  const baseGeo=new THREE.BoxGeometry(2.6,0.7,2.6);
-  const shaftGeo=new THREE.CylinderGeometry(0.95,1.15,7.4,16);
-  const capitalGeo=new THREE.BoxGeometry(2.4,0.7,2.4);
-  const abacusGeo=new THREE.BoxGeometry(2.0,0.4,2.0);
-  const baseIM=new THREE.InstancedMesh(baseGeo,stoneAccentMat,COUNT_STANDING);
-  const shaftIM=new THREE.InstancedMesh(shaftGeo,stoneMat,COUNT_STANDING);
-  const capIM=new THREE.InstancedMesh(capitalGeo,stoneAccentMat,COUNT_STANDING);
-  const abacusIM=new THREE.InstancedMesh(abacusGeo,stoneAccentMat,COUNT_STANDING);
   for(let i=0;i<COUNT_STANDING;i++){
     const t=_SS_PLAZA_T_RANGE[0]+(i+0.5)/COUNT_STANDING*(_SS_PLAZA_T_RANGE[1]-_SS_PLAZA_T_RANGE[0]);
     const p=trackCurve.getPoint(t);
@@ -654,27 +677,48 @@ function _ssBuildTempleRuins(){
     const side=i%2===0?1:-1;
     const off=BARRIER_OFF+9+Math.random()*8;
     const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
-    // Per-instance Y-rotation jitter so each pillar reads as hand-placed
     const yawJ=Math.random()*Math.PI*2;
-    _dummy.position.set(cx,0.35,cz);_dummy.rotation.set(0,yawJ,0);_dummy.updateMatrix();
-    baseIM.setMatrixAt(i,_dummy.matrix);
-    _dummy.position.set(cx,4.4,cz);_dummy.updateMatrix();
-    shaftIM.setMatrixAt(i,_dummy.matrix);
-    _dummy.position.set(cx,8.5,cz);_dummy.updateMatrix();
-    capIM.setMatrixAt(i,_dummy.matrix);
-    _dummy.position.set(cx,9.0,cz);_dummy.updateMatrix();
-    abacusIM.setMatrixAt(i,_dummy.matrix);
+    // Stack: base (y=0..0.5) → shaft (0.5..5.5) → echinus (5.5..5.8) → ring (~5.85) → abacus (5.95..6.25)
+    _dummy.rotation.set(0,yawJ,0);
+    _dummy.position.set(cx, 0.25, cz); _dummy.updateMatrix(); baseIM.setMatrixAt(i,_dummy.matrix);
+    // entasisShaft has its bottom at y=0 (lathe), so position at y=0.5+(5/2)
+    // would put the shaft midpoint at 3.0; lathe-result has y∈[0,5] so we
+    // place at y=0.5 (so shaft.bottom=0.5 lands on top of base which ends
+    // at y=0.5).
+    _dummy.position.set(cx, 0.5, cz); _dummy.updateMatrix(); shaftIM.setMatrixAt(i,_dummy.matrix);
+    _dummy.position.set(cx, 5.65, cz); _dummy.updateMatrix(); echinusIM.setMatrixAt(i,_dummy.matrix);
+    _dummy.position.set(cx, 6.05, cz); _dummy.updateMatrix(); abacusIM.setMatrixAt(i,_dummy.matrix);
+    if(ringIM){
+      // Torus oriented horizontal (rotated around X)
+      _dummy.rotation.set(Math.PI/2, yawJ, 0);
+      _dummy.position.set(cx, 5.85, cz); _dummy.updateMatrix();
+      ringIM.setMatrixAt(i,_dummy.matrix);
+    }
   }
-  baseIM.instanceMatrix.needsUpdate=true;scene.add(baseIM);
-  shaftIM.instanceMatrix.needsUpdate=true;scene.add(shaftIM);
-  capIM.instanceMatrix.needsUpdate=true;scene.add(capIM);
-  abacusIM.instanceMatrix.needsUpdate=true;scene.add(abacusIM);
-  // Fallen pillars — instanced with rotated cylinder + 1 broken sub-cylinder
-  // alongside (more decay than the previous build's single rotated cyl).
-  const fallenGeo=new THREE.CylinderGeometry(0.9,1.05,5.5,12);
-  const fallenChunkGeo=new THREE.CylinderGeometry(0.9,0.95,1.6,12);
-  const fallenIM=new THREE.InstancedMesh(fallenGeo,stoneMat,COUNT_FALLEN);
-  const fallenChunkIM=new THREE.InstancedMesh(fallenChunkGeo,stoneMat,COUNT_FALLEN);
+  baseIM.instanceMatrix.needsUpdate=true;     scene.add(baseIM);
+  shaftIM.instanceMatrix.needsUpdate=true;    scene.add(shaftIM);
+  echinusIM.instanceMatrix.needsUpdate=true;  scene.add(echinusIM);
+  abacusIM.instanceMatrix.needsUpdate=true;   scene.add(abacusIM);
+  if(ringIM){ ringIM.instanceMatrix.needsUpdate=true; scene.add(ringIM); }
+
+  // ── Fallen pillars — 3 broken stukken per fallen, cilinder-shapes
+  // rotated horizontal. Geeft een "in 3 stukken gevallen" lezing.
+  // Reuse organicCylinder for variety in chunk-shapes.
+  const chunkGeoA=ProcGeometry.organicCylinder({
+    topRadius:0.65, bottomRadius:0.70, height:2.4,
+    sides: mob?8:14, displaceAmount:0.04, seed:201
+  });
+  const chunkGeoB=ProcGeometry.organicCylinder({
+    topRadius:0.62, bottomRadius:0.68, height:1.8,
+    sides: mob?8:14, displaceAmount:0.05, seed:233
+  });
+  const chunkGeoC=ProcGeometry.organicCylinder({
+    topRadius:0.60, bottomRadius:0.66, height:1.5,
+    sides: mob?8:14, displaceAmount:0.06, seed:271
+  });
+  const fallenA=new THREE.InstancedMesh(chunkGeoA, shaftMat, COUNT_FALLEN);
+  const fallenB=new THREE.InstancedMesh(chunkGeoB, shaftMat, COUNT_FALLEN);
+  const fallenC=new THREE.InstancedMesh(chunkGeoC, shaftMat, COUNT_FALLEN);
   for(let i=0;i<COUNT_FALLEN;i++){
     const t=_SS_PLAZA_T_RANGE[0]+0.05+Math.random()*(_SS_PLAZA_T_RANGE[1]-_SS_PLAZA_T_RANGE[0]-0.10);
     const p=trackCurve.getPoint(t);
@@ -683,19 +727,25 @@ function _ssBuildTempleRuins(){
     const side=(i+1)%2===0?1:-1;
     const off=BARRIER_OFF+12+Math.random()*10;
     const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
+    // Common ground-orientation: cilinders lying along an axis defined by yaw.
     const yaw=Math.random()*Math.PI*2;
-    _dummy.position.set(cx,0.9,cz);
-    _dummy.rotation.set(0,yaw,Math.PI/2);
-    _dummy.updateMatrix();fallenIM.setMatrixAt(i,_dummy.matrix);
-    // Broken chunk a bit ahead, smaller, rotated differently
-    _dummy.position.set(cx+Math.cos(yaw)*4,0.95,cz+Math.sin(yaw)*4);
-    _dummy.rotation.set(0,yaw+0.4,Math.PI/2);
-    _dummy.updateMatrix();fallenChunkIM.setMatrixAt(i,_dummy.matrix);
+    const ax=Math.cos(yaw), az=Math.sin(yaw);
+    // 3 chunks placed end-to-end along the yaw-axis with slight angular drift
+    _dummy.position.set(cx, 0.7, cz);
+    _dummy.rotation.set(0, yaw,         Math.PI/2);
+    _dummy.updateMatrix(); fallenA.setMatrixAt(i,_dummy.matrix);
+    _dummy.position.set(cx + ax*2.1, 0.65, cz + az*2.1);
+    _dummy.rotation.set(0, yaw + 0.25,  Math.PI/2);
+    _dummy.updateMatrix(); fallenB.setMatrixAt(i,_dummy.matrix);
+    _dummy.position.set(cx + ax*3.7, 0.62, cz + az*3.7);
+    _dummy.rotation.set(0.10, yaw + 0.55, Math.PI/2);
+    _dummy.updateMatrix(); fallenC.setMatrixAt(i,_dummy.matrix);
   }
-  fallenIM.instanceMatrix.needsUpdate=true;scene.add(fallenIM);
-  fallenChunkIM.instanceMatrix.needsUpdate=true;scene.add(fallenChunkIM);
-  // Architrave fragment — main beam + 2 carved relief blocks underneath
-  // (3 sub-meshes to read as decorated stonework, not a plain box).
+  fallenA.instanceMatrix.needsUpdate=true; scene.add(fallenA);
+  fallenB.instanceMatrix.needsUpdate=true; scene.add(fallenB);
+  fallenC.instanceMatrix.needsUpdate=true; scene.add(fallenC);
+
+  // ── Architrave fragment — main beam (beveledBox) + 2 relief blocks beneath.
   const tMid=(_SS_PLAZA_T_RANGE[0]+_SS_PLAZA_T_RANGE[1])*0.5;
   const p=trackCurve.getPoint(tMid);
   const tg=trackCurve.getTangent(tMid).normalize();
@@ -703,23 +753,64 @@ function _ssBuildTempleRuins(){
   const off=BARRIER_OFF+18;
   const cx=p.x+nr.x*off,cz=p.z+nr.z*off;
   const yaw=Math.atan2(tg.x,tg.z);
-  const beam=new THREE.Mesh(new THREE.BoxGeometry(6,1.2,1.4),stoneMat);
-  beam.position.set(cx,1.0,cz);beam.rotation.y=yaw;beam.rotation.z=0.18;scene.add(beam);
-  // Carved relief block 1 (smaller, beneath)
-  const relief1=new THREE.Mesh(new THREE.BoxGeometry(2.4,0.5,1.0),stoneAccentMat);
-  relief1.position.set(cx-0.6,0.4,cz);relief1.rotation.y=yaw;scene.add(relief1);
-  // Carved relief block 2
-  const relief2=new THREE.Mesh(new THREE.BoxGeometry(2.0,0.5,1.0),stoneAccentMat);
-  relief2.position.set(cx+1.2,0.35,cz);relief2.rotation.y=yaw+0.05;scene.add(relief2);
+  const beam=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:6, h:1.2, d:1.4, bevel:0.10,
+      bevelSegments: mob?1:2, curveSegments: mob?2:4}),
+    shaftMat
+  );
+  beam.position.set(cx,1.0,cz);
+  beam.rotation.y=yaw; beam.rotation.z=0.18;
+  scene.add(beam);
+  const relief1=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:2.4, h:0.5, d:1.0, bevel:0.06,
+      bevelSegments: mob?1:2, curveSegments: mob?2:3}),
+    accentMat
+  );
+  relief1.position.set(cx-0.6,0.4,cz); relief1.rotation.y=yaw; scene.add(relief1);
+  const relief2=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:2.0, h:0.5, d:1.0, bevel:0.06,
+      bevelSegments: mob?1:2, curveSegments: mob?2:3}),
+    accentMat
+  );
+  relief2.position.set(cx+1.2,0.35,cz); relief2.rotation.y=yaw+0.05; scene.add(relief2);
 }
 
-// Obelisks — 2 with sokkel + 4-sided tapered prisma + capstone pyramid.
+// Obelisken — Phase-3B rebuild per spec §3.7. 2 obelisken bij plaza.
+//
+// Sub-meshes per obelisk (desktop): sokkel + 2 plinten + tapered prism shaft
+// (NOT a 4-side cylinder hack — uses ProcGeometry.taperedPrism for crisp
+// 4-sided silhouette) + pyramidCap. Hieroglyph-suggestion via
+// ProcTextures.pseudoGlyphs as a second material on the shaft (overlaid by
+// using the same canvas-tex with composited glyphs).
+//
+// Mobile: skip plinten + skip hiërogliefen, use simple weatheredStone.
 function _ssBuildObelisks(){
-  const stoneTex=_ssSandstoneTex();
-  const stoneMat=new THREE.MeshLambertMaterial({color:0xb89370,map:stoneTex});
-  const stoneAccentMat=new THREE.MeshLambertMaterial({color:0x9a7048});
-  const capMat=new THREE.MeshLambertMaterial({color:0xd4a55a,emissive:0x4a2810,emissiveIntensity:0.3});
-  // Two obelisks at the ends of the plaza segment, on opposite sides.
+  const mob=window._isMobile;
+  // Shaft: mobile uses plain weatheredStone; desktop uses pseudoGlyphs which
+  // composites glyph-marks on top of a sandstone base. ProcTextures handles
+  // both via cache so the call is cheap (LRU hit on rebuild).
+  const shaftTex = mob
+    ? ProcTextures.weatheredStone({
+        baseColor:'#b89370', crackColor:'#3a2418', crackCount:8,
+        ageWear:0.7, repeatX:1, repeatY:1
+      })
+    : ProcTextures.pseudoGlyphs({
+        rowCount:5, glyphsPerRow:4,
+        baseColor:'#b89370', glyphColor:'#3a2418',
+        repeatX:1, repeatY:1
+      });
+  const accentTex=ProcTextures.weatheredStone({
+    baseColor:'#9a7048', crackColor:'#2a1810', crackCount:5,
+    ageWear:0.5, repeatX:1, repeatY:1
+  });
+  const shaftMat =new THREE.MeshStandardMaterial({map:shaftTex,  roughness:0.92, metalness:0});
+  const accentMat=new THREE.MeshStandardMaterial({map:accentTex, roughness:0.94, metalness:0});
+  // Capstone — lightly emissive gold-tinted "gilded tip" (#d0a070 per spec).
+  const capMat=new THREE.MeshStandardMaterial({
+    color:0xd0a070, roughness:0.55, metalness:0.18,
+    emissive:0x4a2810, emissiveIntensity:0.30
+  });
+
   [_SS_PLAZA_T_RANGE[0],_SS_PLAZA_T_RANGE[1]].forEach((t,idx)=>{
     const p=trackCurve.getPoint(t);
     const tg=trackCurve.getTangent(t).normalize();
@@ -727,17 +818,51 @@ function _ssBuildObelisks(){
     const side=idx===0?-1:1;
     const off=BARRIER_OFF+5;
     const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
-    // SOKKEL — wider stepped base (2 blocks)
-    const sokkelLow=new THREE.Mesh(new THREE.BoxGeometry(4.0,0.8,4.0),stoneAccentMat);
-    sokkelLow.position.set(cx,0.4,cz);scene.add(sokkelLow);
-    const sokkelHi=new THREE.Mesh(new THREE.BoxGeometry(3.2,0.8,3.2),stoneAccentMat);
-    sokkelHi.position.set(cx,1.2,cz);scene.add(sokkelHi);
-    // Tapered 4-sided prisma (cylinder geom with 4 segments = square pyramid frustum)
-    const ob=new THREE.Mesh(new THREE.CylinderGeometry(0.5,1.4,12,4),stoneMat);
-    ob.position.set(cx,7.6,cz);ob.rotation.y=Math.PI/4;scene.add(ob);
-    // Pyramid capstone (gold-tinted, lightly emissive — picks up warm sun)
-    const cap=new THREE.Mesh(new THREE.ConeGeometry(0.7,1.8,4),capMat);
-    cap.position.set(cx,14.5,cz);cap.rotation.y=Math.PI/4;scene.add(cap);
+
+    // SOKKEL — main base block (always present)
+    const sokkel=new THREE.Mesh(
+      ProcGeometry.beveledBox({w:2.5, h:1.0, d:2.5, bevel:0.08,
+        bevelSegments: mob?1:2, curveSegments: mob?2:4}),
+      accentMat
+    );
+    sokkel.position.set(cx, 0.5, cz);
+    scene.add(sokkel);
+
+    // PLINTEN — 2 stepped blocks above sokkel — desktop only per spec
+    let topOfPlinten = 1.0; // y at which the shaft begins (default = top of sokkel)
+    if(!mob){
+      const plinth1=new THREE.Mesh(
+        ProcGeometry.beveledBox({w:2.2, h:0.4, d:2.2, bevel:0.06,
+          bevelSegments:2, curveSegments:3}),
+        accentMat
+      );
+      plinth1.position.set(cx, 1.2, cz); scene.add(plinth1);
+      const plinth2=new THREE.Mesh(
+        ProcGeometry.beveledBox({w:1.9, h:0.4, d:1.9, bevel:0.05,
+          bevelSegments:2, curveSegments:3}),
+        accentMat
+      );
+      plinth2.position.set(cx, 1.6, cz); scene.add(plinth2);
+      topOfPlinten = 1.8;
+    }
+
+    // SHAFT — taperedPrism (4-sided, NOT cylinder hack). Spec §3.7.
+    // taperedPrism's local Y range is [0, height], so we position the
+    // mesh at topOfPlinten so the shaft-bottom rests on the plinten.
+    const shaft=new THREE.Mesh(
+      ProcGeometry.taperedPrism({topW:0.4, bottomW:0.7, height:12}),
+      shaftMat
+    );
+    shaft.position.set(cx, topOfPlinten, cz);
+    scene.add(shaft);
+
+    // CAPSTONE — pyramidCap on top of shaft
+    const cap=new THREE.Mesh(
+      ProcGeometry.pyramidCap({baseW:0.55, height:1.2}),
+      capMat
+    );
+    cap.position.set(cx, topOfPlinten + 12, cz);
+    scene.add(cap);
   });
 }
 
