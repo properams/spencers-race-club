@@ -223,13 +223,17 @@
   // maar dat distorteerde de face-planes (puffy-pillow effect want corners
   // op een face delen niet via index). Nu via ExtrudeGeometry: een vierkant
   // Shape met bevelEnabled levert echte rounded corners in alle 12 edges.
-  // Triangle-cost is hoger dan een ruwe BoxGeometry (ruwweg ~120 tris ipv 12)
-  // maar acceptabel voor hero-props (sphinx). Caller kan `bevel:0` zetten
-  // om gewoon een box te krijgen (skip de extrude path).
+  // Triangle-cost: ~280 per box op default (bevelSegments:2, curveSegments:4).
+  // Mobile-LOD opts (bevelSegments:1, curveSegments:2) halveren dit tot
+  // ~140 tris zonder visueel waarneembaar verschil bij race-snelheid op
+  // small screens. Caller kan `bevel:0` zetten om gewoon een BoxGeometry
+  // te krijgen (skip de extrude path).
   function beveledBox(opts){
     opts=opts||{};
     const w=opts.w||1, h=opts.h||1, d=opts.d||1;
     const bevel=opts.bevel!=null?opts.bevel:0.1;
+    const bevelSegments=opts.bevelSegments!=null?opts.bevelSegments:2;
+    const curveSegments=opts.curveSegments!=null?opts.curveSegments:4;
     // Bevel:0 → fast path, return plain BoxGeometry without segments.
     if(bevel<=0){
       return new THREE.BoxGeometry(w,h,d);
@@ -246,13 +250,13 @@
     shape.lineTo(-hw,  hd);
     shape.lineTo(-hw, -hd);
     const geo=new THREE.ExtrudeGeometry(shape, {
-      depth: h - cb*2,        // total height includes bevel-thickness on both ends
+      depth: h - cb*2,
       bevelEnabled: true,
-      bevelSegments: 2,        // 2 = good quality without huge tri-cost
+      bevelSegments: bevelSegments,
       bevelSize: cb,
       bevelThickness: cb,
       steps: 1,
-      curveSegments: 4
+      curveSegments: curveSegments
     });
     // ExtrudeGeometry extrudes along +Z; rotate so box stands along Y.
     geo.rotateX(-Math.PI/2);
@@ -369,6 +373,11 @@
   // Mesh must have a unique (cloned) material — caller decides.
   // Lerps material.color toward fogColor by clamped distance ratio.
   // No per-frame cost.
+  //
+  // Hoisted scratch Color (`_fogScratch`) reused across calls so a typical
+  // build (~26 atmospheric calls in sandstorm Phase 3A) doesn't allocate
+  // 26 separate Color objects during world-build.
+  const _fogScratch = new THREE.Color();
   function applyAtmosphericPerspective(mesh, opts){
     if(!mesh || !mesh.material){
       if(window.dbg) dbg.warn('proc-geom','applyAtmosphericPerspective: mesh missing material');
@@ -385,10 +394,11 @@
     const dist=Math.hypot(dx, dz);
     const t=Math.max(0, Math.min(1, (dist-startDist) / Math.max(1, fullDist-startDist)));
     if(t<=0) return; // close enough — no blend
-    const fogVec=new THREE.Color(fogColor);
+    _fogScratch.set(fogColor);
+    const blend=t*maxBlend;
     const apply=(m)=>{
       if(!m || !m.color) return;
-      m.color.lerp(fogVec, t*maxBlend);
+      m.color.lerp(_fogScratch, blend);
     };
     if(Array.isArray(mesh.material)) mesh.material.forEach(apply);
     else apply(mesh.material);

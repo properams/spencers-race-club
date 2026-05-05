@@ -433,6 +433,22 @@ function _ssBuildSandDunes(){
 // the few sub-shapes that doesn't fit any ProcGeometry recipe yet).
 function _ssBuildSphinxMonument(){
   const mob=window._isMobile;
+  // Mobile beveledBox LOD: halve bevelSegments + curveSegments to roughly
+  // halve per-box tri-count (~140 tris/box vs ~280 desktop). 15 mobile
+  // sub-meshes × ~140 = ~2100 tris vs the unoptimised ~4400. Visually
+  // indistinguishable at race-camera distance.
+  const bevSegs = mob ? 1 : 2;
+  const curveSegs = mob ? 2 : 4;
+  // Inline helper so we don't repeat bevelSegments/curveSegments at every
+  // call-site. Used for sub-meshes that don't need post-creation vertex
+  // tweaks; the upper-body taper + nemes-flap taper still call
+  // ProcGeometry.beveledBox directly because they edit the resulting
+  // BufferGeometry afterwards.
+  const _bbox = (w, h, d, bevel) => ProcGeometry.beveledBox({
+    w, h, d, bevel,
+    bevelSegments: bevSegs,
+    curveSegments: curveSegs
+  });
   // 3 material zones (PBR baseline). Per-mesh color-tint kan via .color
   // set ALSO de same map laten zien, zodat caller-clones niet nodig zijn.
   const bodyTex=ProcTextures.weatheredStone({
@@ -453,25 +469,21 @@ function _ssBuildSphinxMonument(){
   const sphinx=new THREE.Group();
 
   // ── SOKKEL — large stepped base (2 beveled blocks) — sub-meshes 1-2
-  const sokkelLow=new THREE.Mesh(
-    ProcGeometry.beveledBox({w:20, h:1.2, d:28, bevel:0.20}),
-    sokkelMat
-  );
+  const sokkelLow=new THREE.Mesh(_bbox(20, 1.2, 28, 0.20), sokkelMat);
   sokkelLow.position.y=0.6; sphinx.add(sokkelLow);
-  const sokkelHi=new THREE.Mesh(
-    ProcGeometry.beveledBox({w:17, h:1.2, d:25, bevel:0.18}),
-    sokkelMat
-  );
+  const sokkelHi=new THREE.Mesh(_bbox(17, 1.2, 25, 0.18), sokkelMat);
   sokkelHi.position.y=1.8; sphinx.add(sokkelHi);
 
   // ── BODY — lying lion-form (lower + tapered upper) — sub-meshes 3-4
-  const bodyLower=new THREE.Mesh(
-    ProcGeometry.beveledBox({w:8, h:3, d:16, bevel:0.20}),
-    bodyMat
-  );
+  const bodyLower=new THREE.Mesh(_bbox(8, 3, 16, 0.20), bodyMat);
   bodyLower.position.y=3.9; sphinx.add(bodyLower);
-  // Upper body — slightly tapered top via post-creation vertex inset
-  const upperGeo=ProcGeometry.beveledBox({w:7.4, h:2.8, d:14.5, bevel:0.20});
+  // Upper body — slightly tapered top via post-creation vertex inset.
+  // Uses the full-opts call (not _bbox) because we mutate the geometry
+  // after creation; the bevel-LOD applies via shared bevSegs/curveSegs.
+  const upperGeo=ProcGeometry.beveledBox({
+    w:7.4, h:2.8, d:14.5, bevel:0.20,
+    bevelSegments: bevSegs, curveSegments: curveSegs
+  });
   // Pull top vertices inward so the body silhouette tapers toward the spine
   {
     const pos=upperGeo.attributes.position;
@@ -489,19 +501,13 @@ function _ssBuildSphinxMonument(){
   bodyUpper.position.y=6.7; sphinx.add(bodyUpper);
 
   // ── CHEST RISE — voorste deel van de body, hoger dan abdomen — sub-mesh 5
-  const chestRise=new THREE.Mesh(
-    ProcGeometry.beveledBox({w:4, h:3, d:3, bevel:0.15}),
-    bodyMat
-  );
+  const chestRise=new THREE.Mesh(_bbox(4, 3, 3, 0.15), bodyMat);
   chestRise.position.set(0, 7.5, -6.0);
   sphinx.add(chestRise);
 
   // ── FRONT PAWS (2) — beveled blocks angled forward — sub-meshes 6-7
   [-1,1].forEach(s=>{
-    const paw=new THREE.Mesh(
-      ProcGeometry.beveledBox({w:1, h:3, d:4, bevel:0.10}),
-      bodyMat
-    );
+    const paw=new THREE.Mesh(_bbox(1, 3, 4, 0.10), bodyMat);
     paw.position.set(s*2.3, 3.9, -6.5);
     sphinx.add(paw);
   });
@@ -509,49 +515,39 @@ function _ssBuildSphinxMonument(){
   // ── REAR PAWS (2) — desktop only — sub-meshes 8-9 (skip on mobile)
   if(!mob){
     [-1,1].forEach(s=>{
-      const rearPaw=new THREE.Mesh(
-        ProcGeometry.beveledBox({w:0.8, h:1.2, d:2, bevel:0.10}),
-        bodyMat
-      );
+      const rearPaw=new THREE.Mesh(_bbox(0.8, 1.2, 2, 0.10), bodyMat);
       rearPaw.position.set(s*2.5, 3.0, 7.2);
       sphinx.add(rearPaw);
     });
   }
 
   // ── TAIL — small block curving along the body — sub-mesh 10
-  const tail=new THREE.Mesh(
-    ProcGeometry.beveledBox({w:0.8, h:1.2, d:3, bevel:0.10}),
-    bodyMat
-  );
+  const tail=new THREE.Mesh(_bbox(0.8, 1.2, 3, 0.10), bodyMat);
   tail.position.set(0, 4.5, 8.4);
   tail.rotation.x=0.3;
   sphinx.add(tail);
 
   // ── NECK + HEAD — sub-meshes 11-12
-  const neck=new THREE.Mesh(
-    ProcGeometry.beveledBox({w:3, h:1.5, d:2, bevel:0.12}),
-    bodyMat
-  );
+  const neck=new THREE.Mesh(_bbox(3, 1.5, 2, 0.12), bodyMat);
   neck.position.set(0, 8.5, -7.0);
   sphinx.add(neck);
-  const head=new THREE.Mesh(
-    ProcGeometry.beveledBox({w:3, h:3.5, d:3, bevel:0.20}),
-    bodyMat
-  );
+  const head=new THREE.Mesh(_bbox(3, 3.5, 3, 0.20), bodyMat);
   head.position.set(0, 10.5, -7.5);
   sphinx.add(head);
 
   // ── NEMES HEADDRESS — 2 angled trapezium flaps + central block (3 sub-meshes)
   // Sub-mesh 13 = nemes center
-  const nemesCenter=new THREE.Mesh(
-    ProcGeometry.beveledBox({w:4.4, h:1.6, d:4.4, bevel:0.15}),
-    nemesMat
-  );
+  const nemesCenter=new THREE.Mesh(_bbox(4.4, 1.6, 4.4, 0.15), nemesMat);
   nemesCenter.position.set(0, 12.7, -7.5);
   sphinx.add(nemesCenter);
-  // Sub-meshes 14-15 = side flaps (custom trapezium via BoxGeometry + scale-Z taper)
+  // Sub-meshes 14-15 = side flaps (custom trapezium via post-create taper).
+  // Uses the full-opts call (not _bbox) because we mutate the geometry
+  // after creation; the bevel-LOD applies via shared bevSegs/curveSegs.
   [-1,1].forEach(s=>{
-    const flapGeo=ProcGeometry.beveledBox({w:0.8, h:2.6, d:3.4, bevel:0.10});
+    const flapGeo=ProcGeometry.beveledBox({
+      w:0.8, h:2.6, d:3.4, bevel:0.10,
+      bevelSegments: bevSegs, curveSegments: curveSegs
+    });
     // Taper bottom narrower so flap reads as Egyptian nemes side-cloth
     const pos=flapGeo.attributes.position;
     const v=new THREE.Vector3();
@@ -587,10 +583,7 @@ function _ssBuildSphinxMonument(){
 
   // ── PHARAO BAARD — desktop only, sub-mesh 18 (false beard onder kin)
   if(!mob){
-    const baard=new THREE.Mesh(
-      ProcGeometry.beveledBox({w:0.5, h:1.4, d:0.5, bevel:0.06}),
-      nemesMat
-    );
+    const baard=new THREE.Mesh(_bbox(0.5, 1.4, 0.5, 0.06), nemesMat);
     baard.position.set(0, 9.4, -8.95);
     baard.rotation.x=0.10;
     sphinx.add(baard);
