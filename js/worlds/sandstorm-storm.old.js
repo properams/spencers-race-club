@@ -248,14 +248,8 @@ function updateSandstormStorm(dt,currentLap){
   if(car&&_sstScratch){
     _sstScratch.set(0,0,-1).applyQuaternion(car.mesh.quaternion);
     const dist=st.lap>=3?80:st.lap>=2?140:220;
-    // Skip the transparent-blend draw entirely when the curtain is
-    // effectively invisible (lap 1) — saves fillrate on mobile where the
-    // curtain plane covers ~1/3 of the viewport. perf-budget review hint.
-    const visible=st.curtainOp>0.01;
     for(let i=0;i<_sstStormCurtain.length;i++){
       const c=_sstStormCurtain[i];
-      c.mesh.visible=visible;
-      if(!visible)continue;
       const offX=(i-(_sstStormCurtain.length-1)*0.5)*22;
       c.mesh.position.set(
         car.mesh.position.x+_sstScratch.x*dist+offX,

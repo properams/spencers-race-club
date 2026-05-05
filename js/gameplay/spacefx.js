@@ -40,6 +40,11 @@ function triggerSpaceRecovery(car){
   car._fallingIntoSpace=false;
   car._fallTimer=0;
   recoverActive=true;recoverTimer=2.8;car.speed=0;car.vy=0;car.inAir=false;
+  // Populate stuck-recovery trackers so the >5s hang-warn (tracklimits.js)
+  // covers space-world recoveries too. typeof guards keep this resilient if
+  // tracklimits.js is loaded out of order in a future refactor.
+  if(typeof _tlRecoveryEntryT!=='undefined')_tlRecoveryEntryT=_nowSec;
+  if(typeof _tlStuckRecoveryWarned!=='undefined')_tlStuckRecoveryWarned=false;
   hideBanner();
   // Tractor beam — position beam above recovery point
   const t=car.progress;

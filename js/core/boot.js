@@ -171,6 +171,67 @@ function _checkMemoryBudget(){
   }
 }
 
+// Schema-validator for waypoint loops in data/tracks.json. Runs once at
+// boot, after loadGameData() populates _TRACKS. Catches:
+//   • segment lengths outside [10, 200] units (sparse or duplicate WPs)
+//   • opeenvolgende waypoints binnen 5 units (effectively duplicate)
+//   • non-adjacent segment-segment intersections (figure-8 / zelfsnijdende loop)
+// Channel: 'track-validate'. Logs warnings only — never crashes — so a flagged
+// world stays playable while the warning surfaces in dbg's ringbuffer.
+function _validateTrackSchema(){
+  if(typeof _TRACKS!=='object'||!_TRACKS)return;
+  const warn=(w,msg)=>{
+    if(window.dbg)dbg.warn('track-validate','['+w+'] '+msg);
+    // No console fallback — this is purely diagnostic; absence of dbg means
+    // a non-debug session and we don't want to spam the production console.
+  };
+  // 2D segment-segment intersection test (returns true if AB and CD cross).
+  // Uses oriented-area / sign comparison; not a precise intersection but
+  // sufficient for "do these segments cross visibly".
+  const _sgn=v=>v>0?1:v<0?-1:0;
+  const _segCross=(ax,az,bx,bz,cx,cz,dx,dz)=>{
+    const d1=(dx-cx)*(az-cz)-(dz-cz)*(ax-cx);
+    const d2=(dx-cx)*(bz-cz)-(dz-cz)*(bx-cx);
+    const d3=(bx-ax)*(cz-az)-(bz-az)*(cx-ax);
+    const d4=(bx-ax)*(dz-az)-(bz-az)*(dx-ax);
+    return _sgn(d1)!==_sgn(d2)&&_sgn(d3)!==_sgn(d4);
+  };
+  const worlds=Object.keys(_TRACKS);
+  for(let wi=0;wi<worlds.length;wi++){
+    const w=worlds[wi],pts=_TRACKS[w];
+    if(!Array.isArray(pts)||pts.length<3){
+      warn(w,'expected array of >=3 waypoints, got '+(pts&&pts.length));
+      continue;
+    }
+    const N=pts.length;
+    // Segment-length + duplicate checks
+    for(let i=0;i<N;i++){
+      const a=pts[i],b=pts[(i+1)%N];
+      const dx=b[0]-a[0],dz=b[1]-a[1];
+      const dist=Math.hypot(dx,dz);
+      if(dist<5){
+        warn(w,'wp'+(i+1)+'->wp'+(((i+1)%N)+1)+' near-duplicate (dist='+dist.toFixed(2)+')');
+      }else if(dist<10||dist>200){
+        warn(w,'wp'+(i+1)+'->wp'+(((i+1)%N)+1)+' segment-length '+dist.toFixed(1)+' outside [10..200]');
+      }
+    }
+    // Non-adjacent segment intersection check — quadratic in N, but N<=18
+    // so 18² = 324 comparisons per world, ~2.6k total. One-shot at boot.
+    for(let i=0;i<N;i++){
+      const a=pts[i],b=pts[(i+1)%N];
+      // Skip the segment itself + its two neighbours (those touch by design).
+      for(let j=i+2;j<N;j++){
+        if(j===N-1&&i===0)continue; // closing seg shares wp with first
+        const c=pts[j],d=pts[(j+1)%N];
+        if(_segCross(a[0],a[1],b[0],b[1],c[0],c[1],d[0],d[1])){
+          warn(w,'segment wp'+(i+1)+'->wp'+(((i+1)%N)+1)+
+                 ' crosses wp'+(j+1)+'->wp'+(((j+1)%N)+1)+' — self-intersecting loop');
+        }
+      }
+    }
+  }
+}
+
 async function boot(){
   window.dbg&&dbg.log('boot','start');
   // SW disabled for file:// compat.
@@ -184,6 +245,10 @@ async function boot(){
     if(_loadEl){_loadEl.innerHTML='<div style="padding:40px;color:#ff6600;font-family:Orbitron,sans-serif">⚠ DATA LOAD FAILED<br><span style="font-size:12px;color:#888">'+e.message+'</span></div>';}
     return;
   }
+  // Validate waypoint loops once the data is loaded. Pure diagnostic — any
+  // flagged world stays playable but the warning helps spot regressions early.
+  try{_validateTrackSchema();}
+  catch(e){if(window.dbg)dbg.warn('track-validate','validator threw: '+(e&&e.message||e));}
   _installIOSGestureBlocks();
   spawnFlames();
   // Defer heavy init zodat de browser eerst de loading-screen kan painten.

@@ -8,12 +8,42 @@
 // in ui/hud.js voor _elWrongWay overlay-toggle.
 let _wrongWayTimer=0;
 
+// Throttle for dbg.log of the tracklimits state — once-per-second snapshot
+// makes it cheap to leave on while still useful for diagnosing future
+// regressions like the sandstorm-waypoint zigzag bug. Logs progress + the
+// raw distance + active world via the 'tracklimits' channel (filterable
+// via localStorage.src_debug_channels).
+let _tlDbgLastT=0;
+// Detect a stuck-recovery loop (recovery re-trigger within a frame of exit
+// — the symptom of a malformed curve where trackDist keeps reporting > 30
+// even on the correct asphalt position). Logged at warn level once per
+// race so the dev console flags it without log spam.
+let _tlStuckRecoveryWarned=false;
+let _tlRecoveryEntryT=0;
+
 function checkTrackLimits(dt){
   const car=carObjs[playerIdx];if(!car||car.finished)return;
-  if(recoverActive){recoverTimer-=dt;if(recoverTimer<=0){recoverActive=false;hideBanner();}return;}
+  if(recoverActive){
+    recoverTimer-=dt;
+    // Warn once if recovery hangs > 5s (means triggerRecovery keeps re-firing
+    // because the underlying trackDist is permanently > RECOVER_DIST — likely
+    // a malformed curve / waypoint regression on this world).
+    if(window.dbg&&!_tlStuckRecoveryWarned&&_tlRecoveryEntryT&&_nowSec-_tlRecoveryEntryT>5){
+      _tlStuckRecoveryWarned=true;
+      dbg.warn('tracklimits','recovery hung >5s on world='+activeWorld+
+               ' progress='+car.progress.toFixed(3)+' — possible waypoint/curve regression');
+    }
+    if(recoverTimer<=0){recoverActive=false;hideBanner();_tlRecoveryEntryT=0;_tlStuckRecoveryWarned=false;}
+    return;
+  }
   if(car._fallingIntoSpace)return; // handled by updateSpaceWorld
   if(car.inAir)return;
   const d=trackDist(car.mesh.position,car.progress);
+  if(window.dbg&&_nowSec-_tlDbgLastT>1.0){
+    _tlDbgLastT=_nowSec;
+    dbg.log('tracklimits','prog='+car.progress.toFixed(3)+
+            ' dist='+d.toFixed(2)+' TW='+TW+' world='+activeWorld);
+  }
   if(activeWorld==='space'){
     // In space: going off edge starts a fall rather than instant recovery
     if(d>RECOVER_DIST)triggerSpaceFall(car);
@@ -32,6 +62,7 @@ function checkTrackLimits(dt){
 
 function triggerRecovery(car){
   recoverActive=true;recoverTimer=2.2;car.speed=0;car.vy=0;car.inAir=false;
+  _tlRecoveryEntryT=_nowSec;_tlStuckRecoveryWarned=false;
   if(_elWarn)_elWarn.style.display='none';
   if(_elWrongWay)_elWrongWay.style.display='none';
   _wrongWayTimer=0;
@@ -48,6 +79,7 @@ function triggerRecovery(car){
 
 function triggerDeepSeaRecovery(car){
   recoverActive=true;recoverTimer=2.0;car.speed=0;car.vy=0;car.inAir=false;
+  _tlRecoveryEntryT=_nowSec;_tlStuckRecoveryWarned=false;
   if(_elWarn)_elWarn.style.display='none';
   if(_elWrongWay)_elWrongWay.style.display='none';
   _wrongWayTimer=0;

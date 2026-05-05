@@ -56,6 +56,10 @@ function _resetRaceState(){
   _achieveUnlocked.clear();
   _nitroUseCount=0;_airborneAccum=0;_cleanLapFlag=true;_driftAccum=0;
   _sandstormLap3CleanFlag=false;_sandstormPrevLap=0;
+  // Reset tracklimits stuck-recovery trackers so a stale entry-time from a
+  // prior race can't fire a false "recovery hung >5s" warn on race-start.
+  if(typeof _tlRecoveryEntryT!=='undefined')_tlRecoveryEntryT=0;
+  if(typeof _tlStuckRecoveryWarned!=='undefined')_tlStuckRecoveryWarned=false;
   _bestS1=Infinity;_bestS2=Infinity;_bestS3=Infinity;_currentSector=0;_sectorStart=0;
   _comboCount=0;_comboMult=1.0;_comboTimer=0;_lastRaceCoins=0;
   _lapTimes.length=0;_weatherForecastTimer=0;_weatherForecastFired=false;
@@ -74,6 +78,13 @@ function _resetRaceState(){
   if(_safetyCar){scene.remove(_safetyCar.mesh);_safetyCar=null;}
   // Volcano/Arctic cleanup
   _volcanoLavaRivers.length=0;_volcanoGeisers.length=0;_volcanoEruption=null;_volcanoEruptionTimer=3;_volcanoEmbers=null;_volcanoEmberGeo=null;_volcanoGlowLight=null;
+  // Sandstorm cleanup — mirror volcano's pattern. disposeScene() releases
+  // the actual Three resources; here we drop our refs so the next build
+  // doesn't accidentally read into freed memory.
+  if(typeof _sandstormSandSwept!=='undefined')_sandstormSandSwept=null;
+  if(typeof _sandstormFlecksGeo!=='undefined')_sandstormFlecksGeo=null;
+  if(typeof _sandstormFlecks!=='undefined')_sandstormFlecks=null;
+  if(typeof _sandstormPalmLeaves!=='undefined')_sandstormPalmLeaves.length=0;
   if(typeof disposeVolcanoBridge==='function')disposeVolcanoBridge();
   if(typeof disposeArcticIceShelf==='function')disposeArcticIceShelf();
   if(typeof disposeCandyChocoBridge==='function')disposeCandyChocoBridge();
