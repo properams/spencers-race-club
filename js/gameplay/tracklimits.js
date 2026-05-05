@@ -33,7 +33,7 @@ function checkTrackLimits(dt){
       dbg.warn('tracklimits','recovery hung >5s on world='+activeWorld+
                ' progress='+car.progress.toFixed(3)+' — possible waypoint/curve regression');
     }
-    if(recoverTimer<=0){recoverActive=false;hideBanner();_tlRecoveryEntryT=0;}
+    if(recoverTimer<=0){recoverActive=false;hideBanner();_tlRecoveryEntryT=0;_tlStuckRecoveryWarned=false;}
     return;
   }
   if(car._fallingIntoSpace)return; // handled by updateSpaceWorld

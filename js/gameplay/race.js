@@ -56,6 +56,10 @@ function _resetRaceState(){
   _achieveUnlocked.clear();
   _nitroUseCount=0;_airborneAccum=0;_cleanLapFlag=true;_driftAccum=0;
   _sandstormLap3CleanFlag=false;_sandstormPrevLap=0;
+  // Reset tracklimits stuck-recovery trackers so a stale entry-time from a
+  // prior race can't fire a false "recovery hung >5s" warn on race-start.
+  if(typeof _tlRecoveryEntryT!=='undefined')_tlRecoveryEntryT=0;
+  if(typeof _tlStuckRecoveryWarned!=='undefined')_tlStuckRecoveryWarned=false;
   _bestS1=Infinity;_bestS2=Infinity;_bestS3=Infinity;_currentSector=0;_sectorStart=0;
   _comboCount=0;_comboMult=1.0;_comboTimer=0;_lastRaceCoins=0;
   _lapTimes.length=0;_weatherForecastTimer=0;_weatherForecastFired=false;
