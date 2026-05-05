@@ -94,6 +94,12 @@ function disposeScene(){
   if(scene.environment&&scene.environment.isTexture && !_shared(scene.environment)) scene.environment.dispose();
   scene.environment=null;
   if(renderer)renderer.renderLists.dispose();
+  // ProcTextures helper-cache — flush on every world-switch so cached
+  // canvas-textures (sphinx sandstone, cliff strata, palm-leaf alpha)
+  // don't accumulate across rebuilds. The next buildScene that needs
+  // them will re-render the canvas (~1ms per generator). Cheap insurance
+  // against the LRU growing past its 60-entry-per-generator cap.
+  if(window.ProcTextures&&typeof ProcTextures.disposeAll==='function')ProcTextures.disposeAll();
 }
 
 // Dispose the previous scene.background texture to prevent GPU memory leaks on

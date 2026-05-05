@@ -682,10 +682,19 @@ function buildSandstormEnvironment(){
   g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;
   g.userData._isProcGround=true;
   scene.add(g);
-  // ── Lighting (warm desert, sky + fog set in core/scene.js)
-  sunLight.color.setHex(0xffc97a);sunLight.intensity=1.4;
-  ambientLight.color.setHex(0x5a3a20);ambientLight.intensity=0.6;
-  hemiLight.color.setHex(0x9bd0e0);hemiLight.groundColor.setHex(0x8b5a2b);hemiLight.intensity=0.4;
+  // ── Lighting (warm desert — Phase-2 retune per visual-richness pilot)
+  // Sky + fog set in core/scene.js. The biggest visual upgrade comes from
+  // the HEMISPHERE: previous sky=#9bd0e0 (cyan) gave canyon walls a cool
+  // sky-bounce that fought the warm sun. New sky=#d4b890 (warm sand) +
+  // ground=#7a4a25 with intensity 0.8 (mobile 0.6) lights the canyon
+  // shadow-side warm — fixes the "platte" cliff/sphinx feel WITHOUT any
+  // geometry changes. Sun bumped to #fff0d0 / 2.5 (mobile 2.0). Ambient
+  // cut to 0.3 because hemisphere now provides the diffuse fill.
+  sunLight.color.setHex(0xfff0d0); sunLight.intensity = window._isMobile ? 2.0 : 2.5;
+  ambientLight.color.setHex(0x5a3a20); ambientLight.intensity = 0.3;
+  hemiLight.color.setHex(0xd4b890);
+  hemiLight.groundColor.setHex(0x7a4a25);
+  hemiLight.intensity = window._isMobile ? 0.6 : 0.8;
   // Sand-haze fill light (warm, modest range — pulses subtly in update)
   _sandstormSandSwept=new THREE.PointLight(0xffe4a8,1.4,500);
   _sandstormSandSwept.position.set(0,8,0);scene.add(_sandstormSandSwept);

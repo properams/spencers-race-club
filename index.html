@@ -470,6 +470,11 @@
 <script src="js/core/scene.js"></script>
 <script src="js/core/loop.js?v=2"></script>
 
+<!-- Procedural helper libraries — must load BEFORE worlds/ so world-builders
+     can call window.ProcTextures / window.ProcGeometry during buildScene. -->
+<script src="js/effects/proc-textures.js"></script>
+<script src="js/effects/proc-geometry.js"></script>
+
 <!-- Audio implementatie (geregistreerd voor api-facade deferred evalueert) -->
 <script src="js/audio/engine.js"></script>
 <script src="js/audio/sfx.js"></script>
