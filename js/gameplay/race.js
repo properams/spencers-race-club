@@ -43,7 +43,7 @@ function _resetRaceState(){
   if(selectMusic){selectMusic.stop();selectMusic=null;}
   // Reset dynamic music state for clean slate
   _musicDuck=1.0;_applyMusicGain(0);
-  Audio.stopWind();Audio.stopCrowd();
+  Audio.stopWind();Audio.stopCrowd();Audio.stopSandstormWind();
   carObjs.forEach(c=>scene.remove(c.mesh));carObjs=[];
   // Skid-mark geometry is shared across all marks; only dispose materials per mark.
   skidMarks.forEach(s=>{const m=s.mesh||s;if(m.material)m.material.dispose();scene.remove(m);});

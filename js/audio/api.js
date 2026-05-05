@@ -127,9 +127,21 @@ const Audio = {
   // Sandstorm-specific wind ambient. The hazard's update() calls this every
   // frame with a 0..1 intensity; routing into ambient.js (initialized lazily)
   // is wired in audio/ambient.js. No-op until the implementation lands.
+  // Delta-gate prevents AudioParam-thrash (zipper noise + audio-thread CPU
+  // churn) when a steady-state intensity is re-issued every render frame —
+  // mirrors the updateMusicIntensity gate above.
   initSandstormWind()           { return window.initSandstormWind && window.initSandstormWind(); },
-  setSandstormIntensity(level)  { return window.updateSandstormWind && window.updateSandstormWind(level); },
-  stopSandstormWind()           { return window.stopSandstormWind && window.stopSandstormWind(); },
+  setSandstormIntensity(level)  {
+    if (typeof window.updateSandstormWind !== 'function') return;
+    const v = Math.max(0, Math.min(1, +level || 0));
+    if (this._lastSandstormIntensity !== undefined && Math.abs(v - this._lastSandstormIntensity) < 0.01) return;
+    this._lastSandstormIntensity = v;
+    return window.updateSandstormWind(v);
+  },
+  stopSandstormWind()           {
+    this._lastSandstormIntensity = undefined;
+    return window.stopSandstormWind && window.stopSandstormWind();
+  },
 
   // ── Placeholder voor toekomst ───────────────────
   play3D(soundId, position){

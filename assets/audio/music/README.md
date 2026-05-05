@@ -130,6 +130,21 @@ Funk-circus / 70s game-show. Refs: Wii Music, Mario Kart, Goblins from Mars.
 | `final-lap.ogg` | circus brass drop stinger G major, 155 bpm, cymbal crash and trumpet roll, instrumental |
 | `nitro-fx.ogg` | cartoon springboard whoosh, 1 second, instrumental |
 
+### Sandstorm Canyon — 128 BPM, D phrygian dominant
+
+Stijl-richting: cinematic Middle-Eastern electronic rock met oud, duduk
+en darbuka over moderne electronic beats. Refs: Niyaz, Loreena McKennitt,
+Junkie XL Mad Max OST, RJD2 Middle-East-fusion.
+
+| Slot | Prompt |
+|---|---|
+| `intro.ogg` | cinematic Middle-Eastern desert intro, oud + duduk + low brass swells, slow build, 70 BPM, mysterious and grand, 25 seconds, instrumental |
+| `base.ogg` | driving Arabic-fusion electronic rock, 128 BPM, D phrygian dominant, oud and electric guitar interplay, deep sub bass, tribal darbuka percussion, hypnotic loop, no melody, drums and bass only, loopable, no fade |
+| `mid.ogg` | layered Middle-Eastern percussion, darbuka and frame drums over electronic synths, 128 BPM, D phrygian dominant, intensity rising, no drums no bass, atmospheric chord layer, loopable, no fade |
+| `lead.ogg` | soaring oud lead over driving electronic beat, 128 BPM, D phrygian dominant, anthemic motorsport energy, no drums no bass, loopable, no fade |
+| `final-lap.ogg` | maximum intensity Arabic electronic rock, full distortion, frantic darbuka, 130 BPM, climax stinger, instrumental |
+| `nitro-fx.ogg` | short sandstorm sweep with brass stinger, 2-3 seconds, no melody, instrumental |
+
 ## Workflow
 
 1. Genereer in Suno met bovenstaande prompts. Lever stems los aan

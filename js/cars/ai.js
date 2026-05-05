@@ -152,9 +152,10 @@ function updateAI(car,dt){
   car.mesh.position.addScaledVector(_aiFwd,car.speed);
   // Sandstorm wind-pull: AI cars get 70% of the player's lateral drift so
   // they stay competitive without all flying off-track on lap 3. Scales
-  // with speed; falsy outside sandstorm world. Reuses _aiFwdRV scratch as
-  // the right-vector to avoid per-frame Vector3 allocs.
-  if(window._sandstormWindPull){
+  // with speed; gated by activeWorld for defense-in-depth (matches
+  // physics.js). Reuses _aiFwdRV scratch as the right-vector to avoid
+  // per-frame Vector3 allocs.
+  if(window._sandstormWindPull&&activeWorld==='sandstorm'){
     const _aiRt=_aiFwdRV.set(1,0,0).applyQuaternion(car.mesh.quaternion);
     const _spdR=Math.min(1,Math.abs(car.speed)/Math.max(0.001,car.def.topSpd));
     car.mesh.position.addScaledVector(_aiRt, window._sandstormWindPull*0.7*dt*_spdR);

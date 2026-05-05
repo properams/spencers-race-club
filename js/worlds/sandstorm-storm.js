@@ -18,7 +18,11 @@
 
 'use strict';
 
-const _SS_INTERP_K=0.25;          // 1/4-second time-constant
+// Per-frame lerp rate. With dt~0.016s @60fps this gives a half-life of ~42
+// frames (~0.7s) — close to the spec's "smooth interpolation over 4 seconds"
+// without feeling sluggish. (Earlier draft had a misleading
+// `_SS_INTERP_K=0.25 * 4` math; collapsed to a single constant.)
+const _SS_LERP_RATE=1.0;
 const _SS_FOG_FAR_DEFAULT=220;
 const _SS_PARTICLES_MOBILE_MAX=600;
 const _SS_PARTICLES_DESKTOP_MAX=1500;
@@ -36,6 +40,7 @@ let _sstState=null;
 let _sstParticleGeo=null;
 let _sstParticleMesh=null;
 let _sstStormCurtain=[];   // [{mesh, baseY}]
+let _sstSharedCurtainTex=null; // disposed explicitly (flagged _sharedAsset)
 let _sstOverlay=null;      // DOM div (kept alive across races, opacity controlled)
 let _sstHeadlightsOn=false;
 let _sstScratch=null;      // pre-allocated Vector3 (per-frame physics use)
@@ -78,7 +83,8 @@ function buildSandstormStorm(){
     windPull:0,
     curtainOp:0,
     shake:0,
-    _partTick:0
+    _partTick:0,
+    _lastOvKey:0
   };
 
   // ── Particle pool (max for lap 3, drawRange controls lap-by-lap density)
@@ -103,11 +109,18 @@ function buildSandstormStorm(){
   scene.add(_sstParticleMesh);
 
   // ── Storm-front curtain (semi-transparent stacked planes)
+  // Mark the (single) base canvas as a shared asset so disposeScene's
+  // _disposeMat traversal skips it on the first plane it sees — without
+  // this flag, three planes pointing at the same texture would each
+  // call .dispose() on it (idempotent today, but brittle and explicitly
+  // called out by the code-quality review). The texture itself is freed
+  // explicitly in disposeSandstormStorm() below.
   const curtainCount=window._isMobile?_SS_CURTAIN_COUNT_MOBILE:_SS_CURTAIN_COUNT_DESKTOP;
   const curtainTex=_sstStormCurtainTex();
+  curtainTex.userData=curtainTex.userData||{};
+  curtainTex.userData._sharedAsset=true;
+  _sstSharedCurtainTex=curtainTex;
   for(let i=0;i<curtainCount;i++){
-    // Each curtain plane gets its own material so opacity ramp can fan out
-    // (subtle visual variation when 3 planes stack).
     const curMat=new THREE.MeshBasicMaterial({
       map:curtainTex,transparent:true,opacity:0,
       side:THREE.DoubleSide,depthWrite:false,fog:true
@@ -145,7 +158,8 @@ function _sstUpdateParticles(dt,activeCount){
   if(!car)return;
   const cx=car.mesh.position.x,cz=car.mesh.position.z;
   // Update a slice each frame (rolling buffer) so worst-case 1500 particles
-  // never stall a single frame. 50 per frame at 60fps = full pool every ~1s.
+  // never stall a single frame. 50 per frame at 60fps = full pool every
+  // ~0.5s on lap 3 (1500 particles), ~0.2s on mobile (600).
   const STEP=Math.min(activeCount,50);
   let start=_sstState._partTick||0;
   if(start>=activeCount)start=0;
@@ -174,7 +188,7 @@ function updateSandstormStorm(dt,currentLap){
   st.lap=Math.max(1,currentLap||1);
   const tg=_sstTargets(st.lap);
   // Frame-rate-independent lerp toward the lap targets.
-  const k=Math.min(1,dt*_SS_INTERP_K*4); // 4× scaling so the 0.25 constant gives ~1s feel; tuned
+  const k=Math.min(1,dt*_SS_LERP_RATE);
   st.fogFar    +=(tg.fogFar    -st.fogFar)   *k;
   st.overlayOp +=(tg.overlayOp -st.overlayOp)*k;
   st.windGain  +=(tg.windGain  -st.windGain) *k;
@@ -189,12 +203,20 @@ function updateSandstormStorm(dt,currentLap){
   }
 
   // ── Apply: DOM overlay tint. Blend lap2 orange → lap3 brown via st.lap.
+  // Delta-gate the style.background write — mix-blend-mode:multiply forces
+  // a compositor repaint every time the value changes; once the lerp
+  // settles (steady-state mid-lap) most frames are no-op.
   if(_sstOverlay){
     const lapBlend=Math.min(1,Math.max(0,(st.lap-2)));
     const r=Math.round(180+(140-180)*lapBlend);
     const gC=Math.round(110+(80-110)*lapBlend);
     const b=Math.round(50+(40-50)*lapBlend);
-    _sstOverlay.style.background='rgba('+r+','+gC+','+b+','+st.overlayOp.toFixed(3)+')';
+    const aQ=Math.round(st.overlayOp*255);
+    const key=(r<<24)|(gC<<16)|(b<<8)|aQ;
+    if(key!==st._lastOvKey){
+      st._lastOvKey=key;
+      _sstOverlay.style.background='rgba('+r+','+gC+','+b+','+st.overlayOp.toFixed(3)+')';
+    }
   }
 
   // ── Apply: audio gain via the Audio facade.
@@ -235,13 +257,22 @@ function updateSandstormStorm(dt,currentLap){
     }
   }
 
-  // ── Apply: headlights auto-on at lap 2. Idempotent — only triggers once.
-  if(st.lap>=2&&!_sstHeadlightsOn){
+  // ── Apply: headlights auto-on while lap >= 2. Re-applied per-frame so a
+  // mid-storm toggleNight (which writes plHeadL.intensity=0 on day-mode
+  // for sandstorm in night.js) doesn't kill the storm-mandated lights.
+  // Idempotent — equivalent to a one-shot latch when nothing else writes,
+  // but robust against external resets. _sstHeadlightsOn is kept as a
+  // diagnostic flag (used by dispose to know if we modified them).
+  if(st.lap>=2){
     _sstHeadlightsOn=true;
-    if(plHeadL)plHeadL.intensity=1.7;
-    if(plHeadR)plHeadR.intensity=1.7;
-    if(plTail)plTail.intensity=1.4;
-    if(typeof _aiHeadPool!=='undefined')_aiHeadPool.forEach(l=>l.intensity=1.0);
+    if(plHeadL&&plHeadL.intensity<1.7)plHeadL.intensity=1.7;
+    if(plHeadR&&plHeadR.intensity<1.7)plHeadR.intensity=1.7;
+    if(plTail&&plTail.intensity<1.4)plTail.intensity=1.4;
+    if(typeof _aiHeadPool!=='undefined'){
+      for(let i=0;i<_aiHeadPool.length;i++){
+        if(_aiHeadPool[i].intensity<1.0)_aiHeadPool[i].intensity=1.0;
+      }
+    }
   }
 
   // ── Apply: lap-3 camera shake. Subtle and only triggered when shake is
@@ -263,10 +294,20 @@ function disposeSandstormStorm(){
   _sstParticleMesh=null;
   _sstHeadlightsOn=false;
   _sstScratch=null;
+  // The shared curtain canvas was flagged _sharedAsset so disposeScene's
+  // traversal skipped it; release it explicitly here so the next build's
+  // _sstStormCurtainTex() doesn't accumulate unused canvas-textures.
+  if(_sstSharedCurtainTex){
+    try{_sstSharedCurtainTex.dispose();}catch(_){}
+    _sstSharedCurtainTex=null;
+  }
   // Hide the DOM overlay (don't remove — kept alive across races to avoid
-  // re-creating + re-styling). disposeScene won't see it.
+  // re-creating + re-styling). Reset BOTH background-rgba AND opacity so a
+  // future inline-style mutation (e.g. dev-tools / 3rd party script)
+  // can't leave a stale tint visible across races.
   if(_sstOverlay){
     _sstOverlay.style.background='rgba(180,110,50,0)';
+    _sstOverlay.style.opacity='0';
   }
   // Reset globals so the next race / different world doesn't inherit pull.
   if(typeof window!=='undefined')window._sandstormWindPull=0;
