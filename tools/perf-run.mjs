@@ -24,11 +24,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
 const PORT = process.env.PERF_PORT ? +process.env.PERF_PORT : 8087;
 const URL = `http://localhost:${PORT}/?perfauto=1`;
-// Cold pass order: grandprix is the boot-default (rebuildWorld returns
+// Cold pass order: space is the boot-default (rebuildWorld returns
 // early when newWorld===activeWorld), so we visit it LAST in the cold
-// pass — by then we've switched away to neoncity and the grandprix
-// rebuild fires for real. Warm pass uses the same order.
-const WORLDS = ['candy', 'volcano', 'space', 'neoncity', 'grandprix'];
+// pass — by then we've switched away to neoncity and the space rebuild
+// fires for real. Warm pass uses the same order.
+const WORLDS = ['candy', 'volcano', 'neoncity', 'space'];
 const WANT_REPORT = process.argv.includes('--report');
 
 // ── http-server ──────────────────────────────────────────────────────

@@ -42,7 +42,7 @@ export function writeReport(result, outPath){
 
   // ── World transition (rebuildWorld → buildScene incl. precompile) ──
   lines.push('## World transition (select → race) — buildScene timings');
-  lines.push('All numbers in ms. `transition.total` is the user-facing rebuildWorld duration; `build.*` are substeps. Cold visit order: candy → volcano → space → neoncity → grandprix (boot-default last so its rebuild fires for real).');
+  lines.push('All numbers in ms. `transition.total` is the user-facing rebuildWorld duration; `build.*` are substeps. Cold visit order: candy → volcano → neoncity → space (boot-default last so its rebuild fires for real).');
   lines.push('');
   lines.push('| World     | Cold total | dispose | track | world | gameplay | night | assetBridge | precompile | Warm total |');
   lines.push('|-----------|-----------:|--------:|------:|------:|---------:|------:|------------:|-----------:|-----------:|');

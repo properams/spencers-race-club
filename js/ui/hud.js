@@ -50,7 +50,7 @@ let _elCarStatus=null;
 let _elRpm=null;
 let _elPos,_elPosOf,_elLap,_elSpd,_elNitro,_elNitroInd,_elNitroIndFill,_elLapTime,_elTireT,_elSecT,_elPitAvail,_elCloseBattle,_elFastestLapFlash;
 // Verhuisd uit main.js — gevuld in cacheHUDRefs hieronder.
-let _drsEl=null,_sectorPanelEl=null,_speedTrapEl=null;
+let _sectorPanelEl=null,_speedTrapEl=null;
 
 function cacheHUDRefs(){
   // On mobile: hide performance-heavy HUD elements
@@ -60,7 +60,7 @@ function cacheHUDRefs(){
     // hudNightBtn blijft op mobile staan — user wil de day/night toggle
     // expliciet beschikbaar tijdens race op alle device-types.
     ['sectorPanel','hudCarStatus',
-     'hudRainBtn','hudMuteBtn','ghostLabel','drsIndicator',
+     'hudRainBtn','hudMuteBtn','ghostLabel',
      'closeBattleEl','speedTrapEl','mirrorFrame','mirrorLabel','speedLines'].forEach(id=>{
       const el=document.getElementById(id);if(el)el.style.display='none';
     });
@@ -84,7 +84,6 @@ function cacheHUDRefs(){
   _elLapDelta=document.getElementById('hdLapDelta');
   _elCarStatus=document.getElementById('hudCarStatus');
   _elRpm=document.getElementById('rpmFill');
-  _drsEl=document.getElementById('drsIndicator');
   _sectorPanelEl=document.getElementById('sectorPanel');
   _speedTrapEl=document.getElementById('speedTrapEl');
   _elTireT={fl:document.getElementById('ttFL'),fr:document.getElementById('ttFR'),rl:document.getElementById('ttRL'),rr:document.getElementById('ttRR')};

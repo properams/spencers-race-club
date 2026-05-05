@@ -112,10 +112,9 @@ function _resetRaceState(){
   [1,2,3].forEach(s=>{const el=document.getElementById('secT'+s);if(el){el.textContent='--.-';el.style.color='#666';}});
   // Reset new systems
   _pitStopActive=false;_pitStopTimer=0;_pitStopUsed=false;
-  _fastestLapFlashT=0;_closeBattleTimer=0;_drsActive=false;
+  _fastestLapFlashT=0;_closeBattleTimer=0;
   const pitOv=document.getElementById('pitStopOverlay');if(pitOv)pitOv.style.display='none';
   const flEl=document.getElementById('fastestLapFlash');if(flEl)flEl.style.opacity='0';
-  const drsE=document.getElementById('drsIndicator');if(drsE)drsE.style.display='none';
   const cbEl=document.getElementById('closeBattleEl');if(cbEl)cbEl.style.display='none';
   for(let i=0;i<_nearMissCooldown.length;i++)_nearMissCooldown[i]=0;
 }

@@ -95,7 +95,6 @@ function loop(){
     }
     if(gameState==='RACE'){
       checkJumps();checkSpinPads(dt);checkBoostPads();checkCollectibles();checkCollisions(dt);checkTrackLimits(dt);checkWrongWay(dt);
-      if(typeof checkPropCollisions==='function')checkPropCollisions(dt);
       if(activeWorld==='space'){checkSpaceRailgun();checkGravityZones(dt);checkOrbitingAsteroids(dt);checkWarpTunnels(dt);}
       else if(activeWorld==='deepsea'){checkCurrentStreams(dt);checkAbyssCracks(dt);checkTreasureTrail(dt);}
       updateBoostArrows();updateSlipstreamVisuals();updateSafetyCar(dt);

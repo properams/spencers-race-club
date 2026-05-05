@@ -11,7 +11,7 @@ Trees, plants, rocks, mushrooms, flowers, grass.
 
 - **Author:** [@Quaternius](https://quaternius.com) — [Patreon](https://www.patreon.com/quaternius)
 - **License:** [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/)
-- **Used by manifest slots:** grandprix (trees + rocks), volcano (rocks + lava chunk substitute), arctic (snow rock substitute), deepsea (coral substitute via Plant variants).
+- **Used by manifest slots:** volcano (rocks + lava chunk substitute), arctic (snow rock substitute), deepsea (coral substitute via Plant variants).
 
 ### `assets/models/city/` — Quaternius "City Bits"
 

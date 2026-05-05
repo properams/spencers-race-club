@@ -4,13 +4,13 @@
 #
 # Usage:
 #   bash assets/download_assets.sh                # fetch everything
-#   bash assets/download_assets.sh grandprix      # only one world
+#   bash assets/download_assets.sh neoncity       # only one world
 #   bash assets/download_assets.sh hdri           # only HDRIs (2K + 1K) for all worlds
 #   bash assets/download_assets.sh ground         # only ground PBR sets
 #
-# What it downloads (~140MB total):
-#  - 2K + 1K HDRI for grandprix / neoncity / volcano / arctic / themepark
-#  - PBR ground set (color + normal + roughness, 2K) for all 6 worlds with ground slots
+# What it downloads (~120MB total):
+#  - 2K + 1K HDRI for neoncity / volcano / arctic / themepark
+#  - PBR ground set (color + normal + roughness, 2K) for the 5 worlds with ground slots
 #
 # What it does NOT download:
 #  - GLTF models (Quaternius / KayKit packs are zipped — see assets/README.md
@@ -58,19 +58,6 @@ ph_tex() {
 }
 
 # ── World-by-world recipes ───────────────────────────────────────────────────
-fetch_grandprix_hdri() {
-  echo "GP / HDRI — kloofendal_48d_partly_cloudy_puresky"
-  ph_hdri kloofendal_48d_partly_cloudy_puresky 2k "$HDRI_DIR/grandprix_dusk_2k.hdr" || true
-  ph_hdri kloofendal_48d_partly_cloudy_puresky 1k "$HDRI_DIR/grandprix_dusk_1k.hdr" || true
-}
-fetch_grandprix_ground() {
-  echo "GP / ground — aerial_grass_rock"
-  local d="$TEX_DIR/grandprix"
-  ph_tex aerial_grass_rock diff   "$d/ground_color.jpg"  || true
-  ph_tex aerial_grass_rock nor_gl "$d/ground_normal.jpg" || true
-  ph_tex aerial_grass_rock rough  "$d/ground_rough.jpg"  || true
-}
-
 fetch_neoncity_hdri() {
   echo "Neon City / HDRI — dikhololo_night"
   ph_hdri dikhololo_night 2k "$HDRI_DIR/neoncity_night_2k.hdr" || true
@@ -134,28 +121,24 @@ fetch_deepsea_ground() {
 # ── Driver ───────────────────────────────────────────────────────────────────
 case "${1:-all}" in
   hdri)
-    fetch_grandprix_hdri
     fetch_neoncity_hdri
     fetch_volcano_hdri
     fetch_arctic_hdri
     fetch_themepark_hdri
     ;;
   ground)
-    fetch_grandprix_ground
     fetch_neoncity_ground
     fetch_volcano_ground
     fetch_arctic_ground
     fetch_themepark_ground
     fetch_deepsea_ground
     ;;
-  grandprix) fetch_grandprix_hdri; fetch_grandprix_ground ;;
   neoncity)  fetch_neoncity_hdri;  fetch_neoncity_ground ;;
   volcano)   fetch_volcano_hdri;   fetch_volcano_ground ;;
   arctic)    fetch_arctic_hdri;    fetch_arctic_ground ;;
   themepark) fetch_themepark_hdri; fetch_themepark_ground ;;
   deepsea)   fetch_deepsea_ground ;;
   all)
-    fetch_grandprix_hdri; fetch_grandprix_ground
     fetch_neoncity_hdri;  fetch_neoncity_ground
     fetch_volcano_hdri;   fetch_volcano_ground
     fetch_arctic_hdri;    fetch_arctic_ground
@@ -163,7 +146,7 @@ case "${1:-all}" in
     fetch_deepsea_ground
     ;;
   *)
-    echo "usage: $0 [all|hdri|ground|grandprix|neoncity|volcano|arctic|themepark|deepsea]" >&2
+    echo "usage: $0 [all|hdri|ground|neoncity|volcano|arctic|themepark|deepsea]" >&2
     exit 1
     ;;
 esac

@@ -8,7 +8,7 @@
 //   trackLightList, trackPoles, _trackFlags, _aiHeadPool
 //   jumpRamps, spinPads, boostPads, collectibles, skidMarks
 //   stars, plHeadL, plHeadR, plTail, _boostLight, _trackMesh, _sunBillboard
-//   _wp*, _drs*, _drsActive, _drsTimer, _drsBoostUsed
+//   _wp*
 //   _space*, _kelp*, _jellyfish*, _dsa*, _sprinkle*, _gummy*, _gum*, _candy*,
 //   _choco*, _neon*, _holo*, _volcano*, _arctic*, _tp*
 //   _snowParticles, _snowGeo, _fogColorDay, _fogColorNight
@@ -18,9 +18,9 @@
 // buildDeepSeaEnvironment, buildCandyEnvironment, buildNeonCityEnvironment,
 // buildVolcanoEnvironment, buildArcticEnvironment, buildThemeparkEnvironment,
 // buildGround, buildClouds, buildBarriers, buildGantry, buildMountains,
-// buildLake, buildGravelTraps, buildEnvironmentTrees, buildNightObjects,
+// buildLake, buildGravelTraps, buildNightObjects,
 // buildSpectators, buildSunBillboard, buildAdvertisingBoards,
-// buildCornerBoards, buildTrackFlags, buildGPTrackProps, buildJumpRamps,
+// buildCornerBoards, buildTrackFlags, buildJumpRamps,
 // buildCenterlineArrows, buildSpinPads, buildBoostPads, buildCollectibles,
 // buildWorldElements, buildParticles, buildGhostMesh, initSpeedLines,
 // initRain, toggleNight.
@@ -83,10 +83,6 @@ function disposeScene(){
     }
   });
   while(scene.children.length>0)scene.remove(scene.children[0]);
-  // Reset world-prop colliders zodat een wereld zonder bomen geen stale
-  // tree-bumps van de vorige wereld behoudt. Wereld-builders vullen het
-  // weer in tijdens buildScene() (alleen GP doet dat momenteel).
-  if(window._propColliders)window._propColliders.length=0;
   // Reset _crowdMaterials hier ook (defense-in-depth): buildTrack() doet
   // dit ook al, maar als buildSpectators voor de actieve wereld vroeg
   // returned (zoals nu voor GP) en buildTrack-volgorde ooit verandert,
@@ -476,12 +472,8 @@ function buildScene(){
   jumpRamps.length=0;spinPads.length=0;boostPads.length=0;collectibles.length=0;skidMarks.length=0;
   // Shared skid geometry was disposed by the traversal above — drop our reference so the next race builds a fresh one.
   if(typeof _skidGeo!=='undefined')_skidGeo=null;
-  // _wpWaterPuddles + _wpDrsZones reference removed — grandprix.js + grandprix-
-  // storm.js werden verwijderd in PR #76 (remove-grandprix-track), de globals
-  // bestaan niet meer. _drs* state-flags blijven in main.js gedeclareerd.
   _wpGravityZones.length=0;_wpOrbitAsteroids.length=0;_wpWarpTunnels.length=0;
   _wpCurrentStreams.length=0;_wpAbyssCracks.length=0;_wpTreasureTrail.length=0;
-  _drsActive=false;_drsTimer=0;_drsBoostUsed=false;
   stars=null;plHeadL=null;plHeadR=null;plTail=null;
   _boostLight=null;_trackMesh=null;_sunBillboard=null;
   _spaceAsteroids.length=0;_spaceDustParticles=null;_spaceDustGeo=null;
