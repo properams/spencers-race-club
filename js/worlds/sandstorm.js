@@ -15,38 +15,15 @@ const _SS_DUNES_T_RANGES = [[0.00,0.28],[0.88,1.00]];
 const _SS_SLOT_T_RANGE   = [0.32,0.62];
 const _SS_PLAZA_T_RANGE  = [0.70,0.86];
 
-// ── Procedural canvas textures (recycled from sandstorm.old.js + 1 new) ──
-
-function _ssRockTex(){
-  const S=256,c=document.createElement('canvas');c.width=S;c.height=S;
-  const g=c.getContext('2d');
-  g.fillStyle='#7a3820';g.fillRect(0,0,S,S);
-  const id=g.getImageData(0,0,S,S),d=id.data;
-  for(let i=0;i<d.length;i+=4){
-    const n=Math.random();
-    const tone=n<0.55?[120+n*60|0,55+n*30|0,30+n*20|0]:[180+n*40|0,120+n*30|0,80+n*20|0];
-    d[i]=tone[0];d[i+1]=tone[1];d[i+2]=tone[2];d[i+3]=255;
-  }
-  g.putImageData(id,0,0);
-  // Horizontal stratification bands — strong, since strata are the
-  // hero detail of canyon-rock surfaces.
-  for(let y=0;y<S;y+=10){
-    g.fillStyle='rgba(60,28,16,0.55)';
-    g.fillRect(0,y+Math.sin(y*.18)*3,S,2);
-  }
-  // Diagonal cracks
-  g.strokeStyle='rgba(30,12,6,0.65)';g.lineWidth=1.5;
-  for(let i=0;i<10;i++){
-    g.beginPath();
-    let x=Math.random()*S,y=Math.random()*S;g.moveTo(x,y);
-    for(let j=0;j<5;j++){
-      x+=(Math.random()-.3)*40;y+=(Math.random()-.5)*30;g.lineTo(x,y);
-    }
-    g.stroke();
-  }
-  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;
-  t.repeat.set(2,3);t.anisotropy=window._isMobile?2:4;t.needsUpdate=true;return t;
-}
+// ── Procedural canvas textures (recycled from sandstorm.old.js) ──
+//
+// Phase-3A swap: cliffs + mesas now use ProcTextures.rockStrata
+// (centralised in js/effects/proc-textures.js). The old _ssRockTex inline
+// canvas — and _ssDisplaceCliffGeometry helper that went with the per-
+// panel cliff approach — were removed in this commit; their consumers
+// migrated to ProcGeometry.strataStack which embeds displacement.
+// Sandstone _ssSandstoneTex below stays for now — Phase 3B (pillaren +
+// obelisken) is its only remaining caller and will swap it.
 
 // Sandstone canvas with soft horizontal weathering — used by tempel ruins,
 // obelisks, sphinx body. Lighter base than canyon rock; subtle vertical
@@ -163,23 +140,10 @@ function _ssScarabSignTex(){
   const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
 }
 
-// Roughens a PlaneGeometry's vertex positions in-place along local Z.
-// Heightfactor weights: more displacement near the top, less at the foot
-// (so the cliff's base reads "carved" vs. its weathered upper face).
-function _ssDisplaceCliffGeometry(geo, amplitude, seed){
-  const pos=geo.attributes.position;
-  let s=seed||1337;
-  const rnd=()=>{ s=(s*9301+49297)%233280; return s/233280; };
-  for(let i=0;i<pos.count;i++){
-    const y=pos.getY(i);
-    const heightFactor=Math.max(0.15,(y+0.5)*0.8);
-    const noise=(rnd()-0.5)*2*amplitude*heightFactor
-              +(rnd()-0.5)*amplitude*0.3*heightFactor;
-    pos.setZ(i,pos.getZ(i)+noise);
-  }
-  pos.needsUpdate=true;
-  geo.computeVertexNormals();
-}
+// (Removed: _ssDisplaceCliffGeometry — per-PlaneGeometry vertex displacement
+//  helper that went with the legacy 48-wall cliff implementation. The
+//  Phase-3A strataStack-based cliffs embed displacement in ProcGeometry, so
+//  this helper has no remaining callers.)
 
 // Per-world animated state — gereset bij world-switch via core/scene.js
 // disposeScene() (geometry/material/textures cleared) + race.js
@@ -205,72 +169,196 @@ let _sandstormPalmLeaves=[];     // [{im, baseAng, amp}] for wind-sway animation
 //
 // Materials are hoisted ONCE per strata layer (3 mats total instead of 48
 // unique mats — one per panel as the previous draft did). Geometry stays
-// per-panel because each panel needs unique vertex displacement to avoid
-// the wall reading as a tiled-canvas-texture.
+// Canyon cliffs — Phase-3A rebuild via ProcGeometry.strataStack.
+// Each cliff is now a single BufferGeometry with vertex-color blended
+// strata seams (4 stratum layers per cliff). 6-10 free-standing buttes
+// scattered along the slot-canyon t-range — each one a Monument-Valley
+// style formation, not a tiled wall. This is the visual fix for the
+// "stack of plates" feel: ONE mesh per cliff, smooth color transitions
+// at strata boundaries via vertexColors.
+//
+// Material: MeshStandardMaterial + ProcTextures.rockStrata (PBR pipeline,
+// vertexColors:true so the strata blend reads). Per-cliff cloned material
+// so applyAtmosphericPerspective can lerp distant cliffs into fog
+// (Variant A pattern from proc-geometry).
+//
+// Talud (rubble at base): 4-5 beveledBox rocks per cliff via single
+// shared InstancedMesh. Skipped on mobile.
 function _ssBuildCanyonCliffs(){
   const mob=window._isMobile;
-  const SEGS=mob?5:8;
-  const SUB_X=mob?6:12;
-  const SUB_Y=mob?4:8;
-  const tex=_ssRockTex();
-  // 3 strata layers — bottom (dark), mid (rust), top (sun-bleached).
-  // Materials shared across all panels (perf-budget review fix: cuts
-  // unique-material count from 48 → 3).
-  const strataDefs=[
-    {y0:0,    h:7,  mat:new THREE.MeshLambertMaterial({color:0x6a3018,map:tex}), ampl:0.5},
-    {y0:7,    h:8,  mat:new THREE.MeshLambertMaterial({color:0xa86839,map:tex}), ampl:0.7},
-    {y0:15,   h:6,  mat:new THREE.MeshLambertMaterial({color:0xc89070,map:tex}), ampl:0.4},
-  ];
-  const [tStart,tEnd]=_SS_SLOT_T_RANGE;
-  // Lager talud (afgekalfde rotsen) — instanced rocks aan de voet van de cliffs
-  const taludMat=new THREE.MeshLambertMaterial({color:0x7a3a1c});
-  const taludGeo=new THREE.IcosahedronGeometry(1.0,0);
-  const taludIM=new THREE.InstancedMesh(taludGeo,taludMat,SEGS*2*3);
-  const _dummy=new THREE.Object3D();
+  const COUNT=mob?6:10;
+  const lod=mob?1:0;
+  // One shared rock-strata texture across all cliffs (cached by ProcTextures
+  // LRU). Per-cliff material clones swap colour for atmospheric blend, but
+  // the map stays shared.
+  const stoneTex=ProcTextures.rockStrata({
+    bandCount:5,
+    baseColor:'#a86839',
+    stratColors:['#7a3a1d','#a8643a','#8b4a25','#b87850','#cf8e60'],
+    ageWear:0.4,
+    repeatX:1, repeatY:1
+  });
+  const baseCliffMat=new THREE.MeshStandardMaterial({
+    map:stoneTex,
+    roughness:0.92,
+    metalness:0,
+    vertexColors:true,    // strataStack puts r/g/b on each vertex
+    flatShading:false
+  });
+  // Talud: instanced beveled rocks at the base.
+  const ROCKS_PER=mob?0:5;
+  let taludIM=null;
   let taludIdx=0;
-
-  for(let i=0;i<SEGS;i++){
-    const t=tStart+(i+0.5)*((tEnd-tStart)/SEGS);
+  const _dummy=new THREE.Object3D();
+  if(ROCKS_PER>0){
+    const rockGeo=ProcGeometry.beveledBox({w:1.5,h:0.8,d:1.5,bevel:0.15});
+    const rockMat=new THREE.MeshStandardMaterial({
+      color:0x7a3a1c, roughness:0.95, metalness:0
+    });
+    taludIM=new THREE.InstancedMesh(rockGeo, rockMat, COUNT*ROCKS_PER);
+  }
+  const [tStart,tEnd]=_SS_SLOT_T_RANGE;
+  for(let i=0;i<COUNT;i++){
+    const t=tStart+(i+0.5)*((tEnd-tStart)/COUNT);
     const p=trackCurve.getPoint(t);
     const tg=trackCurve.getTangent(t).normalize();
-    const yaw=Math.atan2(tg.x,tg.z);
-    const arc=(tEnd-tStart)/SEGS*1700;
-    const panelL=Math.min(arc*1.15,mob?14:22);
-    const lxX=Math.cos(yaw),lxZ=-Math.sin(yaw);
-    [-1,1].forEach(side=>{
-      const off=BARRIER_OFF+6;
-      const wallX=p.x+side*off*lxX,wallZ=p.z+side*off*lxZ;
-      // Stack 3 strata at increasing Y. Each layer gets its own displaced
-      // geometry (different seed per layer + per-segment so strata don't
-      // tile visibly), but the material is shared across all panels of the
-      // same strata layer (3 mats serve all 48 desktop panels).
-      strataDefs.forEach((s,si)=>{
-        const geo=new THREE.PlaneGeometry(panelL,s.h,SUB_X,SUB_Y);
-        _ssDisplaceCliffGeometry(geo,s.ampl,1337+i*7+(side+1)*131+si*53);
-        const wall=new THREE.Mesh(geo,s.mat);
-        wall.position.set(wallX,s.y0+s.h*0.5-1,wallZ);
-        wall.rotation.y=yaw+(side>0?Math.PI:0);
-        scene.add(wall);
-      });
-      // 3 rubble rocks per cliff segment per side at the talud foot.
-      for(let r=0;r<3;r++){
-        const ox=(Math.random()-0.5)*panelL*0.8;
-        const oz=(Math.random()-0.2)*3;
-        // Rotate (ox,oz) into world space via yaw
-        const wx=wallX+Math.cos(yaw)*ox+Math.sin(yaw)*oz*side;
-        const wz=wallZ-Math.sin(yaw)*ox+Math.cos(yaw)*oz*side;
-        _dummy.position.set(wx,0.4+Math.random()*0.4,wz);
-        const sc=0.6+Math.random()*0.7;
-        _dummy.scale.set(sc*1.3,sc,sc*1.1);
-        _dummy.rotation.set(Math.random()*Math.PI,Math.random()*Math.PI*2,Math.random()*Math.PI);
-        _dummy.updateMatrix();
-        taludIM.setMatrixAt(taludIdx++,_dummy.matrix);
-      }
+    const nr=new THREE.Vector3(-tg.z,0,tg.x);
+    const side=(i%2===0)?1:-1;
+    const off=BARRIER_OFF+6+Math.random()*4;
+    const cx=p.x+nr.x*side*off;
+    const cz=p.z+nr.z*side*off;
+    // Per-cliff strata def — slight per-cliff variance so the canyon
+    // doesn't read as a uniform array of identical formations.
+    const baseR=7+Math.random()*2;
+    const cliffGeo=ProcGeometry.strataStack({
+      strata:[
+        {height:3, radius:baseR+1.0, color:'#7a3a1d', displaceAmount:0.30},
+        {height:6, radius:baseR,     color:'#a8643a', displaceAmount:0.20},
+        {height:8, radius:baseR-0.5, color:'#8b4a25', displaceAmount:0.25},
+        {height:4, radius:baseR-1.0, color:'#b87850', displaceAmount:0.15}
+      ],
+      totalSides: mob?7:10,
+      blendRange:0.4,
+      seed:1337+i*53,
+      lod:lod
     });
+    // Per-cliff material clone — required for atmospheric perspective
+    // (Variant A: applyAtmosphericPerspective mutates material.color).
+    const cliffMat=baseCliffMat.clone();
+    const cliff=new THREE.Mesh(cliffGeo, cliffMat);
+    cliff.position.set(cx, 0, cz);
+    cliff.rotation.y=Math.random()*Math.PI*2;
+    scene.add(cliff);
+    // Atmospheric perspective for cliffs >150u from anchor (track centre).
+    const distToCenter=Math.hypot(cx,cz);
+    if(distToCenter>150){
+      ProcGeometry.applyAtmosphericPerspective(cliff, {
+        fogColor:'#e8b878',
+        startDistance:150,
+        fullBlendDistance:400,
+        cameraAnchor:new THREE.Vector3(0,0,0),
+        maxBlend:0.6
+      });
+    }
+    // Talud rubble rocks at the foot of this cliff
+    if(taludIM){
+      for(let r=0;r<ROCKS_PER;r++){
+        const ang=Math.random()*Math.PI*2;
+        const rDist=baseR+1+Math.random()*2;
+        _dummy.position.set(
+          cx+Math.cos(ang)*rDist,
+          0.4+Math.random()*0.3,
+          cz+Math.sin(ang)*rDist
+        );
+        const sc=0.6+Math.random()*0.7;
+        _dummy.scale.set(sc*1.3, sc, sc*1.1);
+        _dummy.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI*2, Math.random()*Math.PI);
+        _dummy.updateMatrix();
+        taludIM.setMatrixAt(taludIdx++, _dummy.matrix);
+      }
+    }
   }
-  taludIM.count=taludIdx;
-  taludIM.instanceMatrix.needsUpdate=true;
-  scene.add(taludIM);
+  if(taludIM){
+    taludIM.count=taludIdx;
+    taludIM.instanceMatrix.needsUpdate=true;
+    scene.add(taludIM);
+  }
+}
+
+// Background mesa's — Phase-3A 3-tier depth scaffold via organicCylinder
+// + atmospheric perspective. Foreground/midground/background tiers placed
+// on radial bands around the track-centre at distances 150/250/400.
+// Each mesa has unique cloned material so its color can lerp toward fog.
+// Pattern matches Monument Valley silhouette layering — 3 distinct depth
+// reads even when foreground is occluded by cliffs.
+function _ssBuildBackgroundMesas(){
+  const mob=window._isMobile;
+  const lod=mob?1:0;
+  const stoneTex=ProcTextures.rockStrata({
+    bandCount:4,
+    baseColor:'#8b4a25',
+    stratColors:['#6a3018','#8b4a25','#a8643a','#b87850'],
+    ageWear:0.3
+  });
+  const baseMat=new THREE.MeshStandardMaterial({
+    map:stoneTex,
+    color:0xcc8d60,
+    roughness:0.95,
+    metalness:0,
+    flatShading:false
+  });
+  // Mobile: skip the background tier (only 2 layers, halved counts) so the
+  // far-distance fillrate stays manageable.
+  const tiers = mob
+    ? [
+        { distance:150, count:4, sides:8, displaceAmount:0.4, maxBlend:0.4 },
+        { distance:250, count:3, sides:6, displaceAmount:0.3, maxBlend:0.65 }
+      ]
+    : [
+        { distance:150, count:6, sides:8, displaceAmount:0.4, maxBlend:0.4 },
+        { distance:250, count:6, sides:6, displaceAmount:0.3, maxBlend:0.65 },
+        { distance:400, count:4, sides:5, displaceAmount:0.2, maxBlend:0.85 }
+      ];
+  tiers.forEach((tier,ti)=>{
+    for(let i=0;i<tier.count;i++){
+      // Spread evenly around the track-centre with per-tier angle phase.
+      const ang=(i/tier.count)*Math.PI*2 + (ti*0.4);
+      const dist=tier.distance + (Math.random()-0.5)*40;
+      const cx=Math.cos(ang)*dist;
+      const cz=Math.sin(ang)*dist;
+      // Larger mesas at far distance so they read at scale
+      const baseRadius=14+Math.random()*8 + (ti*4);
+      const height=22+Math.random()*16 + (ti*6);
+      const mesaGeo=ProcGeometry.organicCylinder({
+        sides:tier.sides,
+        topRadius:baseRadius*0.85,
+        bottomRadius:baseRadius,
+        height:height,
+        displaceAmount:tier.displaceAmount,
+        seed:31+i*17+ti*73,
+        lod:lod
+      });
+      // Per-mesa unique material so atmospheric perspective lerp can
+      // target each independently. Slight per-instance color jitter
+      // breaks up the "stamped" look.
+      const mesaMat=baseMat.clone();
+      mesaMat.color.multiplyScalar(0.92+Math.random()*0.16);
+      const mesa=new THREE.Mesh(mesaGeo, mesaMat);
+      mesa.position.set(cx, height*0.5-1, cz);
+      mesa.rotation.y=Math.random()*Math.PI*2;
+      // Squashed Y-scale + slight per-instance jitter
+      const sc=0.85+Math.random()*0.40;
+      mesa.scale.set(sc, 0.7+Math.random()*0.3, sc);
+      ProcGeometry.applyAtmosphericPerspective(mesa, {
+        fogColor:'#e8b878',
+        startDistance:tier.distance-50,
+        fullBlendDistance:tier.distance+150,
+        cameraAnchor:new THREE.Vector3(0,0,0),
+        maxBlend:tier.maxBlend
+      });
+      scene.add(mesa);
+    }
+  });
 }
 
 // Sand dunes — overlapping silhouettes met windrichting-aligned ripples.
@@ -326,65 +414,212 @@ function _ssBuildSandDunes(){
   }
 }
 
-// Sphinx hero monument — full layered version (8 sub-meshes + sand mound).
-// Matches spec §3.3: gestapelde body, 2-tone material, sokkel.
+// Sphinx hero monument — Phase-3A rebuild per spec §3.5. 14+ sub-meshes
+// op desktop (12 op mobile na skip uraeus + baard + achterpoten). Volledig
+// op `ProcGeometry.beveledBox` zodat geen scherpe doos-kanten ogen kartonachtig.
+//
+// Material zones (3 distinct):
+//   • body         — warm sandstone via ProcTextures.weatheredStone(ageWear:0.7)
+//   • sokkel       — koeler/donkerder accent — eigen weatheredStone variant
+//   • nemes/uraeus/baard — distinctief donker (#9b6f3a) so headdress reads
+//
+// Helper builds a custom trapezoidal nemes-flap geometry inline (one of
+// the few sub-shapes that doesn't fit any ProcGeometry recipe yet).
 function _ssBuildSphinxMonument(){
-  // 2-tone via canvas-tex on body, plain darker mat on accents
-  const stoneTex=_ssSandstoneTex();
-  const stoneMat=new THREE.MeshLambertMaterial({color:0xc89b6e,map:stoneTex});
-  const stoneAccentMat=new THREE.MeshLambertMaterial({color:0x9a7048});
-  const stoneDarkMat=new THREE.MeshLambertMaterial({color:0x6a4a2c});
+  const mob=window._isMobile;
+  // 3 material zones (PBR baseline). Per-mesh color-tint kan via .color
+  // set ALSO de same map laten zien, zodat caller-clones niet nodig zijn.
+  const bodyTex=ProcTextures.weatheredStone({
+    baseColor:'#c9a373', crackColor:'#3a2418', crackCount:10,
+    ageWear:0.7, repeatX:1, repeatY:1
+  });
+  const sokkelTex=ProcTextures.weatheredStone({
+    baseColor:'#b89370', crackColor:'#3a2418', crackCount:6,
+    ageWear:0.5, repeatX:1, repeatY:1
+  });
+  const nemesTex=ProcTextures.weatheredStone({
+    baseColor:'#9b6f3a', crackColor:'#2a1410', crackCount:8,
+    ageWear:0.6, repeatX:1, repeatY:1
+  });
+  const bodyMat   =new THREE.MeshStandardMaterial({map:bodyTex,   roughness:0.92, metalness:0});
+  const sokkelMat =new THREE.MeshStandardMaterial({map:sokkelTex, roughness:0.94, metalness:0});
+  const nemesMat  =new THREE.MeshStandardMaterial({map:nemesTex,  roughness:0.90, metalness:0});
   const sphinx=new THREE.Group();
-  // SOKKEL — large stepped base (2 stacked blocks)
-  const sokkelLow=new THREE.Mesh(new THREE.BoxGeometry(20,1.2,28),stoneAccentMat);
-  sokkelLow.position.y=0.6;sphinx.add(sokkelLow);
-  const sokkelHi=new THREE.Mesh(new THREE.BoxGeometry(17,1.2,25),stoneAccentMat);
-  sokkelHi.position.y=1.8;sphinx.add(sokkelHi);
-  // BODY (lower abdomen) + chest plate (upper) — 2-tone via separate mats
-  const bodyLower=new THREE.Mesh(new THREE.BoxGeometry(8,3,16),stoneMat);
-  bodyLower.position.y=3.9;sphinx.add(bodyLower);
-  const bodyUpper=new THREE.Mesh(new THREE.BoxGeometry(7.4,2.8,14.5),stoneMat);
-  bodyUpper.position.y=6.7;sphinx.add(bodyUpper);
-  // Chest plate — small contrasting box at the front of the body
-  const chestPlate=new THREE.Mesh(new THREE.BoxGeometry(6,1.8,1.2),stoneAccentMat);
-  chestPlate.position.set(0,5.6,-7.2);sphinx.add(chestPlate);
-  // FRONT + REAR PAWS
+
+  // ── SOKKEL — large stepped base (2 beveled blocks) — sub-meshes 1-2
+  const sokkelLow=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:20, h:1.2, d:28, bevel:0.20}),
+    sokkelMat
+  );
+  sokkelLow.position.y=0.6; sphinx.add(sokkelLow);
+  const sokkelHi=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:17, h:1.2, d:25, bevel:0.18}),
+    sokkelMat
+  );
+  sokkelHi.position.y=1.8; sphinx.add(sokkelHi);
+
+  // ── BODY — lying lion-form (lower + tapered upper) — sub-meshes 3-4
+  const bodyLower=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:8, h:3, d:16, bevel:0.20}),
+    bodyMat
+  );
+  bodyLower.position.y=3.9; sphinx.add(bodyLower);
+  // Upper body — slightly tapered top via post-creation vertex inset
+  const upperGeo=ProcGeometry.beveledBox({w:7.4, h:2.8, d:14.5, bevel:0.20});
+  // Pull top vertices inward so the body silhouette tapers toward the spine
+  {
+    const pos=upperGeo.attributes.position;
+    const v=new THREE.Vector3();
+    for(let i=0;i<pos.count;i++){
+      v.fromBufferAttribute(pos,i);
+      // Top half (positive Y after centering): pull X inward by 8%
+      if(v.y > 0.4) v.x *= 0.85;
+      pos.setXYZ(i, v.x, v.y, v.z);
+    }
+    pos.needsUpdate=true;
+    upperGeo.computeVertexNormals();
+  }
+  const bodyUpper=new THREE.Mesh(upperGeo, bodyMat);
+  bodyUpper.position.y=6.7; sphinx.add(bodyUpper);
+
+  // ── CHEST RISE — voorste deel van de body, hoger dan abdomen — sub-mesh 5
+  const chestRise=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:4, h:3, d:3, bevel:0.15}),
+    bodyMat
+  );
+  chestRise.position.set(0, 7.5, -6.0);
+  sphinx.add(chestRise);
+
+  // ── FRONT PAWS (2) — beveled blocks angled forward — sub-meshes 6-7
   [-1,1].forEach(s=>{
-    const pawF=new THREE.Mesh(new THREE.BoxGeometry(2.2,2.2,4.5),stoneMat);
-    pawF.position.set(s*2.5,3.5,-6.5);sphinx.add(pawF);
-    const pawR=new THREE.Mesh(new THREE.BoxGeometry(2.2,2.2,3.5),stoneMat);
-    pawR.position.set(s*2.5,3.5,7.0);sphinx.add(pawR);
+    const paw=new THREE.Mesh(
+      ProcGeometry.beveledBox({w:1, h:3, d:4, bevel:0.10}),
+      bodyMat
+    );
+    paw.position.set(s*2.3, 3.9, -6.5);
+    sphinx.add(paw);
   });
-  // TAIL — small block at rear
-  const tail=new THREE.Mesh(new THREE.BoxGeometry(1,1.2,3),stoneMat);
-  tail.position.set(0,4.5,8.4);tail.rotation.x=0.3;sphinx.add(tail);
-  // HEAD — slightly larger box on neck
-  const neck=new THREE.Mesh(new THREE.BoxGeometry(3,1.5,2),stoneMat);
-  neck.position.set(0,8.1,-7.0);sphinx.add(neck);
-  const head=new THREE.Mesh(new THREE.BoxGeometry(4,4,4),stoneMat);
-  head.position.set(0,10.4,-7.5);sphinx.add(head);
-  // NEMES HEADDRESS — central block + two angled side flaps
-  const nemesCenter=new THREE.Mesh(new THREE.BoxGeometry(4.4,1.6,4.4),stoneAccentMat);
-  nemesCenter.position.set(0,12.7,-7.5);sphinx.add(nemesCenter);
+
+  // ── REAR PAWS (2) — desktop only — sub-meshes 8-9 (skip on mobile)
+  if(!mob){
+    [-1,1].forEach(s=>{
+      const rearPaw=new THREE.Mesh(
+        ProcGeometry.beveledBox({w:0.8, h:1.2, d:2, bevel:0.10}),
+        bodyMat
+      );
+      rearPaw.position.set(s*2.5, 3.0, 7.2);
+      sphinx.add(rearPaw);
+    });
+  }
+
+  // ── TAIL — small block curving along the body — sub-mesh 10
+  const tail=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:0.8, h:1.2, d:3, bevel:0.10}),
+    bodyMat
+  );
+  tail.position.set(0, 4.5, 8.4);
+  tail.rotation.x=0.3;
+  sphinx.add(tail);
+
+  // ── NECK + HEAD — sub-meshes 11-12
+  const neck=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:3, h:1.5, d:2, bevel:0.12}),
+    bodyMat
+  );
+  neck.position.set(0, 8.5, -7.0);
+  sphinx.add(neck);
+  const head=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:3, h:3.5, d:3, bevel:0.20}),
+    bodyMat
+  );
+  head.position.set(0, 10.5, -7.5);
+  sphinx.add(head);
+
+  // ── NEMES HEADDRESS — 2 angled trapezium flaps + central block (3 sub-meshes)
+  // Sub-mesh 13 = nemes center
+  const nemesCenter=new THREE.Mesh(
+    ProcGeometry.beveledBox({w:4.4, h:1.6, d:4.4, bevel:0.15}),
+    nemesMat
+  );
+  nemesCenter.position.set(0, 12.7, -7.5);
+  sphinx.add(nemesCenter);
+  // Sub-meshes 14-15 = side flaps (custom trapezium via BoxGeometry + scale-Z taper)
   [-1,1].forEach(s=>{
-    const flap=new THREE.Mesh(new THREE.BoxGeometry(0.8,2.4,3.4),stoneAccentMat);
-    flap.position.set(s*2.4,11.6,-7.3);
-    flap.rotation.z=s*0.18;sphinx.add(flap);
+    const flapGeo=ProcGeometry.beveledBox({w:0.8, h:2.6, d:3.4, bevel:0.10});
+    // Taper bottom narrower so flap reads as Egyptian nemes side-cloth
+    const pos=flapGeo.attributes.position;
+    const v=new THREE.Vector3();
+    for(let i=0;i<pos.count;i++){
+      v.fromBufferAttribute(pos,i);
+      if(v.y < -0.5) v.z *= 0.65;
+      pos.setXYZ(i, v.x, v.y, v.z);
+    }
+    pos.needsUpdate=true;
+    flapGeo.computeVertexNormals();
+    const flap=new THREE.Mesh(flapGeo, nemesMat);
+    flap.position.set(s*2.4, 11.6, -7.3);
+    flap.rotation.z=s*0.18;
+    sphinx.add(flap);
   });
-  // CAPSTONE — small pyramid on top of nemes
-  const cap=new THREE.Mesh(new THREE.ConeGeometry(1.3,1.6,4),stoneDarkMat);
-  cap.position.set(0,14.3,-7.5);cap.rotation.y=Math.PI/4;sphinx.add(cap);
-  // Half-buried sand mound base
+
+  // ── URAEUS (cobra-symbool op voorhoofd) — desktop only, 2 sub-meshes (16-17)
+  if(!mob){
+    const uraeusBase=new THREE.Mesh(
+      new THREE.CylinderGeometry(0.10, 0.13, 0.5, 6),
+      nemesMat
+    );
+    uraeusBase.position.set(0, 11.7, -8.85);
+    uraeusBase.rotation.x=-0.3;
+    sphinx.add(uraeusBase);
+    const uraeusHead=new THREE.Mesh(
+      new THREE.SphereGeometry(0.18, 6, 4),
+      nemesMat
+    );
+    uraeusHead.position.set(0, 12.0, -8.95);
+    sphinx.add(uraeusHead);
+  }
+
+  // ── PHARAO BAARD — desktop only, sub-mesh 18 (false beard onder kin)
+  if(!mob){
+    const baard=new THREE.Mesh(
+      ProcGeometry.beveledBox({w:0.5, h:1.4, d:0.5, bevel:0.06}),
+      nemesMat
+    );
+    baard.position.set(0, 9.4, -8.95);
+    baard.rotation.x=0.10;
+    sphinx.add(baard);
+  }
+
+  // ── CAPSTONE — small pyramid on top of nemes — sub-mesh 19
+  // Use ProcGeometry.pyramidCap for crisp 4-sided pyramid (not cone hack).
+  const cap=new THREE.Mesh(
+    ProcGeometry.pyramidCap({baseW:1.3, height:1.5}),
+    nemesMat
+  );
+  cap.position.set(0, 13.5, -7.5);
+  cap.rotation.y=Math.PI/4;
+  sphinx.add(cap);
+
+  // ── HALF-BURIED SAND MOUND — Lambert OK (background reads), sub-mesh 20
+  // The mound IS the integrated base. Lambert acceptable here — it's
+  // semi-decorative ground around the prop, not a hero surface.
   const moundMat=new THREE.MeshLambertMaterial({color:0xc8a070});
-  const mound=new THREE.Mesh(new THREE.SphereGeometry(16,14,9,0,Math.PI*2,0,Math.PI*0.5),moundMat);
-  mound.scale.set(1.3,0.3,1.1);mound.position.y=-1.5;sphinx.add(mound);
-  // Place beside finish line via track curve
+  const mound=new THREE.Mesh(
+    new THREE.SphereGeometry(16, 14, 9, 0, Math.PI*2, 0, Math.PI*0.5),
+    moundMat
+  );
+  mound.scale.set(1.3, 0.3, 1.1);
+  mound.position.y=-1.5;
+  sphinx.add(mound);
+
+  // ── PLACEMENT: half-buried beside finish-line, facing the track
+  // -1.2 Y-offset on the whole group sinks the sokkel into the mound.
   const t=0.96;
   const p=trackCurve.getPoint(t);
   const tg=trackCurve.getTangent(t).normalize();
   const nr=new THREE.Vector3(-tg.z,0,tg.x);
   const off=BARRIER_OFF+14;
-  sphinx.position.set(p.x+nr.x*off,0,p.z+nr.z*off);
+  sphinx.position.set(p.x+nr.x*off, -1.2, p.z+nr.z*off);
   sphinx.rotation.y=Math.atan2(tg.x,tg.z)+Math.PI*0.5;
   scene.add(sphinx);
 }
@@ -721,9 +956,14 @@ function buildSandstormEnvironment(){
     scene.add(_sandstormFlecks);_sandstormFlecksGeo=geo;
   }
   // ── World props (Phase 3 visual upgrade) ────────────────
-  // Background horizon comes from track/environment.js's shared
-  // buildBackgroundLayers() — invoked by core/scene.js for sandstorm
-  // via _SILHOUETTE_PALETTES.sandstorm. We don't add our own mesa-rings.
+  // Two depth-tiered horizon layers:
+  //   1. Shared silhouette layers from track/environment.js (cylinder rings
+  //      via _SILHOUETTE_PALETTES.sandstorm, called by core/scene.js).
+  //   2. _ssBuildBackgroundMesas (Phase-3A): discrete organic-cylinder
+  //      mesa props at 150/250/400u bands with atmospheric perspective.
+  // The two are NOT duplicates — silhouette is wrap-around horizon haze,
+  // mesas are individual scatter-props that read as Monument-Valley buttes.
+  _ssBuildBackgroundMesas();
   _ssBuildCanyonCliffs();
   _ssBuildSandDunes();
   _ssBuildSphinxMonument();
