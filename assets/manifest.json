@@ -216,6 +216,9 @@
         "mountains_far":  "assets/textures/candy/sweethills_far.png",
         "mountains_near": "assets/textures/candy/sweethills_near.png"
       }
+    },
+    "sandstorm": {
+      "props": {}
     }
   }
 }

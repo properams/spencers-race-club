@@ -658,8 +658,8 @@ function buildCarSelectUI(){
   // World indicator badge
   const wInd=document.getElementById('worldIndicator');
   if(wInd){
-    const wIcons={space:'🚀',deepsea:'🌊',candy:'🍬',neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢'};
-    const wNames2={space:'COSMIC',deepsea:'DEEP SEA',candy:'CANDY',neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK'};
+    const wIcons={space:'🚀',deepsea:'🌊',candy:'🍬',neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢',sandstorm:'🏜'};
+    const wNames2={space:'COSMIC',deepsea:'DEEP SEA',candy:'CANDY',neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK',sandstorm:'SANDSTORM'};
     wInd.textContent=(wIcons[activeWorld]||'⬢')+' '+(wNames2[activeWorld]||activeWorld.toUpperCase());
   }
   _weatherMode='clear';
@@ -734,11 +734,13 @@ let _selMScrollWired=false;
 
 const _SELM_WORLD_ICONS={
   space:'🚀',deepsea:'🌊',candy:'🍬',
-  neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢'
+  neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢',
+  sandstorm:'🏜'
 };
 const _SELM_WORLD_NAMES={
   space:'COSMIC',deepsea:'DEEP SEA',candy:'SUGAR RUSH',
-  neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK'
+  neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK',
+  sandstorm:'SANDSTORM'
 };
 const _SELM_TIER_LABEL={super:'SUPER',f1:'F1',muscle:'MUSCLE',electric:'ELECTRIC'};
 

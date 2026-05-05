@@ -420,6 +420,37 @@ function makeArcticSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
+// Sandstorm — cyan zenith → warm peach horizon → sand-cream undertones.
+// Lap-progressive haze tint is layered on top via DOM-overlay (in
+// sandstorm-storm.js); this canvas is the lap-1 clear-sky baseline.
+function makeSandstormSkyTex(){
+  const {c,g}=_newSkyCanvas('#7ec4d9','#f1cea0');
+  // Sun hotspot (warm white) — high-contrast desert sun.
+  const sun=g.createRadialGradient(720,140,0,720,140,260);
+  sun.addColorStop(0,'rgba(255,250,225,1)');
+  sun.addColorStop(.3,'rgba(255,235,180,0.55)');
+  sun.addColorStop(1,'rgba(255,220,150,0)');
+  g.fillStyle=sun;g.fillRect(440,0,560,400);
+  // Warm horizon haze that fades into the sand-tinted lower band.
+  const haze=g.createLinearGradient(0,300,0,512);
+  haze.addColorStop(0,'rgba(232,180,118,0)');
+  haze.addColorStop(.5,'rgba(232,180,118,0.45)');
+  haze.addColorStop(1,'rgba(216,164,98,0.65)');
+  g.fillStyle=haze;g.fillRect(0,300,1024,212);
+  // Sparse high-altitude wisps (desert cirrus) — adds depth without
+  // looking cloudy. Just a few thin horizontal streaks.
+  for(let i=0;i<8;i++){
+    const y=70+Math.random()*120,w=140+Math.random()*180;
+    const x=Math.random()*1024;
+    const grd=g.createLinearGradient(x,y,x+w,y);
+    grd.addColorStop(0,'rgba(255,245,225,0)');
+    grd.addColorStop(.5,'rgba(255,245,225,0.18)');
+    grd.addColorStop(1,'rgba(255,245,225,0)');
+    g.fillStyle=grd;g.fillRect(x,y-2,w,4);
+  }
+  return _skyTexFromCanvas(c);
+}
+
 // Theme park — sunset gradient + soft cloud puffs + early stars + lit horizon
 function makeThemeparkSkyTex(){
   const {c,g}=_newSkyCanvas('#2a0844','#ff8844');
@@ -508,6 +539,7 @@ function buildScene(){
   const isThemepark=activeWorld==='themepark';
   const isVolcano=activeWorld==='volcano';
   const isArctic=activeWorld==='arctic';
+  const isSandstorm=activeWorld==='sandstorm';
   scene=new THREE.Scene();
   // scene.environment wordt per-world gezet ná het skybox-block hieronder
   // (zie _buildWorldEnvFromSky aanroep). Dit was eerder een generieke
@@ -550,6 +582,16 @@ function buildScene(){
     scene.background=makeArcticSkyTex();
     scene.fog=new THREE.FogExp2(0x1a3050,.0035);
     _fogColorDay.setHex(0x1a3050);_fogColorNight.setHex(0x162e48);
+  }else if(isSandstorm){
+    // Sandstorm uses linear THREE.Fog (not Exp2) so the rolling-storm hazard
+    // can mutate scene.fog.far on a known scale. Lap-1 baseline: far=220
+    // (clear desert visibility); hazard pulls it down to 55 on lap 3.
+    // _fogBaseDensity stays at the linear 'far' for setWeather rain blend
+    // (linear fog ignores density, so weather-rain-add becomes a no-op here
+    // — acceptable since sandstorm has no rain mode).
+    scene.background=makeSandstormSkyTex();
+    scene.fog=new THREE.Fog(0xe8b878,60,220);
+    _fogColorDay.setHex(0xe8b878);_fogColorNight.setHex(0x6a4830);
   }else{
     // Onbekende world — val terug op space-sky zodat de scene niet crasht.
     if(window.dbg)dbg.warn('scene','unknown world '+activeWorld+' — falling back to space sky');
@@ -615,6 +657,9 @@ function buildScene(){
     buildBackgroundLayers();
   }else if(activeWorld==='arctic'){
     buildArcticEnvironment();
+    buildBackgroundLayers();
+  }else if(isSandstorm){
+    buildSandstormEnvironment();
     buildBackgroundLayers();
   }else if(isThemepark){
     buildThemeparkEnvironment();

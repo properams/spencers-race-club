@@ -77,6 +77,7 @@ function _resetRaceState(){
   if(typeof disposeArcticIceShelf==='function')disposeArcticIceShelf();
   if(typeof disposeCandyChocoBridge==='function')disposeCandyChocoBridge();
   if(typeof disposeThemeparkCoaster==='function')disposeThemeparkCoaster();
+  if(typeof disposeSandstormStorm==='function')disposeSandstormStorm();
   if(typeof disposeNeonCityEMP==='function')disposeNeonCityEMP();
   if(typeof disposeSpaceAnomaly==='function')disposeSpaceAnomaly();
   if(typeof disposeDeepSeaCurrent==='function')disposeDeepSeaCurrent();

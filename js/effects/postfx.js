@@ -206,7 +206,8 @@ const _BLOOM_WORLD_MUL = {
   neoncity: 1.00,   // intentionally heavy bloom — neon look
   volcano:  1.00,   // lava emissives are the show
   space:    1.00,   // deliberate cosmic bloom
-  deepsea:  0.85    // bioluminescence subtle
+  deepsea:  0.85,   // bioluminescence subtle
+  sandstorm:0.55    // bright sun + sand reflectie — temper bloom flood
 };
 function setBloomDayNight(dark){
   if(!_postfx.ready) return;
@@ -265,7 +266,8 @@ function setWorldGrading(world){
     neoncity:  [1.05, 0.85, 1.15, 0.18, 0.60],
     volcano:   [1.20, 0.92, 0.78, 0.16, 0.55],
     arctic:    [0.92, 1.00, 1.18, 0.14, 0.50],
-    themepark: [1.18, 0.92, 1.05, 0.14, 0.55]
+    themepark: [1.18, 0.92, 1.05, 0.14, 0.55],
+    sandstorm: [1.18, 1.00, 0.78, 0.16, 0.50]
   }[world] || [1,1,1, 0.0, 0.45];
   _postfx.matComposite.uniforms.tint.value.set(cfg[0], cfg[1], cfg[2]);
   _postfx.matComposite.uniforms.gradeAmount.value = cfg[3];

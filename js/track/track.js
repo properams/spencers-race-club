@@ -56,7 +56,7 @@ function buildTrack(){
   const N=400;
   // Main track mat: polygonOffset pushes asphalt *away* from camera in depth so curbs,
   // edge lines and startline overlays win the depth test on low-precision depth buffers (iPad).
-  const _baseTrackColor=activeWorld==='space'?0x141420:activeWorld==='deepsea'?0x1a2830:activeWorld==='candy'?0xee3388:activeWorld==='neoncity'?0x0a0a14:activeWorld==='volcano'?0x2a0808:activeWorld==='arctic'?0x667788:activeWorld==='themepark'?0x221030:0x262626;
+  const _baseTrackColor=activeWorld==='space'?0x141420:activeWorld==='deepsea'?0x1a2830:activeWorld==='candy'?0xee3388:activeWorld==='neoncity'?0x0a0a14:activeWorld==='volcano'?0x2a0808:activeWorld==='arctic'?0x667788:activeWorld==='themepark'?0x221030:activeWorld==='sandstorm'?0x6a4a2e:0x262626;
   const _trackMat=new THREE.MeshLambertMaterial({color:_baseTrackColor,map:_buildTrackSurfaceTex()});
   // No polygonOffset on asphalt itself — it sits at y=0.005, well above the
   // ground plane at y=-0.12, so natural depth ordering keeps asphalt on top
@@ -110,7 +110,7 @@ function buildCurbs(N){
       const R=p.clone().addScaledVector(nr,eo+CW*.5);R.y=CY;
       pos.push(L.x,L.y,L.z,R.x,R.y,R.z);
       const s=Math.floor(t*STRIPES)%2;
-      const [r,g,b]=activeWorld==='space'?(s===0?[0,.9,.9]:[.7,0,.9]):activeWorld==='deepsea'?(s===0?[0,.9,.7]:[0,.5,1]):activeWorld==='candy'?(s===0?[1,.2,.6]:[1,.95,.1]):activeWorld==='themepark'?(s===0?[1,.3,.8]:[1,.9,.2]):(s===0?[.82,.07,.03]:[1,1,1]);
+      const [r,g,b]=activeWorld==='space'?(s===0?[0,.9,.9]:[.7,0,.9]):activeWorld==='deepsea'?(s===0?[0,.9,.7]:[0,.5,1]):activeWorld==='candy'?(s===0?[1,.2,.6]:[1,.95,.1]):activeWorld==='themepark'?(s===0?[1,.3,.8]:[1,.9,.2]):activeWorld==='sandstorm'?(s===0?[.79,.45,.20]:[.95,.85,.62]):(s===0?[.82,.07,.03]:[1,1,1]);
       col.push(r,g,b,r,g,b);
       if(i<N){const a=i*2,b2=a+1,c=a+2,d=a+3;idx.push(a,b2,c,b2,d,c);}
     }
@@ -133,6 +133,7 @@ function buildCurbs(N){
     else if(activeWorld==='volcano'){cMat.emissive=new THREE.Color(0xff3300);cMat.emissiveIntensity=.55;}
     else if(activeWorld==='arctic'){cMat.emissive=new THREE.Color(0x4488dd);cMat.emissiveIntensity=.45;}
     else if(activeWorld==='themepark'){cMat.emissive=new THREE.Color(0xff44aa);cMat.emissiveIntensity=.6;}
+    else if(activeWorld==='sandstorm'){cMat.emissive=new THREE.Color(0xc97232);cMat.emissiveIntensity=.40;}
     else {cMat.emissive=new THREE.Color(0x661111);cMat.emissiveIntensity=.30;} // GP — subtle red curb glow
     scene.add(new THREE.Mesh(geo,cMat));
   });

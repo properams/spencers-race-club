@@ -8,7 +8,7 @@
 // (Car-unlocks staan in progression.js → CAR_UNLOCK_RULES.)
 const WORLD_UNLOCK_THRESHOLDS = {
   byRaces:   { space: 2, deepsea: 4, candy: 7, neoncity: 10 },
-  byPodiums: { volcano: 3, arctic: 6 }
+  byPodiums: { volcano: 3, arctic: 6, sandstorm: 3 }
 };
 
 const STORAGE_KEY = 'spencerRC';
