@@ -47,11 +47,15 @@
 })();
 </script>
 
-<div id="sTitle" class="screen">
+<div id="sTitle" class="screen neon-bg">
   <div id="titleFlames"></div>
-  <div id="titleStarfield" style="position:absolute;inset:0;z-index:0;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.9) 1px,transparent 1px),radial-gradient(circle,rgba(200,150,255,.7) 1px,transparent 1px),radial-gradient(circle,rgba(150,200,255,.6) 1px,transparent 1px);background-size:220px 180px,140px 160px,300px 250px;animation:starDrift 25s linear infinite"></div>
+  <div class="neon-stars"></div>
   <div class="tLogo">SPENCER'S<br>RACE CLUB</div>
-  <div class="tStart" id="btnStart">&#9654;&nbsp; PRESS START &nbsp;&#9664;</div>
+  <button class="tStart" id="btnStart" type="button" aria-label="Press start">
+    <span class="tStartBracket" aria-hidden="true">[</span>
+    <span class="tStartLabel">PRESS START</span>
+    <span class="tStartBracket" aria-hidden="true">]</span>
+  </button>
   <div class="tHighScore" id="titleHighScore"></div>
 </div>
 
@@ -197,10 +201,12 @@
     <div class="selM-ctaBar">
       <div class="selM-ctaBarInner">
         <button class="selM-ctaBtn" id="selMRace">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          START RACE
+          <span class="selM-ctaBtnMain">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            <span class="selM-ctaBtnLbl">START RACE</span>
+          </span>
+          <span class="selM-ctaSummary" id="selMSummary"></span>
         </button>
-        <div class="selM-ctaSummary" id="selMSummary"></div>
       </div>
     </div>
   </div>
@@ -348,12 +354,11 @@
   <div class="hintBox">⬆ GAS &nbsp;·&nbsp; ⬇ BRAKE &nbsp;·&nbsp; ← → STEER &nbsp;·&nbsp; SPACE DRIFT &nbsp;·&nbsp; N NITRO &nbsp;·&nbsp; J DAY/NIGHT &nbsp;·&nbsp; H PIT STOP &nbsp;·&nbsp; C CAM &nbsp;·&nbsp; V MIRROR &nbsp;·&nbsp; HOLD R RESTART &nbsp;·&nbsp; P PAUSE</div>
 </div>
 
-<div id="loadingScreen" style="position:fixed;inset:0;background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:var(--z-modal);font-family:'Orbitron',sans-serif">
-  <div style="color:#ff6600;font-size:22px;letter-spacing:4px">SPENCER'S RACE CLUB</div>
-  <div style="color:#888;font-size:12px;margin-top:14px;letter-spacing:3px">LOADING...</div>
-  <div style="width:200px;height:4px;background:#222;margin-top:18px;border-radius:2px;overflow:hidden">
-    <div id="loadBar" style="height:100%;background:#ff6600;animation:loadAnim 1.2s ease-in-out infinite alternate;border-radius:2px"></div>
-  </div>
+<div id="loadingScreen" class="neon-bg">
+  <div class="neon-stars"></div>
+  <div class="tLogo loadLogo">SPENCER'S<br>RACE CLUB</div>
+  <div class="loadStatus" id="loadStep">LOADING<span class="loadDots">...</span></div>
+  <div class="loadBarTrack"><div id="loadBar" class="loadBarFill"></div></div>
 </div>
 <canvas id="rainCanvas"></canvas>
 <div id="speedOverlay"></div>
