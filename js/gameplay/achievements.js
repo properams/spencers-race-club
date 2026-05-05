@@ -33,9 +33,10 @@ const ACHIEVEMENTS=[
   {id:'podium5',icon:'🥇',title:'VETERAN',desc:'5 podium finishes',check:function(){return _podiumCount>=5;}},
   {id:'combo4',icon:'🔥',title:'ON FIRE',desc:'4x combo in a race',check:function(){return _comboCount>=4;}},
   // Sandstorm Canyon — only triggerable on that world. _sandstormLap3CleanFlag
-  // is set true when the player enters lap 3 in the sandstorm world and
-  // cleared on any recoverActive while still on lap 3 (see updateAchievements).
-  {id:'sandstorm_eye',icon:'🏜',title:'EYE OF THE STORM',desc:'Finish lap 3 of Sandstorm without going off-track',
+  // is set true when the player enters the FINAL lap in the sandstorm world
+  // (final = TOTAL_LAPS, which is user-selectable 1/3/5) and cleared on any
+  // recoverActive while still on the final lap (see updateAchievements).
+  {id:'sandstorm_eye',icon:'🏜',title:'EYE OF THE STORM',desc:'Finish the final lap of Sandstorm without going off-track',
     check:function(){return activeWorld==='sandstorm'&&_sandstormLap3CleanFlag;}},
   {id:'sandstorm_mirage',icon:'🌅',title:'MIRAGE MASTER',desc:'Win Sandstorm Canyon on Normal+',
     check:function(p){return activeWorld==='sandstorm'&&p===1&&difficulty>=1;}},
@@ -92,14 +93,16 @@ function updateAchievements(dt){
   // Clean lap — reset on recovery
   if(recoverActive)_cleanLapFlag=false;
   // Sandstorm Eye-of-the-Storm tracker. Latch the flag on first frame of
-  // lap 3 in the sandstorm world; clear it if the player ever goes off-track
-  // (recoverActive) while still on lap 3. Only watched in sandstorm so other
-  // worlds don't pay the lap-edge cost.
+  // the FINAL lap (TOTAL_LAPS, user-selectable 1/3/5) in sandstorm world;
+  // clear it if the player ever goes off-track (recoverActive) while still
+  // on the final lap. Only watched in sandstorm so other worlds don't pay
+  // the lap-edge cost.
   if(activeWorld==='sandstorm'){
-    if(car.lap===3&&_sandstormPrevLap!==3){
+    const _final=TOTAL_LAPS;
+    if(car.lap===_final&&_sandstormPrevLap!==_final){
       _sandstormLap3CleanFlag=true;
     }
-    if(recoverActive&&car.lap===3)_sandstormLap3CleanFlag=false;
+    if(recoverActive&&car.lap===_final)_sandstormLap3CleanFlag=false;
     _sandstormPrevLap=car.lap;
   }
   // Nitro junkie tracked via activations in updatePlayer

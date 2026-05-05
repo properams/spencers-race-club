@@ -219,8 +219,12 @@ function updateSandstormStorm(dt,currentLap){
     }
   }
 
-  // ── Apply: audio gain via the Audio facade.
-  if(window.Audio&&typeof Audio.setSandstormIntensity==='function'){
+  // ── Apply: audio gain via the Audio facade. Skip when not in RACE so
+  // showFinish()'s Audio.stopSandstormWind() isn't immediately undone by
+  // the next frame's lazy re-init (the FINISH-screen "wind plays after
+  // teardown" bug). The visuals can keep lerping toward target without
+  // re-stoking audio.
+  if(window.Audio&&typeof Audio.setSandstormIntensity==='function'&&gameState==='RACE'){
     Audio.setSandstormIntensity(st.windGain);
   }
 
