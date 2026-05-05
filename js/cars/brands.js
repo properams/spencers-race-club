@@ -17,94 +17,82 @@
 // ─────────────────────────────────────────────────────────────────────────────
 function buildFerrariSF90(g, def, mats, lod){
   const lo = lod === 'low';
-  // Phase 3 Tier A — body-subgroup, crowned hood/roof/engine cover, premium
-  // headlights, chrome trim, drilled discs + branded calipers, player underglow.
+  // Art-of-Rally restyle (Interpretatie A) — extruded super-archetype body
+  // i.p.v. box-stack. Brand-specifieke details (engine slats, side intakes,
+  // hoog-staande spoiler) blijven als overlays. Underglow en premium
+  // headlights weggehaald (te modern voor AOR-aesthetic). Drilled discs +
+  // accent calipers blijven (passen bij rally race-detail).
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  // Lower chassis — long, low wedge.
-  addPart(body, new THREE.BoxGeometry(1.92, .42, 4.10), mats.paint, 0, .26, 0);
-  // Side rocker/skirt extension (lower, wider grip)
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(2.00, .14, 3.40), mats.matBlk, 0, .12, 0);
+  const W = 1.92, L = 4.10, H = 1.05;
+  if (lo){
+    // Mobile box-stack fallback
+    addPart(body, new THREE.BoxGeometry(W, .42, L), mats.paint, 0, .26, 0);
+    addPart(body, new THREE.BoxGeometry(W*.85, .35, L*.32), mats.paint, 0, .68, -.05);
+    addPart(body, new THREE.BoxGeometry(W*.92, .04, L*.30), mats.paint, 0, .89, -.10);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'super' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
   }
-  // Front nose: low sloping wedge
-  addPart(body, new THREE.BoxGeometry(1.70, .26, .80), mats.paint, 0, .30, -1.85);
   // Front splitter (matBlk lip)
-  addPart(body, new THREE.BoxGeometry(1.78, .06, .26), mats.matBlk, 0, .10, -2.10);
-  // Hood — crowned slab voor aerodynamische welving
-  addPart(body, _crownedSlabGeo(1.70, .10, 1.40), mats.paint, 0, .54, -.95);
+  addPart(body, new THREE.BoxGeometry(W*0.92, .06, .26), mats.matBlk, 0, .10, -L*0.51);
   // Front grille / lower intake (signature dark inset)
-  addPart(body, new THREE.BoxGeometry(.90, .14, .12), mats.grille, 0, .22, -2.02);
-  // Premium headlights — slim units met lens + LED-strip
-  buildPremiumHeadlights(body, mats, {spread:.78, y:.46, z:-1.92, w:.30, h:.10, d:.08});
-  // Cabin — narrow, set forward of midsection
-  addPart(body, new THREE.BoxGeometry(1.62, .42, 1.30), mats.paint, 0, .76, -.05);
-  // Front windshield — sloped glass
-  addPart(body, new THREE.BoxGeometry(1.50, .50, .08), mats.glass, 0, .82, -.78, -.42);
-  // Side windows
-  [-.81, .81].forEach(s=>{
-    addPart(body, new THREE.BoxGeometry(.06, .32, 1.10), mats.glass, s, .82, -.05);
-  });
-  // Rear glass (engine cover window — short on mid-engine)
-  addPart(body, new THREE.BoxGeometry(1.42, .26, .08), mats.glassDark, 0, .82, .58, .40);
-  // Roof — crowned slab
-  addPart(body, _crownedSlabGeo(1.36, .04, 1.05), mats.paint, 0, 1.00, -.18);
-  // Engine cover — crowned slab
-  addPart(body, _crownedSlabGeo(1.55, .22, 1.10), mats.paint, 0, .68, .92);
-  if(!lo){
-    // Engine cover slats (carbon-look strakes)
+  if (!lo) addPart(body, new THREE.BoxGeometry(.90, .14, .12), mats.grille, 0, H*0.20, -L*0.49);
+  // Simple bumper-mounted headlights (rally style — niet meer premium LED)
+  buildHeadlights(body, mats, {spread: W*0.40, y: H*0.42, z: -L*0.49, w: .28, h: .10, d: .08});
+  // Cabin glass
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.78, 0.42, 0.08), mats.glass, 0, H*0.78, -L*0.06, -0.42);
+    addPart(body, new THREE.BoxGeometry(W*0.74, 0.26, 0.08), mats.glassDark, 0, H*0.78, L*0.14, 0.40);
+    [-W*0.42, +W*0.42].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(0.06, 0.30, L*0.27), mats.glass, s, H*0.78, L*0.04);
+    });
+  }
+  // Engine cover slats (carbon-look strakes — Ferrari signature)
+  if (!lo){
     [-.30, 0, .30].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.12, .04, 1.00), mats.matBlk, s, .80, .92);
+      addPart(body, new THREE.BoxGeometry(.12, .04, 1.00), mats.matBlk, s, H*0.78, L*0.22);
     });
   }
-  // Front fenders — bulges over front wheels
+  // Side air intakes — SF90 signature
+  if (!lo){
+    [-W*0.50, +W*0.50].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(.05, .22, .85), mats.matBlk, s, H*0.55, L*0.08);
+      addPart(body, new THREE.BoxGeometry(.04, .10, .70), mats.grille, s, H*0.55, L*0.08);
+    });
+  }
+  // Wheel arches
   buildWheelArches(body, mats.paint, {positions:[
-    [-.99, .42, -1.40], [.99, .42, -1.40], [-.99, .42, 1.40], [.99, .42, 1.40]
+    [-W*0.50, .42, -L*0.34], [W*0.50, .42, -L*0.34], [-W*0.50, .42, L*0.34], [W*0.50, .42, L*0.34]
   ]});
-  // Chrome window-trim strips
-  if(!lo){
-    [-0.84, 0.84].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.025, .025, 1.10), mats.chrome, s, .65, -.05);
-    });
-    addPart(body, new THREE.BoxGeometry(1.20, .025, .025), mats.chrome, 0, .65, -.60);
-    addPart(body, new THREE.BoxGeometry(1.20, .025, .025), mats.chrome, 0, .65,  .50);
-  }
-  // Side air intakes — SF90 signature, large dark vents on doors
-  if(!lo){
-    [-1.00, 1.00].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.05, .22, .85), mats.matBlk, s, .56, .35);
-      addPart(body, new THREE.BoxGeometry(.04, .10, .70), mats.grille, s, .56, .35);
-    });
-    buildSideVents(body, mats, {spread:1.00, y:.50, z:-.45, w:.04, h:.16, d:.55});
-  }
   // Rear bumper / lower diffuser
-  addPart(body, new THREE.BoxGeometry(1.85, .22, .30), mats.paint, 0, .32, 1.95);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.65, .10, .28), mats.matBlk, 0, .14, 2.00);
-    // Diffuser fins
+  addPart(body, new THREE.BoxGeometry(W*0.96, .22, .30), mats.paint, 0, .32, L*0.48);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.86, .10, .28), mats.matBlk, 0, .14, L*0.49);
     [-.50, -.15, .15, .50].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.04, .14, .26), mats.blk, s, .14, 2.00);
+      addPart(body, new THREE.BoxGeometry(.04, .14, .26), mats.blk, s, .14, L*0.49);
     });
   }
   // Rear spoiler — high, on visible stands
   [-.65, .65].forEach(s=>{
-    addPart(body, new THREE.BoxGeometry(.08, .26, .12), mats.matBlk, s, .92, 1.78);
+    addPart(body, new THREE.BoxGeometry(.08, .26, .12), mats.matBlk, s, H*0.85, L*0.43);
   });
-  addPart(body, new THREE.BoxGeometry(1.66, .06, .36), mats.paint, 0, 1.08, 1.78);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.62, .03, .12), mats.matBlk, 0, 1.05, 1.66);
-  }
-  // Tail lights — SF90 has horizontal slim units (not the cat-eyes from older Ferraris)
-  buildTaillights(body, mats, {spread:.70, y:.58, z:1.98, w:.38, h:.08, d:.05});
+  addPart(body, new THREE.BoxGeometry(W*0.86, .06, .36), mats.paint, 0, H*1.00, L*0.43);
+  // Tail lights
+  buildTaillights(body, mats, {spread: W*0.36, y: H*0.55, z: L*0.49, w: .38, h: .08, d: .05});
   // Dual exhausts — high mounted center pair
-  buildExhausts(body, mats, {spread:.32, y:.34, z:2.06, radius:.075, length:.30});
-  // Side skirts
-  buildSideSkirts(body, mats, {spread:.99, y:.10, z:0, length:2.6});
+  buildExhausts(body, mats, {spread:.32, y:.34, z: L*0.51, radius:.075, length:.30});
+  // Single accent stripe (rally livery) — over hood + roof
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(0.22, 0.025, L*0.85), mats.accent, 0, H*0.97, 0);
+  }
+  buildSideSkirts(body, mats, {spread: W*0.50, y:.10, z:0, length: L*0.65});
   g.userData = g.userData || {};
   g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
-  g.userData._signature = { underglow: def.accent };
+  // Geen _signature.underglow — AOR-style heeft geen ground glow.
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -891,69 +879,76 @@ function buildFordMustang(g, def, mats, lod){
 // ─────────────────────────────────────────────────────────────────────────────
 function buildTeslaModelS(g, def, mats, lod){
   const lo = lod === 'low';
-  // Phase 3 Tier C — body-subgroup wrap. Tesla's smooth-sedan silhouette
-  // krijgt geen crowned slabs (de Model S leest juist BEWUST glad), wel chrome
-  // door de bestaande door-handles. Glass-roof transmission upgrade is uit
-  // scope getrimd; bestaande glassDark mat met clearcoat van Phase 1 is
-  // genoeg voor de "panoramic glass" feel.
+  // Art-of-Rally restyle (Interpretatie A) — extruded sedan-archetype body.
+  // Tesla-signatures (smooth front zonder grille, panoramic glass roof,
+  // flush chrome door-handles, light bar) blijven als overlays. Lichte
+  // matte finish via def.paintClearcoat=0.30.
   const body = new THREE.Group();
   body.userData = body.userData || {};
   body.userData._isBody = true;
   g.add(body);
-  // Smooth chassis — slightly higher than super (sedan stance)
-  addPart(body, new THREE.BoxGeometry(2.00, .46, 4.40), mats.paint, 0, .28, 0);
-  // SMOOTH front (no grille — Tesla signature)
-  addPart(body, new THREE.BoxGeometry(1.86, .32, .80), mats.paint, 0, .32, -2.05);
-  // Lower air intake (subtle, no grille slats)
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.20, .08, .14), mats.matBlk, 0, .18, -2.20);
+  const W = 2.00, L = 4.40, H = 1.20;
+  if (lo){
+    // Mobile box-stack fallback
+    addPart(body, new THREE.BoxGeometry(W, .46, L), mats.paint, 0, .28, 0);
+    addPart(body, new THREE.BoxGeometry(W*.89, .44, L*.41), mats.paint, 0, .76, .15);
+    addPart(body, new THREE.BoxGeometry(W*.83, .04, L*.32), mats.glassDark, 0, 1.00, .15);
+  } else {
+    const bodyMesh = buildExtrudedBody(W, L, H, { mat: mats.paint, profile: 'sedan' });
+    bodyMesh.position.y = 0.05;
+    body.add(bodyMesh);
   }
   // Smooth front splitter
-  addPart(body, new THREE.BoxGeometry(1.94, .04, .20), mats.matBlk, 0, .08, -2.22);
-  // Slim modern headlights (LED bar style)
-  buildHeadlights(body, mats, {spread:.78, y:.44, z:-2.10, w:.36, h:.06, d:.06});
-  if(!lo){
-    // Inner LED light strip (Tesla signature)
-    [-.78, .78].forEach(s=>addPart(body, new THREE.BoxGeometry(.36, .02, .04), mats.head, s, .50, -2.16));
+  addPart(body, new THREE.BoxGeometry(W*0.97, .04, .20), mats.matBlk, 0, .08, -L*0.505);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(1.20, .08, .14), mats.matBlk, 0, H*0.15, -L*0.50);
   }
-  // Long sloping hood (no scoop, smooth)
-  addPart(body, new THREE.BoxGeometry(1.86, .06, 1.45), mats.paint, 0, .54, -1.10);
-  // Cabin — fastback teardrop with LARGE glass area (Tesla glass roof)
-  addPart(body, new THREE.BoxGeometry(1.78, .44, 1.80), mats.paint, 0, .76, .15);
-  addPart(body, new THREE.BoxGeometry(1.66, .50, .08), mats.glass, 0, .82, -.78, -.40);
-  [-.89, .89].forEach(s=>addPart(body, new THREE.BoxGeometry(.06, .36, 1.60), mats.glass, s, .84, .15));
-  // Glass roof (Model S signature — almost the entire roof is glass)
-  addPart(body, new THREE.BoxGeometry(1.50, .04, 1.40), mats.glassDark, 0, 1.00, .15);
-  addPart(body, new THREE.BoxGeometry(1.66, .04, .20), mats.paint, 0, 1.00, -.55); // front roof rail
-  addPart(body, new THREE.BoxGeometry(1.66, .04, .20), mats.paint, 0, 1.00, .85); // rear roof rail
-  // Sloping fastback rear glass
-  addPart(body, new THREE.BoxGeometry(1.60, .42, .08), mats.glassDark, 0, .80, 1.05, .50);
-  // Trunk lid
-  addPart(body, new THREE.BoxGeometry(1.88, .18, .90), mats.paint, 0, .58, 1.65);
-  // Smooth wheel arches (less bulgy than super)
+  // Slim LED-bar headlights (Tesla signature)
+  buildHeadlights(body, mats, {spread: W*0.39, y: H*0.37, z: -L*0.477, w: .36, h: .06, d: .06});
+  if (!lo){
+    [-.78, .78].forEach(s=>addPart(body, new THREE.BoxGeometry(.36, .02, .04), mats.head, s, H*0.42, -L*0.491));
+  }
+  // Cabin glass — front + side + rear
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.83, 0.50, 0.08), mats.glass, 0, H*0.68, -L*0.18, -0.40);
+    [-W*0.45, +W*0.45].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(0.06, 0.36, L*0.36), mats.glass, s, H*0.70, L*0.04);
+    });
+    // Sloping fastback rear glass
+    addPart(body, new THREE.BoxGeometry(W*0.80, 0.42, 0.08), mats.glassDark, 0, H*0.67, L*0.24, 0.50);
+    // Glass roof (panoramic)
+    addPart(body, new THREE.BoxGeometry(W*0.75, 0.04, L*0.32), mats.glassDark, 0, H*0.835, L*0.04);
+  }
+  // Wheel arches
   buildWheelArches(body, mats.paint, {positions:[
-    [-1.02, .42, -1.50], [1.02, .42, -1.50], [-1.02, .42, 1.50], [1.02, .42, 1.50]
+    [-W*0.51, .42, -L*0.34], [W*0.51, .42, -L*0.34], [-W*0.51, .42, L*0.34], [W*0.51, .42, L*0.34]
   ]});
-  // Flush door handles (Tesla signature) — thin chrome lines
-  if(!lo){
-    [-1.01, 1.01].forEach(s=>{
-      addPart(body, new THREE.BoxGeometry(.04, .04, .25), mats.chrome, s, .56, -.30);
-      addPart(body, new THREE.BoxGeometry(.04, .04, .25), mats.chrome, s, .56, .50);
+  // Flush chrome door handles (Tesla signature)
+  if (!lo){
+    [-W*0.505, +W*0.505].forEach(s=>{
+      addPart(body, new THREE.BoxGeometry(.04, .04, .25), mats.chrome, s, H*0.47, -L*0.07);
+      addPart(body, new THREE.BoxGeometry(.04, .04, .25), mats.chrome, s, H*0.47,  L*0.11);
     });
   }
   // Smooth rear bumper
-  addPart(body, new THREE.BoxGeometry(1.94, .22, .28), mats.paint, 0, .34, 2.10);
-  if(!lo){
-    addPart(body, new THREE.BoxGeometry(1.74, .08, .26), mats.matBlk, 0, .16, 2.16);
+  addPart(body, new THREE.BoxGeometry(W*0.97, .22, .28), mats.paint, 0, .34, L*0.477);
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(W*0.87, .08, .26), mats.matBlk, 0, .16, L*0.49);
   }
-  // Subtle slim tail lights (Tesla style — single thin bar)
-  buildTaillights(body, mats, {spread:.66, y:.52, z:2.14, w:.34, h:.06, d:.04});
-  if(!lo){
-    // Connecting light bar between tails (modern Tesla signature)
-    addPart(body, new THREE.BoxGeometry(1.30, .04, .04), mats.tail, 0, .52, 2.16);
+  // Subtle slim tail lights + connecting light bar (modern Tesla signature)
+  buildTaillights(body, mats, {spread: W*0.33, y: H*0.43, z: L*0.486, w: .34, h: .06, d: .04});
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(1.30, .04, .04), mats.tail, 0, H*0.43, L*0.491);
+  }
+  // Single accent stripe (rally livery) — over hood + roof
+  if (!lo){
+    addPart(body, new THREE.BoxGeometry(0.20, 0.025, L*0.85), mats.accent, 0, H*0.85, 0);
   }
   // NO exhaust (electric vehicle)
-  buildSideSkirts(body, mats, {spread:1.00, y:.12, z:0, length:2.8});
+  buildSideSkirts(body, mats, {spread: W*0.50, y:.12, z:0, length: L*0.64});
+  // Drilled discs + accent calipers — Tesla EV-rally aesthetic, geen underglow.
+  g.userData = g.userData || {};
+  g.userData._wheelOpts = { brakeStyle: 'drilled', caliperMatKey: 'accent' };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
