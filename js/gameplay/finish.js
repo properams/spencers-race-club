@@ -11,6 +11,7 @@ function showFinish(){
   setTimeout(()=>{if(gameState==='FINISH')startTitleMusic();},900);
   // Stop all ambient audio — prevents harsh noise on finish screen
   Audio.stopWind();
+  Audio.stopSandstormWind();
   if(_crowdGain&&audioCtx)_crowdGain.gain.setTargetAtTime(0.0,audioCtx.currentTime,.8);
   // Stop engine oscillator
   if(engineGain&&audioCtx)engineGain.gain.setTargetAtTime(0.0,audioCtx.currentTime,.4);

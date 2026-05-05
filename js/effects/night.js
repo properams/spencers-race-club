@@ -115,6 +115,26 @@ function toggleNight(){
       _aiHeadPool.forEach(l=>l.intensity=0);
     }
     if(_sunBillboard)_sunBillboard.visible=!isDark;
+  }else if(activeWorld==='sandstorm'){
+    // Sandstorm has no day/night cycle (per design): the storm hazard
+    // replaces the mood-arc. Keep the warm desert look in both modes; the
+    // toggle only nudges sun/ambient slightly so the moon/sun button still
+    // gives visual feedback. Fog far stays driven by the storm hazard, NOT
+    // by night.js — never write scene.fog.far / .near here.
+    if(isDark){
+      sunLight.color.setHex(0xc8a878);sunLight.intensity=1.0;
+      ambientLight.intensity=0.5;hemiLight.intensity=0.32;
+      trackLightList.forEach(l=>l.intensity=1.6);trackPoles.forEach(p=>p.visible=true);
+    }else{
+      sunLight.color.setHex(0xffc97a);sunLight.intensity=1.4;
+      ambientLight.intensity=0.6;hemiLight.intensity=0.4;
+      trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
+    }
+    if(stars)stars.visible=isDark;
+    if(plHeadL){plHeadL.intensity=isDark?1.7:0;plHeadR.intensity=isDark?1.7:0;}
+    if(plTail)plTail.intensity=isDark?1.4:0;
+    _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0);
+    if(_sunBillboard)_sunBillboard.visible=!isDark;
   }else if(activeWorld==='space'){
     // Space is always dark — toggle only affects ambient brightness ("solar flare day" vs "deep night")
     if(isDark){
@@ -152,7 +172,9 @@ function toggleNight(){
   }
   // Cache per-world "no rain" fog density so updateWeather can layer rain on top
   // without resetting to GP-hardcoded values every frame.
-  if(scene&&scene.fog)_fogBaseDensity=scene.fog.density;
+  // Linear THREE.Fog (sandstorm) has no .density — skip the cache write so
+  // updateWeather's rainAdd doesn't produce NaN against an undefined base.
+  if(scene&&scene.fog&&typeof scene.fog.density==='number')_fogBaseDensity=scene.fog.density;
   if(_sunBillboard)_sunBillboard.visible=!isDark&&!isRain&&activeWorld!=='space'&&activeWorld!=='deepsea';
   // Bloom intensifies bij night (lower threshold, higher strength) — neon
   // emissives gloeien dan dramatischer. Day = subtieler.

@@ -109,6 +109,7 @@ function loop(){
     if(activeWorld==='volcano')updateVolcanoWorld(dt);
     if(activeWorld==='arctic')updateArcticWorld(dt);
     if(activeWorld==='themepark')updateThemeparkWorld(dt);
+    if(activeWorld==='sandstorm'&&typeof updateSandstormWorld==='function')updateSandstormWorld(dt);
     if(gameState==='RACE'){
       updateHUD(dt);updateSpeedOverlay();
       const _pp=getPositions().findIndex(c=>c.isPlayer)+1;

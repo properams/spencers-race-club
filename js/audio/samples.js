@@ -30,6 +30,7 @@ const MUSIC_MANIFEST = {
   volcano:   {},
   arctic:    {},
   themepark: {},
+  sandstorm: {},
 };
 
 // Engine: per car-type 5 RPM-banden. Crossfade tussen idle/low/mid/high/redline
@@ -89,6 +90,7 @@ const WORLD_DEFAULT_SURFACE = {
   volcano:   'sand',
   arctic:    'ice',
   themepark: 'asphalt',
+  sandstorm: 'sand',
 };
 
 // ── State ───────────────────────────────────────────────────────────────────

@@ -145,6 +145,19 @@ function updatePlayer(dt){
   const fwd=_plFwd;
   car.mesh.position.addScaledVector(fwd,car.speed);
 
+  // Sandstorm wind-pull: lateral drift toward right vector when the world's
+  // hazard module sets _sandstormWindPull > 0. Scales with speed so a
+  // stationary car isn't pushed off-line; dampens by 50% during active
+  // steering input so corners stay drivable. Defense-in-depth: also gate
+  // on activeWorld so a stale global from a prior session can never bleed
+  // into a different world's physics.
+  if(window._sandstormWindPull&&activeWorld==='sandstorm'){
+    _plRt.set(1,0,0).applyQuaternion(car.mesh.quaternion);
+    const _spdR=Math.min(1,Math.abs(car.speed)/Math.max(0.001,car.def.topSpd));
+    const _corner=(lft||rgt)?0.5:1.0;
+    car.mesh.position.addScaledVector(_plRt, window._sandstormWindPull*dt*_spdR*_corner);
+  }
+
   // Exhaust particles
   if(Math.abs(car.speed)>.05&&Math.random()>.6){
     _plBk.copy(_plFwd).negate();

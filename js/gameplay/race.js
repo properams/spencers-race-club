@@ -43,7 +43,7 @@ function _resetRaceState(){
   if(selectMusic){selectMusic.stop();selectMusic=null;}
   // Reset dynamic music state for clean slate
   _musicDuck=1.0;_applyMusicGain(0);
-  Audio.stopWind();Audio.stopCrowd();
+  Audio.stopWind();Audio.stopCrowd();Audio.stopSandstormWind();
   carObjs.forEach(c=>scene.remove(c.mesh));carObjs=[];
   // Skid-mark geometry is shared across all marks; only dispose materials per mark.
   skidMarks.forEach(s=>{const m=s.mesh||s;if(m.material)m.material.dispose();scene.remove(m);});
@@ -55,6 +55,7 @@ function _resetRaceState(){
   _introPanTimer=0;_camView=0;_raceMaxSpeed=0;_raceOvertakes=0;_lastPlayerPos=9;_raceStartGrace=0;
   _achieveUnlocked.clear();
   _nitroUseCount=0;_airborneAccum=0;_cleanLapFlag=true;_driftAccum=0;
+  _sandstormLap3CleanFlag=false;_sandstormPrevLap=0;
   _bestS1=Infinity;_bestS2=Infinity;_bestS3=Infinity;_currentSector=0;_sectorStart=0;
   _comboCount=0;_comboMult=1.0;_comboTimer=0;_lastRaceCoins=0;
   _lapTimes.length=0;_weatherForecastTimer=0;_weatherForecastFired=false;
@@ -77,6 +78,7 @@ function _resetRaceState(){
   if(typeof disposeArcticIceShelf==='function')disposeArcticIceShelf();
   if(typeof disposeCandyChocoBridge==='function')disposeCandyChocoBridge();
   if(typeof disposeThemeparkCoaster==='function')disposeThemeparkCoaster();
+  if(typeof disposeSandstormStorm==='function')disposeSandstormStorm();
   if(typeof disposeNeonCityEMP==='function')disposeNeonCityEMP();
   if(typeof disposeSpaceAnomaly==='function')disposeSpaceAnomaly();
   if(typeof disposeDeepSeaCurrent==='function')disposeDeepSeaCurrent();

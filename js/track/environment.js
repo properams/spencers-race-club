@@ -246,6 +246,15 @@ const _SILHOUETTE_PALETTES = {
     far:  ['#ffb3d4','#ffd9e8',0.40, 0.40, 100],
     near: ['#cc6699','#ee8fb8',0.55, 0.50,  76],
   },
+  // Sandstorm: deep rust/orange canyon ridges fading into warm haze.
+  // Far layer is the highest tier of mesas dissolving into the
+  // sand-haze fog (#e8b878), near layer is the closer canyon walls
+  // that bracket the slot section. Jaggedness 0.85/1.05 for the
+  // sharp mesa profile typical of southwest desert.
+  sandstorm: {
+    far:  ['#a86839','#d49060',0.85, 0.78, 110],
+    near: ['#5a2818','#8b3a1d',1.05, 0.90,  82],
+  },
 };
 
 function buildBackgroundLayers(){

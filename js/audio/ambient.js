@@ -138,6 +138,103 @@ function stopAmbientWind(){
   _ambientWind=null;_ambientWindGain=null;
 }
 
+// ── Sandstorm wind ambient ──────────────────────────────────────────────
+// Two-band noise loop driven by the rolling sandstorm hazard:
+//   • lowpass branch — deep wind rumble (the "weight" of the storm)
+//   • bandpass branch — high sand-sizzle (sand grains hitting metal)
+// Both feed a master gain modulated by `updateSandstormWind(intensity)`,
+// where intensity is the lap-driven 0..1 blend from the hazard module.
+//
+// `_gen` counter follows the same race-condition pattern as RaceMusic:
+// each (re)init increments _gen so a stale stop() callback can't tear
+// down the freshly-built nodes after a quick stop→start cycle.
+let _sandstormWind=null;     // {srcLow, srcBand, gainLow, gainBand, master, _gen}
+let _sandstormWindGen=0;
+const _SANDSTORM_WIND_RAMP=0.25;  // master-gain ramp in seconds
+
+function _ssCreateNoiseSrc(durSec){
+  const sz=Math.ceil(audioCtx.sampleRate*durSec);
+  const buf=audioCtx.createBuffer(1,sz,audioCtx.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<sz;i++)d[i]=Math.random()*2-1;
+  const src=audioCtx.createBufferSource();
+  src.buffer=buf;src.loop=true;
+  return src;
+}
+
+function initSandstormWind(){
+  if(!audioCtx)return;
+  if(_sandstormWind)return; // idempotent — already running
+  const gen=++_sandstormWindGen;
+  // Lowpass rumble branch (deep wind)
+  const srcLow=_ssCreateNoiseSrc(2.4);
+  const lp=audioCtx.createBiquadFilter();
+  lp.type='lowpass';lp.frequency.value=180;lp.Q.value=0.4;
+  const gainLow=audioCtx.createGain();
+  gainLow.gain.value=0.55;
+  // Bandpass sand-sizzle branch (high frequencies)
+  const srcBand=_ssCreateNoiseSrc(2.8);
+  const bp=audioCtx.createBiquadFilter();
+  bp.type='bandpass';bp.frequency.value=2400;bp.Q.value=1.2;
+  const gainBand=audioCtx.createGain();
+  gainBand.gain.value=0.35;
+  // Master gain — modulated by updateSandstormWind() per-frame from hazard.
+  const master=audioCtx.createGain();
+  master.gain.value=0;
+  srcLow.connect(lp);lp.connect(gainLow);gainLow.connect(master);
+  srcBand.connect(bp);bp.connect(gainBand);gainBand.connect(master);
+  master.connect(_dst());
+  // Stagger source-starts by a few ms so the noise doesn't phase-align
+  // (would produce a faint comb-filter coloration at higher gain).
+  const t=audioCtx.currentTime;
+  srcLow.start(t);
+  srcBand.start(t+0.03);
+  _sandstormWind={srcLow,srcBand,gainLow,gainBand,lp,bp,master,_gen:gen};
+}
+
+function updateSandstormWind(intensity){
+  if(!audioCtx)return;
+  if(!_sandstormWind)initSandstormWind();
+  if(!_sandstormWind)return;
+  const v=Math.max(0,Math.min(1,+intensity||0));
+  const t=audioCtx.currentTime;
+  // Master gain follows intensity smoothly. setTargetAtTime gives a clean
+  // exponential approach without glitching when the value is re-issued.
+  try{
+    _sandstormWind.master.gain.setTargetAtTime(v*0.45,t,_SANDSTORM_WIND_RAMP);
+    // Filter-cutoff sweep: quiet storm = duller (lower lowpass cutoff,
+    // tighter bandpass), full storm = brighter (more sand sizzle).
+    _sandstormWind.lp.frequency.setTargetAtTime(160+v*240,t,_SANDSTORM_WIND_RAMP);
+    _sandstormWind.bp.frequency.setTargetAtTime(2200+v*900,t,_SANDSTORM_WIND_RAMP);
+  }catch(_){}
+}
+
+function stopSandstormWind(){
+  if(!_sandstormWind)return;
+  const ref=_sandstormWind;
+  // Increment gen first so any pending in-flight init/update can't read
+  // a stale ref after the disconnect.
+  _sandstormWindGen++;
+  _sandstormWind=null;
+  if(audioCtx){
+    const t=audioCtx.currentTime;
+    try{ref.master.gain.cancelScheduledValues(t);
+        ref.master.gain.setTargetAtTime(0,t,0.30);}catch(_){}
+  }
+  // Hard-stop the buffer sources after the fade so the WebAudio graph
+  // releases them. setTimeout is the standard pattern in this codebase
+  // (see startAmbientWind / playThunder).
+  setTimeout(()=>{
+    try{ref.srcLow.stop();}catch(_){}
+    try{ref.srcBand.stop();}catch(_){}
+    try{ref.master.disconnect();}catch(_){}
+    try{ref.gainLow.disconnect();}catch(_){}
+    try{ref.gainBand.disconnect();}catch(_){}
+    try{ref.lp.disconnect();}catch(_){}
+    try{ref.bp.disconnect();}catch(_){}
+  },800);
+}
+
 function playCrowdCheer(){
   if(!audioCtx)return;
   if(!_hasVisibleCrowd())return; // skip: no spectators in this world
