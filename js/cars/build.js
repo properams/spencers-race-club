@@ -82,6 +82,7 @@ function makeAllCars(){
     neoncity:0.935,   // Neon City: last WP at ~0.94, straight into t=0
     volcano:0.940,
     arctic:0.940,
+    sandstorm:0.940,  // Sandstorm: last WP at -90,268, straight into t=0=0,270
   };
   // How many track units between each grid row
   const _rowGap=0.014; // slightly wider gap for cleaner grid separation
