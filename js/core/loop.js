@@ -94,7 +94,13 @@ function loop(){
       }
     }
     if(gameState==='RACE'){
-      checkJumps();checkSpinPads(dt);checkBoostPads();checkCollectibles();checkCollisions(dt);checkTrackLimits(dt);checkWrongWay(dt);
+      checkJumps();checkSpinPads(dt);checkBoostPads();checkCollectibles();checkCollisions(dt);
+      // Soft-wall must run BEFORE checkTrackLimits so any wall-induced push
+      // gets baked into the position before tracklimits inspects offDist
+      // (otherwise a recovery-circle could trigger on a position the wall
+      // would have corrected this same frame).
+      if(typeof checkWallCollisions==='function')checkWallCollisions(dt);
+      checkTrackLimits(dt);checkWrongWay(dt);
       if(activeWorld==='space'){checkSpaceRailgun();checkGravityZones(dt);checkOrbitingAsteroids(dt);checkWarpTunnels(dt);}
       else if(activeWorld==='deepsea'){checkCurrentStreams(dt);checkAbyssCracks(dt);checkTreasureTrail(dt);}
       updateBoostArrows();updateSlipstreamVisuals();updateSafetyCar(dt);

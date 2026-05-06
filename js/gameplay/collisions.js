@@ -20,17 +20,24 @@ function checkCollisions(dt){
       Audio.playCollision();
       const eX=player.mesh.position.x,eZ=player.mesh.position.z;
       sparkSystem.emit(eX,.5,eZ,nx*.05,.06,nz*.05,heavy?36:16,1,.65,.1,.45);
-      if(heavy){
-        // Additional white impact sparks + float text
-        sparkSystem.emit(eX,.6,eZ,(Math.random()-.5)*.1,.1+Math.random()*.06,(Math.random()-.5)*.1,18,1,1,1,.7);
-        floatText('💥 CONTACT!','#ff4400',innerWidth*.5,innerHeight*.45);
-      }
+      // Float-text + popup are de-bounced via the global _contactPopupCD —
+      // previously the heavy-contact branch fired floatText('💥 CONTACT!')
+      // unconditionally every frame. Cars in close formation could bounce
+      // 8-10 times during a single overtake → flickering popup spam (v3
+      // issue 9). All visible feedback now shares the same cooldown gate.
       if(heavy){
         _colFlashT=0.42;
         player.hitCount=(player.hitCount||0)+1;
-        if(player.hitCount===3&&_contactPopupCD<=0){showPopup('⚠ DAMAGE!','#ff4400',1000);_contactPopupCD=3;}
-        if(player.hitCount===6&&_contactPopupCD<=0){showPopup('🔥 CRITICAL DAMAGE!','#ff2200',1200);_contactPopupCD=3;}
-        if(_contactPopupCD<=0){showPopup('CONTACT! 💥','#ff4400',500);_contactPopupCD=3;}
+        if(_contactPopupCD<=0){
+          // Additional white impact sparks + float text on first heavy
+          // contact within the cooldown window only.
+          sparkSystem.emit(eX,.6,eZ,(Math.random()-.5)*.1,.1+Math.random()*.06,(Math.random()-.5)*.1,18,1,1,1,.7);
+          floatText('💥 CONTACT!','#ff4400',innerWidth*.5,innerHeight*.45);
+          if(player.hitCount===3)showPopup('⚠ DAMAGE!','#ff4400',1000);
+          else if(player.hitCount===6)showPopup('🔥 CRITICAL DAMAGE!','#ff2200',1200);
+          else showPopup('CONTACT! 💥','#ff4400',500);
+          _contactPopupCD=3;
+        }
       }else{
         if(_contactPopupCD<=0){showPopup('CONTACT! 💥','#ffcc00',400);_contactPopupCD=3;}
       }

@@ -159,7 +159,11 @@ function _ssBuildCanyonCliffs(){
     const tg=trackCurve.getTangent(t).normalize();
     const nr=new THREE.Vector3(-tg.z,0,tg.x);
     const side=(i%2===0)?1:-1;
-    const off=BARRIER_OFF+6+Math.random()*4;
+    // Cliff base offset: was BARRIER_OFF+6..10 (=22..26), bumped to
+    // BARRIER_OFF+10..14 (=26..30) so cliff-edge clears the asphalt by
+    // ≥4u even at max baseR=9 (visual-fix-v3 issue 2: cliffs were
+    // reaching track-edge in worst-case combinations).
+    const off=BARRIER_OFF+10+Math.random()*4;
     const cx=p.x+nr.x*side*off;
     const cz=p.z+nr.z*side*off;
     // Per-cliff strata def — slight per-cliff variance so the canyon
