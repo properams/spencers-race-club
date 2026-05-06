@@ -405,6 +405,45 @@ function makeVolcanoSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
+// NeonCity NIGHT — saturated cyberpunk sky. Day already night-themed,
+// but the PMREM env was the day skybox, so cars reflected static neon
+// haze. Night-version intensifies the magenta/cyan glows, adds a distant
+// city-light halo, and (per spec) skips stars — light pollution dominates.
+function makeNeonCityNightSkyTex(){
+  const {c,g}=_newSkyCanvas('#02000c','#06001c');
+  // Stronger magenta + cyan haze (saturation cranked vs day).
+  const h1=g.createRadialGradient(280,420,0,280,420,460);
+  h1.addColorStop(0,'rgba(220,50,200,0.65)');h1.addColorStop(1,'rgba(220,50,200,0)');
+  g.fillStyle=h1;g.fillRect(0,180,1024,332);
+  const h2=g.createRadialGradient(800,440,0,800,440,460);
+  h2.addColorStop(0,'rgba(50,200,255,0.55)');h2.addColorStop(1,'rgba(50,200,255,0)');
+  g.fillStyle=h2;g.fillRect(0,180,1024,332);
+  // Distant city-glow halo (broad horizon-line warm light pollution band).
+  const halo=g.createLinearGradient(0,300,0,440);
+  halo.addColorStop(0,'rgba(255,140,200,0)');
+  halo.addColorStop(.4,'rgba(255,140,200,0.12)');
+  halo.addColorStop(1,'rgba(180,80,160,0)');
+  g.fillStyle=halo;g.fillRect(0,300,1024,140);
+  // Distant skyline silhouette + lit windows (more density than day).
+  g.fillStyle='#000003';
+  let x=0;
+  while(x<1024){
+    const w=20+Math.random()*60;
+    const h=80+Math.random()*200;
+    g.fillRect(x,512-h,w,h);
+    g.fillStyle=Math.random()<0.5?'rgba(255,200,90,0.65)':'rgba(140,220,255,0.65)';
+    for(let wy=512-h+8;wy<512-8;wy+=10){
+      for(let wx=x+3;wx<x+w-3;wx+=6){
+        if(Math.random()<0.55)g.fillRect(wx,wy,2,3);
+      }
+    }
+    g.fillStyle='#000003';
+    x+=w+1;
+  }
+  // No stars — light pollution dominates. Spec §4 explicit.
+  return _skyTexFromCanvas(c);
+}
+
 // Volcano NIGHT — deep ember sky, intensified lava-glow horizon, dense
 // smoke, sparse warm ember-stars, low cream moon dimmed by smoke. The
 // PMREM-baked env paints car clearcoat with lava-glow rim-light.

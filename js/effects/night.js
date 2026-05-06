@@ -82,13 +82,27 @@ function toggleNight(){
     _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0);
     if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='neoncity'){
-    // Neon City — always night, toggle adjusts neon intensity
+    // Neon City night: saturated cyberpunk skybox + city-glow halo. PMREM
+    // env paints car lacquer with magenta/cyan neon reflections instead of
+    // the static day version. The world is always-night by design — both
+    // toggle states still swap in our own cached versions for consistent
+    // env behaviour, day-version is just less saturated.
     if(isDark){
-      scene.background=makeSkyTex('#04031e','#0a0828');scene.fog.density=.0014;
+      if(!_ncyDayBg)_ncyDayBg=scene.background;
+      if(!_ncyDayEnv)_ncyDayEnv=scene.environment;
+      if(!_ncyNightBg && typeof makeNeonCityNightSkyTex==='function'){
+        const _baked=_bakeNightEnv(makeNeonCityNightSkyTex);
+        _ncyNightBg=_baked.bg; _ncyNightEnv=_baked.env;
+      }
+      if(_ncyNightBg) scene.background=_ncyNightBg;
+      if(_ncyNightEnv) scene.environment=_ncyNightEnv;
+      scene.fog.density=.0014;
       sunLight.intensity=.12;ambientLight.intensity=.40;hemiLight.intensity=.26;
       trackLightList.forEach(l=>{if(l.intensity>0)l.intensity=Math.min(l.intensity*1.3,4.5);});
     }else{
-      scene.background=makeSkyTex('#040015','#080025');scene.fog.density=.0021;
+      if(_ncyDayBg) scene.background=_ncyDayBg;
+      if(_ncyDayEnv) scene.environment=_ncyDayEnv;
+      scene.fog.density=.0021;
       sunLight.color.setHex(0x441122);sunLight.intensity=.08;
       ambientLight.intensity=.22;hemiLight.intensity=.18;
     }

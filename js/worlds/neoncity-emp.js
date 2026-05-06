@@ -192,4 +192,6 @@ function disposeNeonCityEMP(){
     }
   }
   _neonEmpRuntime=null;
+  // Release the night.js sky-cache (day + night skybox + PMREM env).
+  if(typeof _disposeNeonCitySkyCache==='function')_disposeNeonCitySkyCache();
 }
