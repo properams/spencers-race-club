@@ -22,6 +22,15 @@ const _fogColorNight=new THREE.Color(0x030610);
 // the GPU memory before the next buildScene allocates fresh textures.
 let _sstNightBg=null, _sstNightEnv=null;
 let _sstDayBg=null,   _sstDayEnv=null;
+// Cross-world night-sky caches (mirror sandstorm pattern). Each world's
+// dispose<World><Extras> function invokes its corresponding cleanup so
+// the next buildScene starts with fresh textures.
+let _vlcNightBg=null, _vlcNightEnv=null, _vlcDayBg=null, _vlcDayEnv=null;
+let _arcNightBg=null, _arcNightEnv=null, _arcDayBg=null, _arcDayEnv=null;
+let _ncyNightBg=null, _ncyNightEnv=null, _ncyDayBg=null, _ncyDayEnv=null;
+let _cdyNightBg=null, _cdyNightEnv=null, _cdyDayBg=null, _cdyDayEnv=null;
+let _tpkNightBg=null, _tpkNightEnv=null, _tpkDayBg=null, _tpkDayEnv=null;
+let _gpNightBg=null,  _gpNightEnv=null,  _gpDayBg=null,  _gpDayEnv=null;
 
 // Generic night-env baker. Calls a per-world skybox builder, then runs
 // the PMREM pipeline on the resulting canvas to derive a cubemap-style
@@ -100,6 +109,22 @@ function toggleNight(){
     _aiHeadPool.forEach(function(l){l.intensity=isDark?1.0:0;});
     if(_sunBillboard)_sunBillboard.visible=!isDark;
   }else if(activeWorld==='volcano'){
+    // Volcano night: dramatic dark-ember sky + intensified lava-glow
+    // horizon + dim cream moon. The PMREM-baked env paints car lacquer
+    // with warm lava rim-light at night (the visual-fix-v5 win).
+    if(isDark){
+      if(!_vlcDayBg)_vlcDayBg=scene.background;
+      if(!_vlcDayEnv)_vlcDayEnv=scene.environment;
+      if(!_vlcNightBg && typeof makeVolcanoNightSkyTex==='function'){
+        const _baked=_bakeNightEnv(makeVolcanoNightSkyTex);
+        _vlcNightBg=_baked.bg; _vlcNightEnv=_baked.env;
+      }
+      if(_vlcNightBg) scene.background=_vlcNightBg;
+      if(_vlcNightEnv) scene.environment=_vlcNightEnv;
+    }else{
+      if(_vlcDayBg) scene.background=_vlcDayBg;
+      if(_vlcDayEnv) scene.environment=_vlcDayEnv;
+    }
     sunLight.intensity=isDark?.22:.7;ambientLight.intensity=isDark?.38:.35;hemiLight.intensity=isDark?.26:.25;
     if(stars)stars.visible=true;
     trackLightList.forEach(function(l){l.intensity=isDark?1.8:0;});
@@ -282,6 +307,48 @@ function _disposeSandstormSkyCache(){
   if(_sstNightEnv){try{_sstNightEnv.dispose();}catch(_){} _sstNightEnv=null;}
   if(_sstDayBg){try{_sstDayBg.dispose();}catch(_){} _sstDayBg=null;}
   if(_sstDayEnv){try{_sstDayEnv.dispose();}catch(_){} _sstDayEnv=null;}
+}
+
+// Per-world dispose helpers for the cross-world night-sky caches. Each is
+// called from the corresponding world-extras dispose function (e.g.
+// disposeVolcanoBridge) on race-reset / world-switch so the next
+// buildScene starts fresh. THREE dispose() is idempotent; the try/catch
+// covers the rare case of a texture released by a different code path.
+function _disposeVolcanoSkyCache(){
+  if(_vlcNightBg){try{_vlcNightBg.dispose();}catch(_){} _vlcNightBg=null;}
+  if(_vlcNightEnv){try{_vlcNightEnv.dispose();}catch(_){} _vlcNightEnv=null;}
+  if(_vlcDayBg){try{_vlcDayBg.dispose();}catch(_){} _vlcDayBg=null;}
+  if(_vlcDayEnv){try{_vlcDayEnv.dispose();}catch(_){} _vlcDayEnv=null;}
+}
+function _disposeArcticSkyCache(){
+  if(_arcNightBg){try{_arcNightBg.dispose();}catch(_){} _arcNightBg=null;}
+  if(_arcNightEnv){try{_arcNightEnv.dispose();}catch(_){} _arcNightEnv=null;}
+  if(_arcDayBg){try{_arcDayBg.dispose();}catch(_){} _arcDayBg=null;}
+  if(_arcDayEnv){try{_arcDayEnv.dispose();}catch(_){} _arcDayEnv=null;}
+}
+function _disposeNeonCitySkyCache(){
+  if(_ncyNightBg){try{_ncyNightBg.dispose();}catch(_){} _ncyNightBg=null;}
+  if(_ncyNightEnv){try{_ncyNightEnv.dispose();}catch(_){} _ncyNightEnv=null;}
+  if(_ncyDayBg){try{_ncyDayBg.dispose();}catch(_){} _ncyDayBg=null;}
+  if(_ncyDayEnv){try{_ncyDayEnv.dispose();}catch(_){} _ncyDayEnv=null;}
+}
+function _disposeCandySkyCache(){
+  if(_cdyNightBg){try{_cdyNightBg.dispose();}catch(_){} _cdyNightBg=null;}
+  if(_cdyNightEnv){try{_cdyNightEnv.dispose();}catch(_){} _cdyNightEnv=null;}
+  if(_cdyDayBg){try{_cdyDayBg.dispose();}catch(_){} _cdyDayBg=null;}
+  if(_cdyDayEnv){try{_cdyDayEnv.dispose();}catch(_){} _cdyDayEnv=null;}
+}
+function _disposeThemeparkSkyCache(){
+  if(_tpkNightBg){try{_tpkNightBg.dispose();}catch(_){} _tpkNightBg=null;}
+  if(_tpkNightEnv){try{_tpkNightEnv.dispose();}catch(_){} _tpkNightEnv=null;}
+  if(_tpkDayBg){try{_tpkDayBg.dispose();}catch(_){} _tpkDayBg=null;}
+  if(_tpkDayEnv){try{_tpkDayEnv.dispose();}catch(_){} _tpkDayEnv=null;}
+}
+function _disposeGrandPrixSkyCache(){
+  if(_gpNightBg){try{_gpNightBg.dispose();}catch(_){} _gpNightBg=null;}
+  if(_gpNightEnv){try{_gpNightEnv.dispose();}catch(_){} _gpNightEnv=null;}
+  if(_gpDayBg){try{_gpDayBg.dispose();}catch(_){} _gpDayBg=null;}
+  if(_gpDayEnv){try{_gpDayEnv.dispose();}catch(_){} _gpDayEnv=null;}
 }
 
 

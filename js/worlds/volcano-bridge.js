@@ -179,4 +179,9 @@ function disposeVolcanoBridge(){
   _volcanoBridgeSegs.length=0;
   _volcanoBridgeLava=null;
   _volcanoBridgeState=null;
+  // Release the night.js sky-cache (day + night skybox + PMREM env). These
+  // outlive a single race because they're cached for instant M-toggle, so
+  // they need explicit cleanup before the next buildScene allocates fresh
+  // day textures (otherwise the old day-cache holds a stale reference).
+  if(typeof _disposeVolcanoSkyCache==='function')_disposeVolcanoSkyCache();
 }

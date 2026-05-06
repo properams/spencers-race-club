@@ -405,6 +405,48 @@ function makeVolcanoSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
+// Volcano NIGHT — deep ember sky, intensified lava-glow horizon, dense
+// smoke, sparse warm ember-stars, low cream moon dimmed by smoke. The
+// PMREM-baked env paints car clearcoat with lava-glow rim-light.
+function makeVolcanoNightSkyTex(){
+  const {c,g}=_newSkyCanvas('#0a0408','#1a0608');
+  // Intensified lava-glow at horizon (lower band, much brighter than day).
+  const glow=g.createLinearGradient(0,280,0,512);
+  glow.addColorStop(0,'rgba(255,80,20,0)');
+  glow.addColorStop(.4,'rgba(255,90,30,0.45)');
+  glow.addColorStop(.8,'rgba(220,55,10,0.75)');
+  glow.addColorStop(1,'rgba(180,30,0,0.95)');
+  g.fillStyle=glow;g.fillRect(0,280,1024,232);
+  // Smoke clouds — denser + darker than day. Composited dark over the glow.
+  for(let i=0;i<14;i++){
+    const x=Math.random()*1024,y=110+Math.random()*220;
+    const r=80+Math.random()*120;
+    const gr=g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,'rgba(20,10,8,0.75)');
+    gr.addColorStop(1,'rgba(20,10,8,0)');
+    g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  // Warm ember-specks (fewer, brighter) — read as cinders in the smoke.
+  for(let i=0;i<80;i++){
+    const x=Math.random()*1024,y=150+Math.random()*300;
+    const a=(Math.random()*0.55+0.45).toFixed(2);
+    g.fillStyle=`rgba(255,${(140+Math.random()*70)|0},${(30+Math.random()*40)|0},${a})`;
+    g.fillRect(x,y,2,2);
+  }
+  // Dim moon, upper-left, partially veiled by smoke. Intentionally low
+  // contrast — volcano nights are smoky, not crisp.
+  const moonCx=260,moonCy=120,moonR=32;
+  const halo=g.createRadialGradient(moonCx,moonCy,moonR*0.5,moonCx,moonCy,moonR*2.4);
+  halo.addColorStop(0,'rgba(240,205,150,0.30)');
+  halo.addColorStop(1,'rgba(240,205,150,0)');
+  g.fillStyle=halo;g.fillRect(moonCx-moonR*2.4,moonCy-moonR*2.4,moonR*4.8,moonR*4.8);
+  const disc=g.createRadialGradient(moonCx-moonR*0.3,moonCy-moonR*0.3,0, moonCx,moonCy,moonR);
+  disc.addColorStop(0,'rgba(245,220,180,0.85)');
+  disc.addColorStop(1,'rgba(180,140,100,0.65)');
+  g.fillStyle=disc;g.beginPath();g.arc(moonCx,moonCy,moonR,0,Math.PI*2);g.fill();
+  return _skyTexFromCanvas(c);
+}
+
 // Arctic — aurora bands (green/violet) + ice fog + faint stars
 function makeArcticSkyTex(){
   const {c,g}=_newSkyCanvas('#0a1830','#a8c8e0');
