@@ -22,6 +22,25 @@ const _fogColorNight=new THREE.Color(0x030610);
 // the GPU memory before the next buildScene allocates fresh textures.
 let _sstNightBg=null, _sstNightEnv=null;
 let _sstDayBg=null,   _sstDayEnv=null;
+
+// Generic night-env baker. Calls a per-world skybox builder, then runs
+// the PMREM pipeline on the resulting canvas to derive a cubemap-style
+// environment texture for car clearcoat reflections. Returns {bg, env}
+// — bg always present, env may be null if PMREM failed (renderer
+// missing, build error logged via dbg).
+//
+// Used by every world's night-toggle branch that wants moonlit reflections
+// in car lacquer. Mirrors the sandstorm pattern that was the reference
+// implementation. Caching is the caller's responsibility — this helper
+// only does the bake.
+function _bakeNightEnv(skyboxBuilder){
+  if(typeof skyboxBuilder!=='function')return {bg:null, env:null};
+  const bg=skyboxBuilder();
+  const env=(typeof _buildWorldEnvFromSky==='function')
+    ? _buildWorldEnvFromSky(bg)
+    : null;
+  return {bg, env};
+}
 // Per-world "no rain" fog density. updateWeather() reads this so its rain-blend
 // adds rainAdd on top of the active world's base instead of clobbering all worlds
 // to GP-hardcoded values every frame. Set at end of toggleNight() and on
@@ -141,10 +160,9 @@ function toggleNight(){
       // ── Build night refs lazily, then cache. Subsequent toggles to dark
       // skip the bake + PMREM and just reference-swap.
       if(!_sstNightBg && typeof makeSandstormNightSkyTex==='function'){
-        _sstNightBg=makeSandstormNightSkyTex();
-        if(typeof _buildWorldEnvFromSky==='function'){
-          _sstNightEnv=_buildWorldEnvFromSky(_sstNightBg);
-        }
+        const _baked=_bakeNightEnv(makeSandstormNightSkyTex);
+        _sstNightBg=_baked.bg;
+        _sstNightEnv=_baked.env;
       }
       if(_sstNightBg) scene.background=_sstNightBg;
       if(_sstNightEnv) scene.environment=_sstNightEnv;
