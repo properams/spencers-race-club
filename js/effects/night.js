@@ -310,14 +310,27 @@ function toggleNight(){
     if(plTail)plTail.intensity=1.5;
     _aiHeadPool.forEach(l=>l.intensity=1.1);
   }else{
+    // Grand Prix (default). Modest stars + moon + horizon glow at night,
+    // standard daytime sky in day. PMREM env baked from each version so
+    // car lacquer reflects whichever sky is active.
     if(isDark){
-      scene.background=makeSkyTex('#0a1426','#162842');scene.fog.density=.0022;
+      if(!_gpDayBg)_gpDayBg=scene.background;
+      if(!_gpDayEnv)_gpDayEnv=scene.environment;
+      if(!_gpNightBg && typeof makeGrandPrixNightSkyTex==='function'){
+        const _baked=_bakeNightEnv(makeGrandPrixNightSkyTex);
+        _gpNightBg=_baked.bg; _gpNightEnv=_baked.env;
+      }
+      if(_gpNightBg) scene.background=_gpNightBg;
+      if(_gpNightEnv) scene.environment=_gpNightEnv;
+      scene.fog.density=.0022;
       sunLight.intensity=.22;ambientLight.intensity=.40;hemiLight.intensity=.28;
       trackLightList.forEach(l=>l.intensity=2.4);trackPoles.forEach(p=>p.visible=true);if(stars)stars.visible=true;
       if(plHeadL){plHeadL.intensity=1.8;plHeadR.intensity=1.8;}if(plTail)plTail.intensity=1.5;
       _aiHeadPool.forEach(l=>l.intensity=1.1);
     }else{
-      scene.background=makeSkyTex('#1e5292','#b8d8ee');scene.fog.density=.0021;
+      if(_gpDayBg) scene.background=_gpDayBg;
+      if(_gpDayEnv) scene.environment=_gpDayEnv;
+      scene.fog.density=.0021;
       sunLight.intensity=1.65;ambientLight.intensity=.50;hemiLight.intensity=.36;
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);if(stars)stars.visible=false;
       if(plHeadL){plHeadL.intensity=0;plHeadR.intensity=0;}if(plTail)plTail.intensity=0;

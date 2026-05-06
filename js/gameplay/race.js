@@ -93,6 +93,10 @@ function _resetRaceState(){
   if(typeof disposeNeonCityEMP==='function')disposeNeonCityEMP();
   if(typeof disposeSpaceAnomaly==='function')disposeSpaceAnomaly();
   if(typeof disposeDeepSeaCurrent==='function')disposeDeepSeaCurrent();
+  // Grand Prix has no per-world extras module, so its night-sky cache
+  // cleanup hooks straight into _resetRaceState alongside the other
+  // worlds' extras-disposes.
+  if(typeof _disposeGrandPrixSkyCache==='function')_disposeGrandPrixSkyCache();
   _arcticIcePatches.length=0;_arcticAurora.length=0;_arcticBlizzardGeo=null;
   _lastGear=1;_currentGear=1;_lastPPos=0;_lastLeaderOrder='';
   _leaderPendingKey='';_leaderStableT=0;_posStableValue=0;_posStableT=0;

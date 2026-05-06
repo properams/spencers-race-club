@@ -405,6 +405,39 @@ function makeVolcanoSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
+// Grand Prix NIGHT — straightforward dark-blue track-night. Stars +
+// modest moon. Per spec the most subdued of the cross-world night
+// upgrades: GP is the "default" world, environment shouldn't compete
+// with the on-track action.
+function makeGrandPrixNightSkyTex(){
+  const {c,g}=_newSkyCanvas('#0a1426','#162842');
+  // Sparse zenith-weighted stars.
+  const STAR_COUNT=window._isMobile?60:140;
+  for(let i=0;i<STAR_COUNT;i++){
+    const x=Math.random()*1024;
+    const y=Math.pow(Math.random(),1.6)*300;
+    const a=(0.45+Math.random()*0.5).toFixed(2);
+    g.fillStyle=`rgba(220,228,250,${a})`;
+    g.fillRect(x,y,1,1);
+  }
+  // Subtle horizon glow — distant city/track lights, very low contrast.
+  const glow=g.createLinearGradient(0,400,0,512);
+  glow.addColorStop(0,'rgba(80,110,170,0)');
+  glow.addColorStop(1,'rgba(80,110,170,0.35)');
+  g.fillStyle=glow;g.fillRect(0,400,1024,112);
+  // Modest moon, upper-right, nothing flashy.
+  const moonCx=730,moonCy=130,moonR=32;
+  const halo=g.createRadialGradient(moonCx,moonCy,moonR*0.5,moonCx,moonCy,moonR*2.2);
+  halo.addColorStop(0,'rgba(225,232,250,0.40)');
+  halo.addColorStop(1,'rgba(225,232,250,0)');
+  g.fillStyle=halo;g.fillRect(moonCx-moonR*2.2,moonCy-moonR*2.2,moonR*4.4,moonR*4.4);
+  const disc=g.createRadialGradient(moonCx-moonR*0.25,moonCy-moonR*0.25,0, moonCx,moonCy,moonR);
+  disc.addColorStop(0,'rgba(248,250,255,1)');
+  disc.addColorStop(1,'rgba(210,218,235,0.92)');
+  g.fillStyle=disc;g.beginPath();g.arc(moonCx,moonCy,moonR,0,Math.PI*2);g.fill();
+  return _skyTexFromCanvas(c);
+}
+
 // Themepark NIGHT — carnival blues + warm fairground-light reflections
 // at horizon. Day is sunset-toned; night drops to deep blue with a
 // dramatic strip of carnival-light glow (yellow + pink + cyan) along
