@@ -5,6 +5,12 @@
 
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _sprinkleParticles=null,_sprinkleGeo=null;
+// Floating candy-bits — atmospheric drift particles that complement the
+// existing falling-sprinkles. Zweven slow on lateral wind + slight Y drift
+// instead of falling; recycled in a sphere around the player. Reuses the
+// Points + vertexColors + sizeAttenuation pattern of the sprinkles so no
+// new shader path is introduced. See buildFloatingCandyBits + updateFloatingCandyBits.
+let _candyFloatBits=null,_candyFloatBitsGeo=null,_candyFloatBitsVel=null;
 const _gummyBears=[];
 const _gumZones=[];
 const _candyCannons=[];
@@ -51,6 +57,7 @@ function buildCandyEnvironment(){
   buildCakeBuilding();
   buildCandyGate();
   buildSprinkleParticles();
+  buildFloatingCandyBits();
   buildCottonCandyClouds();
   buildRainbowTrackStripes();
   buildCandyBarriers();
@@ -364,6 +371,80 @@ function buildCandyGate(){
 }
 
 
+// Atmospheric floating candy-bits — slow-drifting points that hover at
+// player altitude rather than falling like the sprinkle rain. 4-color
+// pastel palette (pink + yellow + turquoise + purple). Recycled in a
+// sphere around the player so they're always visible without infinite
+// world-coverage. Visual-polish v2 §3 — gives candy a continuous gentle
+// motion signature on top of the existing falling-sprinkles.
+//
+// Budget: 40 desktop / 18 mobile, single Points draw (same shader path
+// as the sprinkles), no new materials, no per-particle meshes.
+function buildFloatingCandyBits(){
+  const count=window._isMobile?18:40;
+  const geo=new THREE.BufferGeometry();
+  const pos=new Float32Array(count*3);
+  const col=new Float32Array(count*3);
+  const vel=new Float32Array(count*3);
+  // 4-color pastel palette: pink, yellow, turquoise, purple. Each particle
+  // gets one color from the cycle so the field reads as varied pastel.
+  const palette=[[1.0,0.55,0.80],[1.0,0.92,0.55],[0.55,1.0,0.85],[0.80,0.65,1.0]];
+  const car=carObjs[playerIdx];
+  const cx=car?car.mesh.position.x:0,cz=car?car.mesh.position.z:0;
+  for(let i=0;i<count;i++){
+    pos[i*3]=cx+(Math.random()-.5)*120;
+    pos[i*3+1]=2+Math.random()*16;        // hover altitude 2-18u
+    pos[i*3+2]=cz+(Math.random()-.5)*120;
+    const c=palette[i%palette.length];
+    col[i*3]=c[0];col[i*3+1]=c[1];col[i*3+2]=c[2];
+    // Slow lateral drift + tiny Y wobble. Speeds in units/sec.
+    vel[i*3]=(Math.random()-.5)*0.6;
+    vel[i*3+1]=(Math.random()-.5)*0.15;   // intentionally near-zero so they hover
+    vel[i*3+2]=(Math.random()-.5)*0.6;
+  }
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  geo.setAttribute('color',new THREE.Float32BufferAttribute(col,3));
+  const mat=new THREE.PointsMaterial({
+    size:.42, vertexColors:true, transparent:true, opacity:.7,
+    sizeAttenuation:true, depthWrite:false
+  });
+  _candyFloatBits=new THREE.Points(geo,mat);
+  _candyFloatBitsGeo=geo;
+  _candyFloatBitsVel=vel;
+  scene.add(_candyFloatBits);
+}
+
+// Drift floating candy-bits and recycle particles that wander outside
+// the 90u sphere around the player. Called from updateCandyWorld each
+// frame. Updates a slice per call (rolling buffer) to keep the worst-
+// case cost bounded — at 40 particles desktop / 18 mobile this is
+// already negligible but the slice-pattern matches the sandstorm-storm
+// particle update for consistency.
+function updateFloatingCandyBits(dt){
+  if(!_candyFloatBitsGeo||!_candyFloatBitsVel)return;
+  const pos=_candyFloatBitsGeo.attributes.position.array;
+  const vel=_candyFloatBitsVel;
+  const car=carObjs[playerIdx];
+  const cx=car?car.mesh.position.x:0,cz=car?car.mesh.position.z:0;
+  const count=pos.length/3;
+  for(let i=0;i<count;i++){
+    pos[i*3]   += vel[i*3]   * dt;
+    pos[i*3+1] += vel[i*3+1] * dt;
+    pos[i*3+2] += vel[i*3+2] * dt;
+    // Recycle if out of view-radius or below ground / above ceiling.
+    const dx=pos[i*3]-cx,dz=pos[i*3+2]-cz;
+    if(dx*dx+dz*dz>8100 || pos[i*3+1]<1 || pos[i*3+1]>22){
+      pos[i*3]=cx+(Math.random()-.5)*120;
+      pos[i*3+1]=2+Math.random()*16;
+      pos[i*3+2]=cz+(Math.random()-.5)*120;
+      vel[i*3]=(Math.random()-.5)*0.6;
+      vel[i*3+1]=(Math.random()-.5)*0.15;
+      vel[i*3+2]=(Math.random()-.5)*0.6;
+    }
+  }
+  _candyFloatBitsGeo.attributes.position.needsUpdate=true;
+}
+
 function buildSprinkleParticles(){
   const count=600;
   const geo=new THREE.BufferGeometry();
@@ -537,6 +618,7 @@ function updateCandyWorld(dt){
     updateCandyChocoBridge(dt, pl?pl.lap:1);
   }
   updateSprinkles(dt);
+  updateFloatingCandyBits(dt);
   // Cotton candy cloud drift
   _candyLollipops.forEach((h,i)=>{
     h.position.y+=Math.sin(_nowSec*.8+i*.6)*dt*.04;
