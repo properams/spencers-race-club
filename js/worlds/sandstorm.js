@@ -951,6 +951,10 @@ function _ssBuildPalmTrees(){
   // All fronds across all palms in ONE InstancedMesh — biggest perf win.
   // 12 palms × 10 fronds = 120 draws compressed into 1.
   const frondIM=new THREE.InstancedMesh(frondGeo, leafMat, COUNT*FRONDS_PER_PALM);
+  // Trunks across all palms in ONE InstancedMesh — was 12 separate Mesh
+  // objects (12 draw calls) since each had identical geometry + material
+  // and only position/rotation/scale differed. Single IM = 1 draw call.
+  const trunkIM=new THREE.InstancedMesh(trunkGeo, trunkMat, COUNT);
   const _dummy=new THREE.Object3D();
   let frondIdx=0;
   for(let i=0;i<COUNT;i++){
@@ -964,14 +968,14 @@ function _ssBuildPalmTrees(){
     const h=4.5+Math.random()*1.5;
     const sc=0.85+Math.random()*0.30;
     const yawJ=Math.random()*Math.PI*2;
-    // Trunk: shared geometry, scale.y to actual height. The curvedTrunk
-    // helper bakes a Y-bend into the geometry; per-trunk Y rotation
-    // re-orients the bend for natural variation.
-    const trunk=new THREE.Mesh(trunkGeo, trunkMat);
-    trunk.position.set(cx, h*0.5, cz);
-    trunk.scale.set(sc, h, sc);
-    trunk.rotation.y=yawJ;
-    scene.add(trunk);
+    // Trunk — write transform into trunkIM via the shared _dummy. Same
+    // (position, scale, rotation) values the per-trunk Mesh used; the IM
+    // composes a per-instance matrix from these.
+    _dummy.position.set(cx, h*0.5, cz);
+    _dummy.scale.set(sc, h, sc);
+    _dummy.rotation.set(0, yawJ, 0);
+    _dummy.updateMatrix();
+    trunkIM.setMatrixAt(i, _dummy.matrix);
     // Crown position — palm-tops sit at trunk.scale.y. The curvedTrunk
     // bend produces a slight X offset at the top; approximate via the
     // bake-curve constant 0.4 × top-Y-fraction. Good enough for crown
@@ -1000,6 +1004,8 @@ function _ssBuildPalmTrees(){
   frondIM.count=frondIdx;
   frondIM.instanceMatrix.needsUpdate=true;
   scene.add(frondIM);
+  trunkIM.instanceMatrix.needsUpdate=true;
+  scene.add(trunkIM);
 }
 
 // Camel silhouettes — Phase-3C rebuild per spec §3.11. Background scale-
