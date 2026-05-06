@@ -973,6 +973,15 @@ function buildScene(){
   if(typeof _p47Bridge!=='undefined')_p47Bridge=null;
   if(typeof _p47Drizzle!=='undefined')_p47Drizzle=null;
   if(typeof _p47DrizzleGeo!=='undefined')_p47DrizzleGeo=null;
+  // Cinematic helpers (js/effects/cinematic.js) — drain registered fog/
+  // markers so the next world starts clean. The actual mesh + tex disposal
+  // is handled by the generic scene.traverse path; we only zero the refs.
+  if(typeof window!=='undefined'&&typeof window.resetCinematicState==='function'){
+    window.resetCinematicState();
+  }
+  if(typeof window!=='undefined'&&typeof window.disposeCinematicCaches==='function'){
+    window.disposeCinematicCaches();
+  }
 
   const isSpace=activeWorld==='space';
   const isDeepSea=activeWorld==='deepsea';

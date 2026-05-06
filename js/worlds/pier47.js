@@ -807,8 +807,25 @@ function buildPier47Environment(){
   _p47BuildOphaalbrug();
   // Sessie 3 atmosphere: drizzle-particle pool gives depth-tested rain
   // streaks in 3D (the canvas rain is a flat overlay; combining both
-  // reads as actual volumetric motregen). Plassen + stoom land separately.
+  // reads as actual volumetric motregen).
   _p47BuildDrizzle();
+  // Cinematic foundation: low ground fog (js/effects/cinematic.js).
+  // Donkerpaars met subtiele warme tint die de amber lamp-pools
+  // straks complementeert. Slow scroll suggereert lichte harbour-wind.
+  // Mobile auto-clamps to 1 layer (vs 3 desktop) for budget.
+  if (typeof buildCinematicGroundFog === 'function'){
+    buildCinematicGroundFog(scene, {
+      color: 0x2a1a30,
+      density: 0.55,
+      height: 4.5,
+      layerCount: 3,
+      layerSpacing: 2.0,
+      size: 900,
+      scrollDir: [1, 0.3],
+      scrollSpeed: 0.012,
+      fadeWithDistance: true
+    });
+  }
   // Player + AI headlight refs — Pier 47 is dark, headlights matter even
   // before sessie-2 sodium lamps land.
   plHeadL=new THREE.SpotLight(0xffffff,0,50,Math.PI*.16,.5);

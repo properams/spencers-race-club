@@ -117,6 +117,9 @@ function loop(){
     if(activeWorld==='themepark')updateThemeparkWorld(dt);
     if(activeWorld==='sandstorm'&&typeof updateSandstormWorld==='function')updateSandstormWorld(dt);
     if(activeWorld==='pier47'&&typeof updatePier47World==='function')updatePier47World(dt);
+    // Cinematic helpers — only does work if a builder pushed something into
+    // _cinemaState. Cheap early-out for non-cinematic worlds.
+    if(typeof updateCinematic==='function')updateCinematic(dt);
     if(gameState==='RACE'){
       updateHUD(dt);updateSpeedOverlay();
       const _pp=getPositions().findIndex(c=>c.isPlayer)+1;
