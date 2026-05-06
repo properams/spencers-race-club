@@ -34,32 +34,12 @@ const _SS_PLAZA_T_RANGE  = [0.70,0.86];
 // ProcTextures.stripedFabric. The legacy _ssPalmLeafTex + _ssTentStripeTex
 // inline canvases are now removed.
 //
-// _ssScarabSignTex retained for now — only caller is _ssBuildScarabSigns
-// which Phase 4 will fold into the roadside-detail spawning system. After
-// that fold, this last inline helper goes too.
-
-function _ssScarabSignTex(){
-  const W=128,H=96,c=document.createElement('canvas');c.width=W;c.height=H;
-  const g=c.getContext('2d');
-  g.fillStyle='#7a4818';g.fillRect(0,0,W,H);
-  g.strokeStyle='rgba(40,20,8,0.5)';g.lineWidth=1;
-  for(let y=8;y<H;y+=10){
-    g.beginPath();g.moveTo(0,y+Math.sin(y*.2)*1.5);g.lineTo(W,y+Math.cos(y*.2)*1.5);g.stroke();
-  }
-  g.fillStyle='#1a0e04';
-  g.beginPath();g.ellipse(W/2,H/2+4,18,22,0,0,Math.PI*2);g.fill();
-  g.strokeStyle='#0a0500';g.lineWidth=1.5;
-  g.beginPath();g.moveTo(W/2,H/2-12);g.lineTo(W/2,H/2+22);g.stroke();
-  g.beginPath();g.ellipse(W/2,H/2-15,8,5,0,0,Math.PI*2);g.fill();
-  g.fillRect(W/2-10,H/2-22,3,8);g.fillRect(W/2+7,H/2-22,3,8);
-  g.lineWidth=2;
-  for(let i=0;i<3;i++){
-    const yo=H/2-6+i*10;
-    g.beginPath();g.moveTo(W/2-16,yo);g.lineTo(W/2-26,yo+3);g.stroke();
-    g.beginPath();g.moveTo(W/2+16,yo);g.lineTo(W/2+26,yo+3);g.stroke();
-  }
-  const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t;
-}
+// Phase-4 §4.2 swap: _ssBuildScarabSigns folded into _ssBuildRoadsideDetail
+// as one of the 6 prop-types. The legacy _ssScarabSignTex inline canvas is
+// removed; the new spawner uses ProcTextures.pseudoGlyphs as a stand-in
+// scarab-silhouette source. Sandstorm's sole remaining inline canvas-tex
+// (other than the shared _sandGroundTex from environment.js for ground
+// surface) is now zero — the helper migration is complete.
 
 // (Removed: _ssDisplaceCliffGeometry — per-PlaneGeometry vertex displacement
 //  helper that went with the legacy 48-wall cliff implementation. The
@@ -1087,28 +1067,162 @@ function _ssBuildBedouinTents(){
   }
 }
 
-function _ssBuildScarabSigns(){
-  const COUNT=_mobCount(4);
-  const signTex=_ssScarabSignTex();
-  const signMat=new THREE.MeshBasicMaterial({map:signTex,side:THREE.DoubleSide});
-  const poleMat=new THREE.MeshLambertMaterial({color:0x4a3018});
-  const ts=[0.10,0.45,0.78,0.93];
-  const poleGeo=new THREE.CylinderGeometry(0.08,0.08,2.4,5);
-  const signGeo=new THREE.PlaneGeometry(1.6,1.2);
-  for(let i=0;i<COUNT;i++){
-    const t=ts[i%ts.length];
-    const p=trackCurve.getPoint(t);
-    const tg=trackCurve.getTangent(t).normalize();
-    const nr=new THREE.Vector3(-tg.z,0,tg.x);
-    const side=i%2===0?1:-1;
-    const off=BARRIER_OFF+4;
-    const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
-    const pole=new THREE.Mesh(poleGeo,poleMat);
-    pole.position.set(cx,1.2,cz);scene.add(pole);
-    const sign=new THREE.Mesh(signGeo,signMat);
-    sign.position.set(cx,2.1,cz);
-    sign.rotation.y=Math.atan2(tg.x,tg.z)+(side<0?0:Math.PI);
-    scene.add(sign);
+// ── Phase-4 §4.2: roadside detail spawner ───────────────────────────────
+//
+// 6 prop-types distributed along the track in 6 InstancedMeshes (4 op
+// mobile — cactus + bones skipped per spec). Target totals: 100 desktop /
+// 50 mobile, allocated 30/25/15/12/10/8 % per type per spec §4.2.
+//
+// Each prop-type has ONE prototype geometry (merged where multi-shape).
+// Per-instance jitter via Object3D matrix (rotation + scale + position).
+// Materials are shared across all instances of a type.
+//
+// Replaces the standalone _ssBuildScarabSigns + the now-deleted
+// _ssScarabSignTex inline canvas. Scarab signs live as one of the 6
+// prop-types here.
+function _ssBuildRoadsideDetail(){
+  const mob=window._isMobile;
+  // Per-type instance counts. Mobile drops cactus + bones per spec §4.2.
+  const COUNTS = mob
+    ? {rock:13, sunken:13, marker:8, cactus:0, bones:0, scarab:5}
+    : {rock:30, sunken:25, marker:15, cactus:12, bones:10, scarab:8};
+
+  // ── Materials (all shared, no clones) ─────────────────────────────────
+  const stoneTex=ProcTextures.weatheredStone({
+    baseColor:'#a8643a', crackColor:'#3a2418', crackCount:5, ageWear:0.5
+  });
+  const stoneMat=new THREE.MeshStandardMaterial({
+    map:stoneTex, roughness:0.95, metalness:0
+  });
+  const woodMat=new THREE.MeshLambertMaterial({color:0x6e4520});
+  const flagMat=new THREE.MeshLambertMaterial({color:0xa83a25, side:THREE.DoubleSide});
+  const cactusMat=new THREE.MeshStandardMaterial({color:0x4a6b32, roughness:0.85, metalness:0});
+  const boneMat=new THREE.MeshLambertMaterial({color:0xe8d8b0});
+  // Scarab sign uses pseudoGlyphs as a bug-silhouette stand-in via opts —
+  // ProcTextures.pseudoGlyphs has the visual primitives we need.
+  const signTex=ProcTextures.pseudoGlyphs({
+    rowCount:1, glyphsPerRow:1,
+    baseColor:'#7a4818', glyphColor:'#1a0e04'
+  });
+  const signMat=new THREE.MeshLambertMaterial({map:signTex,side:THREE.DoubleSide});
+
+  // ── Prototype geometries ─────────────────────────────────────────────
+  // Rock: simple beveledBox. Per-instance scale jitter creates "cluster" feel
+  // when multiple instances overlap.
+  const rockGeo=ProcGeometry.beveledBox({
+    w:1.2, h:0.8, d:1.4, bevel:0.12,
+    bevelSegments: mob?1:2, curveSegments: mob?2:3
+  });
+  // Sunken stone: low + wider beveledBox (will be Y-rotated random)
+  const sunkenGeo=ProcGeometry.beveledBox({
+    w:1.6, h:0.4, d:1.0, bevel:0.10,
+    bevelSegments: mob?1:2, curveSegments: mob?2:3
+  });
+  // Marker: pole + flag merged (1 IM × N instances, pole always upright)
+  const markerGeo=(()=>{
+    const pole=new THREE.CylinderGeometry(0.06, 0.08, 2.2, 5);
+    pole.translate(0, 1.1, 0);
+    const flag=new THREE.PlaneGeometry(0.6, 0.4);
+    flag.translate(0.35, 1.85, 0);
+    const merged=THREE.BufferGeometryUtils.mergeBufferGeometries([pole, flag]);
+    pole.dispose(); flag.dispose();
+    return merged;
+  })();
+  // Cactus: 3-cylinder Saguaro shape (main + 2 arms) merged
+  const cactusGeo=(()=>{
+    const trunk=new THREE.CylinderGeometry(0.28, 0.32, 2.4, 7);
+    trunk.translate(0, 1.2, 0);
+    const armL=new THREE.CylinderGeometry(0.18, 0.20, 1.0, 6);
+    armL.translate(-0.45, 1.4, 0);
+    armL.rotateZ(0.5);
+    const armLUp=new THREE.CylinderGeometry(0.16, 0.18, 0.8, 6);
+    armLUp.translate(-0.65, 2.0, 0);
+    const armR=new THREE.CylinderGeometry(0.18, 0.20, 0.8, 6);
+    armR.translate(0.40, 1.6, 0);
+    armR.rotateZ(-0.5);
+    const merged=THREE.BufferGeometryUtils.mergeBufferGeometries([trunk, armL, armLUp, armR]);
+    [trunk, armL, armLUp, armR].forEach(g=>g.dispose());
+    return merged;
+  })();
+  // Bones: skull-like sphere + 2 boxes (tanden) merged
+  const bonesGeo=(()=>{
+    const skull=new THREE.SphereGeometry(0.35, 7, 5);
+    skull.translate(0, 0.4, 0);
+    const tooth1=new THREE.BoxGeometry(0.08, 0.15, 0.08);
+    tooth1.translate(-0.10, 0.20, 0.30);
+    const tooth2=new THREE.BoxGeometry(0.08, 0.15, 0.08);
+    tooth2.translate( 0.10, 0.20, 0.30);
+    const horn1=new THREE.CylinderGeometry(0.05, 0.08, 0.4, 5);
+    horn1.translate(-0.20, 0.65, 0);
+    horn1.rotateZ(0.6);
+    const horn2=new THREE.CylinderGeometry(0.05, 0.08, 0.4, 5);
+    horn2.translate( 0.20, 0.65, 0);
+    horn2.rotateZ(-0.6);
+    const merged=THREE.BufferGeometryUtils.mergeBufferGeometries([skull, tooth1, tooth2, horn1, horn2]);
+    [skull, tooth1, tooth2, horn1, horn2].forEach(g=>g.dispose());
+    return merged;
+  })();
+  // Scarab sign: pole + sign-plate merged
+  const scarabGeo=(()=>{
+    const pole=new THREE.CylinderGeometry(0.08, 0.08, 2.4, 5);
+    pole.translate(0, 1.2, 0);
+    const sign=new THREE.PlaneGeometry(1.6, 1.2);
+    sign.translate(0, 2.1, 0);
+    const merged=THREE.BufferGeometryUtils.mergeBufferGeometries([pole, sign]);
+    pole.dispose(); sign.dispose();
+    return merged;
+  })();
+
+  // ── Spawn helper: walks waypoints, places instances within 3-8u of edge.
+  const _dummy=new THREE.Object3D();
+  const _spawn=(im, count, mat, scaleRange, offRange, yOff)=>{
+    if(!count) return;
+    let placed=0;
+    for(let i=0;i<count;i++){
+      const t=Math.random();
+      const p=trackCurve.getPoint(t);
+      const tg=trackCurve.getTangent(t).normalize();
+      const nr=new THREE.Vector3(-tg.z,0,tg.x);
+      const side=Math.random()<0.5?-1:1;
+      const off=BARRIER_OFF + offRange[0] + Math.random()*(offRange[1]-offRange[0]);
+      const cx=p.x+nr.x*side*off + (Math.random()-0.5)*1.5;
+      const cz=p.z+nr.z*side*off + (Math.random()-0.5)*1.5;
+      _dummy.position.set(cx, yOff||0, cz);
+      _dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+      const sc=scaleRange[0] + Math.random()*(scaleRange[1]-scaleRange[0]);
+      _dummy.scale.set(sc, sc, sc);
+      _dummy.updateMatrix();
+      im.setMatrixAt(placed++, _dummy.matrix);
+    }
+    im.count=placed;
+    im.instanceMatrix.needsUpdate=true;
+    scene.add(im);
+  };
+
+  // ── Build the 6 InstancedMeshes ──────────────────────────────────────
+  if(COUNTS.rock){
+    const rockIM=new THREE.InstancedMesh(rockGeo, stoneMat, COUNTS.rock);
+    _spawn(rockIM, COUNTS.rock, stoneMat, [0.7, 1.4], [3, 8], 0.25);
+  }
+  if(COUNTS.sunken){
+    const sunkenIM=new THREE.InstancedMesh(sunkenGeo, stoneMat, COUNTS.sunken);
+    _spawn(sunkenIM, COUNTS.sunken, stoneMat, [0.8, 1.3], [4, 8], 0.0);
+  }
+  if(COUNTS.marker){
+    const markerIM=new THREE.InstancedMesh(markerGeo, woodMat, COUNTS.marker);
+    _spawn(markerIM, COUNTS.marker, woodMat, [0.9, 1.1], [3, 6], 0);
+  }
+  if(COUNTS.cactus){
+    const cactusIM=new THREE.InstancedMesh(cactusGeo, cactusMat, COUNTS.cactus);
+    _spawn(cactusIM, COUNTS.cactus, cactusMat, [0.85, 1.25], [4, 8], 0);
+  }
+  if(COUNTS.bones){
+    const bonesIM=new THREE.InstancedMesh(bonesGeo, boneMat, COUNTS.bones);
+    _spawn(bonesIM, COUNTS.bones, boneMat, [0.9, 1.3], [3, 7], 0);
+  }
+  if(COUNTS.scarab){
+    const scarabIM=new THREE.InstancedMesh(scarabGeo, signMat, COUNTS.scarab);
+    _spawn(scarabIM, COUNTS.scarab, signMat, [0.9, 1.1], [3, 6], 0);
   }
 }
 
@@ -1176,7 +1290,9 @@ function buildSandstormEnvironment(){
   _ssBuildPalmTrees();
   _ssBuildCamels();
   _ssBuildBedouinTents();
-  _ssBuildScarabSigns();
+  // Phase-4 §4.2: 6 prop-type roadside detail spawner. Replaces the
+  // standalone _ssBuildScarabSigns (folded in as one of the 6 types).
+  _ssBuildRoadsideDetail();
   // ── Hazard hook (Phase 4 supplies the implementation)
   if(typeof buildSandstormStorm==='function')buildSandstormStorm();
   // ── Barriers + start line (shared environment helpers).

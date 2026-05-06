@@ -175,8 +175,21 @@
   // from window.Assets cache for the active world. Returns count of
   // clusters actually placed (0 if no GLTFs cached → caller's procedural
   // fallback should handle it).
+  //
+  // Phase-4 §4.1 guard: refuse to spawn if the requested worldId doesn't
+  // match the currently-active world. This is the safety net that
+  // catches the "hooi-baal in sandstorm" / "vliegende rocks in arctic"
+  // class of bug, where a cached GLTF prototype from world A would be
+  // re-spawned in world B because a stale call referenced the wrong tag.
+  // applyHDRI already had this check (line 22); spawnRoadsideProps and
+  // spawnGroundClutter now match.
   function spawnRoadsideProps(worldId, opts){
     if (!window.scene || !window.Assets || !window.trackCurve) return 0;
+    if (window.activeWorld !== worldId){
+      if (window.dbg) dbg.warn('asset-bridge',
+        'spawnRoadsideProps refused — world="'+worldId+'" but activeWorld="'+window.activeWorld+'"');
+      return 0;
+    }
     // BARRIER_OFF must come from config.js — bail if script-load order is
     // ever broken so we can't accidentally spawn props on top of the wall.
     if (typeof BARRIER_OFF === 'undefined') return 0;
@@ -226,6 +239,11 @@
   // around two annular bands away from the racing line.
   function spawnGroundClutter(worldId, opts){
     if (!window.scene || !window.Assets || !window.trackCurve) return 0;
+    if (window.activeWorld !== worldId){
+      if (window.dbg) dbg.warn('asset-bridge',
+        'spawnGroundClutter refused — world="'+worldId+'" but activeWorld="'+window.activeWorld+'"');
+      return 0;
+    }
     if (typeof BARRIER_OFF === 'undefined') return 0;
     opts = opts || {};
     const propKeys = (opts.propKeys || []).filter(k => !!Assets.getGLTF(worldId, k));
