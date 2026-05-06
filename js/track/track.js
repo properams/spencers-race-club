@@ -43,6 +43,39 @@ function _buildTrackSurfaceTex(){
   return t;
 }
 
+// Per-world track-surface palette. Single source of truth for all per-world
+// color decisions in the track-build pipeline (asphalt base color, curb
+// stripes, curb emissive accent, gantry accent strip). Previously these
+// were spread across 4 separate inline ternary chains in buildTrack /
+// buildCurbs / buildGantry — adding a 9th world meant patching 4 places.
+//
+// Schema per entry:
+//   asphalt          — base track-mat color (number)
+//   kerbA, kerbB     — alternating curb stripe colors as [r,g,b] floats
+//   kerbEmissive     — curb material .emissive color (number)
+//   kerbEmissiveInt  — curb material .emissiveIntensity (number 0..1)
+//   gantryAccent     — gantry neon-strip base color (number)
+//   gantryEmissive   — gantry neon-strip emissive color (number)
+//
+// Lookup pattern: `WORLD_TRACK_PALETTE[activeWorld] || WORLD_TRACK_PALETTE.gp`.
+// Defensive fallback to GP keeps a future unknown world from crashing.
+//
+// All values copied EXACTLY from the inline ternaries this table replaces —
+// zero visual change vs pre-refactor. Worlds that didn't have an explicit
+// override in a given ternary inherit the GP default for that field.
+const WORLD_TRACK_PALETTE = {
+  gp:        { asphalt:0x262626, kerbA:[.82,.07,.03], kerbB:[1,1,1],     kerbEmissive:0x661111, kerbEmissiveInt:.30, gantryAccent:0x441166, gantryEmissive:0x6622cc },
+  space:     { asphalt:0x141420, kerbA:[0,.9,.9],     kerbB:[.7,0,.9],   kerbEmissive:0x4422aa, kerbEmissiveInt:.70, gantryAccent:0x4422aa, gantryEmissive:0x3311cc },
+  deepsea:   { asphalt:0x1a2830, kerbA:[0,.9,.7],     kerbB:[0,.5,1],    kerbEmissive:0x0a4a4a, kerbEmissiveInt:.85, gantryAccent:0x006688, gantryEmissive:0x00aacc },
+  candy:     { asphalt:0xee3388, kerbA:[1,.2,.6],     kerbB:[1,.95,.1],  kerbEmissive:0x661133, kerbEmissiveInt:.55, gantryAccent:0x441166, gantryEmissive:0x6622cc },
+  neoncity:  { asphalt:0x0a0a14, kerbA:[.82,.07,.03], kerbB:[1,1,1],     kerbEmissive:0x00ffaa, kerbEmissiveInt:.75, gantryAccent:0x441166, gantryEmissive:0x6622cc },
+  volcano:   { asphalt:0x2a0808, kerbA:[.82,.07,.03], kerbB:[1,1,1],     kerbEmissive:0xff3300, kerbEmissiveInt:.55, gantryAccent:0x441166, gantryEmissive:0x6622cc },
+  arctic:    { asphalt:0x667788, kerbA:[.82,.07,.03], kerbB:[1,1,1],     kerbEmissive:0x4488dd, kerbEmissiveInt:.45, gantryAccent:0x441166, gantryEmissive:0x6622cc },
+  themepark: { asphalt:0x221030, kerbA:[1,.3,.8],     kerbB:[1,.9,.2],   kerbEmissive:0xff44aa, kerbEmissiveInt:.60, gantryAccent:0x441166, gantryEmissive:0x6622cc },
+  sandstorm: { asphalt:0x6a4a2e, kerbA:[.79,.45,.20], kerbB:[.95,.85,.62],kerbEmissive:0xc97232, kerbEmissiveInt:.40, gantryAccent:0x441166, gantryEmissive:0x6622cc }
+};
+if(typeof window!=='undefined')window.WORLD_TRACK_PALETTE=WORLD_TRACK_PALETTE;
+
 function buildTrack(){
   // Reset per-frame visual state arrays — sommige builders worden niet voor
   // alle worlds aangeroepen, dus zonder deze reset houden de arrays stale
@@ -56,7 +89,8 @@ function buildTrack(){
   const N=400;
   // Main track mat: polygonOffset pushes asphalt *away* from camera in depth so curbs,
   // edge lines and startline overlays win the depth test on low-precision depth buffers (iPad).
-  const _baseTrackColor=activeWorld==='space'?0x141420:activeWorld==='deepsea'?0x1a2830:activeWorld==='candy'?0xee3388:activeWorld==='neoncity'?0x0a0a14:activeWorld==='volcano'?0x2a0808:activeWorld==='arctic'?0x667788:activeWorld==='themepark'?0x221030:activeWorld==='sandstorm'?0x6a4a2e:0x262626;
+  const _trackPalette=WORLD_TRACK_PALETTE[activeWorld]||WORLD_TRACK_PALETTE.gp;
+  const _baseTrackColor=_trackPalette.asphalt;
   const _trackMat=new THREE.MeshLambertMaterial({color:_baseTrackColor,map:_buildTrackSurfaceTex()});
   // No polygonOffset on asphalt itself — it sits at y=0.005, well above the
   // ground plane at y=-0.12, so natural depth ordering keeps asphalt on top
@@ -101,6 +135,9 @@ function buildCurbs(N){
   // is nu groot genoeg dat polygonOffset niet meer alle z-werk hoeft te
   // doen, ook niet op low-precision depth buffers.
   const CY=.065;
+  // Palette lookup once per buildCurbs, used inside the side-loop body.
+  // Defensive fallback to GP keeps unknown worlds from crashing.
+  const _palette=WORLD_TRACK_PALETTE[activeWorld]||WORLD_TRACK_PALETTE.gp;
   [-1,1].forEach(side=>{
     const eo=side*(TW+CW*.5),pos=[],col=[],idx=[];
     for(let i=0;i<=N;i++){
@@ -110,7 +147,7 @@ function buildCurbs(N){
       const R=p.clone().addScaledVector(nr,eo+CW*.5);R.y=CY;
       pos.push(L.x,L.y,L.z,R.x,R.y,R.z);
       const s=Math.floor(t*STRIPES)%2;
-      const [r,g,b]=activeWorld==='space'?(s===0?[0,.9,.9]:[.7,0,.9]):activeWorld==='deepsea'?(s===0?[0,.9,.7]:[0,.5,1]):activeWorld==='candy'?(s===0?[1,.2,.6]:[1,.95,.1]):activeWorld==='themepark'?(s===0?[1,.3,.8]:[1,.9,.2]):activeWorld==='sandstorm'?(s===0?[.79,.45,.20]:[.95,.85,.62]):(s===0?[.82,.07,.03]:[1,1,1]);
+      const [r,g,b]=s===0?_palette.kerbA:_palette.kerbB;
       col.push(r,g,b,r,g,b);
       if(i<N){const a=i*2,b2=a+1,c=a+2,d=a+3;idx.push(a,b2,c,b2,d,c);}
     }
@@ -126,15 +163,8 @@ function buildCurbs(N){
     cMat.polygonOffset=true;cMat.polygonOffsetFactor=-2;cMat.polygonOffsetUnits=-2;
     // Per-world emissive accents — vertexColors zijn al gezet per world, maar
     // emissive geeft daarbovenop een gloed die door bloom oppikt wordt.
-    if(activeWorld==='space'){cMat.emissive=new THREE.Color(0x4422aa);cMat.emissiveIntensity=.7;}
-    else if(activeWorld==='deepsea'){cMat.emissive=new THREE.Color(0x0a4a4a);cMat.emissiveIntensity=.85;}
-    else if(activeWorld==='candy'){cMat.emissive=new THREE.Color(0x661133);cMat.emissiveIntensity=.55;}
-    else if(activeWorld==='neoncity'){cMat.emissive=new THREE.Color(0x00ffaa);cMat.emissiveIntensity=.75;}
-    else if(activeWorld==='volcano'){cMat.emissive=new THREE.Color(0xff3300);cMat.emissiveIntensity=.55;}
-    else if(activeWorld==='arctic'){cMat.emissive=new THREE.Color(0x4488dd);cMat.emissiveIntensity=.45;}
-    else if(activeWorld==='themepark'){cMat.emissive=new THREE.Color(0xff44aa);cMat.emissiveIntensity=.6;}
-    else if(activeWorld==='sandstorm'){cMat.emissive=new THREE.Color(0xc97232);cMat.emissiveIntensity=.40;}
-    else {cMat.emissive=new THREE.Color(0x661111);cMat.emissiveIntensity=.30;} // GP — subtle red curb glow
+    cMat.emissive=new THREE.Color(_palette.kerbEmissive);
+    cMat.emissiveIntensity=_palette.kerbEmissiveInt;
     scene.add(new THREE.Mesh(geo,cMat));
   });
 }
@@ -245,9 +275,11 @@ function buildGantry(){
   // Clean horizontal bar
   const bar=new THREE.Mesh(new THREE.BoxGeometry(hw*2,.7,.7),new THREE.MeshLambertMaterial({color:0x111122}));
   bar.position.copy(p);bar.position.y=10;scene.add(bar);
-  // Thin neon accent strip — colour matches active world
-  const accentCol=activeWorld==='space'?0x4422aa:activeWorld==='deepsea'?0x006688:0x441166;
-  const accentEmit=activeWorld==='space'?0x3311cc:activeWorld==='deepsea'?0x00aacc:0x6622cc;
+  // Thin neon accent strip — colour matches active world. Pulled from the
+  // shared WORLD_TRACK_PALETTE table. Fallback to GP for unknown worlds.
+  const _gantryPal=WORLD_TRACK_PALETTE[activeWorld]||WORLD_TRACK_PALETTE.gp;
+  const accentCol=_gantryPal.gantryAccent;
+  const accentEmit=_gantryPal.gantryEmissive;
   const accent=new THREE.Mesh(new THREE.BoxGeometry(hw*2-.6,.07,.16),
     new THREE.MeshLambertMaterial({color:accentCol,emissive:accentEmit,emissiveIntensity:1.4}));
   accent.position.copy(p);accent.position.y=9.68;scene.add(accent);
