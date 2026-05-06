@@ -239,6 +239,10 @@ function updateWeatherForecast(dt){
   // Lock out the forecast — toggleRain() would flip rain off mid-race
   // and break the bewolkte-nacht atmosphere the world is built around.
   if(activeWorld==='pier47'){_weatherForecastFired=true;return;}
+  // Volcano Cinematic: extinct caldera by design — rain doesn't fit the
+  // gothic dormant-heat vibe. Lock the forecast so toggleRain() doesn't
+  // fire mid-race.
+  if(activeWorld==='volcano-cinematic'){_weatherForecastFired=true;return;}
   _weatherForecastTimer-=dt;
   if(_weatherForecastTimer<=8&&_weatherForecastTimer>7.9){
     // 8s warning before change. Use the lightweight top-banner (one-line,
