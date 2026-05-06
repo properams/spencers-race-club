@@ -164,13 +164,25 @@ function toggleNight(){
     _aiHeadPool.forEach(function(l){l.intensity=isDark?1.2:0;});
     if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='themepark'){
-    // Sunset park stays sunset-toned; toggle dims/lights it without swapping the skybox to GP blue.
+    // Themepark night: carnival-light strip along horizon (yellow + pink +
+    // cyan blobs) over deep-blue sky with stars and warm moon. PMREM env
+    // gives car lacquer the warm fairground-glow from below at night.
     if(isDark){
-      scene.background=makeSkyTex('#260340','#4e1734');scene.fog.density=.0014;
+      if(!_tpkDayBg)_tpkDayBg=scene.background;
+      if(!_tpkDayEnv)_tpkDayEnv=scene.environment;
+      if(!_tpkNightBg && typeof makeThemeparkNightSkyTex==='function'){
+        const _baked=_bakeNightEnv(makeThemeparkNightSkyTex);
+        _tpkNightBg=_baked.bg; _tpkNightEnv=_baked.env;
+      }
+      if(_tpkNightBg) scene.background=_tpkNightBg;
+      if(_tpkNightEnv) scene.environment=_tpkNightEnv;
+      scene.fog.density=.0014;
       sunLight.intensity=.25;ambientLight.intensity=.42;hemiLight.intensity=.32;
       trackLightList.forEach(l=>l.intensity=2.2);trackPoles.forEach(p=>p.visible=true);
     }else{
-      scene.background=makeSkyTex('#2a0844','#ff8844');scene.fog.density=.0019;
+      if(_tpkDayBg) scene.background=_tpkDayBg;
+      if(_tpkDayEnv) scene.environment=_tpkDayEnv;
+      scene.fog.density=.0019;
       sunLight.intensity=.85;ambientLight.intensity=.45;hemiLight.intensity=.35;
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
     }

@@ -151,4 +151,6 @@ function disposeThemeparkCoaster(){
   _themeparkCoasterSegs.length=0;
   _themeparkCoasterSupports.length=0;
   _themeparkCoasterState=null;
+  // Release the night.js sky-cache (day + night skybox + PMREM env).
+  if(typeof _disposeThemeparkSkyCache==='function')_disposeThemeparkSkyCache();
 }
