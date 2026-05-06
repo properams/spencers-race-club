@@ -277,15 +277,309 @@ function _p47BuildLampPoles(){
   scene.add(poleIM);scene.add(armIM);scene.add(headIM);
 }
 
+// ── Containers (Container Run sector 1 + Yard sector 2) ──────────────────
+//
+// ISO shipping containers stacked along the kade. The Container Run section
+// (t in [0..0.25]) gets neat single-stack rows that bracket the track for
+// the "smal tussen containers" feel; The Yard (t in [0.25..0.5]) gets
+// mixed-orientation 1-3 high stacks for chaotic open-yard read.
+//
+// All containers share a single 12 × 2.6 × 2.4u BoxGeometry rendered via
+// InstancedMesh. instanceColor (per-instance r/g/b) gives variety from a
+// realistic palette (rust-orange, faded blue, weathered green, dark red,
+// industrial grey) without 5 separate materials. One draw call total.
+//
+// Mobile halves the count and skips the yard's 3-high tier.
+//
+// Procedural texture on the container body adds vertical corrugation hint
+// + faded paint streaks. Shared across all instances.
+function _p47ContainerTex(){
+  const W=128,H=128,c=document.createElement('canvas');
+  c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  // Base white (multiplied with instanceColor → keeps per-instance tint)
+  g.fillStyle='#ffffff';g.fillRect(0,0,W,H);
+  // Vertical corrugation lines (every 4px) — thin grey
+  g.strokeStyle='rgba(40,40,40,0.35)';g.lineWidth=1;
+  for(let x=0;x<W;x+=4){g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke();}
+  // Horizontal frame bands top + bottom
+  g.fillStyle='rgba(30,30,30,0.55)';
+  g.fillRect(0,0,W,5);g.fillRect(0,H-5,W,5);
+  // A few rust streaks running vertically
+  for(let i=0;i<6;i++){
+    const x=Math.random()*W,h=20+Math.random()*60;
+    const y=Math.random()*(H-h);
+    const grd=g.createLinearGradient(x,y,x+3,y);
+    grd.addColorStop(0,'rgba(70,30,15,0)');
+    grd.addColorStop(.5,'rgba(70,30,15,0.55)');
+    grd.addColorStop(1,'rgba(70,30,15,0)');
+    g.fillStyle=grd;g.fillRect(x-1,y,3,h);
+  }
+  // Faded paint scuffs
+  for(let i=0;i<8;i++){
+    const x=Math.random()*W,y=Math.random()*H,r=4+Math.random()*8;
+    const grd=g.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0,'rgba(255,255,255,0.18)');
+    grd.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=grd;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.anisotropy=4;t.needsUpdate=true;
+  return t;
+}
+
+// Realistic shipping-container palette — 7 weathered tones picked to read
+// against the dark-concrete + sodium-lamp scene.
+const _P47_CONTAINER_COLORS=[
+  [0.62,0.28,0.16],   // rust-orange
+  [0.18,0.32,0.50],   // faded blue
+  [0.22,0.42,0.30],   // weathered green
+  [0.45,0.18,0.20],   // dark red
+  [0.42,0.42,0.40],   // industrial grey
+  [0.55,0.45,0.20],   // dirty mustard
+  [0.30,0.30,0.36]    // dark slate
+];
+
+function _p47BuildContainers(){
+  const mob=window._isMobile;
+  // Container Run: tight single-stack rows along t in [0.0, 0.25]
+  const RUN_COUNT=mob?14:24;
+  // The Yard: scattered mixed-stack clusters along t in [0.25, 0.5]
+  const YARD_CLUSTERS=mob?6:10;
+  const YARD_PER_CLUSTER=mob?3:5;
+  const TOTAL=RUN_COUNT+YARD_CLUSTERS*YARD_PER_CLUSTER*(mob?1:1.6)|0;
+  // Shared geo + mat — one InstancedMesh for all containers.
+  const tex=_p47ContainerTex();
+  const cGeo=new THREE.BoxGeometry(12,2.6,2.4);
+  const cMat=new THREE.MeshLambertMaterial({color:0xffffff,map:tex});
+  const im=new THREE.InstancedMesh(cGeo,cMat,TOTAL);
+  // Allocate per-instance colour buffer.
+  im.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(TOTAL*3),3);
+  const dummy=new THREE.Object3D();
+  let idx=0;
+  // ── Container Run rows (sector 1) ──────────────────────────────────────
+  for(let i=0;i<RUN_COUNT;i++){
+    const t=0.005+(i/RUN_COUNT)*0.235;  // span t [0.005..0.24]
+    const p=trackCurve.getPoint(t);
+    const tg=trackCurve.getTangent(t).normalize();
+    const nr=new THREE.Vector3(-tg.z,0,tg.x);
+    const ang=Math.atan2(tg.x,tg.z);
+    [-1,1].forEach(side=>{
+      // Skip the inner side every other position so the run reads as
+      // alternating gaps — gives a less-wall-like feel + lets headlights
+      // sweep through.
+      if(side<0 && i%2===0)return;
+      if(idx>=TOTAL)return;
+      const off=BARRIER_OFF+3.5+Math.random()*1.5;
+      const cx=p.x+nr.x*side*off;
+      const cz=p.z+nr.z*side*off;
+      // Single layer in the run — neat row, no stacking
+      dummy.position.set(cx,1.3,cz);
+      dummy.rotation.set(0,ang,0);
+      const sc=0.95+Math.random()*0.15;
+      dummy.scale.set(sc,1,1);
+      dummy.updateMatrix();
+      im.setMatrixAt(idx,dummy.matrix);
+      const col=_P47_CONTAINER_COLORS[(Math.random()*_P47_CONTAINER_COLORS.length)|0];
+      im.instanceColor.setXYZ(idx,col[0],col[1],col[2]);
+      idx++;
+    });
+  }
+  // ── The Yard clusters (sector 2) — mixed orientation, 1-3 high ────────
+  for(let cI=0;cI<YARD_CLUSTERS;cI++){
+    const t=0.26+(cI/YARD_CLUSTERS)*0.24;  // span t [0.26..0.50]
+    const p=trackCurve.getPoint(t);
+    const tg=trackCurve.getTangent(t).normalize();
+    const nr=new THREE.Vector3(-tg.z,0,tg.x);
+    const side=(cI%2===0)?1:-1;
+    const clusterOff=BARRIER_OFF+8+Math.random()*5;
+    const cBaseX=p.x+nr.x*side*clusterOff;
+    const cBaseZ=p.z+nr.z*side*clusterOff;
+    // Cluster orientation: 70% aligned-to-track, 30% rotated 90°
+    const clusterAng=Math.random()<0.7?Math.atan2(tg.x,tg.z):Math.atan2(tg.x,tg.z)+Math.PI/2;
+    for(let k=0;k<YARD_PER_CLUSTER;k++){
+      if(idx>=TOTAL)return;
+      // Stack height — 1, 2, or 3 high (mobile capped at 2)
+      const stack=mob? (Math.random()<0.6?1:2) : (Math.random()<0.4?1:Math.random()<0.7?2:3);
+      // Each cluster member is a small 2D-grid cell within ~6×6 around base
+      const localX=(Math.random()-0.5)*6;
+      const localZ=(Math.random()-0.5)*6;
+      // Rotate offset by cluster angle
+      const cosA=Math.cos(clusterAng),sinA=Math.sin(clusterAng);
+      const cx=cBaseX+localX*cosA-localZ*sinA;
+      const cz=cBaseZ+localX*sinA+localZ*cosA;
+      for(let s=0;s<stack;s++){
+        if(idx>=TOTAL)return;
+        dummy.position.set(cx,1.3+s*2.65,cz);
+        // Each member's own minor angle jitter
+        dummy.rotation.set(0,clusterAng+(Math.random()-0.5)*0.15,0);
+        dummy.scale.set(1,1,1);
+        dummy.updateMatrix();
+        im.setMatrixAt(idx,dummy.matrix);
+        const col=_P47_CONTAINER_COLORS[(Math.random()*_P47_CONTAINER_COLORS.length)|0];
+        im.instanceColor.setXYZ(idx,col[0],col[1],col[2]);
+        idx++;
+      }
+    }
+  }
+  // Final count — pack the IM so disposeScene's traversal doesn't render
+  // empty trailing instances. Three.js InstancedMesh.count caps the draw.
+  im.count=idx;
+  im.instanceMatrix.needsUpdate=true;
+  if(im.instanceColor)im.instanceColor.needsUpdate=true;
+  scene.add(im);
+}
+
+// ── Warehouse (loods) at WP9 90° right ───────────────────────────────────
+//
+// Large industrial warehouse silhouetted at the end of the warehouse
+// straight (sector 3 → sector 4 transition). Single-mesh corrugated-metal
+// box with a slight roof pitch. Positioned just outside the BARRIER_OFF
+// at the inside of the 90° right turn so it dominates the player's
+// approach view through sector 3.
+//
+// Geometry: simple BoxGeometry with the corrugation texture from
+// _p47ContainerTex (re-used — same vertical-line corrugation works
+// for warehouse cladding). Roof = thin Box on top with darker tint.
+function _p47BuildWarehouse(){
+  // Place at WP9 (t = 8/12 ≈ 0.667) — the 90° right corner. Anchor
+  // the warehouse on the INSIDE of the corner (right side of travel
+  // direction = nr * +1).
+  const t=0.665;
+  const p=trackCurve.getPoint(t);
+  const tg=trackCurve.getTangent(t).normalize();
+  const nr=new THREE.Vector3(-tg.z,0,tg.x);
+  const side=1; // inside of the 90° right
+  const off=BARRIER_OFF+18;
+  const cx=p.x+nr.x*side*off;
+  const cz=p.z+nr.z*side*off;
+  const ang=Math.atan2(tg.x,tg.z);
+  // Body — 30 × 8 × 18 (length × height × depth)
+  const tex=_p47ContainerTex();
+  const bodyMat=new THREE.MeshLambertMaterial({color:0x4a463e,map:tex});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(30,8,18),bodyMat);
+  body.position.set(cx,4,cz);
+  body.rotation.y=ang;
+  scene.add(body);
+  // Roof — slightly larger, darker, sits 8u above ground
+  const roof=new THREE.Mesh(
+    new THREE.BoxGeometry(31,0.6,19),
+    new THREE.MeshLambertMaterial({color:0x2a2820})
+  );
+  roof.position.set(cx,8.3,cz);
+  roof.rotation.y=ang;
+  scene.add(roof);
+  // Loading dock — a smaller box jutting out toward the track at ground level
+  const dockGeo=new THREE.BoxGeometry(10,1.4,2);
+  const dockMat=new THREE.MeshLambertMaterial({color:0x3a3530});
+  const dock=new THREE.Mesh(dockGeo,dockMat);
+  dock.position.set(
+    cx-nr.x*side*(18*0.5+1),
+    0.7,
+    cz-nr.z*side*(18*0.5+1)
+  );
+  dock.rotation.y=ang;
+  scene.add(dock);
+  // Two warm-yellow window strips on the body (large industrial windows
+  // glowing softly through the night — light shining from inside).
+  // Emissive box overlays — placed on the side facing the track.
+  const winMat=new THREE.MeshBasicMaterial({color:0xffcc77});
+  for(const wx of [-9,9]){
+    const win=new THREE.Mesh(new THREE.BoxGeometry(6,1.6,0.1),winMat);
+    // Position on the long face nearest the track (perp to ang)
+    win.position.set(
+      cx-nr.x*side*(18*0.5+0.06)+Math.cos(ang)*wx,
+      4.5,
+      cz-nr.z*side*(18*0.5+0.06)+Math.sin(ang)*wx
+    );
+    win.rotation.y=ang;
+    scene.add(win);
+  }
+}
+
+// ── Cranes on the kade (gantry cranes) ───────────────────────────────────
+//
+// Tall industrial gantry cranes towering over the kade-strook (sector 5).
+// 2 cranes desktop / 1 mobile. Each crane is a mini-rig of:
+//   • 2 vertical legs (BoxGeometry posts) — splayed at base, narrow at top
+//   • 1 horizontal beam connecting the tops
+//   • 1 short cable + hook hanging from the beam centre
+// Steel-grey weathered material; legs share BoxGeometry, beam its own.
+//
+// Positioned at fixed t-values along sector 5 ([0.85, 0.95]) on the OUTER
+// side (kade edge, away from the track) so they read as silhouettes against
+// the city-glow horizon when the player sweeps past.
+function _p47BuildCranes(){
+  const mob=window._isMobile;
+  const cranes=mob?[0.91]:[0.86,0.94];
+  const steelMat=new THREE.MeshLambertMaterial({color:0x4a4a52});
+  const beamMat=new THREE.MeshLambertMaterial({color:0x3a3a42});
+  const cableMat=new THREE.MeshLambertMaterial({color:0x1a1a1a});
+  const hookMat=new THREE.MeshLambertMaterial({color:0x6a6a72});
+  cranes.forEach(t=>{
+    const p=trackCurve.getPoint(t);
+    const tg=trackCurve.getTangent(t).normalize();
+    const nr=new THREE.Vector3(-tg.z,0,tg.x);
+    const side=-1; // outer side of sector-5 right-sweep = kade edge
+    const off=BARRIER_OFF+12;
+    const cx=p.x+nr.x*side*off;
+    const cz=p.z+nr.z*side*off;
+    const ang=Math.atan2(tg.x,tg.z);
+    // Crane geometry: legs 28u tall, 14u apart at base, 6u apart at top.
+    // We approximate splay by translating two slightly-rotated post boxes.
+    const legSpread=14;
+    for(const lx of [-legSpread*0.5, legSpread*0.5]){
+      const leg=new THREE.Mesh(new THREE.BoxGeometry(0.8,28,0.8),steelMat);
+      // Position legs along the cross-track axis (perp to tg)
+      leg.position.set(
+        cx+nr.x*side*0+Math.cos(ang)*lx,
+        14,
+        cz+nr.z*side*0+Math.sin(ang)*lx
+      );
+      // Subtle splay — tilt outward at the base via rotation
+      leg.rotation.y=ang;
+      leg.rotation.z=lx>0?-0.04:0.04;
+      scene.add(leg);
+    }
+    // Top beam — 18u wide, sits above the legs
+    const beam=new THREE.Mesh(new THREE.BoxGeometry(18,1.2,1.2),beamMat);
+    beam.position.set(cx,28,cz);
+    beam.rotation.y=ang;
+    scene.add(beam);
+    // Cable from beam centre, ~12u long (hangs into kade space)
+    const cable=new THREE.Mesh(new THREE.CylinderGeometry(0.06,0.06,12,4),cableMat);
+    cable.position.set(cx,22,cz);
+    scene.add(cable);
+    // Hook block at end of cable
+    const hook=new THREE.Mesh(new THREE.BoxGeometry(1.4,1.0,1.4),hookMat);
+    hook.position.set(cx,16,cz);
+    scene.add(hook);
+    // Counterweight blob on top — reads as the trolley/winch housing
+    const trolley=new THREE.Mesh(new THREE.BoxGeometry(2.4,1.2,2.0),beamMat);
+    trolley.position.set(cx,29,cz);
+    trolley.rotation.y=ang;
+    scene.add(trolley);
+    // Dim red obstruction-warning light on top — emissive small cube
+    const warnMat=new THREE.MeshBasicMaterial({color:0xff2030});
+    const warn=new THREE.Mesh(new THREE.BoxGeometry(0.6,0.6,0.6),warnMat);
+    warn.position.set(cx,29.9,cz);
+    scene.add(warn);
+  });
+}
+
 // ── Main environment builder ──────────────────────────────────────────────
 //
 // Sessie 2 expansion:
 //   1. Concrete kade ground (sessie-1)
 //   2. Day-lighting (sessie-1)
 //   3. Barriers + start line (sessie-1)
-//   4. Sodium lamp poles along the kade (NEW, _p47BuildLampPoles)
-//   5. (Containers / warehouse / cranes / ophaalbrug land in commit 2/3)
-//   6. Headlights + sparse always-off stars (sessie-1)
+//   4. Sodium lamp poles along the kade (sessie-2 commit 1)
+//   5. Containers in Container Run + The Yard (sessie-2 commit 2 — NEW)
+//   6. Warehouse at sector 3 → 4 corner (sessie-2 commit 2 — NEW)
+//   7. Cranes on the kade (sessie-2 commit 2 — NEW)
+//   8. (Wet-asphalt rendering + ophaalbrug land in commit 3)
+//   9. Headlights + sparse always-off stars (sessie-1)
 function buildPier47Environment(){
   // Weather reset — Pier 47's signature mood is motregen, but sessie 1 has
   // no rain renderer yet. Clear any inherited weather state so the dry
@@ -313,6 +607,13 @@ function buildPier47Environment(){
   // Defining detail of the world; placed AFTER barriers so the pole
   // bases sit just outside the barrier line.
   _p47BuildLampPoles();
+  // Industrial props (sessie 2 commit 2):
+  //   • Containers — sectors 1 + 2 (Container Run + The Yard)
+  //   • Warehouse — sector 3 / 4 corner (loods at WP9 90° right)
+  //   • Cranes — sector 5 (kade edge, outer side)
+  _p47BuildContainers();
+  _p47BuildWarehouse();
+  _p47BuildCranes();
   // Player + AI headlight refs — Pier 47 is dark, headlights matter even
   // before sessie-2 sodium lamps land.
   plHeadL=new THREE.SpotLight(0xffffff,0,50,Math.PI*.16,.5);
