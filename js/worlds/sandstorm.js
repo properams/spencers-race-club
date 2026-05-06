@@ -25,70 +25,18 @@ const _SS_PLAZA_T_RANGE  = [0.70,0.86];
 // Phase-3B swap: tempel ruins + obelisken migrated to
 // ProcTextures.weatheredStone (with optional flutes flag) and
 // ProcTextures.pseudoGlyphs (obelisk shafts). The legacy _ssSandstoneTex
-// inline canvas is removed too — sphinx still uses weatheredStone but
-// via ProcTextures, not the inline copy.
+// inline canvas was removed too; sphinx + pillaren + obelisken now share
+// ProcTextures.weatheredStone with per-prop ageWear/baseColor opts.
 //
-// Phase-3C will swap the remaining inline canvases (_ssPalmLeafTex,
-// _ssTentStripeTex, _ssScarabSignTex) for ProcTextures.palmLeaf /
-// stripedFabric / pseudoGlyphs.
-
-function _ssPalmLeafTex(){
-  const W=128,H=64,c=document.createElement('canvas');c.width=W;c.height=H;
-  const g=c.getContext('2d');
-  g.clearRect(0,0,W,H);
-  // Base shadow (darker) leaf shape, then highlight (lighter) on top —
-  // 2-tone canvas eliminates the "platte single-color" look from the
-  // previous build.
-  g.fillStyle='#2c4818';
-  g.beginPath();
-  g.moveTo(0,H*.5);
-  for(let i=1;i<=20;i++){
-    const x=i*W/20;
-    const y=H*.5+Math.sin((i/20)*Math.PI)*-22;
-    g.lineTo(x,y);
-  }
-  for(let i=20;i>=0;i--){
-    const x=i*W/20;
-    const y=H*.5+Math.sin((i/20)*Math.PI)*22;
-    g.lineTo(x,y);
-  }
-  g.closePath();g.fill();
-  // Spine (lighter green over the dark base)
-  g.fillStyle='#5a8a28';g.fillRect(0,H*.5-1,W,2);
-  // Leaflet ribs (2-tone: lighter highlight side, darker shadow side)
-  g.lineWidth=2;
-  for(let i=0;i<14;i++){
-    const x=4+i*(W-8)/13;
-    const lenT=Math.sin((i/13)*Math.PI);
-    const lf=14*lenT;
-    g.strokeStyle='#86b540';
-    g.beginPath();g.moveTo(x,H*.5);g.lineTo(x-2,H*.5-lf);g.stroke();
-    g.strokeStyle='#3a5a18';
-    g.beginPath();g.moveTo(x,H*.5);g.lineTo(x-2,H*.5+lf);g.stroke();
-  }
-  const t=new THREE.CanvasTexture(c);
-  t.needsUpdate=true;return t;
-}
-
-function _ssTentStripeTex(){
-  const W=128,H=128,c=document.createElement('canvas');c.width=W;c.height=H;
-  const g=c.getContext('2d');
-  const colors=['#a04020','#f0d8a0','#c08850'];
-  for(let y=0;y<H;y+=12){
-    g.fillStyle=colors[(y/12)%colors.length|0];
-    g.fillRect(0,y,W,12);
-  }
-  const id=g.getImageData(0,0,W,H),d=id.data;
-  for(let i=0;i<d.length;i+=4){
-    const n=(Math.random()-0.5)*30|0;
-    d[i]=Math.max(0,Math.min(255,d[i]+n));
-    d[i+1]=Math.max(0,Math.min(255,d[i+1]+n));
-    d[i+2]=Math.max(0,Math.min(255,d[i+2]+n));
-  }
-  g.putImageData(id,0,0);
-  const t=new THREE.CanvasTexture(c);
-  t.wrapS=t.wrapT=THREE.RepeatWrapping;t.needsUpdate=true;return t;
-}
+// Phase-3C swap: palms migrated to ProcTextures.bark + ProcTextures.palmLeaf
+// (returns {texture, alphaMap} pair for Lambert + alphaTest material per
+// spec §2.2 mobile-PBR-alpha exception). Tents migrated to
+// ProcTextures.stripedFabric. The legacy _ssPalmLeafTex + _ssTentStripeTex
+// inline canvases are now removed.
+//
+// _ssScarabSignTex retained for now — only caller is _ssBuildScarabSigns
+// which Phase 4 will fold into the roadside-detail spawning system. After
+// that fold, this last inline helper goes too.
 
 function _ssScarabSignTex(){
   const W=128,H=96,c=document.createElement('canvas');c.width=W;c.height=H;
@@ -338,24 +286,31 @@ function _ssBuildBackgroundMesas(){
   });
 }
 
-// Sand dunes — overlapping silhouettes met windrichting-aligned ripples.
+// Sand dunes — Phase-3C rebuild per spec §3.9. duneCap (sphere-cap met
+// asymmetric scale + top-vertex jitter) ipv flat PlaneGeometry — top is
+// now organisch gerond, niet geometrisch hard. ProcTextures.sandSurface
+// levert the windrichting-aligned ripple canvas (rotated rect-fill, vele
+// goedkoper dan per-line trig).
+//
+// Per spec §3.9: NO emissive (zand glow-t niet in werkelijkheid). Warmth
+// komt uit hemisphere + ACES tonemapping.
 function _ssBuildSandDunes(){
   const mob=window._isMobile;
-  const COUNT=_mobCount(10);
-  // 2-tone material: lit base via canvas with windrichting-aligned ripples.
-  // Build a small ripple-canvas inline (4x cheaper than full ground-tex).
-  const S=128,c=document.createElement('canvas');c.width=S;c.height=S;
-  const g=c.getContext('2d');
-  g.fillStyle='#c8a070';g.fillRect(0,0,S,S);
-  // Wind-aligned ripples (horizontal, slight vertical wobble)
-  for(let y=0;y<S;y+=4){
-    g.fillStyle=y%8===0?'rgba(160,120,80,0.25)':'rgba(220,180,120,0.18)';
-    g.fillRect(0,y+Math.sin(y*.3)*1.2,S,2);
-  }
-  const dTex=new THREE.CanvasTexture(c);
-  dTex.wrapS=dTex.wrapT=THREE.RepeatWrapping;
-  dTex.repeat.set(2,1);dTex.needsUpdate=true;
-  const duneMat=new THREE.MeshLambertMaterial({color:0xd4a55a,map:dTex});
+  const COUNT=mob?4:_mobCount(10);
+  // Wind-direction angle for ripple-alignment. Spec mentions globalWindAngle;
+  // we hard-code an east-bound wind (the storm's prevailing direction).
+  const sandTex=ProcTextures.sandSurface({
+    baseColor:'#c8a070',
+    rippleCount:60,
+    rippleAngle: Math.PI*0.05,    // slight east-bound tilt
+    pebbleCount: mob?12:20,
+    edgeWear:0,
+    repeatX:2, repeatY:1
+  });
+  const duneMat=new THREE.MeshStandardMaterial({
+    map:sandTex, color:0xd4a55a,
+    roughness:1.0, metalness:0
+  });
   for(let i=0;i<COUNT;i++){
     const range=_SS_DUNES_T_RANGES[i%_SS_DUNES_T_RANGES.length];
     const t=range[0]+Math.random()*(range[1]-range[0]);
@@ -365,27 +320,33 @@ function _ssBuildSandDunes(){
     const side=i%2===0?1:-1;
     const off=BARRIER_OFF+18+Math.random()*45;
     const px=p.x+nr.x*side*off,pz=p.z+nr.z*side*off;
-    // 2 overlapping dune-silhouettes per spawn-point for layered depth
+    // 2 overlapping dune-silhouettes per spawn-point for layered depth.
+    // Per spec §3.4 "overlapping silhouettes" — each layer slightly offset
+    // so the dune cluster has natural depth, not a single mound.
     for(let layer=0;layer<2;layer++){
-      const w=18+Math.random()*22+layer*4;
-      const d=14+Math.random()*18+layer*3;
-      const sub=mob?6:10;
-      const geo=new THREE.PlaneGeometry(w,d,sub,sub);
-      const pos=geo.attributes.position;
-      for(let v=0;v<pos.count;v++){
-        const x=pos.getX(v),y=pos.getY(v);
-        // Sine-noise displacement, layer-2 bigger crest
-        const h=Math.sin(x*.15)*2.0+Math.cos(y*.18)*1.5+Math.sin((x+y)*.08)*1.2;
-        pos.setZ(v,Math.max(0,h*0.6+1.5+layer*0.6));
-      }
-      pos.needsUpdate=true;geo.computeVertexNormals();
-      const dune=new THREE.Mesh(geo,duneMat);
-      dune.rotation.x=-Math.PI/2;
-      dune.rotation.z=Math.random()*Math.PI*2;
-      // Per-instance scale + position jitter (from spec §3.4)
+      const radius=8+Math.random()*5+layer*1.5;
+      const dune=new THREE.Mesh(
+        ProcGeometry.duneCap({
+          radius:radius,
+          scaleX: 1.6+Math.random()*0.8,
+          scaleZ: 0.9+Math.random()*0.4,
+          scaleY: 0.4+Math.random()*0.2,
+          topJitter: 0.15+layer*0.05,
+          seed: 31+i*7+layer*53,
+          lod: mob?1:0
+        }),
+        duneMat
+      );
+      // Per-instance scale + position jitter (spec §3.4)
       const sc=0.85+Math.random()*0.30;
-      dune.scale.set(sc,1+layer*0.15,sc);
-      dune.position.set(px+(layer*3-1.5)*Math.cos(i),-0.05,pz+(layer*2-1)*Math.sin(i));
+      dune.scale.set(sc, 1+layer*0.15, sc);
+      // Random Y rotation breaks the "stamped" look
+      dune.rotation.y=Math.random()*Math.PI*2;
+      dune.position.set(
+        px+(layer*3-1.5)*Math.cos(i),
+        -0.05,
+        pz+(layer*2-1)*Math.sin(i)
+      );
       scene.add(dune);
     }
   }
@@ -866,22 +827,54 @@ function _ssBuildObelisks(){
   });
 }
 
-// Palm trees — fan-leaves, lightly curved trunk via 2 stacked tapered cyls.
-// Per-instance jitter on scale + Y-rotation. Leaves go through one big
-// InstancedMesh = 1 draw call for all 60+ fronds.
+// Palm trees — Phase-3C rebuild per spec §3.8. Trunk via
+// ProcGeometry.curvedTrunk (single tapered cyl with monotonic Y-bend
+// — was 2 stacked Cylinders in the old build). Trunk-tex via
+// ProcTextures.bark (horizontal rings + grain). Leaves via
+// ProcTextures.palmLeaf which returns a {texture, alphaMap} pair —
+// lets us use Lambert + alphaTest + transparent:false (per spec §2.2
+// material-exception list, avoids mobile PBR alpha-sortering issues).
+//
+// Spec §3.8: 10 leaves desktop / 6 mobile (was 8 in earlier draft).
+// Each leaf is a custom BufferGeometry with 12 segments along length
+// for natural per-segment droop curve — currently approximated via a
+// PlaneGeometry rotated/positioned with a single droop angle. Acceptable
+// trade for cache-friendly InstancedMesh draw-call (1 IM for all leaves).
 function _ssBuildPalmTrees(){
+  const mob=window._isMobile;
   const COUNT=_mobCount(12);
-  const trunkMat=new THREE.MeshLambertMaterial({color:0x6a4a28});
-  const leafTex=_ssPalmLeafTex();
-  const leafMat=new THREE.MeshBasicMaterial({
-    map:leafTex,transparent:true,alphaTest:0.35,
-    side:THREE.DoubleSide,depthWrite:false
+  const FRONDS_PER_PALM = mob?6:10;
+  const barkTex=ProcTextures.bark({
+    baseColor:'#6e4520', ringColor:'#8b5a2b', ringCount:14
   });
-  const frondGeo=new THREE.PlaneGeometry(3.4,1.2);
-  const trunkLowGeo=new THREE.CylinderGeometry(0.22,0.32,1,7);  // base segment
-  const trunkHiGeo=new THREE.CylinderGeometry(0.18,0.22,1,7);   // top segment
-  const FRONDS_PER_PALM=8;
-  const frondIM=new THREE.InstancedMesh(frondGeo,leafMat,COUNT*FRONDS_PER_PALM);
+  const trunkMat=new THREE.MeshStandardMaterial({
+    map:barkTex, color:0x8b6532,
+    roughness:0.95, metalness:0
+  });
+  // palmLeaf returns { texture, alphaMap }. Lambert + alphaTest +
+  // transparent:false avoids mobile-PBR alpha-sortering Z-fighting (spec
+  // material-exception §2.2).
+  const leafPair=ProcTextures.palmLeaf({
+    darkColor:'#2c4818', lightColor:'#86b540', midribColor:'#5a8a28'
+  });
+  const leafMat=new THREE.MeshLambertMaterial({
+    map:leafPair.texture, alphaMap:leafPair.alphaMap,
+    alphaTest:0.5, transparent:false,
+    side:THREE.DoubleSide
+  });
+  const frondGeo=new THREE.PlaneGeometry(3.4, 1.2);
+  // Trunk built once with curvedTrunk; per-tree scale.y handles height
+  // variance so geometry stays shared.
+  const trunkGeo=ProcGeometry.curvedTrunk({
+    segments: mob?4:5,
+    baseRadius:0.20, topRadius:0.14,
+    height: 1,                 // unit height — scale.y per-tree
+    curveAmount:0.4,
+    sides: mob?6:8
+  });
+  // All fronds across all palms in ONE InstancedMesh — biggest perf win.
+  // 12 palms × 10 fronds = 120 draws compressed into 1.
+  const frondIM=new THREE.InstancedMesh(frondGeo, leafMat, COUNT*FRONDS_PER_PALM);
   const _dummy=new THREE.Object3D();
   let frondIdx=0;
   for(let i=0;i<COUNT;i++){
@@ -893,31 +886,35 @@ function _ssBuildPalmTrees(){
     const off=BARRIER_OFF+3+Math.random()*7;
     const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
     const h=4.5+Math.random()*1.5;
-    // Per-instance scale jitter (.85-1.15 per spec §3.4)
     const sc=0.85+Math.random()*0.30;
     const yawJ=Math.random()*Math.PI*2;
-    // Trunk: 2 stacked tapered cyls for slight curve
-    const lean=(Math.random()-0.5)*0.12;
-    const tLow=new THREE.Mesh(trunkLowGeo,trunkMat);
-    tLow.position.set(cx,h*0.25,cz);
-    tLow.scale.set(sc,h*0.5,sc);
-    tLow.rotation.z=lean*0.4;
-    scene.add(tLow);
-    const tHi=new THREE.Mesh(trunkHiGeo,trunkMat);
-    tHi.position.set(cx+Math.sin(lean)*h*0.25,h*0.75,cz);
-    tHi.scale.set(sc,h*0.5,sc);
-    tHi.rotation.z=lean;
-    scene.add(tHi);
-    // 8 fronds in a fan with droop — write into shared InstancedMesh
-    const topX=cx+Math.sin(lean)*h*0.5,topY=h+0.3,topZ=cz;
+    // Trunk: shared geometry, scale.y to actual height. The curvedTrunk
+    // helper bakes a Y-bend into the geometry; per-trunk Y rotation
+    // re-orients the bend for natural variation.
+    const trunk=new THREE.Mesh(trunkGeo, trunkMat);
+    trunk.position.set(cx, h*0.5, cz);
+    trunk.scale.set(sc, h, sc);
+    trunk.rotation.y=yawJ;
+    scene.add(trunk);
+    // Crown position — palm-tops sit at trunk.scale.y. The curvedTrunk
+    // bend produces a slight X offset at the top; approximate via the
+    // bake-curve constant 0.4 × top-Y-fraction. Good enough for crown
+    // placement (player rarely studies trunk-curve continuity).
+    const topX=cx + Math.sin(yawJ) * 0.4 * h * 0.5;
+    const topY=h + 0.3;
+    const topZ=cz + Math.cos(yawJ) * 0.4 * h * 0.5;
     for(let l=0;l<FRONDS_PER_PALM;l++){
       const ang=(l/FRONDS_PER_PALM)*Math.PI*2;
       const droop=-0.32-Math.random()*0.12;
-      _dummy.position.set(topX+Math.cos(ang+yawJ)*1.1,topY,topZ+Math.sin(ang+yawJ)*1.1);
-      _dummy.rotation.set(droop,ang+yawJ,(Math.random()-0.5)*0.2,'YXZ');
-      _dummy.scale.set(sc,sc,sc);
+      _dummy.position.set(
+        topX+Math.cos(ang+yawJ)*1.1,
+        topY,
+        topZ+Math.sin(ang+yawJ)*1.1
+      );
+      _dummy.rotation.set(droop, ang+yawJ, (Math.random()-0.5)*0.2, 'YXZ');
+      _dummy.scale.set(sc, sc, sc);
       _dummy.updateMatrix();
-      frondIM.setMatrixAt(frondIdx++,_dummy.matrix);
+      frondIM.setMatrixAt(frondIdx++, _dummy.matrix);
     }
   }
   frondIM.count=frondIdx;
@@ -925,74 +922,106 @@ function _ssBuildPalmTrees(){
   scene.add(frondIM);
 }
 
-// Camel silhouettes — desktop only. 4 instances on far dunes; pure
-// background scale-cue. Built as a 1-mesh merged-geometry prototype +
-// InstancedMesh × 4 instances → 1 draw call total.
+// Camel silhouettes — Phase-3C rebuild per spec §3.11. Background scale-
+// cue placed >200u from the track centre. Per spec §2.2 material-exception
+// list: distant background → MeshLambertMaterial is acceptable (PBR is
+// wasted on props that vanish into fog).
+//
+// Mobile per spec §3.11 builds camels minus the legs (lichaam + humps +
+// hals + hoofd zwevend in haze — geen probleem). Was: mobile skipped
+// camels entirely. Now: mobile keeps the silhouette read.
+//
+// Body parts use ProcGeometry.beveledBox with mobile-LOD opts (bevSegs:1,
+// curveSegs:2) so the merged geo isn't bloated. All parts merged into ONE
+// BufferGeometry → InstancedMesh × N positions → 1 draw call total.
 function _ssBuildCamels(){
-  if(window._isMobile)return;
-  const camelMat=new THREE.MeshLambertMaterial({color:0x6a4628});
-  // Build prototype meshes, then merge their geometries into a single
-  // BufferGeometry so the camel renders as one InstancedMesh draw.
-  // Uses THREE.BufferGeometryUtils.mergeBufferGeometries from the
-  // bundled three-r160 build (verified present in vendor blob).
+  const mob=window._isMobile;
+  // Spec §3.11 color: warme bruin-grijs #8b6f4d.
+  const camelMat=new THREE.MeshLambertMaterial({color:0x8b6f4d});
   const parts=[];
-  const _box=(w,h,d,x,y,z,rx,ry,rz)=>{
-    const g=new THREE.BoxGeometry(w,h,d);
-    g.translate(x,y,z);
+  // Helper: take a prebuilt geometry, translate + optionally rotate, push.
+  const _push=(g, x, y, z, rx, ry, rz)=>{
     if(rx||ry||rz){
       const e=new THREE.Euler(rx||0,ry||0,rz||0,'XYZ');
       const q=new THREE.Quaternion().setFromEuler(e);
       const m=new THREE.Matrix4().makeRotationFromQuaternion(q);
       g.applyMatrix4(m);
     }
-    parts.push(g);
-  };
-  const _sph=(r,x,y,z,sy)=>{
-    const g=new THREE.SphereGeometry(r,6,4);
-    g.scale(1,sy||1,1);
     g.translate(x,y,z);
     parts.push(g);
   };
-  _box(3.5,1.4,1.0, 0,1.6,0);            // body
-  _sph(0.7,-0.6,2.6,0,1.2);              // hump 1
-  _sph(0.7, 0.7,2.6,0,1.2);              // hump 2
-  _box(0.5,1.8,0.5, 1.7,2.4,0, 0,0,-0.6);// neck
-  _box(0.8,0.5,0.6, 2.5,3.1,0);          // head
-  _box(0.25,1.6,0.25,-1,0.8,-0.3);
-  _box(0.25,1.6,0.25, 1,0.8,-0.3);
-  _box(0.25,1.6,0.25,-1,0.8, 0.3);
-  _box(0.25,1.6,0.25, 1,0.8, 0.3);
-  // Merge via the three-r160 utility. All parts use position+normal only
-  // (no UV — MeshLambertMaterial without map doesn't sample UVs), so
-  // attribute-set is consistent across parts.
+  const _bev=(w,h,d,bevel)=>ProcGeometry.beveledBox({
+    w, h, d, bevel,
+    bevelSegments: mob?1:2,
+    curveSegments: mob?2:3
+  });
+  const _sph=(r,sy)=>{
+    const g=new THREE.SphereGeometry(r, mob?5:6, mob?3:4);
+    g.scale(1, sy||1, 1);
+    return g;
+  };
+  const _cyl=(rTop, rBot, h, sides)=>new THREE.CylinderGeometry(rTop, rBot, h, sides);
+
+  // Body + humps + neck + head — always present (mobile + desktop)
+  _push(_bev(3.5, 1.4, 1.0, 0.10), 0, 1.6, 0);
+  _push(_sph(0.7, 1.2),            -0.6, 2.6, 0);
+  _push(_sph(0.7, 1.2),             0.7, 2.6, 0);
+  _push(_cyl(0.20, 0.30, 1.8, mob?5:6), 1.7, 2.4, 0, 0, 0, -0.6);
+  _push(_bev(0.8, 0.5, 0.6, 0.05),  2.5, 3.1, 0);
+  // Legs — desktop only per spec §3.11
+  if(!mob){
+    _push(_cyl(0.12, 0.18, 1.6, 6), -1, 0.8, -0.3);
+    _push(_cyl(0.12, 0.18, 1.6, 6),  1, 0.8, -0.3);
+    _push(_cyl(0.12, 0.18, 1.6, 6), -1, 0.8,  0.3);
+    _push(_cyl(0.12, 0.18, 1.6, 6),  1, 0.8,  0.3);
+  }
+  // Merge via the three-r160 utility. Parts mix BoxGeometry (which has
+  // UVs) with CylinderGeometry/SphereGeometry (also UVs) so attribute-set
+  // is uniform; mergeBufferGeometries handles cleanly.
   const merged=THREE.BufferGeometryUtils.mergeBufferGeometries(parts);
-  // Free the source part-geometries; the merged buffer owns all data now.
   parts.forEach(g=>g.dispose());
-  // Place 4 instances on far dunes — beyond the cliff-line so they read
-  // as distant scale cues, never a hazard.
+  // Place 4 instances on far dunes (>200u from track centre per spec).
   const positions=[[210,-280],[-180,-310],[-260,80],[280,180]];
-  const im=new THREE.InstancedMesh(merged,camelMat,positions.length);
+  const im=new THREE.InstancedMesh(merged, camelMat, positions.length);
   const _dummy=new THREE.Object3D();
   positions.forEach(([px,pz],i)=>{
-    _dummy.position.set(px,0,pz);
-    _dummy.rotation.set(0,Math.random()*Math.PI*2,0);
+    _dummy.position.set(px, 0, pz);
+    _dummy.rotation.set(0, Math.random()*Math.PI*2, 0);
     const sc=0.85+Math.random()*0.30;
-    _dummy.scale.set(sc,sc,sc);
+    _dummy.scale.set(sc, sc, sc);
     _dummy.updateMatrix();
-    im.setMatrixAt(i,_dummy.matrix);
+    im.setMatrixAt(i, _dummy.matrix);
   });
   im.instanceMatrix.needsUpdate=true;
   scene.add(im);
 }
 
+// Bedouin tents — Phase-3C rebuild per spec §3.10. PBR baseline,
+// ProcTextures.stripedFabric for the canvas. Per spec adds: open ingang
+// (wedge weglaten via thetaLength), tent-flap als losse PlaneGeometry,
+// 4 touwen van rand naar ground-spike. Mobile keeps tent + pole only
+// (skip ropes + flap to save 5 calls per tent × 3 tents = 15 calls).
 function _ssBuildBedouinTents(){
+  const mob=window._isMobile;
   const COUNT=_mobCount(3);
-  const stripeTex=_ssTentStripeTex();
-  stripeTex.repeat.set(2,2);
-  const tentMat=new THREE.MeshLambertMaterial({map:stripeTex,side:THREE.DoubleSide});
+  const stripeTex=ProcTextures.stripedFabric({
+    stripeCount:8,
+    colors:['#a83a25','#d4b890','#7a4a25'],
+    repeatX:1, repeatY:1
+  });
+  const tentMat=new THREE.MeshStandardMaterial({
+    map:stripeTex, side:THREE.DoubleSide,
+    roughness:0.85, metalness:0
+  });
   const poleMat=new THREE.MeshLambertMaterial({color:0x4a3018});
-  const tentGeo=new THREE.ConeGeometry(2.4,3.2,6);
-  const poleGeo=new THREE.CylinderGeometry(0.08,0.08,3.8,5);
+  const ropeMat=new THREE.MeshLambertMaterial({color:0xb89370});
+  // Cone with thetaLength=2π - π/3 leaves a ~60° wedge open as the
+  // entrance. theta starts at -π/6 so the open arc straddles the +Z axis
+  // (front of the tent after rotation.y).
+  const tentGeo=new THREE.ConeGeometry(2.4, 3.2, 6, 1, false, -Math.PI/6, Math.PI*2 - Math.PI/3);
+  const poleGeo=new THREE.CylinderGeometry(0.08, 0.08, 3.8, 5);
+  const ropeGeo=new THREE.CylinderGeometry(0.025, 0.025, 1.0, 4); // unit-length, scale per rope
+  const flapGeo=new THREE.PlaneGeometry(1.6, 2.0);
   for(let i=0;i<COUNT;i++){
     const t=_SS_PLAZA_T_RANGE[0]+0.04+i*((_SS_PLAZA_T_RANGE[1]-_SS_PLAZA_T_RANGE[0]-0.08)/Math.max(1,COUNT-1));
     const p=trackCurve.getPoint(t);
@@ -1001,13 +1030,60 @@ function _ssBuildBedouinTents(){
     const side=i%2===0?-1:1;
     const off=BARRIER_OFF+15+Math.random()*4;
     const cx=p.x+nr.x*side*off,cz=p.z+nr.z*side*off;
-    const tent=new THREE.Mesh(tentGeo,tentMat);
-    tent.position.set(cx,1.4,cz);
-    // Slight scheve hoek per spec §3.3 — feels weathered, not factory-set
-    tent.rotation.set((Math.random()-0.5)*0.10,Math.random()*Math.PI*2,(Math.random()-0.5)*0.06);
+    const yaw=Math.random()*Math.PI*2;
+    // Cone tent — slight scheve hoek per spec §3.10
+    const tent=new THREE.Mesh(tentGeo, tentMat);
+    tent.position.set(cx, 1.4, cz);
+    tent.rotation.set(
+      (Math.random()-0.5)*0.10,
+      yaw,
+      (Math.random()-0.5)*0.06
+    );
     scene.add(tent);
-    const pole=new THREE.Mesh(poleGeo,poleMat);
-    pole.position.set(cx,1.7,cz);scene.add(pole);
+    // Center pole peeking up through the top
+    const pole=new THREE.Mesh(poleGeo, poleMat);
+    pole.position.set(cx, 1.7, cz);
+    scene.add(pole);
+    // Mobile stops here. Desktop adds 4 ropes + 1 flap (decorative detail).
+    if(mob)continue;
+    // 4 ropes from tent-edge (~y=2.0 at cone-rim) down to ground-spikes.
+    // Skip the rope nearest the open ingang so the entrance reads.
+    for(let r=0;r<4;r++){
+      const ang=(r/4)*Math.PI*2 + yaw + Math.PI*0.25;
+      // Skip the rope whose angle aligns with the open wedge (front)
+      if(Math.abs(ang - yaw - Math.PI*0.5) < 0.5)continue;
+      const ex=cx + Math.cos(ang)*2.4;
+      const ez=cz + Math.sin(ang)*2.4;
+      // Rope mid-point + length: from edge (y=2.0) down to spike (y=0)
+      const mx=(cx + ex)*0.5;
+      const mz=(cz + ez)*0.5;
+      const my=1.0;
+      const ropeLen=Math.hypot(ex-cx, 2.0, ez-cz);
+      const rope=new THREE.Mesh(ropeGeo, ropeMat);
+      rope.position.set(mx, my, mz);
+      // Rotate rope to align from tent-edge to ground-spike. Compute the
+      // vector and use lookAt-trick: scale-Y to length, then rotate so Y
+      // axis points along the rope vector.
+      rope.scale.y=ropeLen;
+      const dx=ex-cx, dy=-2.0, dz=ez-cz;
+      // Rotate Y-axis to point toward (dx,dy,dz). Use lookAt with up=X.
+      const tmpUp=new THREE.Vector3(0,1,0);
+      const dir=new THREE.Vector3(dx,dy,dz).normalize();
+      const axis=new THREE.Vector3().crossVectors(tmpUp, dir).normalize();
+      const angle=Math.acos(Math.max(-1, Math.min(1, tmpUp.dot(dir))));
+      rope.quaternion.setFromAxisAngle(axis, angle);
+      scene.add(rope);
+    }
+    // Tent-flap — open door to one side of the entrance wedge.
+    const flap=new THREE.Mesh(flapGeo, tentMat);
+    const flapAng=yaw + Math.PI*0.5; // front of tent
+    flap.position.set(
+      cx + Math.cos(flapAng)*2.0,
+      1.0,
+      cz + Math.sin(flapAng)*2.0
+    );
+    flap.rotation.y=flapAng - 0.6; // hinged open ~35°
+    scene.add(flap);
   }
 }
 
