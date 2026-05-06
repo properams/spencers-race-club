@@ -168,13 +168,12 @@ function toggleNight(){
           }
         }
       }
-      sunLight.color.setHex(0xff8c42);
-      sunLight.intensity=window._isMobile?1.7:2.8;
-      sunLight.position.set(80,35,-60);
-      ambientLight.color.setHex(0x5a2818); ambientLight.intensity=0.35;
-      hemiLight.color.setHex(0xffb87a);
-      hemiLight.groundColor.setHex(0x8b3a1d);
-      hemiLight.intensity=window._isMobile?0.7:1.0;
+      // Use sandstorm.js's shared day-lighting helper instead of inline
+      // hex codes — single source of truth so the build-time and toggle-
+      // time setups can never drift (code-reuse review v4 dedup).
+      if(typeof window._applySandstormDayLighting==='function'){
+        window._applySandstormDayLighting();
+      }
       if(scene&&scene.fog&&scene.fog.color){
         scene.fog.color.setHex(0xe8a468);
       }

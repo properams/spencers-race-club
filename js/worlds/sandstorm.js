@@ -82,6 +82,34 @@ let _sandstormFlecksGeo=null;    // ambient wind-fleck particle BufferGeometry
 let _sandstormFlecks=null;       // Points mesh
 let _sandstormPalmLeaves=[];     // [{im, baseAng, amp}] for wind-sway animation
 
+// Single source of truth for sandstorm warm-sunset day lighting. Called
+// from buildSandstormEnvironment() at world-build, AND from night.js
+// when toggling back from night to day so the two code paths can never
+// drift (code-reuse review v4 found the constants duplicated).
+//
+// Goal palette (cinematic golden-hour):
+//   sun #ff8c42 / 1.7 mobile, 2.8 desktop / position (80,35,-60)
+//   ambient #5a2818 / 0.35
+//   hemi sky #ffb87a / ground #8b3a1d / 0.7 mobile, 1.0 desktop
+//
+// Mobile sun caps at 1.7 (not 2.8) because shadows are off on mobile and
+// the unshadowed Lambert sand-ground (0xd4a55a) would clip to white at
+// full intensity. Sun position is low+angled for long cliff shadows;
+// scene.js creates a fresh sunLight per world-build so this reposition
+// is sandstorm-local — next buildScene gets default position back.
+function _applySandstormDayLighting(){
+  if(!sunLight||!ambientLight||!hemiLight)return;
+  sunLight.color.setHex(0xff8c42);
+  sunLight.intensity = window._isMobile ? 1.7 : 2.8;
+  sunLight.position.set(80, 35, -60);
+  ambientLight.color.setHex(0x5a2818); ambientLight.intensity = 0.35;
+  hemiLight.color.setHex(0xffb87a);
+  hemiLight.groundColor.setHex(0x8b3a1d);
+  hemiLight.intensity = window._isMobile ? 0.7 : 1.0;
+}
+// Expose to non-module consumers — night.js reads from window.* scope.
+if(typeof window!=='undefined')window._applySandstormDayLighting=_applySandstormDayLighting;
+
 // ── Section builders ──────────────────────────────────────────────────────
 
 // (Background mesas removed in post-review fix. core/scene.js calls the
@@ -1425,18 +1453,10 @@ function buildSandstormEnvironment(){
   // invisible. Scene.js creates a fresh sunLight at (180,320,80) per
   // world-build, so our low-angle reposition is sandstorm-local and
   // doesn't leak — next buildScene gets default position back.
-  sunLight.color.setHex(0xff8c42);
-  // Mobile sun caps at 1.7 (not 2.2): shadows are disabled on mobile, so a
-  // 2.8-bright sun on the warm Lambert sand-ground (0xd4a55a) clips to
-  // white. Desktop has shadow projection that grounds the highlights.
-  sunLight.intensity = window._isMobile ? 1.7 : 2.8;
-  // Low + angled sun (height 35, lateral 80, depth -60). Shadow camera
-  // bounds (±500 from sun perspective) easily accommodate the new vantage.
-  sunLight.position.set(80, 35, -60);
-  ambientLight.color.setHex(0x5a2818); ambientLight.intensity = 0.35;
-  hemiLight.color.setHex(0xffb87a);
-  hemiLight.groundColor.setHex(0x8b3a1d);
-  hemiLight.intensity = window._isMobile ? 0.7 : 1.0;
+  // Apply via the shared helper so night.js's day-restore can call the
+  // exact same code path — single source of truth for sandstorm day
+  // lighting (was duplicated, code-reuse review v4 dedup).
+  _applySandstormDayLighting();
   // Sand-haze fill light (warm, modest range — pulses subtly in update)
   _sandstormSandSwept=new THREE.PointLight(0xffe4a8,1.4,500);
   _sandstormSandSwept.position.set(0,8,0);scene.add(_sandstormSandSwept);
