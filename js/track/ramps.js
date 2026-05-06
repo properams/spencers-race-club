@@ -20,10 +20,10 @@ function buildJumpRamps(){
     const h=def.h;
 
     // Per-world colours
-    const isSpR=activeWorld==='space',isDsR=activeWorld==='deepsea';
-    const padCol=isSpR?0x6600cc:isDsR?0x006644:0xff4400;
-    const padEmit=isSpR?0x8833ff:isDsR?0x00aacc:0xff7722;
-    const stripeColR=isSpR?0x00ccff:isDsR?0x00ffaa:0xffdd00;
+    const isSpR=activeWorld==='space',isDsR=activeWorld==='deepsea',isSsR=activeWorld==='sandstorm';
+    const padCol=isSpR?0x6600cc:isDsR?0x006644:isSsR?0xcc6622:0xff4400;
+    const padEmit=isSpR?0x8833ff:isDsR?0x00aacc:isSsR?0xff8833:0xff7722;
+    const stripeColR=isSpR?0x00ccff:isDsR?0x00ffaa:isSsR?0xffd870:0xffdd00;
 
     // Flat glowing launchpad on the track — no obstacle
     const padMat=new THREE.MeshLambertMaterial({color:padCol,emissive:padEmit,emissiveIntensity:1.2,transparent:true,opacity:.88});
@@ -81,6 +81,7 @@ function buildSpinPads(){
     volcano:  {disc:0xaa3300,emit:0x661100,ring:0xff6622,cone:0xff9922,marker:0xcc2200},
     arctic:   {disc:0x336699,emit:0x113366,ring:0x66ccff,cone:0xbbeeff,marker:0x4488cc},
     themepark:{disc:0xcc2266,emit:0x991144,ring:0xff88bb,cone:0xffdd33,marker:0xff5599},
+    sandstorm:{disc:0x8b4a25,emit:0x5a2818,ring:0xff8c42,cone:0xd4a55a,marker:0xc97232},
   };
   const pal=SP[activeWorld]||SP.space;
 
@@ -143,6 +144,7 @@ function buildBoostPads(){
     volcano:  {pad:0xff5522,emit:0xdd2200,chev:0xffdd99,glow:0xff8844,light:0xff4422},
     arctic:   {pad:0x66ddff,emit:0x2288cc,chev:0xe8f5ff,glow:0x99ddff,light:0x88ccff},
     themepark:{pad:0xffcc22,emit:0xff6600,chev:0xffeecc,glow:0xff9933,light:0xffaa00},
+    sandstorm:{pad:0xff8c42,emit:0xcc4a18,chev:0xffe4a8,glow:0xff9c52,light:0xff8c42},
   };
   const pal=BP[activeWorld]||BP.space;
 

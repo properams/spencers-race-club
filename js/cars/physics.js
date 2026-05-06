@@ -265,7 +265,10 @@ function updatePlayer(dt){
                      _OFFTRACK_PROFILES[(window.WORLD_DEFAULT_SURFACE&&window.WORLD_DEFAULT_SURFACE[activeWorld])||'asphalt']||
                      _OFFTRACK_PROFILES.asphalt;
       car.speed*=Math.pow(1-overRatio*_profile.friction,dt*60);
-      if(offDist>TW+4&&Math.random()<_profile.chance){
+      // Popup threshold raised TW+4 → TW+6 (17u → 19u) so curbs (13..15u
+      // outside curve) and quick wide-line corrections don't trigger the
+      // off-track popup. Friction itself still kicks in at TW (line above).
+      if(offDist>TW+6&&Math.random()<_profile.chance){
         showPopup(_profile.label,_profile.color,400);
       }
     }
