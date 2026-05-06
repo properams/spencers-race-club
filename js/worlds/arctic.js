@@ -6,6 +6,24 @@
 // Per-world state (uit main.js verhuisd) — gereset in core/scene.js buildScene().
 let _arcticIcePatches=[],_arcticAurora=[],_arcticBlizzardGeo=null;
 
+// Single source of truth for arctic day lighting. Mirrors the cross-world
+// helper pattern (sandstorm/candy/volcano) — buildArcticEnvironment +
+// night.js arctic-day branch share the same constants.
+//
+// Goal palette (cool clear-sky):
+//   sun #aaccff (cool blue-white) / 0.8
+//   ambient #445566 (cool slate) / 0.45
+//   hemi sky #6688aa / ground #223344 / 0.30
+function _applyArcticDayLighting(){
+  if(!sunLight||!ambientLight||!hemiLight)return;
+  sunLight.color.setHex(0xaaccff); sunLight.intensity=.8;
+  ambientLight.color.setHex(0x445566); ambientLight.intensity=.45;
+  hemiLight.color.setHex(0x6688aa);
+  hemiLight.groundColor.setHex(0x223344);
+  hemiLight.intensity=.30;
+}
+if(typeof window!=='undefined')window._applyArcticDayLighting=_applyArcticDayLighting;
+
 function buildArcticEnvironment(){
   var g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
     new THREE.MeshLambertMaterial({color:0xccddee,map:_iceGroundTex()}));
@@ -13,9 +31,7 @@ function buildArcticEnvironment(){
   g.userData._isProcGround=true; // hookable by asset-bridge if PBR ice maps loaded
   scene.add(g);
   // Sky + fog set in core/scene.js so updateSky's lerp uses world-matched colors.
-  sunLight.color.setHex(0xaaccff);sunLight.intensity=.8;
-  ambientLight.color.setHex(0x445566);ambientLight.intensity=.45;
-  hemiLight.color.setHex(0x6688aa);hemiLight.groundColor.setHex(0x223344);hemiLight.intensity=.30;
+  _applyArcticDayLighting();
   // Ice barriers
   var N=_mobCount(220),im=new THREE.MeshLambertMaterial({color:0x88bbcc,transparent:true,opacity:.85});
   [-1,1].forEach(function(side){

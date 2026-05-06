@@ -131,7 +131,11 @@ function toggleNight(){
       if(_arcDayBg) scene.background=_arcDayBg;
       if(_arcDayEnv) scene.environment=_arcDayEnv;
       scene.fog.density=.0035;
-      sunLight.color.setHex(0xaaccff);sunLight.intensity=.8;ambientLight.intensity=.45;
+      // Use arctics shared day-lighting helper for the day-restore so
+      // build-time + toggle-time setups can never drift.
+      if(typeof window._applyArcticDayLighting==='function'){
+        window._applyArcticDayLighting();
+      }
       trackLightList.forEach(function(l){l.intensity=0;});
     }
     if(stars)stars.visible=isDark;
