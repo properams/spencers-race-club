@@ -116,21 +116,75 @@ function toggleNight(){
     }
     if(_sunBillboard)_sunBillboard.visible=!isDark;
   }else if(activeWorld==='sandstorm'){
-    // Sandstorm has no day/night cycle (per design): the storm hazard
-    // replaces the mood-arc. Keep the warm desert look in both modes; the
-    // toggle only nudges sun/ambient slightly so the moon/sun button still
-    // gives visual feedback. Fog far stays driven by the storm hazard, NOT
-    // by night.js — never write scene.fog.far / .near here.
+    // Sandstorm full day↔night swap (visual-fix-v4 §4). Day = warm sunset
+    // (matches buildSandstormEnvironment values exactly so the sandstorm
+    // build-time lighting and the night.js light-restore agree). Night =
+    // moon-lit desert with deep purple sky baked into the skybox canvas.
+    // Fog far stays driven by the storm hazard, NOT by night.js.
     if(isDark){
-      sunLight.color.setHex(0xc8a878);sunLight.intensity=1.0;
-      ambientLight.intensity=0.5;hemiLight.intensity=0.32;
-      trackLightList.forEach(l=>l.intensity=1.6);trackPoles.forEach(p=>p.visible=true);
+      // ── Skybox swap to night canvas (moon + stars + Milky Way painted in)
+      if(typeof makeSandstormNightSkyTex==='function'){
+        const oldBg=scene.background;
+        scene.background=makeSandstormNightSkyTex();
+        // Drop GPU ref to the previous day-canvas so it gets released by
+        // the next disposeScene traversal (CanvasTexture .dispose).
+        if(oldBg&&oldBg.dispose)oldBg.dispose();
+        // Refresh PMREM env so car clearcoat reflects the moon, not the sun.
+        if(typeof _buildWorldEnvFromSky==='function'){
+          const _newEnv=_buildWorldEnvFromSky(scene.background);
+          if(_newEnv){
+            const _oldEnv=scene.environment;
+            scene.environment=_newEnv;
+            if(_oldEnv&&_oldEnv.dispose)_oldEnv.dispose();
+          }
+        }
+      }
+      // ── Moon-light: cool blue-white directional, low intensity, high angle.
+      sunLight.color.setHex(0xa8c0ff);
+      sunLight.intensity=0.6;
+      sunLight.position.set(80,120,-40);
+      ambientLight.color.setHex(0x2a2540); ambientLight.intensity=0.25;
+      hemiLight.color.setHex(0x3a3868);
+      hemiLight.groundColor.setHex(0x1a1828);
+      hemiLight.intensity=0.4;
+      // Fog tint shifts toward deep purple so distance-faded geometry
+      // blends into the night sky's foot-band (#1a1828).
+      if(scene&&scene.fog&&scene.fog.color){
+        scene.fog.color.setHex(0x1a1535);
+      }
+      _fogColorDay.setHex(0xe8a468); _fogColorNight.setHex(0x1a1535);
     }else{
-      sunLight.color.setHex(0xffc97a);sunLight.intensity=1.4;
-      ambientLight.intensity=0.6;hemiLight.intensity=0.4;
-      trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
+      // ── Day: restore the warm sunset palette from buildSandstormEnvironment.
+      if(typeof makeSandstormSkyTex==='function'){
+        const oldBg=scene.background;
+        scene.background=makeSandstormSkyTex();
+        if(oldBg&&oldBg.dispose)oldBg.dispose();
+        if(typeof _buildWorldEnvFromSky==='function'){
+          const _newEnv=_buildWorldEnvFromSky(scene.background);
+          if(_newEnv){
+            const _oldEnv=scene.environment;
+            scene.environment=_newEnv;
+            if(_oldEnv&&_oldEnv.dispose)_oldEnv.dispose();
+          }
+        }
+      }
+      sunLight.color.setHex(0xff8c42);
+      sunLight.intensity=window._isMobile?1.7:2.8;
+      sunLight.position.set(80,35,-60);
+      ambientLight.color.setHex(0x5a2818); ambientLight.intensity=0.35;
+      hemiLight.color.setHex(0xffb87a);
+      hemiLight.groundColor.setHex(0x8b3a1d);
+      hemiLight.intensity=window._isMobile?0.7:1.0;
+      if(scene&&scene.fog&&scene.fog.color){
+        scene.fog.color.setHex(0xe8a468);
+      }
+      _fogColorDay.setHex(0xe8a468); _fogColorNight.setHex(0x6a4830);
     }
-    if(stars)stars.visible=isDark;
+    // Stars baked into the skybox canvas (not scene-level Points), so the
+    // shared `stars` global stays untouched here. Track-side glow is on
+    // for night so the player has light cues regardless of headlights.
+    trackLightList.forEach(l=>l.intensity=isDark?1.4:0);
+    trackPoles.forEach(p=>p.visible=isDark);
     if(plHeadL){plHeadL.intensity=isDark?1.7:0;plHeadR.intensity=isDark?1.7:0;}
     if(plTail)plTail.intensity=isDark?1.4:0;
     _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0);

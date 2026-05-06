@@ -470,6 +470,102 @@ function makeSandstormSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
+// Sandstorm NIGHT — deep-purple zenith with full-moon hero, dense star
+// field weighted toward the zenith, and a diagonal Milky-Way band.
+// Painted onto the same 1024×512 canvas the day-skybox uses so the
+// PMREM-derived environment reflections automatically pick up the moon
+// glow on car clearcoat.
+//
+// Night-toggle in effects/night.js swaps between makeSandstormSkyTex
+// (day) and this builder when activeWorld==='sandstorm' and isDark
+// flips. Stars are baked into the canvas (not as scene-level Points)
+// so they pan with the skybox when camera turns — matches every other
+// world's star approach.
+function makeSandstormNightSkyTex(){
+  const {c,g}=_newSkyCanvas('#0a0a1f','#2a2548');
+  const W=1024, H=512;
+  // Mid-band — soft purple haze blends zenith into horizon.
+  const mid=g.createLinearGradient(0,160,0,360);
+  mid.addColorStop(0,'rgba(26,21,53,0)');
+  mid.addColorStop(.5,'rgba(26,21,53,0.55)');
+  mid.addColorStop(1,'rgba(42,37,72,0)');
+  g.fillStyle=mid; g.fillRect(0,160,W,200);
+  // Lower horizon — slight indigo lift so the seam against fog disappears.
+  const foot=g.createLinearGradient(0,420,0,512);
+  foot.addColorStop(0,'rgba(42,37,72,0.4)');
+  foot.addColorStop(1,'rgba(26,24,40,1)');
+  g.fillStyle=foot; g.fillRect(0,420,W,92);
+  // Milky Way band — diagonal cloudy strip from lower-left to upper-right
+  // of the zenith half. Procedural blob-cluster fill via additive tint.
+  // Saved + restored so we can rotate the canvas for the diagonal sweep
+  // without affecting subsequent paints.
+  g.save();
+  g.translate(W*0.5, 220);
+  g.rotate(-0.45);   // ~-26° tilt
+  for(let i=0;i<70;i++){
+    const x=(Math.random()-0.5)*W*1.4;
+    const y=(Math.random()-0.5)*120;
+    const r=18+Math.random()*36;
+    const grd=g.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0,'rgba(180,170,210,0.18)');
+    grd.addColorStop(1,'rgba(180,170,210,0)');
+    g.fillStyle=grd; g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  // Brighter clusters along the band's spine
+  for(let i=0;i<30;i++){
+    const x=(Math.random()-0.5)*W*1.2;
+    const y=(Math.random()-0.5)*40;
+    const r=8+Math.random()*16;
+    const grd=g.createRadialGradient(x,y,0,x,y,r);
+    grd.addColorStop(0,'rgba(220,210,250,0.32)');
+    grd.addColorStop(1,'rgba(220,210,250,0)');
+    g.fillStyle=grd; g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  g.restore();
+  // Star field — 200 desktop / 80 mobile, weighted toward zenith via
+  // y=Math.pow(rand,1.6)*midY. 80% white, 15% blue-tinted, 5% warm-yellow.
+  const STAR_COUNT=window._isMobile?80:200;
+  for(let i=0;i<STAR_COUNT;i++){
+    const x=Math.random()*W;
+    // Zenith-weighted: rand^1.6 makes 80% of stars sit in the upper half.
+    const y=Math.pow(Math.random(),1.6)*340;
+    const r=Math.random();
+    const size=r<0.85?1: r<0.97?1.5:2.2;
+    const tone=r<0.80?'255,255,255': r<0.95?'216,224,255':'255,248,224';
+    const alpha=(0.55+Math.random()*0.45).toFixed(2);
+    g.fillStyle=`rgba(${tone},${alpha})`;
+    g.fillRect(x, y, size, size);
+  }
+  // ── HERO: full moon, upper-right quadrant. Scaled to read at distance.
+  const moonCx=720, moonCy=130, moonR=46;
+  // Outer halo (additive feel via radial gradient white-blue → transparent).
+  const halo=g.createRadialGradient(moonCx,moonCy,moonR*0.6, moonCx,moonCy,moonR*2.6);
+  halo.addColorStop(0,'rgba(245,240,216,0.45)');
+  halo.addColorStop(.4,'rgba(200,210,240,0.18)');
+  halo.addColorStop(1,'rgba(200,210,240,0)');
+  g.fillStyle=halo; g.fillRect(moonCx-moonR*2.6, moonCy-moonR*2.6, moonR*5.2, moonR*5.2);
+  // Moon disc — cream-white with a faint terminator gradient.
+  const disc=g.createRadialGradient(moonCx-moonR*0.25, moonCy-moonR*0.25, 0,
+                                     moonCx, moonCy, moonR);
+  disc.addColorStop(0,'rgba(255,250,232,1)');
+  disc.addColorStop(.7,'rgba(245,240,216,1)');
+  disc.addColorStop(1,'rgba(200,194,170,0.95)');
+  g.fillStyle=disc; g.beginPath();
+  g.arc(moonCx, moonCy, moonR, 0, Math.PI*2); g.fill();
+  // Craters — 8 darker spots, sized + placed pseudo-randomly inside disc.
+  const craters=[
+    [-22,-12,7], [12,-18,5], [22,8,6], [-8,16,9],
+    [-18,4,4], [4,-4,3], [16,-2,4], [-2,22,5]
+  ];
+  craters.forEach(([dx,dy,cr])=>{
+    const cgrd=g.createRadialGradient(moonCx+dx,moonCy+dy,0, moonCx+dx,moonCy+dy,cr);
+    cgrd.addColorStop(0,'rgba(170,165,148,0.55)');
+    cgrd.addColorStop(1,'rgba(170,165,148,0)');
+    g.fillStyle=cgrd; g.fillRect(moonCx+dx-cr, moonCy+dy-cr, cr*2, cr*2);
+  });
+  return _skyTexFromCanvas(c);
+}
+
 // Theme park — sunset gradient + soft cloud puffs + early stars + lit horizon
 function makeThemeparkSkyTex(){
   const {c,g}=_newSkyCanvas('#2a0844','#ff8844');

@@ -287,11 +287,18 @@ function _ssBuildBackgroundMesas(){
       const mesaMat=baseMat.clone();
       mesaMat.color.multiplyScalar(0.92+Math.random()*0.16);
       const mesa=new THREE.Mesh(mesaGeo, mesaMat);
-      mesa.position.set(cx, height*0.5-1, cz);
       mesa.rotation.y=Math.random()*Math.PI*2;
       // Squashed Y-scale + slight per-instance jitter
       const sc=0.85+Math.random()*0.40;
-      mesa.scale.set(sc, 0.7+Math.random()*0.3, sc);
+      const sy=0.7+Math.random()*0.3;
+      mesa.scale.set(sc, sy, sc);
+      // Y-position MUST account for the Y-scale: organicCylinder's
+      // CylinderGeometry is centered (y∈[-h/2,h/2]), so after sy-scale
+      // the bottom sits at -h*sy/2 in local space. Position the mesh so
+      // the scaled bottom lands at y=-1 (just below ground). Earlier
+      // formula (height*0.5-1) ignored sy and floated mesas 2-8u in
+      // the air for sy<1.0 — visual-fix-v4 bug 1.
+      mesa.position.set(cx, height*sy*0.5-1, cz);
       ProcGeometry.applyAtmosphericPerspective(mesa, {
         fogColor:'#e8b878',
         startDistance:tier.distance-50,
@@ -1026,7 +1033,13 @@ function _ssBuildCamels(){
   const merged=THREE.BufferGeometryUtils.mergeBufferGeometries(parts);
   parts.forEach(g=>g.dispose());
   // Place 4 instances on far dunes (>200u from track centre per spec).
-  const positions=[[210,-280],[-180,-310],[-260,80],[280,180]];
+  // 8 camel positions desktop, doubled from the original 4 for the v4
+  // density rebuild. Spread across all 4 quadrants on far dunes (>200u
+  // from track centre per spec §3.11).
+  const positions=mob
+    ? [[210,-280],[-180,-310],[-260,80],[280,180]]
+    : [[210,-280],[-180,-310],[-260,80],[280,180],
+       [330,-90],[-300,-180],[-100,330],[150,300]];
   const im=new THREE.InstancedMesh(merged, camelMat, positions.length);
   const _dummy=new THREE.Object3D();
   positions.forEach(([px,pz],i)=>{
@@ -1039,6 +1052,71 @@ function _ssBuildCamels(){
   });
   im.instanceMatrix.needsUpdate=true;
   scene.add(im);
+}
+
+// Pyramids — visual-fix-v4 §3 Giza-cluster.
+// Three Egyptian pyramids near the start/finish straight, visible to the
+// player at race-spawn. ProcGeometry.pyramidCap (already used for obelisk
+// capstones) gives a clean 4-triangle pyramid with the apex at +Y and a
+// square base at Y=0 — perfect when scaled up.
+//
+// Hero pyramid (Cheops-style): baseW=22, h=30, ~120u from start.
+// Companion 1 (Khafre):        baseW=18, h=22, ~170u.
+// Companion 2 (Menkaure):      baseW=12, h=14, ~240u.
+//
+// Companions get atmospheric-perspective material color blended toward
+// the day-fog tint (matches the existing mesa-tier pattern). Hero stays
+// crisp — it's the closest hero-prop and shouldn't fade.
+//
+// Placement: along the +nr-side of the start-straight (same side as the
+// sphinx), with along-tangent offsets so the trio is not collinear (= a
+// natural Giza panorama instead of a row of stamps). Pyramids stand on
+// the ground (geometry base at Y=0, position Y=0).
+//
+// Performance: 1 mesh per pyramid (3 total) sharing one MeshStandardMaterial
+// instance via clone-with-color-shift. Hero casts shadow on desktop, the
+// rest don't (companions are far enough that shadow detail is wasted).
+function _ssBuildPyramids(){
+  const mob=window._isMobile;
+  // Stepped-look sandstone texture. crackCount + repeatY get most of the
+  // way toward the visible block-course banding the spec asked for, without
+  // needing a bespoke canvas painter. The MeshStandardMaterial sun-shading
+  // and ACES tone-mapping handles the highlight/shadow per face.
+  const pyrTex=ProcTextures.weatheredStone({
+    baseColor:'#c9a473', crackColor:'#5a3a1d',
+    crackCount:14, ageWear:0.55,
+    repeatX:1, repeatY:2
+  });
+  const baseMat=new THREE.MeshStandardMaterial({
+    map:pyrTex, color:0xc9a473,
+    roughness:0.95, metalness:0
+  });
+  const startP=trackCurve.getPoint(0.0);
+  const startTg=trackCurve.getTangent(0.0).normalize();
+  const startNr=new THREE.Vector3(-startTg.z,0,startTg.x);
+  // [baseW, height, distOff, alongMul, blendToFog]
+  const trio=[
+    [22, 30, 120,  0.20, 0.00],   // Cheops hero
+    [18, 22, 170, -0.40, 0.30],   // Khafre — set further back along tangent
+    [12, 14, 240,  0.30, 0.55]    // Menkaure — furthest, biggest fog blend
+  ];
+  const fogCol=new THREE.Color('#e8a468');
+  trio.forEach(([baseW,h,distOff,alongMul,blend], idx)=>{
+    const cx = startP.x + startNr.x*distOff + startTg.x*alongMul*distOff;
+    const cz = startP.z + startNr.z*distOff + startTg.z*alongMul*distOff;
+    const geo = ProcGeometry.pyramidCap({ baseW: baseW, height: h });
+    const mat = baseMat.clone();
+    if(blend>0) mat.color.lerp(fogCol, blend);
+    const mesh=new THREE.Mesh(geo, mat);
+    mesh.position.set(cx, 0, cz);
+    // 45° rotation so 4 sloped sides face the cardinal directions instead
+    // of corner-on. Slight per-pyramid yaw jitter so they're not exactly
+    // aligned (would read as obviously procedural).
+    mesh.rotation.y = Math.PI*0.25 + (idx-1)*0.18;
+    if(!mob && idx===0) mesh.castShadow=true;
+    mesh.receiveShadow=!mob;
+    scene.add(mesh);
+  });
 }
 
 // Bedouin tents — Phase-3C rebuild per spec §3.10. PBR baseline,
@@ -1148,9 +1226,12 @@ function _ssBuildBedouinTents(){
 function _ssBuildRoadsideDetail(){
   const mob=window._isMobile;
   // Per-type instance counts. Mobile drops cactus + bones per spec §4.2.
+  // Bumped vs Phase-4 originals to fix the "wereld voelt te leeg" report
+  // (visual-fix-v4 bug 2): rock 30→40, marker 15→25 for stronger track-edge
+  // density, cactus 12→15, others trimmed slightly so total stays in budget.
   const COUNTS = mob
-    ? {rock:13, sunken:13, marker:8, cactus:0, bones:0, scarab:5}
-    : {rock:30, sunken:25, marker:15, cactus:12, bones:10, scarab:8};
+    ? {rock:18, sunken:13, marker:12, cactus:0, bones:0, scarab:3}
+    : {rock:40, sunken:25, marker:25, cactus:15, bones:8, scarab:6};
 
   // ── Materials (all shared, no clones) ─────────────────────────────────
   const stoneTex=ProcTextures.weatheredStone({
@@ -1231,12 +1312,16 @@ function _ssBuildRoadsideDetail(){
   scarabSignGeo.translate(0, 2.1, 0);
 
   // ── Spawn helper: walks waypoints, places instances within 3-8u of edge.
+  // Stratified t-sampling (i/count + jitter) replaces pure Math.random()
+  // so each prop occupies its own track-fraction. Pure random was causing
+  // long visually-empty stretches (visual-fix-v4 bug 2: "lange rechte met
+  // enkel één tent in de verte"). Each prop now has its own t-bucket.
   const _dummy=new THREE.Object3D();
   const _spawn=(im, count, mat, scaleRange, offRange, yOff)=>{
     if(!count) return;
     let placed=0;
     for(let i=0;i<count;i++){
-      const t=Math.random();
+      const t=((i+Math.random())/count)%1;
       const p=trackCurve.getPoint(t);
       const tg=trackCurve.getTangent(t).normalize();
       const nr=new THREE.Vector3(-tg.z,0,tg.x);
@@ -1393,6 +1478,7 @@ function buildSandstormEnvironment(){
   _ssBuildObelisks();
   _ssBuildPalmTrees();
   _ssBuildCamels();
+  _ssBuildPyramids();
   _ssBuildBedouinTents();
   // Phase-4 §4.2: 6 prop-type roadside detail spawner. Replaces the
   // standalone _ssBuildScarabSigns (folded in as one of the 6 types).
