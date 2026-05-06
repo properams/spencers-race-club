@@ -72,7 +72,13 @@ const WORLD_TRACK_PALETTE = {
   volcano:   { asphalt:0x2a0808, kerbA:[.82,.07,.03], kerbB:[1,1,1],     kerbEmissive:0xff3300, kerbEmissiveInt:.55, gantryAccent:0x441166, gantryEmissive:0x6622cc },
   arctic:    { asphalt:0x667788, kerbA:[.82,.07,.03], kerbB:[1,1,1],     kerbEmissive:0x4488dd, kerbEmissiveInt:.45, gantryAccent:0x441166, gantryEmissive:0x6622cc },
   themepark: { asphalt:0x221030, kerbA:[1,.3,.8],     kerbB:[1,.9,.2],   kerbEmissive:0xff44aa, kerbEmissiveInt:.60, gantryAccent:0x441166, gantryEmissive:0x6622cc },
-  sandstorm: { asphalt:0x6a4a2e, kerbA:[.79,.45,.20], kerbB:[.95,.85,.62],kerbEmissive:0xc97232, kerbEmissiveInt:.40, gantryAccent:0x441166, gantryEmissive:0x6622cc }
+  sandstorm: { asphalt:0x6a4a2e, kerbA:[.79,.45,.20], kerbB:[.95,.85,.62],kerbEmissive:0xc97232, kerbEmissiveInt:.40, gantryAccent:0x441166, gantryEmissive:0x6622cc },
+  // Pier 47 (industrial harbour by night). Asphalt is near-black (#1a1a1e)
+  // for the future wet-look pass; kerbs are rust-orange (#a04020) and
+  // faded warning-yellow (#aaa030); kerbEmissive picks up sodium-lamp tint
+  // (#ff8830) so the kerbs glow under the planned street-pole lights in
+  // sessie 2. Line color (#d0d0c8) is the broken-white edge marking.
+  pier47:    { asphalt:0x1a1a1e, kerbA:[.627,.251,.125], kerbB:[.667,.627,.188], kerbEmissive:0xff8830, kerbEmissiveInt:.45, gantryAccent:0xa04020, gantryEmissive:0xff8830 }
 };
 if(typeof window!=='undefined')window.WORLD_TRACK_PALETTE=WORLD_TRACK_PALETTE;
 

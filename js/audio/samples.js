@@ -91,6 +91,7 @@ const WORLD_DEFAULT_SURFACE = {
   arctic:    'ice',
   themepark: 'asphalt',
   sandstorm: 'sand',
+  pier47:    'asphalt',
 };
 
 // ── State ───────────────────────────────────────────────────────────────────
