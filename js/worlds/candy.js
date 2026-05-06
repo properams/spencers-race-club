@@ -85,6 +85,13 @@ function buildLollipopTrees(){
   const stickMat=new THREE.MeshLambertMaterial({color:0xf5e0c8});
   const headColors=[0xff2266,0xff8800,0x22ccff,0xaadd00,0xcc44ff,0xff44aa,0xffcc00,0x44ddbb];
   const count=44;
+  // Sticks share material + geometry — only height (h) differs per stick.
+  // Bake height into the per-instance scale.y of an InstancedMesh so all
+  // 44 sticks render in 1 draw call instead of 44. Unit-height cylinder
+  // (height=1) becomes h units tall after scale.set(1, h, 1).
+  const stickGeo=new THREE.CylinderGeometry(.18,.22,1,6);
+  const stickIM=new THREE.InstancedMesh(stickGeo, stickMat, count);
+  const _stickDummy=new THREE.Object3D();
   for(let i=0;i<count;i++){
     const t=(i/count+Math.random()*.008)%1;
     const p=trackCurve.getPoint(t),tg=trackCurve.getTangent(t).normalize();
@@ -92,9 +99,12 @@ function buildLollipopTrees(){
     const side=(i%2===0?1:-1)*(BARRIER_OFF+22+Math.random()*22);
     const cx=p.x+nr.x*side+(Math.random()-.5)*5,cz=p.z+nr.z*side+(Math.random()-.5)*5;
     const h=5+Math.random()*5;
-    // Stick
-    const stick=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,h,6),stickMat);
-    stick.position.set(cx,h*.5,cz);scene.add(stick);
+    // Stick — write transform into the IM via shared dummy. Same
+    // (position.y = h/2, scale.y = h) values the per-stick Mesh used.
+    _stickDummy.position.set(cx,h*.5,cz);
+    _stickDummy.scale.set(1,h,1);
+    _stickDummy.updateMatrix();
+    stickIM.setMatrixAt(i,_stickDummy.matrix);
     // Head (flattened sphere). Emissive intentionally low — there are 44 of
     // these around the track so cumulative bloom would otherwise wash the
     // ground and bleed through narrow track at distance.
@@ -110,6 +120,10 @@ function buildLollipopTrees(){
     const stripe=new THREE.Mesh(new THREE.TorusGeometry(hr*.6,.07,4,16),stripeMat);
     stripe.position.copy(head.position);stripe.rotation.x=Math.PI/2;scene.add(stripe);
   }
+  // Publish the consolidated stick mesh once after the loop. instanceMatrix
+  // upload happens here, single scene-add for all 44 sticks.
+  stickIM.instanceMatrix.needsUpdate=true;
+  scene.add(stickIM);
 }
 
 
