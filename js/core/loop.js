@@ -116,6 +116,7 @@ function loop(){
     if(activeWorld==='arctic')updateArcticWorld(dt);
     if(activeWorld==='themepark')updateThemeparkWorld(dt);
     if(activeWorld==='sandstorm'&&typeof updateSandstormWorld==='function')updateSandstormWorld(dt);
+    if(activeWorld==='pier47'&&typeof updatePier47World==='function')updatePier47World(dt);
     if(gameState==='RACE'){
       updateHUD(dt);updateSpeedOverlay();
       const _pp=getPositions().findIndex(c=>c.isPlayer)+1;

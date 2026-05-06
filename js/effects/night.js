@@ -31,6 +31,7 @@ let _ncyNightBg=null, _ncyNightEnv=null, _ncyDayBg=null, _ncyDayEnv=null;
 let _cdyNightBg=null, _cdyNightEnv=null, _cdyDayBg=null, _cdyDayEnv=null;
 let _tpkNightBg=null, _tpkNightEnv=null, _tpkDayBg=null, _tpkDayEnv=null;
 let _gpNightBg=null,  _gpNightEnv=null,  _gpDayBg=null,  _gpDayEnv=null;
+let _p47NightBg=null, _p47NightEnv=null, _p47DayBg=null, _p47DayEnv=null;
 
 // Generic night-env baker. Calls a per-world skybox builder, then runs
 // the PMREM pipeline on the resulting canvas to derive a cubemap-style
@@ -313,6 +314,47 @@ function toggleNight(){
     if(plTail)plTail.intensity=isDark?1.4:0;
     _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0);
     if(_sunBillboard)_sunBillboard.visible=!isDark;
+  }else if(activeWorld==='pier47'){
+    // Pier 47 sessie-1 night-toggle: simple PMREM-cached skybox swap to a
+    // slightly-darker variant + ambient deepens. PMREM env-cache is wired
+    // (matches the cross-world pattern) so car lacquer reflections stay
+    // consistent across toggles. Sessie-3 will introduce a real "ochtend"
+    // day-mode and proper sodium-lamp night setup; for now the toggle is
+    // a small visual delta on top of the bewolkte-nacht baseline.
+    if(isDark){
+      if(!_p47DayBg)_p47DayBg=scene.background;
+      if(!_p47DayEnv)_p47DayEnv=scene.environment;
+      if(!_p47NightBg && typeof makePier47NightSkyTex==='function'){
+        const _baked=_bakeNightEnv(makePier47NightSkyTex);
+        _p47NightBg=_baked.bg; _p47NightEnv=_baked.env;
+      }
+      if(_p47NightBg) scene.background=_p47NightBg;
+      if(_p47NightEnv) scene.environment=_p47NightEnv;
+      scene.fog.density=.014;
+      sunLight.color.setHex(0xb0a8a0); sunLight.intensity=0.7;
+      ambientLight.color.setHex(0x14141c); ambientLight.intensity=0.22;
+      hemiLight.color.setHex(0x707880);
+      hemiLight.groundColor.setHex(0x282528);
+      hemiLight.intensity=0.35;
+      if(scene&&scene.fog&&scene.fog.color)scene.fog.color.setHex(0x18141f);
+      _fogColorDay.setHex(0x252030); _fogColorNight.setHex(0x18141f);
+    }else{
+      if(_p47DayBg) scene.background=_p47DayBg;
+      if(_p47DayEnv) scene.environment=_p47DayEnv;
+      scene.fog.density=.012;
+      // Restore via shared helper so build-time + toggle-time setups can never drift.
+      if(typeof window._applyPier47DayLighting==='function'){
+        window._applyPier47DayLighting();
+      }
+      if(scene&&scene.fog&&scene.fog.color)scene.fog.color.setHex(0x252030);
+      _fogColorDay.setHex(0x252030); _fogColorNight.setHex(0x18141f);
+    }
+    // Stars stay hidden — Pier 47 has city light pollution + cloud cover.
+    if(stars)stars.visible=false;
+    if(plHeadL){plHeadL.intensity=isDark?1.7:0.6;plHeadR.intensity=isDark?1.7:0.6;}
+    if(plTail)plTail.intensity=isDark?1.4:0.4;
+    _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0.3);
+    if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='space'){
     // Space is always dark — toggle only affects ambient brightness ("solar flare day" vs "deep night")
     if(isDark){
@@ -397,6 +439,20 @@ function _disposeSandstormSkyCache(){
   if(_sstDayBg){try{_sstDayBg.dispose();}catch(_){} _sstDayBg=null;}
   if(_sstDayEnv){try{_sstDayEnv.dispose();}catch(_){} _sstDayEnv=null;}
 }
+
+// Release the Pier 47 sky-cache (day + night skybox + PMREM env). Mirrors
+// the sandstorm pattern. Wired from disposeScene's per-world cleanup path
+// once sessie-2 lands a disposePier47Extras helper; for sessie 1 the cache
+// is small (one skybox + env per toggle direction) so a leak across one
+// world-switch is negligible. Function defined here so future wiring is a
+// one-line call.
+function _disposePier47SkyCache(){
+  if(_p47NightBg){try{_p47NightBg.dispose();}catch(_){} _p47NightBg=null;}
+  if(_p47NightEnv){try{_p47NightEnv.dispose();}catch(_){} _p47NightEnv=null;}
+  if(_p47DayBg){try{_p47DayBg.dispose();}catch(_){} _p47DayBg=null;}
+  if(_p47DayEnv){try{_p47DayEnv.dispose();}catch(_){} _p47DayEnv=null;}
+}
+if(typeof window!=='undefined')window._disposePier47SkyCache=_disposePier47SkyCache;
 
 // Per-world dispose helpers for the cross-world night-sky caches. Each is
 // called from the corresponding world-extras dispose function (e.g.

@@ -72,7 +72,13 @@ const WORLD_TRACK_PALETTE = {
   volcano:   { asphalt:0x2a0808, kerbA:[.82,.07,.03], kerbB:[1,1,1],     kerbEmissive:0xff3300, kerbEmissiveInt:.55, gantryAccent:0x441166, gantryEmissive:0x6622cc },
   arctic:    { asphalt:0x667788, kerbA:[.82,.07,.03], kerbB:[1,1,1],     kerbEmissive:0x4488dd, kerbEmissiveInt:.45, gantryAccent:0x441166, gantryEmissive:0x6622cc },
   themepark: { asphalt:0x221030, kerbA:[1,.3,.8],     kerbB:[1,.9,.2],   kerbEmissive:0xff44aa, kerbEmissiveInt:.60, gantryAccent:0x441166, gantryEmissive:0x6622cc },
-  sandstorm: { asphalt:0x6a4a2e, kerbA:[.79,.45,.20], kerbB:[.95,.85,.62],kerbEmissive:0xc97232, kerbEmissiveInt:.40, gantryAccent:0x441166, gantryEmissive:0x6622cc }
+  sandstorm: { asphalt:0x6a4a2e, kerbA:[.79,.45,.20], kerbB:[.95,.85,.62],kerbEmissive:0xc97232, kerbEmissiveInt:.40, gantryAccent:0x441166, gantryEmissive:0x6622cc },
+  // Pier 47 (industrial harbour by night). Asphalt is near-black (#1a1a1e)
+  // for the future wet-look pass; kerbs are rust-orange (#a04020) and
+  // faded warning-yellow (#aaa030); kerbEmissive picks up sodium-lamp tint
+  // (#ff8830) so the kerbs glow under the planned street-pole lights in
+  // sessie 2. Line color (#d0d0c8) is the broken-white edge marking.
+  pier47:    { asphalt:0x1a1a1e, kerbA:[.627,.251,.125], kerbB:[.667,.627,.188], kerbEmissive:0xff8830, kerbEmissiveInt:.45, gantryAccent:0xa04020, gantryEmissive:0xff8830 }
 };
 if(typeof window!=='undefined')window.WORLD_TRACK_PALETTE=WORLD_TRACK_PALETTE;
 
@@ -91,7 +97,21 @@ function buildTrack(){
   // edge lines and startline overlays win the depth test on low-precision depth buffers (iPad).
   const _trackPalette=WORLD_TRACK_PALETTE[activeWorld]||WORLD_TRACK_PALETTE.gp;
   const _baseTrackColor=_trackPalette.asphalt;
-  const _trackMat=new THREE.MeshLambertMaterial({color:_baseTrackColor,map:_buildTrackSurfaceTex()});
+  // Pier 47 wet-asphalt: swap to MeshStandardMaterial so the PMREM-baked
+  // skybox env paints the track with reflective slickness — sodium lamps
+  // smear into long highlights down the kade, exactly the look the world
+  // is built around. Other worlds keep the cheaper Lambert. The procedural
+  // _buildTrackSurfaceTex grain map applies to both code paths and gives
+  // the wet asphalt micro-variation so reflections aren't a perfect mirror.
+  const _trackMat=(activeWorld==='pier47')
+    ? new THREE.MeshStandardMaterial({
+        color:_baseTrackColor,
+        map:_buildTrackSurfaceTex(),
+        roughness:0.32,    // slick but not mirror — wet asphalt has roughness
+        metalness:0.45,    // boosts env-map reflectivity for the sodium-streak look
+        envMapIntensity:1.5
+      })
+    : new THREE.MeshLambertMaterial({color:_baseTrackColor,map:_buildTrackSurfaceTex()});
   // No polygonOffset on asphalt itself — it sits at y=0.005, well above the
   // ground plane at y=-0.12, so natural depth ordering keeps asphalt on top
   // of grass/sand. Pushing asphalt away (the previous +1 offset) caused

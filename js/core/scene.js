@@ -969,6 +969,8 @@ function buildScene(){
   _tpFerris=null;_tpCarousel=null;_tpCarouselHorses.length=0;_tpCoasters.length=0;
   _tpBalloons.length=0;_tpFireworks.length=0;_tpBunting.length=0;_tpParkLights.length=0;
   _tpFireworkTimer=2;
+  if(typeof _p47LampEmissives!=='undefined')_p47LampEmissives.length=0;
+  if(typeof _p47Bridge!=='undefined')_p47Bridge=null;
 
   const isSpace=activeWorld==='space';
   const isDeepSea=activeWorld==='deepsea';
@@ -978,6 +980,7 @@ function buildScene(){
   const isVolcano=activeWorld==='volcano';
   const isArctic=activeWorld==='arctic';
   const isSandstorm=activeWorld==='sandstorm';
+  const isPier47=activeWorld==='pier47';
   scene=new THREE.Scene();
   // scene.environment wordt per-world gezet ná het skybox-block hieronder
   // (zie _buildWorldEnvFromSky aanroep). Dit was eerder een generieke
@@ -1037,6 +1040,16 @@ function buildScene(){
     // + lap2 110 + lap3 55) — must stay aligned.
     scene.fog=new THREE.Fog(0xe8a468,60,220);
     _fogColorDay.setHex(0xe8a468);_fogColorNight.setHex(0x6a4830);
+  }else if(isPier47){
+    // Pier 47 — donker bewolkte nacht. Fog density 0.012 is denser than the
+    // other Exp2-fog worlds (.0014..0035) to reinforce the closed-in
+    // industrial-harbour vibe. Color is donkerpaars-grijs (#252030) which
+    // matches the skybox foot-band so distance-faded geometry blends
+    // seamlessly into the horizon. Day = the same overcast-night palette;
+    // a brighter "ochtend"-mode for the toggle is reserved for sessie 3.
+    scene.background=makePier47SkyTex();
+    scene.fog=new THREE.FogExp2(0x252030,.012);
+    _fogColorDay.setHex(0x252030);_fogColorNight.setHex(0x18141f);
   }else{
     // Onbekende world — val terug op space-sky zodat de scene niet crasht.
     if(window.dbg)dbg.warn('scene','unknown world '+activeWorld+' — falling back to space sky');
@@ -1108,6 +1121,12 @@ function buildScene(){
     buildBackgroundLayers();
   }else if(isThemepark){
     buildThemeparkEnvironment();
+    buildBackgroundLayers();
+  }else if(isPier47){
+    buildPier47Environment();
+    // Sessie 2: distant industrial skyline silhouettes (containers /
+    // warehouse roofs / crane booms catching sodium-orange backlight).
+    // Palette lives in track/environment.js _SILHOUETTE_PALETTES.pier47.
     buildBackgroundLayers();
   }else{
     if(window.dbg)dbg.warn('scene','unknown world '+activeWorld+' — no environment builder, scene will be sparse');
