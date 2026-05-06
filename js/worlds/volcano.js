@@ -8,6 +8,26 @@ let _volcanoLavaRivers=[],_volcanoGeisers=[],_volcanoEmberGeo=null;
 let _volcanoEruption=null,_volcanoEruptionTimer=3;
 let _volcanoEmbers=null,_volcanoGlowLight=null;
 
+// Single source of truth for volcano day lighting. Mirrors the sandstorm
+// + candy helper pattern — buildVolcanoEnvironment calls this at world-
+// build, and night.js can call it from the volcano-day branch (currently
+// inline because volcano had no day/night skybox swap before V5; see
+// _applyCandyDayLighting / _applySandstormDayLighting for the precedent).
+//
+// Goal palette (warm magma-light):
+//   sun #ff4422 (red-orange) / 0.7 — low intensity, the world is dim by design
+//   ambient #441100 (deep rust) / 0.35
+//   hemi sky #ff6600 (intense orange) / ground #220800 (dark rust) / 0.25
+function _applyVolcanoDayLighting(){
+  if(!sunLight||!ambientLight||!hemiLight)return;
+  sunLight.color.setHex(0xff4422); sunLight.intensity=.7;
+  ambientLight.color.setHex(0x441100); ambientLight.intensity=.35;
+  hemiLight.color.setHex(0xff6600);
+  hemiLight.groundColor.setHex(0x220800);
+  hemiLight.intensity=.25;
+}
+if(typeof window!=='undefined')window._applyVolcanoDayLighting=_applyVolcanoDayLighting;
+
 function buildVolcanoEnvironment(){
   // Ground
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
@@ -16,9 +36,7 @@ function buildVolcanoEnvironment(){
   g.userData._isProcGround=true;
   scene.add(g);
   // Sky + fog set in core/scene.js so updateSky's lerp uses world-matched colors.
-  sunLight.color.setHex(0xff4422);sunLight.intensity=.7;
-  ambientLight.color.setHex(0x441100);ambientLight.intensity=.35;
-  hemiLight.color.setHex(0xff6600);hemiLight.groundColor.setHex(0x220800);hemiLight.intensity=.25;
+  _applyVolcanoDayLighting();
   _volcanoGlowLight=new THREE.PointLight(0xff4400,3.0,600);
   _volcanoGlowLight.position.set(0,5,0);scene.add(_volcanoGlowLight);
   // Eruption particle system — lava blobs shooting out of main crater

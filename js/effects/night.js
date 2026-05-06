@@ -155,8 +155,15 @@ function toggleNight(){
     }else{
       if(_vlcDayBg) scene.background=_vlcDayBg;
       if(_vlcDayEnv) scene.environment=_vlcDayEnv;
+      // Use volcanos shared day-lighting helper for the day-restore so
+      // build-time + toggle-time setups can never drift.
+      if(typeof window._applyVolcanoDayLighting==='function'){
+        window._applyVolcanoDayLighting();
+      }
     }
-    sunLight.intensity=isDark?.22:.7;ambientLight.intensity=isDark?.38:.35;hemiLight.intensity=isDark?.26:.25;
+    if(isDark){
+      sunLight.intensity=.22; ambientLight.intensity=.38; hemiLight.intensity=.26;
+    }
     if(stars)stars.visible=true;
     trackLightList.forEach(function(l){l.intensity=isDark?1.8:0;});
     if(plHeadL){plHeadL.intensity=isDark?1.9:0;plHeadR.intensity=isDark?1.9:0;}
