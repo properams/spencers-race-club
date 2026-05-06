@@ -559,13 +559,13 @@ function _ssBuildSphinxMonument(){
   mound.position.y=-1.5;
   sphinx.add(mound);
 
-  // ── PLACEMENT: half-buried beside finish-line, facing the track.
-  // Group Y-offset is 0 (NOT -1.2 like an earlier draft tried — that
-  // mis-aligned the sokkel-low under ground while the body floated 0.9u
-  // above the sokkel-hi top, leaving a visible gap. The mound at sphinx-
-  // local y=-1.5 already buries its bottom half below ground, providing
-  // the half-buried look without offsetting the rest of the group.)
-  const t=0.96;
+  // ── PLACEMENT: hero-prop just past start-line, in the player's forward
+  // view at race-spawn. Was t=0.96 (just BEFORE start-line) which put the
+  // sphinx behind the spawning player — invisible from race-cam looking
+  // along +tangent. t=0.04 places it ~4% along the lap, in the camera
+  // frustum at spawn. Group Y-offset is 0; the mound at sphinx-local
+  // y=-1.5 buries its bottom half below ground for the half-buried look.
+  const t=0.04;
   const p=trackCurve.getPoint(t);
   const tg=trackCurve.getTangent(t).normalize();
   const nr=new THREE.Vector3(-tg.z,0,tg.x);
@@ -573,6 +573,7 @@ function _ssBuildSphinxMonument(){
   sphinx.position.set(p.x+nr.x*off, 0, p.z+nr.z*off);
   sphinx.rotation.y=Math.atan2(tg.x,tg.z)+Math.PI*0.5;
   scene.add(sphinx);
+  if(window.dbg)dbg.log('sandstorm','sphinx placed at t='+t+' world=('+sphinx.position.x.toFixed(1)+','+sphinx.position.y.toFixed(1)+','+sphinx.position.z.toFixed(1)+')');
 }
 
 // Tempel ruins — Phase-3B rebuild per spec §3.6.
@@ -876,7 +877,29 @@ function _ssBuildPalmTrees(){
     alphaTest:0.5, transparent:false,
     side:THREE.DoubleSide
   });
-  const frondGeo=new THREE.PlaneGeometry(3.4, 1.2);
+  // Frond geometry — multi-segment plane with a baked quadratic droop
+  // curve along its length. Visual-fix-v2 issue 6: the previous single-
+  // quad PlaneGeometry rendered as 2D no matter the per-frond rotation.
+  // Now: 12 segments desktop / 6 mobile, anchored at the BASE (local x=0)
+  // instead of center so the leaf attaches to the crown rim and the tip
+  // hangs out radially. Per-vertex Y droop is t² where t = x/length, so
+  // the base stays flat and the tip falls ~0.5u — combines naturally
+  // with the per-frond rigid tilt below for realistic variation.
+  const FROND_W=3.4, FROND_H=1.2;
+  const FROND_SEGS = mob ? 6 : 12;
+  const frondGeo=new THREE.PlaneGeometry(FROND_W, FROND_H, FROND_SEGS, 1);
+  frondGeo.translate(FROND_W*0.5, 0, 0);
+  {
+    const pos=frondGeo.attributes.position;
+    const DROOP_MAX=0.5;
+    for(let i=0;i<pos.count;i++){
+      const x=pos.getX(i);
+      const t=x/FROND_W;
+      pos.setY(i, pos.getY(i) - DROOP_MAX*t*t);
+    }
+    pos.needsUpdate=true;
+    frondGeo.computeVertexNormals();
+  }
   // Trunk built once with curvedTrunk; per-tree scale.y handles height
   // variance so geometry stays shared.
   const trunkGeo=ProcGeometry.curvedTrunk({
@@ -919,7 +942,11 @@ function _ssBuildPalmTrees(){
     const topZ=cz + Math.cos(yawJ) * 0.4 * h * 0.5;
     for(let l=0;l<FRONDS_PER_PALM;l++){
       const ang=(l/FRONDS_PER_PALM)*Math.PI*2;
-      const droop=-0.32-Math.random()*0.12;
+      // Rigid tilt softened from -0.32..-0.44 to -0.10..-0.20: the baked
+      // droop curve in frondGeo now provides the bulk of the bend, so the
+      // per-frond X-rotation only needs to angle the whole leaf slightly
+      // down (otherwise the curve + tilt overshoot and tips poke ground).
+      const droop=-0.10-Math.random()*0.10;
       _dummy.position.set(
         topX+Math.cos(ang+yawJ)*1.1,
         topY,
