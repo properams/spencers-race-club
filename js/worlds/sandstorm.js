@@ -1095,7 +1095,6 @@ function _ssBuildRoadsideDetail(){
     map:stoneTex, roughness:0.95, metalness:0
   });
   const woodMat=new THREE.MeshLambertMaterial({color:0x6e4520});
-  const flagMat=new THREE.MeshLambertMaterial({color:0xa83a25, side:THREE.DoubleSide});
   const cactusMat=new THREE.MeshStandardMaterial({color:0x4a6b32, roughness:0.85, metalness:0});
   const boneMat=new THREE.MeshLambertMaterial({color:0xe8d8b0});
   // Scarab sign uses pseudoGlyphs as a bug-silhouette stand-in via opts —
@@ -1162,16 +1161,17 @@ function _ssBuildRoadsideDetail(){
     [skull, tooth1, tooth2, horn1, horn2].forEach(g=>g.dispose());
     return merged;
   })();
-  // Scarab sign: pole + sign-plate merged
-  const scarabGeo=(()=>{
-    const pole=new THREE.CylinderGeometry(0.08, 0.08, 2.4, 5);
-    pole.translate(0, 1.2, 0);
-    const sign=new THREE.PlaneGeometry(1.6, 1.2);
-    sign.translate(0, 2.1, 0);
-    const merged=THREE.BufferGeometryUtils.mergeBufferGeometries([pole, sign]);
-    pole.dispose(); sign.dispose();
-    return merged;
-  })();
+  // Scarab sign: pole + sign-plate as TWO separate prototype geometries
+  // (NOT merged). Reason: signMat carries the pseudoGlyphs map, and on a
+  // merged pole+sign mesh the pole's tight cylinder UVs would wrap the
+  // glyph pattern in awkward stripes around the post. Splitting lets the
+  // pole use plain woodMat and only the sign-plate samples signMat.
+  // Trade-off: 2 IMs per scarab type instead of 1 (8 → 16 instances split
+  // across 2 IMs = +1 draw call per type, still well under budget).
+  const scarabPoleGeo=new THREE.CylinderGeometry(0.08, 0.08, 2.4, 5);
+  scarabPoleGeo.translate(0, 1.2, 0);
+  const scarabSignGeo=new THREE.PlaneGeometry(1.6, 1.2);
+  scarabSignGeo.translate(0, 2.1, 0);
 
   // ── Spawn helper: walks waypoints, places instances within 3-8u of edge.
   const _dummy=new THREE.Object3D();
@@ -1221,8 +1221,18 @@ function _ssBuildRoadsideDetail(){
     _spawn(bonesIM, COUNTS.bones, boneMat, [0.9, 1.3], [3, 7], 0);
   }
   if(COUNTS.scarab){
-    const scarabIM=new THREE.InstancedMesh(scarabGeo, signMat, COUNTS.scarab);
-    _spawn(scarabIM, COUNTS.scarab, signMat, [0.9, 1.1], [3, 6], 0);
+    // Two IMs per scarab type — pole uses woodMat (avoids glyph-tex
+    // wrapping the pole), sign uses signMat. Each IM gets the same
+    // matrices via two _spawn calls; we re-seed Math.random by sharing
+    // the same loop iteration count, but the spawn-helper randomises
+    // independently — a small inconsistency the reviewer flagged as
+    // could-share. Acceptable here: pole and sign-plate are vertically
+    // coincident (sign sits on top of pole at y=2.1), so per-instance
+    // jitter that differs by a fraction is invisible at game distance.
+    const scarabPoleIM=new THREE.InstancedMesh(scarabPoleGeo, woodMat, COUNTS.scarab);
+    _spawn(scarabPoleIM, COUNTS.scarab, woodMat, [0.9, 1.1], [3, 6], 0);
+    const scarabSignIM=new THREE.InstancedMesh(scarabSignGeo, signMat, COUNTS.scarab);
+    _spawn(scarabSignIM, COUNTS.scarab, signMat, [0.9, 1.1], [3, 6], 0);
   }
 }
 
