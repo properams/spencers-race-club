@@ -33,6 +33,9 @@ const _OFFTRACK_WORLD_OVERRIDES={
   // glowing kerbs the player just left. Friction stays at the asphalt
   // baseline (.18) since the surface is asphalt; only the copy + colour change.
   pier47: {friction:0.18, label:'OFF DOCK!', color:'#ff8830', chance:0.04},
+  // Volcano Cinematic: off-track is volcanic-rock outside the asphalt.
+  // Lava-red popup to match the kerbEmissive + cinematic palette pin.
+  'volcano-cinematic': {friction:0.20, label:'CALDERA!', color:'#ff3010', chance:0.05},
 };
 
 function updatePlayer(dt){

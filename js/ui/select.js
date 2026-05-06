@@ -423,19 +423,19 @@ function applyWorldHUDTint(world){
   const isDeepSea=world==='deepsea';
   const isNeonW=world==='neoncity';
   const isP47=world==='pier47';
+  const isVC=world==='volcano-cinematic';
   const nitroFill=document.getElementById('nitroFill');
-  if(nitroFill)nitroFill.style.background=isSpace?'linear-gradient(180deg,#00ffee,#0088ff)':isDeepSea?'linear-gradient(180deg,#00ffcc,#0088aa)':isNeonW?'linear-gradient(180deg,#00ffee,#ff00aa)':isP47?'linear-gradient(180deg,#ffaa44,#a04020)':'linear-gradient(180deg,#ffee00,#ff7700)';
+  if(nitroFill)nitroFill.style.background=isSpace?'linear-gradient(180deg,#00ffee,#0088ff)':isDeepSea?'linear-gradient(180deg,#00ffcc,#0088aa)':isNeonW?'linear-gradient(180deg,#00ffee,#ff00aa)':isP47?'linear-gradient(180deg,#ffaa44,#a04020)':isVC?'linear-gradient(180deg,#ff5022,#8a1808)':'linear-gradient(180deg,#ffee00,#ff7700)';
   const nitroLbl=document.getElementById('nitroLbl');
-  if(nitroLbl)nitroLbl.style.color=isSpace?'#00ccff':isDeepSea?'#00ddaa':isNeonW?'#00ffee':isP47?'#ff8830':'#ff7700';
+  if(nitroLbl)nitroLbl.style.color=isSpace?'#00ccff':isDeepSea?'#00ddaa':isNeonW?'#00ffee':isP47?'#ff8830':isVC?'#ff3010':'#ff7700';
   const hdGear=document.getElementById('hdGear');
-  if(hdGear)hdGear.style.color=isSpace?'#00eeff':isDeepSea?'#00ffcc':isP47?'#ffb070':'#fff';
+  if(hdGear)hdGear.style.color=isSpace?'#00eeff':isDeepSea?'#00ffcc':isP47?'#ffb070':isVC?'#ff7044':'#fff';
   const hdSpd=document.getElementById('hdSpd');
-  if(hdSpd)hdSpd.style.color=isSpace?'#00eeff':isDeepSea?'#00ffcc':isP47?'#ffb070':'#fff';
-  // HUD accent tint per world (applied to race-info panel border). Pier 47
-  // gets a subtle sodium-orange border accent to echo the kerbEmissive +
-  // off-track popup colour without overpowering HUD legibility.
+  if(hdSpd)hdSpd.style.color=isSpace?'#00eeff':isDeepSea?'#00ffcc':isP47?'#ffb070':isVC?'#ff7044':'#fff';
+  // HUD accent tint per world (applied to race-info panel border).
+  // Pier 47 sodium-orange, Volcano Cinematic deep ember-red.
   const hudInfo=document.getElementById('hudRaceInfo');
-  if(hudInfo)hudInfo.style.borderColor=isDeepSea?'rgba(0,221,170,.45)':isSpace?'rgba(0,204,255,.45)':isNeonW?'rgba(0,255,238,.45)':isP47?'rgba(255,136,48,.30)':'rgba(255,255,255,.10)';
+  if(hudInfo)hudInfo.style.borderColor=isDeepSea?'rgba(0,221,170,.45)':isSpace?'rgba(0,204,255,.45)':isNeonW?'rgba(0,255,238,.45)':isP47?'rgba(255,136,48,.30)':isVC?'rgba(255,48,16,.32)':'rgba(255,255,255,.10)';
 }
 
 // Stat ranking across the catalog — computed lazily once. Used to show
@@ -661,8 +661,8 @@ function buildCarSelectUI(){
   // World indicator badge
   const wInd=document.getElementById('worldIndicator');
   if(wInd){
-    const wIcons={space:'🚀',deepsea:'🌊',candy:'🍬',neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢',sandstorm:'🏜',pier47:'🏗'};
-    const wNames2={space:'COSMIC',deepsea:'DEEP SEA',candy:'CANDY',neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK',sandstorm:'SANDSTORM',pier47:'PIER 47'};
+    const wIcons={space:'🚀',deepsea:'🌊',candy:'🍬',neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢',sandstorm:'🏜',pier47:'🏗','volcano-cinematic':'🌋'};
+    const wNames2={space:'COSMIC',deepsea:'DEEP SEA',candy:'CANDY',neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK',sandstorm:'SANDSTORM',pier47:'PIER 47','volcano-cinematic':'VOLCANO C.'};
     wInd.textContent=(wIcons[activeWorld]||'⬢')+' '+(wNames2[activeWorld]||activeWorld.toUpperCase());
   }
   _weatherMode='clear';
@@ -738,12 +738,12 @@ let _selMScrollWired=false;
 const _SELM_WORLD_ICONS={
   space:'🚀',deepsea:'🌊',candy:'🍬',
   neoncity:'🌃',volcano:'🌋',arctic:'🧊',themepark:'🎢',
-  sandstorm:'🏜',pier47:'🏗'
+  sandstorm:'🏜',pier47:'🏗','volcano-cinematic':'🌋'
 };
 const _SELM_WORLD_NAMES={
   space:'COSMIC',deepsea:'DEEP SEA',candy:'SUGAR RUSH',
   neoncity:'NEON CITY',volcano:'VOLCANO',arctic:'ARCTIC',themepark:'THRILL PARK',
-  sandstorm:'SANDSTORM',pier47:'PIER 47'
+  sandstorm:'SANDSTORM',pier47:'PIER 47','volcano-cinematic':'VOLCANO C.'
 };
 const _SELM_TIER_LABEL={super:'SUPER',f1:'F1',muscle:'MUSCLE',electric:'ELECTRIC'};
 

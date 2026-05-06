@@ -208,7 +208,8 @@ const _BLOOM_WORLD_MUL = {
   space:    1.00,   // deliberate cosmic bloom
   deepsea:  0.85,   // bioluminescence subtle
   sandstorm:0.55,   // bright sun + sand reflectie — temper bloom flood
-  pier47:   1.15    // CINEMATIC — bloom-burst on lamps/koplampen against dark scene
+  pier47:   1.15,   // CINEMATIC — bloom-burst on lamps/koplampen against dark scene
+  'volcano-cinematic': 1.25  // CINEMATIC — hot lava emissives need extra punch (kerb #ff3010 + lamps lavaHot/Warm)
 };
 function setBloomDayNight(dark){
   if(!_postfx.ready) return;
@@ -272,7 +273,12 @@ function setWorldGrading(world){
     // Pier 47: cool desaturated tint with subtle warm push so the
     // sodium-orange kerb accents pop against the donkerpaars-grijs scene.
     // Higher vignette (0.65) reinforces the closed-in industrial feel.
-    pier47:    [1.00, 0.92, 0.95, 0.16, 0.65]
+    pier47:    [1.00, 0.92, 0.95, 0.16, 0.65],
+    // Volcano Cinematic: warm tint pull (rust-amber) with darkened
+    // greens/blues so foliage-greens (which appear in distant
+    // silhouette layers if added) read as gothic. High vignette 0.70
+    // for caldera-claustrophobia.
+    'volcano-cinematic': [1.18, 0.86, 0.78, 0.18, 0.70]
   }[world] || [1,1,1, 0.0, 0.45];
   _postfx.matComposite.uniforms.tint.value.set(cfg[0], cfg[1], cfg[2]);
   _postfx.matComposite.uniforms.gradeAmount.value = cfg[3];
