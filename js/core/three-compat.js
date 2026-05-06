@@ -137,57 +137,82 @@
           if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: input[0] is not a BufferGeometry');
           return null;
         }
-        const attrNames = Object.keys(ref.attributes);
-        const isIndexed = ref.index !== null && ref.index !== undefined;
-        // Validate consistency across all inputs.
-        for (let i = 1; i < geos.length; i++) {
+        // Index-mode normalisation. If any input is non-indexed (eg.
+        // ExtrudeGeometry, which is non-indexed in r160) and others are
+        // indexed (Sphere/Cylinder/Box), output must be non-indexed.
+        // Promote indexed inputs to non-indexed via .toNonIndexed() so the
+        // merge succeeds — the official addon does the same. We track the
+        // promoted clones in `tempGeos` so we can dispose them at the end.
+        let allIndexed = true, anyIndexed = false;
+        for (let i = 0; i < geos.length; i++) {
           const g = geos[i];
           if (!g || !g.attributes) {
             if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: input['+i+'] missing .attributes');
             return null;
           }
+          const gIndexed = g.index !== null && g.index !== undefined;
+          if (gIndexed) anyIndexed = true; else allIndexed = false;
+        }
+        const isIndexed = allIndexed;
+        const tempGeos = [];
+        const work = new Array(geos.length);
+        for (let i = 0; i < geos.length; i++) {
+          const g = geos[i];
+          const gIndexed = g.index !== null && g.index !== undefined;
+          if (!isIndexed && gIndexed) {
+            const ni = g.toNonIndexed();
+            tempGeos.push(ni);
+            work[i] = ni;
+          } else {
+            work[i] = g;
+          }
+        }
+        const refW = work[0];
+        const attrNames = Object.keys(refW.attributes);
+        // Validate attribute consistency across all (post-promotion) inputs.
+        for (let i = 1; i < work.length; i++) {
+          const g = work[i];
           const gKeys = Object.keys(g.attributes);
           if (gKeys.length !== attrNames.length) {
             if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: attribute-count mismatch at input['+i+'] ('+gKeys.length+' vs '+attrNames.length+')');
+            for (let t = 0; t < tempGeos.length; t++) tempGeos[t].dispose();
             return null;
           }
           for (let n = 0; n < attrNames.length; n++) {
             const name = attrNames[n];
             if (!g.attributes[name]) {
               if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: attribute "'+name+'" missing at input['+i+']');
+              for (let t = 0; t < tempGeos.length; t++) tempGeos[t].dispose();
               return null;
             }
-            if (g.attributes[name].itemSize !== ref.attributes[name].itemSize) {
+            if (g.attributes[name].itemSize !== refW.attributes[name].itemSize) {
               if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: itemSize mismatch on "'+name+'" at input['+i+']');
+              for (let t = 0; t < tempGeos.length; t++) tempGeos[t].dispose();
               return null;
             }
-          }
-          const gIndexed = g.index !== null && g.index !== undefined;
-          if (gIndexed !== isIndexed) {
-            if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: index presence mismatch at input['+i+']');
-            return null;
           }
         }
         // Sum vertex + index counts.
         let totalVerts = 0, totalIndices = 0;
-        for (let i = 0; i < geos.length; i++) {
-          totalVerts += geos[i].attributes.position.count;
-          if (isIndexed) totalIndices += geos[i].index.count;
+        for (let i = 0; i < work.length; i++) {
+          totalVerts += work[i].attributes.position.count;
+          if (isIndexed) totalIndices += work[i].index.count;
         }
         // Concatenate per-attribute. All sandstorm inputs use Float32Array;
         // log + bail on anything else rather than silently truncating.
         const merged = new THREE.BufferGeometry();
         for (let n = 0; n < attrNames.length; n++) {
           const name = attrNames[n];
-          const itemSize = ref.attributes[name].itemSize;
-          if (!(ref.attributes[name].array instanceof Float32Array)) {
+          const itemSize = refW.attributes[name].itemSize;
+          if (!(refW.attributes[name].array instanceof Float32Array)) {
             if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: non-Float32Array attribute "'+name+'" not supported by polyfill');
+            for (let t = 0; t < tempGeos.length; t++) tempGeos[t].dispose();
             return null;
           }
           const out = new Float32Array(totalVerts * itemSize);
           let off = 0;
-          for (let i = 0; i < geos.length; i++) {
-            const src = geos[i].attributes[name].array;
+          for (let i = 0; i < work.length; i++) {
+            const src = work[i].attributes[name].array;
             out.set(src, off);
             off += src.length;
           }
@@ -198,14 +223,17 @@
           // accepts it without further configuration.
           const idx = new Uint32Array(totalIndices);
           let idxOff = 0, vertOff = 0;
-          for (let i = 0; i < geos.length; i++) {
-            const src = geos[i].index.array;
+          for (let i = 0; i < work.length; i++) {
+            const src = work[i].index.array;
             for (let k = 0; k < src.length; k++) idx[idxOff + k] = src[k] + vertOff;
             idxOff += src.length;
-            vertOff += geos[i].attributes.position.count;
+            vertOff += work[i].attributes.position.count;
           }
           merged.setIndex(new THREE.BufferAttribute(idx, 1));
         }
+        // Dispose temporary toNonIndexed clones — caller still owns the
+        // original inputs.
+        for (let t = 0; t < tempGeos.length; t++) tempGeos[t].dispose();
         return merged;
       };
       appliedFlags.bufferGeomUtilsPolyfilled = true;
