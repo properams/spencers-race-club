@@ -180,9 +180,16 @@ function toggleNight(){
       }
       _fogColorDay.setHex(0xe8a468); _fogColorNight.setHex(0x6a4830);
     }
-    // Stars baked into the skybox canvas (not scene-level Points), so the
-    // shared `stars` global stays untouched here. Track-side glow is on
-    // for night so the player has light cues regardless of headlights.
+    // The 60-instance warm sand-tinted `stars` mesh (sandstorm.js:1525)
+    // is a daytime atmospheric detail — at night the canvas-baked sky-stars
+    // + Milky Way + moon take over and the warm InstancedMesh becomes
+    // visually redundant (cool-night palette + warm-day stars clash).
+    // Hide it at night, restore at day. Other worlds use `stars.visible=isDark`
+    // because their stars ARE the night-sky; sandstorm is the only world
+    // where stars are day-decoration, hence the inverted check.
+    if(stars)stars.visible=!isDark;
+    // Track-side glow is on for night so the player has light cues
+    // regardless of headlights.
     trackLightList.forEach(l=>l.intensity=isDark?1.4:0);
     trackPoles.forEach(p=>p.visible=isDark);
     if(plHeadL){plHeadL.intensity=isDark?1.7:0;plHeadR.intensity=isDark?1.7:0;}
