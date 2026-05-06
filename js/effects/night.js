@@ -194,7 +194,11 @@ function toggleNight(){
       if(_tpkDayBg) scene.background=_tpkDayBg;
       if(_tpkDayEnv) scene.environment=_tpkDayEnv;
       scene.fog.density=.0019;
-      sunLight.intensity=.85;ambientLight.intensity=.45;hemiLight.intensity=.35;
+      // Use themeparks shared day-lighting helper for the day-restore so
+      // build-time + toggle-time setups can never drift.
+      if(typeof window._applyThemeparkDayLighting==='function'){
+        window._applyThemeparkDayLighting();
+      }
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
     }
     if(stars)stars.visible=isDark;

@@ -7,7 +7,28 @@
 let _tpFerris=null,_tpCarousel=null,_tpCarouselHorses=[],_tpCoasters=[],_tpBalloons=[];
 let _tpFireworks=[],_tpBunting=[],_tpParkLights=[],_tpFireworkTimer=0;
 
+// Single source of truth for themepark day lighting. Mirrors the cross-
+// world helper pattern (sandstorm/candy/volcano/arctic) — buildThemeparkEnvironment
+// + night.js themepark-day branch share the same constants.
+//
+// Goal palette (sunset park):
+//   sun #ffcc88 (warm sunset gold) / 0.85
+//   ambient #6633aa (purple-toned twilight) / 0.45
+//   hemi sky #ff88cc (pink) / ground #331144 (dark purple) / 0.35
+// These match the scene.js per-world cascade values for themepark — the
+// helper is purely a refactor for cross-world consistency.
+function _applyThemeparkDayLighting(){
+  if(!sunLight||!ambientLight||!hemiLight)return;
+  sunLight.color.setHex(0xffcc88); sunLight.intensity=.85;
+  ambientLight.color.setHex(0x6633aa); ambientLight.intensity=.45;
+  hemiLight.color.setHex(0xff88cc);
+  hemiLight.groundColor.setHex(0x331144);
+  hemiLight.intensity=.35;
+}
+if(typeof window!=='undefined')window._applyThemeparkDayLighting=_applyThemeparkDayLighting;
+
 function buildThemeparkEnvironment(){
+  _applyThemeparkDayLighting();
   // Dark pavement ground
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
     new THREE.MeshLambertMaterial({color:0x4a3855,map:_pavementGroundTex()}));
