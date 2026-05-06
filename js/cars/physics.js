@@ -27,6 +27,12 @@ const _OFFTRACK_PROFILES={
 // custom emoji label).
 const _OFFTRACK_WORLD_OVERRIDES={
   candy: {friction:0.22, label:'FROSTING! 🧁', color:'#ff66aa', chance:0.05},
+  // Pier 47: industrial harbour, off-track means slipping into the kade-edge
+  // gravel/spillage. Sodium-orange popup colour (#ff8830) matches the
+  // WORLD_TRACK_PALETTE.pier47 kerbEmissive — same visual language as the
+  // glowing kerbs the player just left. Friction stays at the asphalt
+  // baseline (.18) since the surface is asphalt; only the copy + colour change.
+  pier47: {friction:0.18, label:'OFF DOCK!', color:'#ff8830', chance:0.04},
 };
 
 function updatePlayer(dt){
