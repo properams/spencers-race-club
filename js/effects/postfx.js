@@ -208,7 +208,7 @@ const _BLOOM_WORLD_MUL = {
   space:    1.00,   // deliberate cosmic bloom
   deepsea:  0.85,   // bioluminescence subtle
   sandstorm:0.55,   // bright sun + sand reflectie — temper bloom flood
-  pier47:   0.85    // moody industrial nacht — milde bloom op kerb-emissive
+  pier47:   1.15    // CINEMATIC — bloom-burst on lamps/koplampen against dark scene
 };
 function setBloomDayNight(dark){
   if(!_postfx.ready) return;

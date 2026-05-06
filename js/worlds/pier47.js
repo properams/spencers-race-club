@@ -908,6 +908,19 @@ function buildPier47Environment(){
   // Both via shared cinematic.js helpers; pulses driven by updateCinematic.
   _p47BuildDistantMarkers();
   _p47BuildCityGlow();
+  // Cinematic motion: register subtle speed-scaled camera shake. Cleared
+  // automatically on world-switch via resetCinematicState().
+  if (typeof enableCinematicCameraShake === 'function'){
+    enableCinematicCameraShake({
+      intensityScale: 1.0,
+      speedThreshold: 0.20,   // no shake idle
+      maxOffset:      0.045   // ~0.05u offset at top speed — voelbaar niet storend
+    });
+  }
+  // Bloom boost is wired in postfx.js _BLOOM_WORLD_MUL.pier47 — see commit
+  // 4 of the cinematic foundation. The applyCinematicMotionBlur helper
+  // documents the limitation: real radial blur needs a postfx pipeline
+  // restructure that's out of scope.
   // Sessie 3 atmosphere: drizzle-particle pool gives depth-tested rain
   // streaks in 3D (the canvas rain is a flat overlay; combining both
   // reads as actual volumetric motregen).

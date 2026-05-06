@@ -110,6 +110,15 @@ function updateCamera(dt){
   if(camShake>0){const s=camShake*.5;px+=(Math.random()-.5)*s;py+=(Math.random()-.5)*s*.4;pz+=(Math.random()-.5)*s;camShake=Math.max(0,camShake-dt*2.5);}
     if(_comboTimer>0){_comboTimer-=dt;if(_comboTimer<=0)resetCombo();}
   camera.position.set(px,Math.max(.5,py),pz);camera.lookAt(camTgt);
+  // Cinematic speed-shake — applied AFTER position+lookAt so the shake
+  // is a final cinematic micro-jitter on top of the smoothed framing.
+  // Activated per-world via enableCinematicCameraShake() in the world
+  // builder (no-op if no world has registered shake config).
+  if(typeof applyCinematicCameraShake==='function'
+     && window._cinemaState && window._cinemaState.cameraShake){
+    const _spdR=Math.min(1,Math.abs(car.speed)/(car.def.topSpd||1.8));
+    applyCinematicCameraShake(camera, _spdR, window._cinemaState.cameraShake);
+  }
   // Dynamic FOV — wider at high speed for sense of velocity, more extreme on nitro.
   // Landscape: derive vertical FOV from a constant horizontal FOV zodat de framing
   // hetzelfde voelt op desktop 16:9, phone 19:9, iPad 1.71 en iPad 4:3.
