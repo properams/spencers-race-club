@@ -129,7 +129,7 @@ function buildGround(){
   // Outdoor worlds (everything except space/deepsea) get a tiled grass texture.
   // Space + deepsea overdraw with their own ground in their environment builders.
   const groundMat=new THREE.MeshLambertMaterial({color:groundCol});
-  if(!isSpace&&!isDS)groundMat.map=_grassGroundTex();
+  if(!_isVoidWorld(activeWorld))groundMat.map=_grassGroundTex();
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2200,2200,1,1),groundMat);
   g.rotation.x=-Math.PI/2;g.position.y=-.12;g.receiveShadow=true;
   // Tag so asset-bridge can swap in PBR maps post-load (Fase E).
