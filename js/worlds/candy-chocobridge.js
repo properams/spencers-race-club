@@ -134,4 +134,6 @@ function disposeCandyChocoBridge(){
   _candyChocoSegs.length=0;
   _candyChocoPool=null;
   _candyChocoState=null;
+  // Release the night.js sky-cache (day + night skybox + PMREM env).
+  if(typeof _disposeCandySkyCache==='function')_disposeCandySkyCache();
 }

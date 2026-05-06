@@ -180,9 +180,19 @@ function toggleNight(){
     _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0);
     if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='candy'){
-    // Candy — Day=bright pastel paradise, Night=glow-in-the-dark wonderland
+    // Candy — Day=bright pastel paradise, Night=glow-in-the-dark wonderland.
+    // PMREM env swap so car lacquer reflects the dreamy pink moon + sparkle
+    // stars at night, and the bright pink paradise during day.
     if(isDark){
-      scene.background=makeSkyTex('#2c0844','#3e0c52');scene.fog.density=.0010;
+      if(!_cdyDayBg)_cdyDayBg=scene.background;
+      if(!_cdyDayEnv)_cdyDayEnv=scene.environment;
+      if(!_cdyNightBg && typeof makeCandyNightSkyTex==='function'){
+        const _baked=_bakeNightEnv(makeCandyNightSkyTex);
+        _cdyNightBg=_baked.bg; _cdyNightEnv=_baked.env;
+      }
+      if(_cdyNightBg) scene.background=_cdyNightBg;
+      if(_cdyNightEnv) scene.environment=_cdyNightEnv;
+      scene.fog.density=.0010;
       sunLight.intensity=.22;ambientLight.intensity=.44;hemiLight.intensity=.30;
       trackLightList.forEach(l=>l.intensity=2.2);trackPoles.forEach(p=>p.visible=true);
       _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=0.8;} });
@@ -191,7 +201,9 @@ function toggleNight(){
       if(plTail)plTail.intensity=1.4;
       _aiHeadPool.forEach(l=>l.intensity=1.0);
     }else{
-      scene.background=makeSkyTex('#ff88cc','#ffe4f0');scene.fog.density=.0019;
+      if(_cdyDayBg) scene.background=_cdyDayBg;
+      if(_cdyDayEnv) scene.environment=_cdyDayEnv;
+      scene.fog.density=.0019;
       sunLight.intensity=1.5;ambientLight.intensity=.65;hemiLight.intensity=.45;
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
       _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=.20;} });

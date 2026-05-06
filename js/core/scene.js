@@ -405,6 +405,56 @@ function makeVolcanoSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
+// Candy NIGHT — glow-in-the-dark wonderland. Deep-purple/magenta zenith
+// with dense pastel sparkle-stars, soft moon, sugary horizon glow. PMREM
+// env paints lacquer with playful pink/violet reflections.
+function makeCandyNightSkyTex(){
+  const {c,g}=_newSkyCanvas('#1a0a2e','#3a0e54');
+  // Sugary horizon glow — pink/violet rising from bottom.
+  const glow=g.createLinearGradient(0,300,0,512);
+  glow.addColorStop(0,'rgba(255,100,200,0)');
+  glow.addColorStop(.6,'rgba(255,120,200,0.30)');
+  glow.addColorStop(1,'rgba(220,90,180,0.55)');
+  g.fillStyle=glow;g.fillRect(0,300,1024,212);
+  // Sparse magenta + cyan haze blobs (like cotton-candy clouds at night).
+  for(let i=0;i<10;i++){
+    const x=Math.random()*1024,y=140+Math.random()*200;
+    const r=80+Math.random()*100;
+    const tone=Math.random()<0.5?'255,140,220':'180,140,255';
+    const gr=g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,`rgba(${tone},0.30)`);
+    gr.addColorStop(1,`rgba(${tone},0)`);
+    g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);
+  }
+  // Sparkle-stars — pastel tones (white + pink + cyan), denser than other
+  // worlds because candy = bling. Slightly larger size variation for
+  // "sparkle" feel.
+  const STAR_COUNT=window._isMobile?100:240;
+  for(let i=0;i<STAR_COUNT;i++){
+    const x=Math.random()*1024;
+    const y=Math.pow(Math.random(),1.4)*340;
+    const r=Math.random();
+    const tone=r<0.6?'255,255,255': r<0.85?'255,200,235':'200,235,255';
+    const a=(0.5+Math.random()*0.5).toFixed(2);
+    const sz=r<0.85?1: r<0.97?1.5:2.5;
+    g.fillStyle=`rgba(${tone},${a})`;
+    g.fillRect(x,y,sz,sz);
+  }
+  // Soft pink moon, upper-left, with extra-wide halo (matches the world's
+  // dreamy pastel feel).
+  const moonCx=240,moonCy=120,moonR=38;
+  const halo=g.createRadialGradient(moonCx,moonCy,moonR*0.5,moonCx,moonCy,moonR*3);
+  halo.addColorStop(0,'rgba(255,220,240,0.50)');
+  halo.addColorStop(.5,'rgba(255,180,220,0.18)');
+  halo.addColorStop(1,'rgba(255,180,220,0)');
+  g.fillStyle=halo;g.fillRect(moonCx-moonR*3,moonCy-moonR*3,moonR*6,moonR*6);
+  const disc=g.createRadialGradient(moonCx-moonR*0.25,moonCy-moonR*0.25,0, moonCx,moonCy,moonR);
+  disc.addColorStop(0,'rgba(255,250,250,1)');
+  disc.addColorStop(1,'rgba(245,220,235,0.92)');
+  g.fillStyle=disc;g.beginPath();g.arc(moonCx,moonCy,moonR,0,Math.PI*2);g.fill();
+  return _skyTexFromCanvas(c);
+}
+
 // NeonCity NIGHT — saturated cyberpunk sky. Day already night-themed,
 // but the PMREM env was the day skybox, so cars reflected static neon
 // haze. Night-version intensifies the magenta/cyan glows, adds a distant
