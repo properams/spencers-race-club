@@ -50,6 +50,11 @@ REFACTOR_PLAN.md
 PHASE_0_1.md
 PHASE_2.md
 PHASE_3_4.md
+# Privacy audit reports — by definition NOT for the public repo.
+# (the report itself names every weak spot — making it public defeats
+#  the purpose). Keep local copies outside the repo or in a private fork.
+docs/PRIVACY_AUDIT_REPORT.md
+docs/SESSION_HANDOVER.md
 MUSIC_CHANGES.md
 VOLCANO_PILOT_PROMPT.md
 WORLDS_SIGNATURE_PROMPTS.md
