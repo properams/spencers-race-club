@@ -969,6 +969,8 @@ function buildScene(){
   _tpFerris=null;_tpCarousel=null;_tpCarouselHorses.length=0;_tpCoasters.length=0;
   _tpBalloons.length=0;_tpFireworks.length=0;_tpBunting.length=0;_tpParkLights.length=0;
   _tpFireworkTimer=2;
+  if(typeof _p47LampEmissives!=='undefined')_p47LampEmissives.length=0;
+  if(typeof _p47Bridge!=='undefined')_p47Bridge=null;
 
   const isSpace=activeWorld==='space';
   const isDeepSea=activeWorld==='deepsea';
@@ -1122,11 +1124,10 @@ function buildScene(){
     buildBackgroundLayers();
   }else if(isPier47){
     buildPier47Environment();
-    // Sessie 1: no buildBackgroundLayers — _SILHOUETTE_PALETTES.pier47
-    // entry is not defined yet (those distant skyline silhouettes arrive
-    // in sessie 2 along with cranes / loods / containers). Without an
-    // entry, buildBackgroundLayers is a no-op anyway, but skipping it
-    // keeps the bones-only intent explicit.
+    // Sessie 2: distant industrial skyline silhouettes (containers /
+    // warehouse roofs / crane booms catching sodium-orange backlight).
+    // Palette lives in track/environment.js _SILHOUETTE_PALETTES.pier47.
+    buildBackgroundLayers();
   }else{
     if(window.dbg)dbg.warn('scene','unknown world '+activeWorld+' — no environment builder, scene will be sparse');
   }

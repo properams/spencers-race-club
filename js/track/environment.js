@@ -255,6 +255,16 @@ const _SILHOUETTE_PALETTES = {
     far:  ['#a86839','#d49060',0.85, 0.78, 110],
     near: ['#5a2818','#8b3a1d',1.05, 0.90,  82],
   },
+  // Pier 47: industrial harbour skyline — distant container stacks,
+  // warehouse rooftops, cranes silhouetted against the city-glow horizon.
+  // Both layers are very dark (almost black) so they read as flat
+  // silhouettes catching only the sodium-orange reflected light from the
+  // skybox foot-band. Higher jaggedness (1.10/1.35) gives the rectangular
+  // industrial-machinery profile typical of harbours.
+  pier47: {
+    far:  ['#0a0812','#1a1422',1.10, 0.85,  78],
+    near: ['#040206','#0a0812',1.35, 0.95,  60],
+  },
 };
 
 function buildBackgroundLayers(){

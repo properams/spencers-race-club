@@ -1,9 +1,13 @@
 // js/worlds/pier47.js — Pier 47 (industrial harbour by night) world builders.
-// Non-module script. Sessie 1 = bones only: file scaffold + track-waypoint
-// reference + skybox + cinematic dark lighting + minimal environment.
-// Containers / kranen / loods / ophaalbrug / wet rendering / lamp poles
-// arrive in sessie 2. Plassen / regen / mist / stoom particles in sessie 3.
-// Optional wet-physics is sessie 4.
+// Non-module script. Sessie 2 = props + lighting + wet-rendering:
+//   • sodium-lamp poles along the kade (always-on warm orange spillover)
+//   • container stacks along the Container Run + The Yard sectors
+//   • warehouse (loods) at the WP9 90° right
+//   • cranes on the kade
+//   • ophaalbrug (drawbridge) at sector 4
+//   • wet-asphalt rendering on the track surface
+// Plassen / regen / mist / stoom particles arrive in sessie 3. Optional
+// wet-physics is sessie 4.
 //
 // ── Track-waypoints (data/tracks.json#pier47) ────────────────────────────
 // 12 waypoints, counter-clockwise loop, bbox 440 × 405, perimeter 1311 units.
@@ -27,6 +31,14 @@
 
 'use strict';
 
+// Per-world animated state — gereset bij world-switch via core/scene.js
+// disposeScene(). Sessie-2 introduces the lamp-emissive list (sodium-orange
+// flicker pulses subtly in updatePier47World) and the ophaalbrug ref so
+// future polish can animate the bascule. Sessie-3 will park rain-puddle
+// shimmer state here.
+let _p47LampEmissives=[];   // [{mat, phase}] for sodium-lamp flicker
+let _p47Bridge=null;         // ophaalbrug ref (sessie-2 static)
+
 // Single source of truth for Pier 47 day lighting. Mirrors the sandstorm /
 // candy / volcano helper pattern. buildPier47Environment + night.js's
 // pier47-day branch share the same constants, so the build-time setup and
@@ -34,12 +46,13 @@
 //
 // "Day" for Pier 47 is intentionally NOT a sunny morning — it's a bewolkte,
 // dreigende nacht. Sessie 3 will introduce a separate "ochtend"-mode for
-// the day-toggle. For sessie 1 the toggle is a small ambient shift.
+// the day-toggle.
 //
-// Goal palette (overcast night, no sodium-lamp warmth yet — that's sessie 2):
+// Goal palette (overcast night with subtle sodium-lamp warmth lifting the
+// hemisphere ground colour — sessie-2 tweak):
 //   sun     #d8d0c0 / 1.4 desktop / 0.9 mobile / position (60, 110, 80)
 //   ambient #1a1a22 / 0.30
-//   hemi sky #a0a8b0 / ground #403838 / 0.5
+//   hemi sky #a0a8b0 / ground #4a3828 (warmer — sodium spillover) / 0.5
 //
 // Mobile sun caps at 0.9 (vs 1.4 desktop) because shadows are off on mobile;
 // Lambert ground at full intensity would clip to white under no-shadow lighting.
@@ -50,7 +63,7 @@ function _applyPier47DayLighting(){
   sunLight.position.set(60, 110, 80);
   ambientLight.color.setHex(0x1a1a22); ambientLight.intensity = 0.30;
   hemiLight.color.setHex(0xa0a8b0);
-  hemiLight.groundColor.setHex(0x403838);
+  hemiLight.groundColor.setHex(0x4a3828); // warmer than sessie-1 (#403838) — sodium spillover from lamp poles
   hemiLight.intensity = 0.5;
 }
 // Expose to non-module consumers — night.js reads from window.* scope.
@@ -174,12 +187,105 @@ function _pier47GroundTex(){
   return t;
 }
 
+// ── Sodium lamp poles (always-on industrial lighting) ────────────────────
+//
+// Pier 47's defining detail: warm orange (#ff8830) high-pressure sodium
+// lamps lining the kade. Always on (the world is permanently overcast-
+// nacht), pulsing subtly via _p47LampEmissives in updatePier47World.
+//
+// Geometry budget:
+//   • Pole shaft: shared CylinderGeometry, InstancedMesh (POLE_COUNT * 2
+//     instances, one IM call)
+//   • Lamp head:  shared BoxGeometry, InstancedMesh (one IM call). Heads
+//     share a single emissive material reference so flicker animation
+//     mutates one mat for all lamps simultaneously.
+//   • PointLights: spaced out (every 2nd pole on desktop, every 3rd on
+//     mobile) so total active scene lights stay within Three.js's
+//     forward-rendering budget. Range 28u — illuminates barrier + kerb
+//     edge plus ~12u of the kade beyond.
+//
+// Disposal: pole + head InstancedMeshes get cleaned up by disposeScene's
+// generic mesh traversal. PointLights are scene children — auto-removed.
+// _p47LampEmissives is reset in scene.js's per-world array clear block.
+function _p47BuildLampPoles(){
+  const mob=window._isMobile;
+  const POLE_COUNT=mob?14:22;                       // pairs (each pole on both sides)
+  const LIGHT_EVERY=mob?3:2;                        // 1 PointLight per N poles
+  const N_PER_SIDE=POLE_COUNT;
+  const TOTAL=N_PER_SIDE*2;
+  // Shared geometry/materials — one mat per IM, mutated for flicker.
+  const poleGeo=new THREE.CylinderGeometry(0.10,0.16,8.5,6);
+  const poleMat=new THREE.MeshLambertMaterial({color:0x222018});
+  const armGeo=new THREE.BoxGeometry(0.10,0.10,1.4);  // arm reaching toward track
+  const armMat=poleMat;                                // share — same material
+  const headGeo=new THREE.BoxGeometry(0.95,0.32,0.95);
+  // Sodium-orange emissive — high intensity baseline; flicker mutates this.
+  const headMat=new THREE.MeshLambertMaterial({
+    color:0xff8830,
+    emissive:0xff8830,
+    emissiveIntensity:1.4
+  });
+  _p47LampEmissives.push({mat:headMat,phase:Math.random()*Math.PI*2});
+  const poleIM=new THREE.InstancedMesh(poleGeo,poleMat,TOTAL);
+  const armIM =new THREE.InstancedMesh(armGeo,armMat,TOTAL);
+  const headIM=new THREE.InstancedMesh(headGeo,headMat,TOTAL);
+  const dummy=new THREE.Object3D();
+  let idx=0;
+  for(let i=0;i<N_PER_SIDE;i++){
+    const t=i/N_PER_SIDE;
+    const p=trackCurve.getPoint(t);
+    const tg=trackCurve.getTangent(t).normalize();
+    const nr=new THREE.Vector3(-tg.z,0,tg.x);
+    const ang=Math.atan2(tg.x,tg.z);
+    [-1,1].forEach(side=>{
+      const off=BARRIER_OFF+2.4;
+      const px=p.x+nr.x*side*off;
+      const pz=p.z+nr.z*side*off;
+      // Pole shaft — vertical cylinder, base at y=0, height 8.5 → centered at 4.25
+      dummy.position.set(px,4.25,pz);
+      dummy.rotation.set(0,0,0);
+      dummy.scale.set(1,1,1);
+      dummy.updateMatrix();
+      poleIM.setMatrixAt(idx,dummy.matrix);
+      // Arm — extends from top of pole inward toward the track
+      const armX=px-nr.x*side*0.7;
+      const armZ=pz-nr.z*side*0.7;
+      dummy.position.set(armX,8.2,armZ);
+      // Rotate arm so its long axis points along inward-normal (cross-track)
+      dummy.rotation.set(0,ang+Math.PI/2,0);
+      dummy.updateMatrix();
+      armIM.setMatrixAt(idx,dummy.matrix);
+      // Head — sits at end of arm, hangs below it slightly
+      const headX=px-nr.x*side*1.4;
+      const headZ=pz-nr.z*side*1.4;
+      dummy.position.set(headX,7.95,headZ);
+      dummy.rotation.set(0,ang,0);
+      dummy.updateMatrix();
+      headIM.setMatrixAt(idx,dummy.matrix);
+      // PointLight every Nth pole — staggered between sides for spread.
+      if((i+(side>0?0:1))%LIGHT_EVERY===0){
+        const pl=new THREE.PointLight(0xff8830,1.2,28);
+        pl.position.set(headX,7.6,headZ);
+        scene.add(pl);
+      }
+      idx++;
+    });
+  }
+  poleIM.instanceMatrix.needsUpdate=true;
+  armIM.instanceMatrix.needsUpdate=true;
+  headIM.instanceMatrix.needsUpdate=true;
+  scene.add(poleIM);scene.add(armIM);scene.add(headIM);
+}
+
 // ── Main environment builder ──────────────────────────────────────────────
 //
-// Sessie 1 keeps this MINIMAL: ground plane, day-lighting helper, barriers,
-// start line, headlights + tail-light placeholders, sparse stars (always-off
-// — no city stars visible). No props, no containers, no kranen, no loods.
-// Those land in sessie 2.
+// Sessie 2 expansion:
+//   1. Concrete kade ground (sessie-1)
+//   2. Day-lighting (sessie-1)
+//   3. Barriers + start line (sessie-1)
+//   4. Sodium lamp poles along the kade (NEW, _p47BuildLampPoles)
+//   5. (Containers / warehouse / cranes / ophaalbrug land in commit 2/3)
+//   6. Headlights + sparse always-off stars (sessie-1)
 function buildPier47Environment(){
   // Weather reset — Pier 47's signature mood is motregen, but sessie 1 has
   // no rain renderer yet. Clear any inherited weather state so the dry
@@ -203,6 +309,10 @@ function buildPier47Environment(){
   _applyPier47DayLighting();
   // Barriers + start line (shared environment helpers).
   buildBarriers();buildStartLine();
+  // Sodium-lamp poles along the kade — always-on industrial lighting.
+  // Defining detail of the world; placed AFTER barriers so the pole
+  // bases sit just outside the barrier line.
+  _p47BuildLampPoles();
   // Player + AI headlight refs — Pier 47 is dark, headlights matter even
   // before sessie-2 sodium lamps land.
   plHeadL=new THREE.SpotLight(0xffffff,0,50,Math.PI*.16,.5);
@@ -226,6 +336,25 @@ function buildPier47Environment(){
   }
 }
 
-// (Sessie 2 will add updatePier47World here for animated water shimmer
-//  on plassen, ophaalbrug movement, etc. Sessie 1 has no per-frame world
-//  update so loop.js does not call into this file — no wiring needed yet.)
+// ── Per-frame world update ────────────────────────────────────────────────
+//
+// Sessie 2 introduces the first per-frame work for Pier 47: subtle
+// sodium-lamp flicker on the lamp-head shared emissive material. The
+// flicker is a single sine modulation around the baseline emissiveIntensity
+// so all lamps pulse in unison — cheap (one mat mutation per frame) and
+// reads as the harmonic flicker of a row of high-pressure sodium lamps
+// settling into their warm-up cycle.
+//
+// Sessie 3 will extend this with rain-puddle shimmer, drifting fog, and
+// optional ophaalbrug bascule animation. For now: just lamp flicker.
+function updatePier47World(dt){
+  if(!_p47LampEmissives.length)return;
+  const t=_nowSec;
+  for(let i=0;i<_p47LampEmissives.length;i++){
+    const e=_p47LampEmissives[i];
+    if(!e||!e.mat)continue;
+    // Baseline 1.4 ± 0.18 — visible breathing without strobing.
+    const v=Math.sin(t*1.7+e.phase);
+    e.mat.emissiveIntensity=1.4+v*0.18;
+  }
+}
