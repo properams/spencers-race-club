@@ -930,6 +930,7 @@ function buildScene(){
   _dsaCreatures.manta=null;_dsaCreatures.whale=null;_dsaCreatures.fishSchools.length=0;
   _dsaCurrentDir=0;
   _sprinkleParticles=null;_sprinkleGeo=null;
+  _candyFloatBits=null;_candyFloatBitsGeo=null;_candyFloatBitsVel=null;
   _gummyBears.length=0;_gumZones.length=0;_candyCannons.length=0;
   _chocoHighlight=null;_candyCaneList.length=0;_candyLollipops.length=0;
   _candyNightEmissives.length=0;_candyCandles.length=0;
