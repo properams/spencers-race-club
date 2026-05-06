@@ -32,6 +32,7 @@ let _cdyNightBg=null, _cdyNightEnv=null, _cdyDayBg=null, _cdyDayEnv=null;
 let _tpkNightBg=null, _tpkNightEnv=null, _tpkDayBg=null, _tpkDayEnv=null;
 let _gpNightBg=null,  _gpNightEnv=null,  _gpDayBg=null,  _gpDayEnv=null;
 let _p47NightBg=null, _p47NightEnv=null, _p47DayBg=null, _p47DayEnv=null;
+let _vcNightBg=null,  _vcNightEnv=null,  _vcDayBg=null,  _vcDayEnv=null;
 
 // Generic night-env baker. Calls a per-world skybox builder, then runs
 // the PMREM pipeline on the resulting canvas to derive a cubemap-style
@@ -356,6 +357,47 @@ function toggleNight(){
     if(plTail)plTail.intensity=isDark?1.4:0.4;
     _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0.3);
     if(_sunBillboard)_sunBillboard.visible=false;
+  }else if(activeWorld==='volcano-cinematic'){
+    // Volcano Cinematic night-toggle: PMREM-cached skybox swap + ambient
+    // deepens. Both day + night are gothic-dark by design — the toggle
+    // is a small visual delta. Mirrors Pier 47's pattern.
+    if(isDark){
+      if(!_vcDayBg)_vcDayBg=scene.background;
+      if(!_vcDayEnv)_vcDayEnv=scene.environment;
+      if(!_vcNightBg && typeof makeVolcanoCinematicNightSkyTex==='function'){
+        const _baked=_bakeNightEnv(makeVolcanoCinematicNightSkyTex);
+        _vcNightBg=_baked.bg; _vcNightEnv=_baked.env;
+      }
+      if(_vcNightBg) scene.background=_vcNightBg;
+      if(_vcNightEnv) scene.environment=_vcNightEnv;
+      scene.fog.density=.016;
+      // Cinematic night — even dimmer. Lava-pools + lamps are the
+      // narrative light.
+      sunLight.color.setHex(0x402020); sunLight.intensity=0.16;
+      ambientLight.color.setHex(0x080202); ambientLight.intensity=0.08;
+      hemiLight.color.setHex(0x2a1010);
+      hemiLight.groundColor.setHex(0x060101);
+      hemiLight.intensity=0.12;
+      if(scene&&scene.fog&&scene.fog.color)scene.fog.color.setHex(0x1a0a08);
+      _fogColorDay.setHex(0x3a1810); _fogColorNight.setHex(0x1a0a08);
+    }else{
+      if(_vcDayBg) scene.background=_vcDayBg;
+      if(_vcDayEnv) scene.environment=_vcDayEnv;
+      scene.fog.density=.014;
+      // Restore via shared helper so build-time + toggle-time setups
+      // can never drift (P3).
+      if(typeof window._applyVolcanoCinematicDayLighting==='function'){
+        window._applyVolcanoCinematicDayLighting();
+      }
+      if(scene&&scene.fog&&scene.fog.color)scene.fog.color.setHex(0x3a1810);
+      _fogColorDay.setHex(0x3a1810); _fogColorNight.setHex(0x1a0a08);
+    }
+    // Stars stay hidden — ash-cloud cover blocks them.
+    if(stars)stars.visible=false;
+    if(plHeadL){plHeadL.intensity=isDark?1.8:0.7;plHeadR.intensity=isDark?1.8:0.7;}
+    if(plTail)plTail.intensity=isDark?1.5:0.4;
+    _aiHeadPool.forEach(l=>l.intensity=isDark?1.1:0.3);
+    if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='space'){
     // Space is always dark — toggle only affects ambient brightness ("solar flare day" vs "deep night")
     if(isDark){
@@ -454,6 +496,18 @@ function _disposePier47SkyCache(){
   if(_p47DayEnv){try{_p47DayEnv.dispose();}catch(_){} _p47DayEnv=null;}
 }
 if(typeof window!=='undefined')window._disposePier47SkyCache=_disposePier47SkyCache;
+
+// Release the Volcano Cinematic sky-cache. Mirrors the Pier 47 pattern.
+// Defined for completeness; not yet wired into a dispose hook (sessie 1
+// world has no disposeVolcanoCinematicExtras path). Cache is small —
+// leak across one world-switch is negligible.
+function _disposeVolcanoCinematicSkyCache(){
+  if(_vcNightBg){try{_vcNightBg.dispose();}catch(_){} _vcNightBg=null;}
+  if(_vcNightEnv){try{_vcNightEnv.dispose();}catch(_){} _vcNightEnv=null;}
+  if(_vcDayBg){try{_vcDayBg.dispose();}catch(_){} _vcDayBg=null;}
+  if(_vcDayEnv){try{_vcDayEnv.dispose();}catch(_){} _vcDayEnv=null;}
+}
+if(typeof window!=='undefined')window._disposeVolcanoCinematicSkyCache=_disposeVolcanoCinematicSkyCache;
 
 // Per-world dispose helpers for the cross-world night-sky caches. Each is
 // called from the corresponding world-extras dispose function (e.g.
