@@ -46,6 +46,34 @@ const _SS_PLAZA_T_RANGE  = [0.70,0.86];
 //  Phase-3A strataStack-based cliffs embed displacement in ProcGeometry, so
 //  this helper has no remaining callers.)
 
+// ── Module-scope helpers (final cleanup pass) ────────────────────────
+//
+// _ssMakeStoneMat — single source of truth for the sandstorm sandstone
+// PBR material contract. Used by sphinx, pilaren, obelisken, and roadside
+// rocks/sunken-stones. Replaces 8 near-identical inline
+// `new MeshStandardMaterial({map:..., roughness:0.9X, metalness:0})`
+// constructions. Caller passes a pre-built canvas-tex (weatheredStone OR
+// pseudoGlyphs — obelisk shaft uses the latter on desktop) + optional
+// roughness override (default 0.92).
+function _ssMakeStoneMat(map, roughness){
+  return new THREE.MeshStandardMaterial({
+    map: map,
+    roughness: (roughness != null) ? roughness : 0.92,
+    metalness: 0
+  });
+}
+
+// _ssMergeProto — merges multi-shape prototype geometries into one
+// BufferGeometry and disposes the input source geometries. Used by
+// roadside marker/cactus/bones builders. Consolidates the
+// merge → input.dispose() pattern at 3 sites and ensures the source
+// geos can never leak if a future caller forgets to dispose.
+function _ssMergeProto(geos){
+  const merged = THREE.BufferGeometryUtils.mergeBufferGeometries(geos);
+  geos.forEach(g => { try { g.dispose(); } catch(_){} });
+  return merged;
+}
+
 // Per-world animated state — gereset bij world-switch via core/scene.js
 // disposeScene() (geometry/material/textures cleared) + race.js
 // _resetRaceState() (refs hier op null gezet door de world-switch flow).
@@ -103,7 +131,13 @@ function _ssBuildCanyonCliffs(){
     map:stoneTex,
     roughness:0.92,
     metalness:0,
-    vertexColors:true,    // strataStack puts r/g/b on each vertex
+    // map (rockStrata canvas) AND vertexColors (strata r/g/b) multiply
+    // in the fragment shader. The strata vertex-colors lerp BETWEEN
+    // stratum tints (~0.5..1.0 channel range), so the multiplied result
+    // is darker than the plain-map output — intentional: it deepens the
+    // bottom-of-strata seams where the canvas would otherwise look
+    // uniform. stratColors picked with this multiplication factored in.
+    vertexColors:true,
     flatShading:false
   });
   // Talud: instanced beveled rocks at the base.
@@ -377,9 +411,9 @@ function _ssBuildSphinxMonument(){
     baseColor:'#9b6f3a', crackColor:'#2a1410', crackCount:8,
     ageWear:0.6, repeatX:1, repeatY:1
   });
-  const bodyMat   =new THREE.MeshStandardMaterial({map:bodyTex,   roughness:0.92, metalness:0});
-  const sokkelMat =new THREE.MeshStandardMaterial({map:sokkelTex, roughness:0.94, metalness:0});
-  const nemesMat  =new THREE.MeshStandardMaterial({map:nemesTex,  roughness:0.90, metalness:0});
+  const bodyMat   =_ssMakeStoneMat(bodyTex,   0.92);
+  const sokkelMat =_ssMakeStoneMat(sokkelTex, 0.94);
+  const nemesMat  =_ssMakeStoneMat(nemesTex,  0.90);
   const sphinx=new THREE.Group();
 
   // ── SOKKEL — large stepped base (2 beveled blocks) — sub-meshes 1-2
@@ -574,8 +608,8 @@ function _ssBuildTempleRuins(){
     baseColor:'#8c6f50', crackColor:'#2a1810', crackCount:5,
     ageWear:0.55, repeatX:1, repeatY:1
   });
-  const shaftMat =new THREE.MeshStandardMaterial({map:shaftTex,  roughness:0.92, metalness:0});
-  const accentMat=new THREE.MeshStandardMaterial({map:accentTex, roughness:0.94, metalness:0});
+  const shaftMat =_ssMakeStoneMat(shaftTex,  0.92);
+  const accentMat=_ssMakeStoneMat(accentTex, 0.94);
 
   // Standing pillar parts — built once, reused via InstancedMesh per part.
   // entasisShaft baked at desktop sides:24 / mobile sides:12 per spec.
@@ -744,8 +778,8 @@ function _ssBuildObelisks(){
     baseColor:'#9a7048', crackColor:'#2a1810', crackCount:5,
     ageWear:0.5, repeatX:1, repeatY:1
   });
-  const shaftMat =new THREE.MeshStandardMaterial({map:shaftTex,  roughness:0.92, metalness:0});
-  const accentMat=new THREE.MeshStandardMaterial({map:accentTex, roughness:0.94, metalness:0});
+  const shaftMat =_ssMakeStoneMat(shaftTex,  0.92);
+  const accentMat=_ssMakeStoneMat(accentTex, 0.94);
   // Capstone — lightly emissive gold-tinted "gilded tip" (#d0a070 per spec).
   const capMat=new THREE.MeshStandardMaterial({
     color:0xd0a070, roughness:0.55, metalness:0.18,
@@ -1091,9 +1125,7 @@ function _ssBuildRoadsideDetail(){
   const stoneTex=ProcTextures.weatheredStone({
     baseColor:'#a8643a', crackColor:'#3a2418', crackCount:5, ageWear:0.5
   });
-  const stoneMat=new THREE.MeshStandardMaterial({
-    map:stoneTex, roughness:0.95, metalness:0
-  });
+  const stoneMat=_ssMakeStoneMat(stoneTex, 0.95);
   const woodMat=new THREE.MeshLambertMaterial({color:0x6e4520});
   const cactusMat=new THREE.MeshStandardMaterial({color:0x4a6b32, roughness:0.85, metalness:0});
   const boneMat=new THREE.MeshLambertMaterial({color:0xe8d8b0});
@@ -1123,9 +1155,7 @@ function _ssBuildRoadsideDetail(){
     pole.translate(0, 1.1, 0);
     const flag=new THREE.PlaneGeometry(0.6, 0.4);
     flag.translate(0.35, 1.85, 0);
-    const merged=THREE.BufferGeometryUtils.mergeBufferGeometries([pole, flag]);
-    pole.dispose(); flag.dispose();
-    return merged;
+    return _ssMergeProto([pole, flag]);
   })();
   // Cactus: 3-cylinder Saguaro shape (main + 2 arms) merged
   const cactusGeo=(()=>{
@@ -1139,9 +1169,7 @@ function _ssBuildRoadsideDetail(){
     const armR=new THREE.CylinderGeometry(0.18, 0.20, 0.8, 6);
     armR.translate(0.40, 1.6, 0);
     armR.rotateZ(-0.5);
-    const merged=THREE.BufferGeometryUtils.mergeBufferGeometries([trunk, armL, armLUp, armR]);
-    [trunk, armL, armLUp, armR].forEach(g=>g.dispose());
-    return merged;
+    return _ssMergeProto([trunk, armL, armLUp, armR]);
   })();
   // Bones: skull-like sphere + 2 boxes (tanden) merged
   const bonesGeo=(()=>{
@@ -1157,9 +1185,7 @@ function _ssBuildRoadsideDetail(){
     const horn2=new THREE.CylinderGeometry(0.05, 0.08, 0.4, 5);
     horn2.translate( 0.20, 0.65, 0);
     horn2.rotateZ(-0.6);
-    const merged=THREE.BufferGeometryUtils.mergeBufferGeometries([skull, tooth1, tooth2, horn1, horn2]);
-    [skull, tooth1, tooth2, horn1, horn2].forEach(g=>g.dispose());
-    return merged;
+    return _ssMergeProto([skull, tooth1, tooth2, horn1, horn2]);
   })();
   // Scarab sign: pole + sign-plate as TWO separate prototype geometries
   // (NOT merged). Reason: signMat carries the pseudoGlyphs map, and on a
@@ -1222,17 +1248,37 @@ function _ssBuildRoadsideDetail(){
   }
   if(COUNTS.scarab){
     // Two IMs per scarab type — pole uses woodMat (avoids glyph-tex
-    // wrapping the pole), sign uses signMat. Each IM gets the same
-    // matrices via two _spawn calls; we re-seed Math.random by sharing
-    // the same loop iteration count, but the spawn-helper randomises
-    // independently — a small inconsistency the reviewer flagged as
-    // could-share. Acceptable here: pole and sign-plate are vertically
-    // coincident (sign sits on top of pole at y=2.1), so per-instance
-    // jitter that differs by a fraction is invisible at game distance.
+    // wrapping the pole), sign uses signMat. The two IMs MUST share the
+    // same per-instance transform so the sign-plate sits on top of the
+    // pole. Earlier draft used two separate _spawn calls which produced
+    // 8 disjoint random pole-positions and 8 disjoint random sign-
+    // positions — pole and sign were never paired. Code-quality review
+    // flagged this. Fix: compute the matrices ONCE in a paired loop and
+    // write the same Matrix4 into both IMs.
     const scarabPoleIM=new THREE.InstancedMesh(scarabPoleGeo, woodMat, COUNTS.scarab);
-    _spawn(scarabPoleIM, COUNTS.scarab, woodMat, [0.9, 1.1], [3, 6], 0);
     const scarabSignIM=new THREE.InstancedMesh(scarabSignGeo, signMat, COUNTS.scarab);
-    _spawn(scarabSignIM, COUNTS.scarab, signMat, [0.9, 1.1], [3, 6], 0);
+    const _pairDummy=new THREE.Object3D();
+    for(let i=0;i<COUNTS.scarab;i++){
+      const t=Math.random();
+      const pp=trackCurve.getPoint(t);
+      const tg=trackCurve.getTangent(t).normalize();
+      const nr=new THREE.Vector3(-tg.z,0,tg.x);
+      const side=Math.random()<0.5?-1:1;
+      const off=BARRIER_OFF + 3 + Math.random()*3;
+      const cx=pp.x+nr.x*side*off + (Math.random()-0.5)*1.5;
+      const cz=pp.z+nr.z*side*off + (Math.random()-0.5)*1.5;
+      const sc=0.9+Math.random()*0.2;
+      _pairDummy.position.set(cx, 0, cz);
+      _pairDummy.rotation.set(0, Math.random()*Math.PI*2, 0);
+      _pairDummy.scale.set(sc, sc, sc);
+      _pairDummy.updateMatrix();
+      scarabPoleIM.setMatrixAt(i, _pairDummy.matrix);
+      scarabSignIM.setMatrixAt(i, _pairDummy.matrix);
+    }
+    scarabPoleIM.instanceMatrix.needsUpdate=true;
+    scarabSignIM.instanceMatrix.needsUpdate=true;
+    scene.add(scarabPoleIM);
+    scene.add(scarabSignIM);
   }
 }
 
