@@ -568,6 +568,146 @@ function _p47BuildCranes(){
   });
 }
 
+// ── Ophaalbrug (drawbridge) at sector 4 ──────────────────────────────────
+//
+// Static drawbridge straddling a fictional canal between the warehouse
+// half and the kade half of the harbour. Sessie 2 keeps it static — no
+// bascule animation. Visual frame-style construction:
+//   • Two tall towers flanking the track (4 corner posts each + lattice
+//     crossbeams via single-mesh BoxGeometry simplified frames)
+//   • Horizontal upper beam connecting the tower tops
+//   • Two angled tension cables (tower-top to bridge-deck-edge) — these
+//     are the visual signal of "drawbridge"
+//   • A small control booth halfway up one tower
+// Anchored at t≈0.74 (sector 4 mid). Track ribbon passes through; no
+// separate deck mesh needed (the track is already there).
+//
+// Saved into _p47Bridge for future sessie-3 animation hooks. Sessie 1's
+// state declaration block already has this slot; cleanup via scene.js
+// per-world array reset.
+function _p47BuildOphaalbrug(){
+  const t=0.74;
+  const p=trackCurve.getPoint(t);
+  const tg=trackCurve.getTangent(t).normalize();
+  const nr=new THREE.Vector3(-tg.z,0,tg.x);
+  const ang=Math.atan2(tg.x,tg.z);
+  // Tower spacing — left/right of track at +/-1 side
+  const TOWER_HALF=BARRIER_OFF+3;   // from track centerline
+  const TOWER_H=22;
+  const TOWER_W=2.2;
+  const TOWER_D=2.2;
+  // Group the bridge so future sessie-3 animation can rotate the whole
+  // assembly together. _p47Bridge stores the THREE.Group ref.
+  const grp=new THREE.Group();
+  const towerMat=new THREE.MeshLambertMaterial({color:0x3a3a40});
+  const beamMat=new THREE.MeshLambertMaterial({color:0x2a2a30});
+  const cableMat=new THREE.MeshLambertMaterial({color:0x1a1a1a});
+  const boothMat=new THREE.MeshLambertMaterial({color:0x55452a});
+  const winMat=new THREE.MeshBasicMaterial({color:0xffcc77});
+  // Two towers — one each side of the track
+  for(const side of [-1,1]){
+    const tx=p.x+nr.x*side*TOWER_HALF;
+    const tz=p.z+nr.z*side*TOWER_HALF;
+    // Outer shell — single hollow-feeling tower box
+    const tower=new THREE.Mesh(
+      new THREE.BoxGeometry(TOWER_W,TOWER_H,TOWER_D),
+      towerMat
+    );
+    tower.position.set(tx,TOWER_H*0.5,tz);
+    tower.rotation.y=ang;
+    grp.add(tower);
+    // Lattice cross-bracing — two diagonal ribs on the visible face
+    for(const yC of [TOWER_H*0.35, TOWER_H*0.7]){
+      const brace=new THREE.Mesh(
+        new THREE.BoxGeometry(0.3,3.5,0.3),
+        beamMat
+      );
+      brace.position.set(tx,yC,tz);
+      brace.rotation.set(0,ang,Math.PI*0.18);
+      grp.add(brace);
+    }
+    // Cap on top — slightly wider, darker
+    const cap=new THREE.Mesh(
+      new THREE.BoxGeometry(TOWER_W*1.25,0.8,TOWER_D*1.25),
+      beamMat
+    );
+    cap.position.set(tx,TOWER_H+0.4,tz);
+    cap.rotation.y=ang;
+    grp.add(cap);
+  }
+  // Horizontal upper beam connecting the two towers — sits just under
+  // the tower caps. Length spans across the track.
+  const beamLen=TOWER_HALF*2;
+  const upperBeam=new THREE.Mesh(
+    new THREE.BoxGeometry(0.9,1.3,beamLen),
+    beamMat
+  );
+  // Position at track center, height = TOWER_H, oriented along nr (cross-track)
+  upperBeam.position.set(p.x,TOWER_H,p.z);
+  upperBeam.rotation.y=ang+Math.PI/2;  // box's z-axis aligns with nr
+  grp.add(upperBeam);
+  // Tension cables — 4 diagonal cables from tower tops to track-deck
+  // edges. Each cable is a thin cylinder. Length picked to span from
+  // tower top (TOWER_H, side*TOWER_HALF) down to track edge (~0u, side*TW).
+  for(const side of [-1,1]){
+    for(const along of [-1,1]){
+      const topX=p.x+nr.x*side*TOWER_HALF;
+      const topY=TOWER_H-0.5;
+      const topZ=p.z+nr.z*side*TOWER_HALF;
+      // Cable end at track edge along the t-axis (+/- 4u from anchor)
+      const cosA=Math.cos(ang),sinA=Math.sin(ang);
+      const endX=p.x+nr.x*side*(TW+1)+cosA*along*4;
+      const endY=0.4;
+      const endZ=p.z+nr.z*side*(TW+1)+sinA*along*4;
+      // Build a cylinder oriented from top → end
+      const dx=endX-topX, dy=endY-topY, dz=endZ-topZ;
+      const len=Math.hypot(dx,dy,dz);
+      const cable=new THREE.Mesh(
+        new THREE.CylinderGeometry(0.06,0.06,len,4),
+        cableMat
+      );
+      // Position at midpoint, orient via lookAt
+      cable.position.set((topX+endX)*0.5,(topY+endY)*0.5,(topZ+endZ)*0.5);
+      // CylinderGeometry's long axis is +Y by default; need to align with
+      // (dx,dy,dz). Use quaternion from default Y to target dir.
+      const dir=new THREE.Vector3(dx,dy,dz).normalize();
+      const q=new THREE.Quaternion();
+      q.setFromUnitVectors(new THREE.Vector3(0,1,0),dir);
+      cable.quaternion.copy(q);
+      grp.add(cable);
+    }
+  }
+  // Control booth on the +1 side, mid-height. Tiny box with a glowing
+  // amber window.
+  const sideB=1;
+  const boothX=p.x+nr.x*sideB*(TOWER_HALF+1.6);
+  const boothY=11;
+  const boothZ=p.z+nr.z*sideB*(TOWER_HALF+1.6);
+  const booth=new THREE.Mesh(new THREE.BoxGeometry(2.8,2.2,2.0),boothMat);
+  booth.position.set(boothX,boothY,boothZ);
+  booth.rotation.y=ang;
+  grp.add(booth);
+  // Booth window — track-facing side, emissive amber
+  const winOff=-nr.x*sideB*1.06;
+  const winOffZ=-nr.z*sideB*1.06;
+  const win=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.0,0.06),winMat);
+  win.position.set(boothX+winOff,boothY+0.3,boothZ+winOffZ);
+  win.rotation.y=ang;
+  grp.add(win);
+  // Two red obstruction-warning lights on the upper beam ends — small
+  // emissive cubes. Match the crane warning lights for visual consistency.
+  const warnMat=new THREE.MeshBasicMaterial({color:0xff2030});
+  for(const side of [-1,1]){
+    const wx=p.x+nr.x*side*(TOWER_HALF-0.8);
+    const wz=p.z+nr.z*side*(TOWER_HALF-0.8);
+    const warn=new THREE.Mesh(new THREE.BoxGeometry(0.5,0.5,0.5),warnMat);
+    warn.position.set(wx,TOWER_H+0.9,wz);
+    grp.add(warn);
+  }
+  scene.add(grp);
+  _p47Bridge=grp;
+}
+
 // ── Main environment builder ──────────────────────────────────────────────
 //
 // Sessie 2 expansion:
@@ -575,11 +715,12 @@ function _p47BuildCranes(){
 //   2. Day-lighting (sessie-1)
 //   3. Barriers + start line (sessie-1)
 //   4. Sodium lamp poles along the kade (sessie-2 commit 1)
-//   5. Containers in Container Run + The Yard (sessie-2 commit 2 — NEW)
-//   6. Warehouse at sector 3 → 4 corner (sessie-2 commit 2 — NEW)
-//   7. Cranes on the kade (sessie-2 commit 2 — NEW)
-//   8. (Wet-asphalt rendering + ophaalbrug land in commit 3)
-//   9. Headlights + sparse always-off stars (sessie-1)
+//   5. Containers in Container Run + The Yard (sessie-2 commit 2)
+//   6. Warehouse at sector 3 → 4 corner (sessie-2 commit 2)
+//   7. Cranes on the kade (sessie-2 commit 2)
+//   8. Ophaalbrug at sector 4 (sessie-2 commit 3 — NEW)
+//   9. Wet-asphalt material swap in track.js (sessie-2 commit 3 — NEW)
+//  10. Headlights + sparse always-off stars (sessie-1)
 function buildPier47Environment(){
   // Weather reset — Pier 47's signature mood is motregen, but sessie 1 has
   // no rain renderer yet. Clear any inherited weather state so the dry
@@ -614,6 +755,7 @@ function buildPier47Environment(){
   _p47BuildContainers();
   _p47BuildWarehouse();
   _p47BuildCranes();
+  _p47BuildOphaalbrug();
   // Player + AI headlight refs — Pier 47 is dark, headlights matter even
   // before sessie-2 sodium lamps land.
   plHeadL=new THREE.SpotLight(0xffffff,0,50,Math.PI*.16,.5);

@@ -97,7 +97,21 @@ function buildTrack(){
   // edge lines and startline overlays win the depth test on low-precision depth buffers (iPad).
   const _trackPalette=WORLD_TRACK_PALETTE[activeWorld]||WORLD_TRACK_PALETTE.gp;
   const _baseTrackColor=_trackPalette.asphalt;
-  const _trackMat=new THREE.MeshLambertMaterial({color:_baseTrackColor,map:_buildTrackSurfaceTex()});
+  // Pier 47 wet-asphalt: swap to MeshStandardMaterial so the PMREM-baked
+  // skybox env paints the track with reflective slickness — sodium lamps
+  // smear into long highlights down the kade, exactly the look the world
+  // is built around. Other worlds keep the cheaper Lambert. The procedural
+  // _buildTrackSurfaceTex grain map applies to both code paths and gives
+  // the wet asphalt micro-variation so reflections aren't a perfect mirror.
+  const _trackMat=(activeWorld==='pier47')
+    ? new THREE.MeshStandardMaterial({
+        color:_baseTrackColor,
+        map:_buildTrackSurfaceTex(),
+        roughness:0.32,    // slick but not mirror — wet asphalt has roughness
+        metalness:0.45,    // boosts env-map reflectivity for the sodium-streak look
+        envMapIntensity:1.5
+      })
+    : new THREE.MeshLambertMaterial({color:_baseTrackColor,map:_buildTrackSurfaceTex()});
   // No polygonOffset on asphalt itself — it sits at y=0.005, well above the
   // ground plane at y=-0.12, so natural depth ordering keeps asphalt on top
   // of grass/sand. Pushing asphalt away (the previous +1 offset) caused
