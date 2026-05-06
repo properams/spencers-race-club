@@ -113,6 +113,105 @@
     }
   }
 
+  // ── BufferGeometryUtils.mergeBufferGeometries polyfill ──────────────
+  // r160's official BufferGeometryUtils lives in three/addons (not in the
+  // bundled core blob this codebase uses). Sandstorm's procedural prop
+  // builders need mergeBufferGeometries to flatten multi-shape camel /
+  // marker / cactus / bones prototypes into single InstancedMesh-friendly
+  // BufferGeometries. This shim implements the subset of behaviour those
+  // call sites rely on:
+  //   - position / normal / uv / color attributes (Float32Array)
+  //   - indexed and non-indexed inputs (consistent across input list)
+  //   - returns null with dbg.warn on attribute-mismatch instead of
+  //     throwing — preserves the spec'd "fail soft" contract callers
+  //     already coded against
+  // Skips: useGroups support, morphTargets, BufferGeometry instances with
+  // exotic typed arrays (Uint8 color, etc). Logs a dbg.warn if encountered.
+  if (typeof THREE !== 'undefined') {
+    THREE.BufferGeometryUtils = THREE.BufferGeometryUtils || {};
+    if (typeof THREE.BufferGeometryUtils.mergeBufferGeometries !== 'function') {
+      THREE.BufferGeometryUtils.mergeBufferGeometries = function(geos) {
+        if (!Array.isArray(geos) || geos.length === 0) return null;
+        const ref = geos[0];
+        if (!ref || !ref.attributes) {
+          if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: input[0] is not a BufferGeometry');
+          return null;
+        }
+        const attrNames = Object.keys(ref.attributes);
+        const isIndexed = ref.index !== null && ref.index !== undefined;
+        // Validate consistency across all inputs.
+        for (let i = 1; i < geos.length; i++) {
+          const g = geos[i];
+          if (!g || !g.attributes) {
+            if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: input['+i+'] missing .attributes');
+            return null;
+          }
+          const gKeys = Object.keys(g.attributes);
+          if (gKeys.length !== attrNames.length) {
+            if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: attribute-count mismatch at input['+i+'] ('+gKeys.length+' vs '+attrNames.length+')');
+            return null;
+          }
+          for (let n = 0; n < attrNames.length; n++) {
+            const name = attrNames[n];
+            if (!g.attributes[name]) {
+              if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: attribute "'+name+'" missing at input['+i+']');
+              return null;
+            }
+            if (g.attributes[name].itemSize !== ref.attributes[name].itemSize) {
+              if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: itemSize mismatch on "'+name+'" at input['+i+']');
+              return null;
+            }
+          }
+          const gIndexed = g.index !== null && g.index !== undefined;
+          if (gIndexed !== isIndexed) {
+            if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: index presence mismatch at input['+i+']');
+            return null;
+          }
+        }
+        // Sum vertex + index counts.
+        let totalVerts = 0, totalIndices = 0;
+        for (let i = 0; i < geos.length; i++) {
+          totalVerts += geos[i].attributes.position.count;
+          if (isIndexed) totalIndices += geos[i].index.count;
+        }
+        // Concatenate per-attribute. All sandstorm inputs use Float32Array;
+        // log + bail on anything else rather than silently truncating.
+        const merged = new THREE.BufferGeometry();
+        for (let n = 0; n < attrNames.length; n++) {
+          const name = attrNames[n];
+          const itemSize = ref.attributes[name].itemSize;
+          if (!(ref.attributes[name].array instanceof Float32Array)) {
+            if (window.dbg) dbg.warn('three-compat', 'mergeBufferGeometries: non-Float32Array attribute "'+name+'" not supported by polyfill');
+            return null;
+          }
+          const out = new Float32Array(totalVerts * itemSize);
+          let off = 0;
+          for (let i = 0; i < geos.length; i++) {
+            const src = geos[i].attributes[name].array;
+            out.set(src, off);
+            off += src.length;
+          }
+          merged.setAttribute(name, new THREE.BufferAttribute(out, itemSize));
+        }
+        if (isIndexed) {
+          // Use Uint32Array to be safe for >65k vertices; r160 BufferGeometry
+          // accepts it without further configuration.
+          const idx = new Uint32Array(totalIndices);
+          let idxOff = 0, vertOff = 0;
+          for (let i = 0; i < geos.length; i++) {
+            const src = geos[i].index.array;
+            for (let k = 0; k < src.length; k++) idx[idxOff + k] = src[k] + vertOff;
+            idxOff += src.length;
+            vertOff += geos[i].attributes.position.count;
+          }
+          merged.setIndex(new THREE.BufferAttribute(idx, 1));
+        }
+        return merged;
+      };
+      appliedFlags.bufferGeomUtilsPolyfilled = true;
+    }
+  }
+
   window.ThreeCompat = {
     revision: revNum,
     isR150Plus,

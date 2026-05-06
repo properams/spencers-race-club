@@ -1285,6 +1285,16 @@ function _ssBuildRoadsideDetail(){
 // ── Main builders ───────────────────────────────────────────────────────
 
 function buildSandstormEnvironment(){
+  // Weather reset — sandstorm has its own dust-storm hazard mechanic and is
+  // fundamentally incompatible with weather-rain. The isRain / _rainTarget /
+  // _rainIntensity globals persist across world-switches; without an explicit
+  // clear here, a previous world's rain leaks into the desert (Bug 4).
+  if(typeof isRain!=='undefined'&&isRain){
+    isRain=false;
+    if(typeof _rainTarget!=='undefined')_rainTarget=0;
+    if(typeof _rainIntensity!=='undefined')_rainIntensity=0;
+    if(rainCanvas)rainCanvas.style.display='none';
+  }
   // ── Ground (sand canvas, anisotropy/repeat matches grandprix-style)
   const g=new THREE.Mesh(new THREE.PlaneGeometry(2400,2400),
     new THREE.MeshLambertMaterial({color:0xd4a55a,map:_sandGroundTex()}));
