@@ -36,7 +36,9 @@
 // flicker pulses subtly in updatePier47World) and the ophaalbrug ref so
 // future polish can animate the bascule. Sessie-3 will park rain-puddle
 // shimmer state here.
-let _p47LampEmissives=[];   // [{mat, phase}] for sodium-lamp flicker
+// (Removed: _p47LampEmissives — sessie-2 lamp flicker registry. Cinematic
+//  lamps register themselves with _cinemaState.lightPoles in cinematic.js
+//  instead; flicker is driven by updateCinematic().)
 let _p47Bridge=null;         // ophaalbrug ref (sessie-2 static)
 let _p47DrizzleGeo=null;     // BufferGeometry for motregen particle pool
 let _p47Drizzle=null;        // THREE.Points mesh (the drizzle streaks)
@@ -60,13 +62,17 @@ let _p47Drizzle=null;        // THREE.Points mesh (the drizzle streaks)
 // Lambert ground at full intensity would clip to white under no-shadow lighting.
 function _applyPier47DayLighting(){
   if(!sunLight||!ambientLight||!hemiLight)return;
-  sunLight.color.setHex(0xd8d0c0);
-  sunLight.intensity = window._isMobile ? 0.9 : 1.4;
+  // Cinematic foundation: ambient global lighting pulled WAY down so the
+  // praktische lichtbronnen (sodium poles, koplampen, blinkende markers)
+  // doen het narrative werk. "Pools of light, not floods." This is the
+  // single biggest tonal shift between sessie-2 and the cinematic upgrade.
+  sunLight.color.setHex(0x9aa6b8);                          // koel blauw-grijs ipv warm wit
+  sunLight.intensity = window._isMobile ? 0.30 : 0.40;       // was 0.9 / 1.4
   sunLight.position.set(60, 110, 80);
-  ambientLight.color.setHex(0x1a1a22); ambientLight.intensity = 0.30;
-  hemiLight.color.setHex(0xa0a8b0);
-  hemiLight.groundColor.setHex(0x4a3828); // warmer than sessie-1 (#403838) — sodium spillover from lamp poles
-  hemiLight.intensity = 0.5;
+  ambientLight.color.setHex(0x14141c); ambientLight.intensity = 0.15; // was 0.30
+  hemiLight.color.setHex(0x6a7080);                          // was #a0a8b0
+  hemiLight.groundColor.setHex(0x2a2028);                    // donkerder grond-bounce
+  hemiLight.intensity = 0.20;                                // was 0.5
 }
 // Expose to non-module consumers — night.js reads from window.* scope.
 if(typeof window!=='undefined')window._applyPier47DayLighting=_applyPier47DayLighting;
@@ -189,95 +195,13 @@ function _pier47GroundTex(){
   return t;
 }
 
-// ── Sodium lamp poles (always-on industrial lighting) ────────────────────
-//
-// Pier 47's defining detail: warm orange (#ff8830) high-pressure sodium
-// lamps lining the kade. Always on (the world is permanently overcast-
-// nacht), pulsing subtly via _p47LampEmissives in updatePier47World.
-//
-// Geometry budget:
-//   • Pole shaft: shared CylinderGeometry, InstancedMesh (POLE_COUNT * 2
-//     instances, one IM call)
-//   • Lamp head:  shared BoxGeometry, InstancedMesh (one IM call). Heads
-//     share a single emissive material reference so flicker animation
-//     mutates one mat for all lamps simultaneously.
-//   • PointLights: spaced out (every 2nd pole on desktop, every 3rd on
-//     mobile) so total active scene lights stay within Three.js's
-//     forward-rendering budget. Range 28u — illuminates barrier + kerb
-//     edge plus ~12u of the kade beyond.
-//
-// Disposal: pole + head InstancedMeshes get cleaned up by disposeScene's
-// generic mesh traversal. PointLights are scene children — auto-removed.
-// _p47LampEmissives is reset in scene.js's per-world array clear block.
-function _p47BuildLampPoles(){
-  const mob=window._isMobile;
-  const POLE_COUNT=mob?14:22;                       // pairs (each pole on both sides)
-  const LIGHT_EVERY=mob?3:2;                        // 1 PointLight per N poles
-  const N_PER_SIDE=POLE_COUNT;
-  const TOTAL=N_PER_SIDE*2;
-  // Shared geometry/materials — one mat per IM, mutated for flicker.
-  const poleGeo=new THREE.CylinderGeometry(0.10,0.16,8.5,6);
-  const poleMat=new THREE.MeshLambertMaterial({color:0x222018});
-  const armGeo=new THREE.BoxGeometry(0.10,0.10,1.4);  // arm reaching toward track
-  const armMat=poleMat;                                // share — same material
-  const headGeo=new THREE.BoxGeometry(0.95,0.32,0.95);
-  // Sodium-orange emissive — high intensity baseline; flicker mutates this.
-  const headMat=new THREE.MeshLambertMaterial({
-    color:0xff8830,
-    emissive:0xff8830,
-    emissiveIntensity:1.4
-  });
-  _p47LampEmissives.push({mat:headMat,phase:Math.random()*Math.PI*2});
-  const poleIM=new THREE.InstancedMesh(poleGeo,poleMat,TOTAL);
-  const armIM =new THREE.InstancedMesh(armGeo,armMat,TOTAL);
-  const headIM=new THREE.InstancedMesh(headGeo,headMat,TOTAL);
-  const dummy=new THREE.Object3D();
-  let idx=0;
-  for(let i=0;i<N_PER_SIDE;i++){
-    const t=i/N_PER_SIDE;
-    const p=trackCurve.getPoint(t);
-    const tg=trackCurve.getTangent(t).normalize();
-    const nr=new THREE.Vector3(-tg.z,0,tg.x);
-    const ang=Math.atan2(tg.x,tg.z);
-    [-1,1].forEach(side=>{
-      const off=BARRIER_OFF+2.4;
-      const px=p.x+nr.x*side*off;
-      const pz=p.z+nr.z*side*off;
-      // Pole shaft — vertical cylinder, base at y=0, height 8.5 → centered at 4.25
-      dummy.position.set(px,4.25,pz);
-      dummy.rotation.set(0,0,0);
-      dummy.scale.set(1,1,1);
-      dummy.updateMatrix();
-      poleIM.setMatrixAt(idx,dummy.matrix);
-      // Arm — extends from top of pole inward toward the track
-      const armX=px-nr.x*side*0.7;
-      const armZ=pz-nr.z*side*0.7;
-      dummy.position.set(armX,8.2,armZ);
-      // Rotate arm so its long axis points along inward-normal (cross-track)
-      dummy.rotation.set(0,ang+Math.PI/2,0);
-      dummy.updateMatrix();
-      armIM.setMatrixAt(idx,dummy.matrix);
-      // Head — sits at end of arm, hangs below it slightly
-      const headX=px-nr.x*side*1.4;
-      const headZ=pz-nr.z*side*1.4;
-      dummy.position.set(headX,7.95,headZ);
-      dummy.rotation.set(0,ang,0);
-      dummy.updateMatrix();
-      headIM.setMatrixAt(idx,dummy.matrix);
-      // PointLight every Nth pole — staggered between sides for spread.
-      if((i+(side>0?0:1))%LIGHT_EVERY===0){
-        const pl=new THREE.PointLight(0xff8830,1.2,28);
-        pl.position.set(headX,7.6,headZ);
-        scene.add(pl);
-      }
-      idx++;
-    });
-  }
-  poleIM.instanceMatrix.needsUpdate=true;
-  armIM.instanceMatrix.needsUpdate=true;
-  headIM.instanceMatrix.needsUpdate=true;
-  scene.add(poleIM);scene.add(armIM);scene.add(headIM);
-}
+// (Removed: _p47BuildLampPoles — sessie-2 minimal lamp pole implementation.
+//  Replaced by _p47BuildCinematicLamps() which composes the shared
+//  cinematic.js helpers. The previous InstancedMesh-based version was
+//  removed wholesale; the cinematic version emits per-pole groups for
+//  variation flexibility (broken/tilted/working) at the cost of slightly
+//  higher draw-call count. Mobile-degradation lives inside the helper
+//  rather than this caller.)
 
 // ── Containers (Container Run sector 1 + Yard sector 2) ──────────────────
 //
@@ -342,6 +266,67 @@ const _P47_CONTAINER_COLORS=[
   [0.55,0.45,0.20],   // dirty mustard
   [0.30,0.30,0.36]    // dark slate
 ];
+
+// ── Cinematic lamp-pole array along the kade ─────────────────────────────
+//
+// Replaces the sessie-2 _p47BuildLampPoles() with calls into the shared
+// cinematic.js helpers (buildCinematicLightPole). Each pole gets a
+// volumetric cone, ground pool, halo billboard, and per-mat flicker —
+// the "praktische lichtbronnen zijn heroes" pillar.
+//
+// Variation rules:
+//   • Total: 22 desktop / 14 mobile pole-pairs along the track curve
+//   • ~12% of lamps are "uit" (working:false) — paal staat er, geen licht
+//   • ~12% are subtly tilted (~3-5°) — leaning/oude palen
+//   • Even-side lamps face inward toward the track (facingY = ang + π/2)
+//   • Odd-side lamps face the opposite direction (facingY = ang - π/2)
+//
+// Pier 47 palette pin: amber (#ff8830) — same hex as the sodium-lamp
+// emissive on containers/warehouse. Future cinematic worlds pass their
+// own color via the buildCinematicLightPole opts.
+function _p47BuildCinematicLamps(){
+  if (typeof buildCinematicLightPole !== 'function') return;
+  const mob = window._isMobile;
+  const COUNT = mob ? 14 : 22;
+  const TILT_FRAC = 0.12;     // ~12% of lamps subtly tilted
+  const BROKEN_FRAC = 0.12;   // ~12% of lamps "uit"
+  // Stable pseudo-random pattern for variety: deterministic by index so
+  // the same lamps stay broken / tilted across builds (no surprise drift
+  // when the user retoggles night).
+  const rng = (i) => { const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
+  for (let i = 0; i < COUNT; i++){
+    const t = i / COUNT;
+    const p = trackCurve.getPoint(t);
+    const tg = trackCurve.getTangent(t).normalize();
+    const nr = new THREE.Vector3(-tg.z, 0, tg.x);
+    const ang = Math.atan2(tg.x, tg.z);
+    [-1, 1].forEach((side, sIdx) => {
+      const seed = i * 2 + sIdx;
+      const off = BARRIER_OFF + 2.4;
+      const px = p.x + nr.x * side * off;
+      const pz = p.z + nr.z * side * off;
+      const isTilted = rng(seed) < TILT_FRAC;
+      const isBroken = rng(seed + 0.5) < BROKEN_FRAC;
+      // facingY: arm reaches inward toward the track. Side -1 vs +1
+      // mirrors the arm direction. Pole-internal +X axis = arm direction.
+      const facingY = (side === 1) ? ang + Math.PI / 2 : ang - Math.PI / 2;
+      buildCinematicLightPole(scene, new THREE.Vector3(px, 0, pz), {
+        color: 0xff8830,
+        intensity: 1.5,
+        range: 26,
+        height: 8.2,
+        armLength: 1.4,
+        poolRadius: 11,
+        working: !isBroken,
+        tilt: isTilted ? ((rng(seed + 0.7) - 0.5) * 0.10) : 0,  // ±~3°
+        facingY: facingY,
+        castGroundPool: true,
+        castVolumetricCone: true,
+        castHalo: true
+      });
+    });
+  }
+}
 
 function _p47BuildContainers(){
   const mob=window._isMobile;
@@ -793,10 +778,11 @@ function buildPier47Environment(){
   _applyPier47DayLighting();
   // Barriers + start line (shared environment helpers).
   buildBarriers();buildStartLine();
-  // Sodium-lamp poles along the kade — always-on industrial lighting.
-  // Defining detail of the world; placed AFTER barriers so the pole
-  // bases sit just outside the barrier line.
-  _p47BuildLampPoles();
+  // Sodium-lamp poles along the kade — cinematic upgrade. Each pole now
+  // has a volumetric light cone, ground pool, and halo billboard via the
+  // shared cinematic.js helpers, replacing the sessie-2 minimal version.
+  // Variation: 2-3 lamps "broken" (no light), 2-3 subtly tilted ("oude").
+  _p47BuildCinematicLamps();
   // Industrial props (sessie 2 commit 2):
   //   • Containers — sectors 1 + 2 (Container Run + The Yard)
   //   • Warehouse — sector 3 / 4 corner (loods at WP9 90° right)
@@ -862,14 +848,11 @@ function buildPier47Environment(){
 // optional ophaalbrug bascule animation. For now: just lamp flicker.
 function updatePier47World(dt){
   const t=_nowSec;
-  // Sodium-lamp emissive flicker — one mat-mutation drives all instances
-  // sharing the head material.
-  for(let i=0;i<_p47LampEmissives.length;i++){
-    const e=_p47LampEmissives[i];
-    if(!e||!e.mat)continue;
-    const v=Math.sin(t*1.7+e.phase);
-    e.mat.emissiveIntensity=1.4+v*0.18;
-  }
+  // Sodium-lamp emissive flicker is now driven by updateCinematic()
+  // via _cinemaState.lightPoles — see js/effects/cinematic.js. The legacy
+  // _p47LampEmissives loop has been removed (cinematic lamps do not
+  // populate this array). The reset in scene.js is harmless (drains an
+  // empty array on world-switch).
   // Drizzle particle pool — 3D depth-tested rain streaks. Particles fall
   // straight down at ~12u/s with a slight wind-drift on X (motregen often
   // has a horizontal component from harbour wind). When a particle drops

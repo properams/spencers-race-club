@@ -112,6 +112,18 @@ function _cinematicFogWispTex(hexColor){
 function disposeCinematicCaches(){
   _fogTexCache.forEach(t => { try { t.dispose(); } catch(_){} });
   _fogTexCache.clear();
+  if (typeof _poolTexCache !== 'undefined'){
+    _poolTexCache.forEach(t => { try { t.dispose(); } catch(_){} });
+    _poolTexCache.clear();
+  }
+  if (typeof _haloTexCache !== 'undefined'){
+    _haloTexCache.forEach(t => { try { t.dispose(); } catch(_){} });
+    _haloTexCache.clear();
+  }
+  if (typeof _coneTexCache !== 'undefined'){
+    _coneTexCache.forEach(t => { try { t.dispose(); } catch(_){} });
+    _coneTexCache.clear();
+  }
 }
 if (typeof window !== 'undefined') window.disposeCinematicCaches = disposeCinematicCaches;
 
@@ -228,14 +240,170 @@ function buildCinematicGroundFog(scene, opts){
 // @param {boolean} [opts.castHalo=true]     Add halo billboard around lamp
 // @returns {THREE.Group}  Group containing all pole sub-meshes
 //
-// IMPLEMENTATION SLOT — wired in commit 2 of this sessie.
 function buildCinematicLightPole(scene, position, opts){
-  // Stub — full implementation lands in commit 2 of the cinematic sessie.
-  // Returning an empty group keeps callers safe if they call this early.
-  const g = new THREE.Group();
-  g.position.copy(position);
-  scene.add(g);
-  return g;
+  const o = opts || {};
+  const color    = (o.color != null) ? o.color : 0xff8830;
+  const intensity= (o.intensity != null) ? o.intensity : 1.5;
+  const range    = (o.range != null) ? o.range : 24;
+  const height   = (o.height != null) ? o.height : 8;
+  const armLen   = (o.armLength != null) ? o.armLength : 1.4;
+  const poolR    = (o.poolRadius != null) ? o.poolRadius : 12;
+  const working  = (o.working !== false);
+  const tilt     = (o.tilt || 0);
+  const facingY  = (o.facingY || 0);
+  const wantPool = (o.castGroundPool !== false);
+  const wantCone = (o.castVolumetricCone !== false);
+  const wantHalo = (o.castHalo !== false);
+  // Group anchors at the mast base — caller positioned `position` is base
+  const grp = new THREE.Group();
+  grp.position.copy(position);
+  // Tilt — rotate the entire group around X (or Z) for a leaning-pole feel
+  if (tilt !== 0) grp.rotation.z = tilt;
+  if (facingY !== 0) grp.rotation.y = facingY;
+  // Mast — cylinder, slim, dark steel
+  const mastMat = new THREE.MeshLambertMaterial({ color: 0x222018 });
+  const mast = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.10, 0.16, height, 6),
+    mastMat
+  );
+  mast.position.y = height * 0.5;
+  grp.add(mast);
+  // Arm reaching toward the track (along local +X by convention; caller
+  // can pre-rotate the position via facingY)
+  const arm = new THREE.Mesh(
+    new THREE.BoxGeometry(armLen, 0.10, 0.10),
+    mastMat
+  );
+  arm.position.set(armLen * 0.5, height - 0.1, 0);
+  grp.add(arm);
+  // Lamp armature — small box at the end of the arm, slight downward tilt
+  const lampHeadMat = new THREE.MeshLambertMaterial({
+    color: working ? color : 0x1a1816,
+    emissive: working ? color : 0x000000,
+    emissiveIntensity: working ? 1.4 : 0.0
+  });
+  const lampHead = new THREE.Mesh(
+    new THREE.BoxGeometry(0.95, 0.32, 0.95),
+    lampHeadMat
+  );
+  lampHead.position.set(armLen, height - 0.3, 0);
+  grp.add(lampHead);
+  // Track-pole metadata for flicker animation in updateCinematic. The
+  // shared mat ref is what drives flicker; we register one entry per lamp
+  // but with a shared phase based on grp uuid for variety.
+  const flickerPhase = Math.random() * Math.PI * 2;
+  if (working){
+    // PointLight — modest range, color-matched
+    const pl = new THREE.PointLight(color, intensity, range, 2);
+    pl.position.copy(lampHead.position);
+    grp.add(pl);
+    // Volumetric cone (commit 2 helper)
+    if (wantCone){
+      buildCinematicVolumetricLightCone(grp, {
+        color: color,
+        coneRadius: poolR * 0.35,
+        coneHeight: height,
+        opacity: 0.18,
+        anchorX: armLen,
+        anchorY: height - 0.3
+      });
+    }
+    // Ground pool — radial-fade disc directly under the lamp
+    if (wantPool){
+      const poolTex = _cinematicGroundPoolTex(color);
+      const poolMat = new THREE.MeshBasicMaterial({
+        map: poolTex,
+        transparent: true,
+        opacity: 0.55,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        fog: true
+      });
+      const pool = new THREE.Mesh(
+        new THREE.CircleGeometry(poolR, 24),
+        poolMat
+      );
+      pool.rotation.x = -Math.PI / 2;
+      pool.position.set(armLen, -position.y + 0.02, 0);  // sit on ground (y=0 world)
+      pool.renderOrder = -3;
+      grp.add(pool);
+    }
+    // Halo billboard — sprite at the lamp head
+    if (wantHalo){
+      const haloTex = _cinematicHaloTex(color);
+      const haloMat = new THREE.SpriteMaterial({
+        map: haloTex,
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        fog: true
+      });
+      const halo = new THREE.Sprite(haloMat);
+      halo.scale.set(2.4, 2.4, 1);
+      halo.position.copy(lampHead.position);
+      grp.add(halo);
+    }
+  }
+  scene.add(grp);
+  // Register so updateCinematic can drive subtle flicker on working lamps
+  _cinemaState.lightPoles.push({
+    group: grp,
+    headMat: lampHeadMat,
+    working: working,
+    flickerPhase: flickerPhase,
+    baseEmissive: working ? 1.4 : 0.0
+  });
+  return grp;
+}
+
+// ── Procedural ground-pool radial-fade texture ───────────────────────────
+const _poolTexCache = new Map();
+function _cinematicGroundPoolTex(hexColor){
+  const key = String(hexColor);
+  if (_poolTexCache.has(key)) return _poolTexCache.get(key);
+  const S = 128, c = document.createElement('canvas');
+  c.width = S; c.height = S;
+  const g = c.getContext('2d');
+  const col = new THREE.Color(hexColor);
+  const r = Math.round(col.r * 255), gC = Math.round(col.g * 255), b = Math.round(col.b * 255);
+  // Soft radial gradient — peak ~0.5 alpha at center, transparent at edge
+  const grd = g.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
+  grd.addColorStop(0,    `rgba(${r},${gC},${b},0.85)`);
+  grd.addColorStop(0.35, `rgba(${r},${gC},${b},0.45)`);
+  grd.addColorStop(0.7,  `rgba(${r},${gC},${b},0.12)`);
+  grd.addColorStop(1.0,  `rgba(${r},${gC},${b},0)`);
+  g.fillStyle = grd;
+  g.fillRect(0, 0, S, S);
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  _poolTexCache.set(key, tex);
+  return tex;
+}
+
+// Halo billboard tex — radial gradient with a hot center
+const _haloTexCache = new Map();
+function _cinematicHaloTex(hexColor){
+  const key = String(hexColor);
+  if (_haloTexCache.has(key)) return _haloTexCache.get(key);
+  const S = 128, c = document.createElement('canvas');
+  c.width = S; c.height = S;
+  const g = c.getContext('2d');
+  const col = new THREE.Color(hexColor);
+  const r = Math.round(col.r * 255), gC = Math.round(col.g * 255), b = Math.round(col.b * 255);
+  const grd = g.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
+  grd.addColorStop(0,    `rgba(${Math.min(255,r+40)},${Math.min(255,gC+30)},${Math.min(255,b+20)},1.0)`);
+  grd.addColorStop(0.18, `rgba(${r},${gC},${b},0.82)`);
+  grd.addColorStop(0.55, `rgba(${r},${gC},${b},0.30)`);
+  grd.addColorStop(1.0,  `rgba(${r},${gC},${b},0)`);
+  g.fillStyle = grd;
+  g.fillRect(0, 0, S, S);
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  _haloTexCache.set(key, tex);
+  return tex;
 }
 
 // ╔═════════════════════════════════════════════════════════════════════════╗
@@ -257,9 +425,64 @@ function buildCinematicLightPole(scene, position, opts){
 // @param {boolean} [opts.additive=true]    Use AdditiveBlending (cinematic)
 // @returns {THREE.Mesh}  The cone mesh (caller can position-tweak)
 //
-// IMPLEMENTATION SLOT — wired in commit 2.
 function buildCinematicVolumetricLightCone(parent, opts){
-  return null;  // stub — implemented in commit 2
+  const o = opts || {};
+  const color    = (o.color != null) ? o.color : 0xff8830;
+  const coneR    = (o.coneRadius != null) ? o.coneRadius : 4;
+  const coneH    = (o.coneHeight != null) ? o.coneHeight : 8;
+  const opacity  = (o.opacity != null) ? o.opacity : 0.22;
+  const additive = (o.additive !== false);
+  const anchorX  = o.anchorX || 0;
+  const anchorY  = o.anchorY || 0;
+  // Tapered cylinder — narrow at top (lamp), wide at bottom (ground).
+  // Open-ended so we don't render a closing disc; UV mapping wraps around.
+  const geo = new THREE.CylinderGeometry(0.4, coneR, coneH, 12, 1, true);
+  // Vertical gradient texture: hot at top, transparent at bottom. UVs of
+  // CylinderGeometry default to v=0 at bottom, v=1 at top — so paint
+  // accordingly.
+  const tex = _cinematicConeGradientTex(color);
+  const mat = new THREE.MeshBasicMaterial({
+    map: tex,
+    color: 0xffffff,
+    transparent: true,
+    opacity: opacity,
+    depthWrite: false,
+    blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending,
+    side: THREE.DoubleSide,
+    fog: true
+  });
+  const cone = new THREE.Mesh(geo, mat);
+  cone.position.set(anchorX, anchorY - coneH * 0.5, 0);
+  cone.renderOrder = -2;
+  parent.add(cone);
+  return cone;
+}
+
+// Cone gradient — vertical fade from hot (lamp end) to clear (ground end).
+const _coneTexCache = new Map();
+function _cinematicConeGradientTex(hexColor){
+  const key = String(hexColor);
+  if (_coneTexCache.has(key)) return _coneTexCache.get(key);
+  const W = 8, H = 64, c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const col = new THREE.Color(hexColor);
+  const r = Math.round(col.r * 255), gC = Math.round(col.g * 255), b = Math.round(col.b * 255);
+  // v=0 (canvas y=H, bottom of cone, ground end) → transparent
+  // v=1 (canvas y=0, top of cone, lamp end)      → hot
+  const grd = g.createLinearGradient(0, 0, 0, H);
+  grd.addColorStop(0,    `rgba(${r},${gC},${b},1.0)`);
+  grd.addColorStop(0.35, `rgba(${r},${gC},${b},0.55)`);
+  grd.addColorStop(0.75, `rgba(${r},${gC},${b},0.18)`);
+  grd.addColorStop(1.0,  `rgba(${r},${gC},${b},0)`);
+  g.fillStyle = grd;
+  g.fillRect(0, 0, W, H);
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.needsUpdate = true;
+  _coneTexCache.set(key, tex);
+  return tex;
 }
 
 // ╔═════════════════════════════════════════════════════════════════════════╗
@@ -381,6 +604,17 @@ function updateCinematic(dt){
       if (!f || !f.tex) continue;
       f.tex.offset.x += f.scrollDir[0] * f.scrollSpeed * dt;
       f.tex.offset.y += f.scrollDir[1] * f.scrollSpeed * dt;
+    }
+  }
+  // Lamp pole emissive flicker — subtle ±0.18 sine around baseEmissive,
+  // per-pole phase for asynchronous breathing across the lamp array.
+  if (_cinemaState.lightPoles.length){
+    const t = (typeof _nowSec !== 'undefined') ? _nowSec : (performance.now() * 0.001);
+    for (let i = 0; i < _cinemaState.lightPoles.length; i++){
+      const p = _cinemaState.lightPoles[i];
+      if (!p || !p.working || !p.headMat) continue;
+      const v = Math.sin(t * 1.7 + p.flickerPhase);
+      p.headMat.emissiveIntensity = p.baseEmissive + v * 0.18;
     }
   }
   // Blinking markers — implemented in commit 3 (reads pattern + blinkInterval)
