@@ -111,7 +111,11 @@ function buildCandySky(){
 function buildLollipopTrees(){
   const stickMat=new THREE.MeshLambertMaterial({color:0xf5e0c8});
   const headColors=[0xff2266,0xff8800,0x22ccff,0xaadd00,0xcc44ff,0xff44aa,0xffcc00,0x44ddbb];
-  const count=44;
+  // Visual-polish v2 density: desktop bumped 44 → 52 (~+18%) for richer
+  // candy-forest feel; mobile holds at 44 (already heavy + the recent
+  // stickIM consolidation made the per-stick cost nearly free, but mobile
+  // is the weakest platform and candy is visually busy).
+  const count=window._isMobile?44:52;
   // Sticks share material + geometry — only height (h) differs per stick.
   // Bake height into the per-instance scale.y of an InstancedMesh so all
   // 44 sticks render in 1 draw call instead of 44. Unit-height cylinder
@@ -157,9 +161,13 @@ function buildLollipopTrees(){
 function buildCandyCanes(){
   const redMat=new THREE.MeshLambertMaterial({color:0xee1122,emissive:0x550000,emissiveIntensity:.2});
   const whiteMat=new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x222222,emissiveIntensity:.1});
-  const count=22;
+  // Visual-polish v2 density: desktop 22 → 29 (~+30%); mobile holds at 22.
+  const count=window._isMobile?22:29;
   for(let i=0;i<count;i++){
-    const t=(i/count)%1;
+    // Stratified t with small jitter so the canes don't form a perfectly
+    // mechanical ring around the loop. Each cane gets its own track-bucket,
+    // jitter ±0.012 keeps the spread natural without breaking even spacing.
+    const t=((i+0.5+(Math.random()-0.5)*0.4)/count)%1;
     const p=trackCurve.getPoint(t),tg=trackCurve.getTangent(t).normalize();
     const nr=new THREE.Vector3(-tg.z,0,tg.x);
     const side=(i%2===0?1:-1)*(BARRIER_OFF+22);
