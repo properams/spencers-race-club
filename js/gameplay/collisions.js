@@ -27,8 +27,13 @@ function checkCollisions(dt){
       // issue 9). All visible feedback now shares the same cooldown gate.
       if(heavy){
         _colFlashT=0.42;
-        player.hitCount=(player.hitCount||0)+1;
         if(_contactPopupCD<=0){
+          // hitCount increment is gated by the cooldown so each burst of
+          // contact-frames (cars locked side-by-side at >0.18 relSpd can
+          // overlap 60×/s) registers as ONE hit. Without this gate the
+          // ===3 / ===6 thresholds got jumped over silently AND _dmgMult
+          // saturated within the first second of contact (physics.js:64).
+          player.hitCount=(player.hitCount||0)+1;
           // Additional white impact sparks + float text on first heavy
           // contact within the cooldown window only.
           sparkSystem.emit(eX,.6,eZ,(Math.random()-.5)*.1,.1+Math.random()*.06,(Math.random()-.5)*.1,18,1,1,1,.7);

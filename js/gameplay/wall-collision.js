@@ -32,6 +32,10 @@
 // by car index — cars don't move slots between frames so a plain array beats
 // a WeakMap allocation per build.
 const _wcContactCD = [];
+// Scratch Vector3 for trackCurve.getPoint. Catmull-Rom getPoint(t, target)
+// writes into the target instead of allocating a fresh Vector3 per call.
+// Without this, 8 cars × 60fps = 480 Vector3 allocs/sec.
+const _wcCp = new THREE.Vector3();
 
 function checkWallCollisions(dt){
   if(typeof carObjs==='undefined' || !carObjs.length) return;
@@ -43,6 +47,10 @@ function checkWallCollisions(dt){
 
   const wallEdge = TW + 4;       // 17u from curve
   const wallEdge2 = wallEdge * wallEdge;
+  // Match the AI movement-stagger pattern from loop.js so push-cadence
+  // tracks movement-cadence on mobile (otherwise pushing AI at 60Hz while
+  // they only move at 30Hz can cause sticky/oscillating contact feel).
+  const isMob = !!window._isMobile;
 
   for(let ci=0; ci<carObjs.length; ci++){
     const car = carObjs[ci];
@@ -54,16 +62,24 @@ function checkWallCollisions(dt){
     // check correctly only gates the player.
     if(ci===playerIdx && typeof recoverActive!=='undefined' && recoverActive) continue;
     if(typeof _raceStartGrace!=='undefined' && _raceStartGrace>0) continue;
+    // Mobile AI stagger: AI cars are updated every other frame on mobile
+    // (loop.js:93). Skip wall-collision on the off-frames so the push doesn't
+    // race ahead of the integrator and oscillate.
+    if(isMob && ci!==playerIdx && typeof _aiFrameCounter!=='undefined'
+        && (_aiFrameCounter+ci)%2!==0) continue;
 
     const pos = car.mesh.position;
-    const t = (typeof nearestT==='function') ? nearestT(pos, car.progress) : car.progress;
-    const cp = trackCurve.getPoint(t);
-    const dx = pos.x - cp.x, dz = pos.z - cp.z;
+    const t = nearestT(pos, car.progress);
+    trackCurve.getPoint(t, _wcCp);
+    const dx = pos.x - _wcCp.x, dz = pos.z - _wcCp.z;
     const offDist2 = dx*dx + dz*dz;
     if(offDist2 <= wallEdge2) continue;
 
     const offDist = Math.sqrt(offDist2);
-    const overshoot = offDist - wallEdge;
+    // Cap overshoot at 5u/frame so a glitch-teleport doesn't snap the car
+    // visibly across the screen in a single frame. Above 5u the wall keeps
+    // pushing on subsequent frames until back inside.
+    const overshoot = Math.min(offDist - wallEdge, 5);
     // Push direction = -normalised offset (toward curve).
     const nx = -dx / offDist, nz = -dz / offDist;
     // Position push: 0.4 of the overshoot per frame. Cumulative across
