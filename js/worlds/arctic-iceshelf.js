@@ -138,4 +138,6 @@ function disposeArcticIceShelf(){
   _arcticShelfSegs.length=0;
   _arcticShelfPool=null;
   _arcticShelfState=null;
+  // Release the night.js sky-cache (day + night skybox + PMREM env).
+  if(typeof _disposeArcticSkyCache==='function')_disposeArcticSkyCache();
 }

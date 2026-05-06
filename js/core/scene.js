@@ -480,6 +480,66 @@ function makeArcticSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
+// Arctic NIGHT — deep midnight-blue zenith, vivid aurora ribbons (green
+// + violet + cyan) that arc across the upper sky, dense star field,
+// crisp white moon. PMREM-baked env paints car lacquer with cool aurora
+// rim-light at night.
+function makeArcticNightSkyTex(){
+  const {c,g}=_newSkyCanvas('#050a1c','#1a2848');
+  // Dense star field (zenith-weighted), painted before auroras so aurora
+  // partially veils some stars naturally.
+  const STAR_COUNT=window._isMobile?60:160;
+  for(let i=0;i<STAR_COUNT;i++){
+    const x=Math.random()*1024;
+    const y=Math.pow(Math.random(),1.5)*300;
+    const a=(0.5+Math.random()*0.5).toFixed(2);
+    const sz=Math.random()<0.9?1:1.6;
+    g.fillStyle=`rgba(220,230,255,${a})`;
+    g.fillRect(x,y,sz,sz);
+  }
+  // Aurora ribbons — 4 bands with stronger curve + higher saturation
+  // than the day version. Painted with additive feel via 'lighter' comp.
+  g.save();
+  g.globalCompositeOperation='lighter';
+  const auroraBands=[
+    {y:90,  color:'rgba(80,255,180,', amp:38, freq:0.011},
+    {y:140, color:'rgba(120,90,255,', amp:42, freq:0.009},
+    {y:180, color:'rgba(60,220,255,', amp:32, freq:0.013},
+    {y:240, color:'rgba(180,80,220,', amp:26, freq:0.015}
+  ];
+  auroraBands.forEach((band,bi)=>{
+    for(let x=0;x<1024;x+=2){
+      const wob=Math.sin(x*band.freq+bi*1.7)*band.amp;
+      const y=band.y+wob;
+      const peakA=0.32-bi*0.05;
+      const grad=g.createLinearGradient(x,y-60,x,y+60);
+      grad.addColorStop(0,band.color+'0)');
+      grad.addColorStop(.5,band.color+peakA.toFixed(2)+')');
+      grad.addColorStop(1,band.color+'0)');
+      g.fillStyle=grad;g.fillRect(x,y-60,2,120);
+    }
+  });
+  g.restore();
+  // Hero moon, upper-right, crisp + bright (cold air = high contrast).
+  const moonCx=760,moonCy=110,moonR=42;
+  const halo=g.createRadialGradient(moonCx,moonCy,moonR*0.55,moonCx,moonCy,moonR*2.5);
+  halo.addColorStop(0,'rgba(225,235,255,0.55)');
+  halo.addColorStop(.5,'rgba(180,210,250,0.20)');
+  halo.addColorStop(1,'rgba(180,210,250,0)');
+  g.fillStyle=halo;g.fillRect(moonCx-moonR*2.5,moonCy-moonR*2.5,moonR*5,moonR*5);
+  const disc=g.createRadialGradient(moonCx-moonR*0.25,moonCy-moonR*0.25,0, moonCx,moonCy,moonR);
+  disc.addColorStop(0,'rgba(255,255,255,1)');
+  disc.addColorStop(.7,'rgba(235,240,250,1)');
+  disc.addColorStop(1,'rgba(190,200,220,0.9)');
+  g.fillStyle=disc;g.beginPath();g.arc(moonCx,moonCy,moonR,0,Math.PI*2);g.fill();
+  // Distant ice-fog at horizon — same band as day, slightly cooler tone.
+  const fog=g.createLinearGradient(0,400,0,512);
+  fog.addColorStop(0,'rgba(140,170,210,0)');
+  fog.addColorStop(1,'rgba(140,170,210,0.55)');
+  g.fillStyle=fog;g.fillRect(0,400,1024,112);
+  return _skyTexFromCanvas(c);
+}
+
 // Sandstorm — warm-sunset gradient. Purple-warm zenith bleeds through a
 // fiery orange-red mid-band into a peach horizon and warm-dust foot.
 // Cinematic golden-hour feel + dramatic rim-light fodder for cliff side

@@ -98,10 +98,27 @@ function toggleNight(){
     _aiHeadPool.forEach(l=>l.intensity=1.2);
     if(_sunBillboard)_sunBillboard.visible=false;
   }else if(activeWorld==='arctic'){
-    if(isDark){scene.background=makeSkyTex('#0c1e36','#162e48');scene.fog.density=.0030;
-      sunLight.intensity=.22;ambientLight.intensity=.40;hemiLight.intensity=.32;trackLightList.forEach(function(l){l.intensity=1.4;});
-    }else{scene.background=makeSkyTex('#0a1525','#1a3050');scene.fog.density=.0035;
-      sunLight.color.setHex(0xaaccff);sunLight.intensity=.8;ambientLight.intensity=.45;trackLightList.forEach(function(l){l.intensity=0;});
+    // Arctic night: aurora-ribbon skybox (green + violet + cyan) over
+    // dense star field with crisp moon. PMREM env paints car lacquer
+    // with cool aurora rim-light — the dramatic visual win for this world.
+    if(isDark){
+      if(!_arcDayBg)_arcDayBg=scene.background;
+      if(!_arcDayEnv)_arcDayEnv=scene.environment;
+      if(!_arcNightBg && typeof makeArcticNightSkyTex==='function'){
+        const _baked=_bakeNightEnv(makeArcticNightSkyTex);
+        _arcNightBg=_baked.bg; _arcNightEnv=_baked.env;
+      }
+      if(_arcNightBg) scene.background=_arcNightBg;
+      if(_arcNightEnv) scene.environment=_arcNightEnv;
+      scene.fog.density=.0030;
+      sunLight.intensity=.22;ambientLight.intensity=.40;hemiLight.intensity=.32;
+      trackLightList.forEach(function(l){l.intensity=1.4;});
+    }else{
+      if(_arcDayBg) scene.background=_arcDayBg;
+      if(_arcDayEnv) scene.environment=_arcDayEnv;
+      scene.fog.density=.0035;
+      sunLight.color.setHex(0xaaccff);sunLight.intensity=.8;ambientLight.intensity=.45;
+      trackLightList.forEach(function(l){l.intensity=0;});
     }
     if(stars)stars.visible=isDark;
     if(plHeadL){plHeadL.intensity=isDark?1.7:0;plHeadR.intensity=isDark?1.7:0;}
