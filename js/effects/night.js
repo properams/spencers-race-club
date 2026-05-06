@@ -350,7 +350,9 @@ function toggleNight(){
       if(_gpDayBg) scene.background=_gpDayBg;
       if(_gpDayEnv) scene.environment=_gpDayEnv;
       scene.fog.density=.0021;
-      sunLight.intensity=1.65;ambientLight.intensity=.50;hemiLight.intensity=.36;
+      // Use Grand Prix shared day-lighting helper for the day-restore so
+      // build-time + toggle-time setups can never drift.
+      if(typeof _applyGrandPrixDayLighting==='function')_applyGrandPrixDayLighting();
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);if(stars)stars.visible=false;
       if(plHeadL){plHeadL.intensity=0;plHeadR.intensity=0;}if(plTail)plTail.intensity=0;
       _aiHeadPool.forEach(l=>l.intensity=0);

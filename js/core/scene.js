@@ -46,6 +46,30 @@ function _shared(x){ return !!(x && x.userData && x.userData._sharedAsset); }
 function _isVoidWorld(world){
   return world === 'space' || world === 'deepsea';
 }
+
+// Single source of truth for Grand Prix day lighting. Mirrors the cross-
+// world helper pattern (sandstorm/candy/volcano/arctic/themepark) — the
+// default-world buildScene block + night.js default GP-day branch share
+// the same constants. GP has no dedicated world.js file so the helper
+// lives here in scene.js alongside _isVoidWorld.
+//
+// Goal palette (clean blue-sky circuit):
+//   sun #fff5e0 (warm white) / 1.65
+//   ambient #88aacc (cool blue) / 0.50
+//   hemi sky #9bbfdd / ground #4a7a3d (grass) / 0.36
+// Values match the scene.js per-world cascade else-branch — this helper
+// is the consistency refactor.
+function _applyGrandPrixDayLighting(){
+  if(typeof sunLight==='undefined' || !sunLight) return;
+  if(typeof ambientLight==='undefined' || !ambientLight) return;
+  if(typeof hemiLight==='undefined' || !hemiLight) return;
+  sunLight.color.setHex(0xfff5e0); sunLight.intensity=1.65;
+  ambientLight.color.setHex(0x88aacc); ambientLight.intensity=.50;
+  hemiLight.color.setHex(0x9bbfdd);
+  hemiLight.groundColor.setHex(0x4a7a3d);
+  hemiLight.intensity=.36;
+}
+if(typeof window!=='undefined')window._applyGrandPrixDayLighting=_applyGrandPrixDayLighting;
 // Alle texture-slots die op een r134 MeshPhysicalMaterial kunnen voorkomen.
 // _disposeMat itereert deze lijst zodat per-instance physical materials uit
 // Phase 2/3 (transmission lenses, Tesla glass roof, Mustang stripe-canvas)
