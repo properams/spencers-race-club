@@ -426,32 +426,45 @@ function makeArcticSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
-// Sandstorm — cyan zenith → warm peach horizon → sand-cream undertones.
-// Lap-progressive haze tint is layered on top via DOM-overlay (in
-// sandstorm-storm.js); this canvas is the lap-1 clear-sky baseline.
+// Sandstorm — warm-sunset gradient. Purple-warm zenith bleeds through a
+// fiery orange-red mid-band into a peach horizon and warm-dust foot.
+// Cinematic golden-hour feel + dramatic rim-light fodder for cliff side
+// of canyon. Lap-progressive haze tint is layered on top via DOM-overlay
+// in sandstorm-storm.js; this canvas is the lap-1 clear-sky baseline.
 function makeSandstormSkyTex(){
-  const {c,g}=_newSkyCanvas('#7ec4d9','#f1cea0');
-  // Sun hotspot (warm white) — high-contrast desert sun.
-  const sun=g.createRadialGradient(720,140,0,720,140,260);
-  sun.addColorStop(0,'rgba(255,250,225,1)');
-  sun.addColorStop(.3,'rgba(255,235,180,0.55)');
-  sun.addColorStop(1,'rgba(255,220,150,0)');
-  g.fillStyle=sun;g.fillRect(440,0,560,400);
-  // Warm horizon haze that fades into the sand-tinted lower band.
-  const haze=g.createLinearGradient(0,300,0,512);
-  haze.addColorStop(0,'rgba(232,180,118,0)');
-  haze.addColorStop(.5,'rgba(232,180,118,0.45)');
-  haze.addColorStop(1,'rgba(216,164,98,0.65)');
-  g.fillStyle=haze;g.fillRect(0,300,1024,212);
-  // Sparse high-altitude wisps (desert cirrus) — adds depth without
-  // looking cloudy. Just a few thin horizontal streaks.
+  // Two-stop linear bg = zenith → mid-horizon. We paint the lower bands on
+  // top to get a 4-stop sunset effect without altering _newSkyCanvas.
+  const {c,g}=_newSkyCanvas('#5a3a55','#ff7842');
+  // Mid-band warm orange-red → peach horizon (rows ~260-420).
+  const midBand=g.createLinearGradient(0,260,0,420);
+  midBand.addColorStop(0,'rgba(255,120,66,0)');
+  midBand.addColorStop(.5,'rgba(255,160,100,0.55)');
+  midBand.addColorStop(1,'rgba(255,184,122,0.85)');
+  g.fillStyle=midBand;g.fillRect(0,260,1024,160);
+  // Lower horizon → warm-dust foot. Picks up the fog-color so the seam
+  // between fogged distant geometry and skybox is invisible.
+  const foot=g.createLinearGradient(0,410,0,512);
+  foot.addColorStop(0,'rgba(255,184,122,0.85)');
+  foot.addColorStop(1,'rgba(168,104,57,1)');
+  g.fillStyle=foot;g.fillRect(0,410,1024,102);
+  // Sun hotspot — low and warm. Centered just above mid-band so the
+  // sunset glow centers the composition. Color-matches the sun directional
+  // light (#ff8c42) so sky and lit-sides of cliffs share a tone.
+  const sun=g.createRadialGradient(680,300,0,680,300,280);
+  sun.addColorStop(0,'rgba(255,210,140,1)');
+  sun.addColorStop(.25,'rgba(255,160,90,0.65)');
+  sun.addColorStop(.6,'rgba(255,120,60,0.30)');
+  sun.addColorStop(1,'rgba(255,100,50,0)');
+  g.fillStyle=sun;g.fillRect(360,40,640,520);
+  // Sparse high-altitude wisps backlit by sunset — picks up sun-warm
+  // tones rather than cloud-white. Adds atmospheric depth in the zenith.
   for(let i=0;i<8;i++){
-    const y=70+Math.random()*120,w=140+Math.random()*180;
+    const y=70+Math.random()*150,w=140+Math.random()*180;
     const x=Math.random()*1024;
     const grd=g.createLinearGradient(x,y,x+w,y);
-    grd.addColorStop(0,'rgba(255,245,225,0)');
-    grd.addColorStop(.5,'rgba(255,245,225,0.18)');
-    grd.addColorStop(1,'rgba(255,245,225,0)');
+    grd.addColorStop(0,'rgba(255,200,150,0)');
+    grd.addColorStop(.5,'rgba(255,200,150,0.22)');
+    grd.addColorStop(1,'rgba(255,200,150,0)');
     g.fillStyle=grd;g.fillRect(x,y-2,w,4);
   }
   return _skyTexFromCanvas(c);
@@ -596,8 +609,12 @@ function buildScene(){
     // (linear fog ignores density, so weather-rain-add becomes a no-op here
     // — acceptable since sandstorm has no rain mode).
     scene.background=makeSandstormSkyTex();
-    scene.fog=new THREE.Fog(0xe8b878,60,220);
-    _fogColorDay.setHex(0xe8b878);_fogColorNight.setHex(0x6a4830);
+    // Warm-sunset fog color matches the skybox foot-band so distance-faded
+    // mesas tie into the sunset palette seamlessly. Distances (60..220)
+    // are owned by sandstorm-storm.js's hazard mechanic (_SS_FOG_FAR_DEFAULT=220
+    // + lap2 110 + lap3 55) — must stay aligned.
+    scene.fog=new THREE.Fog(0xe8a468,60,220);
+    _fogColorDay.setHex(0xe8a468);_fogColorNight.setHex(0x6a4830);
   }else{
     // Onbekende world — val terug op space-sky zodat de scene niet crasht.
     if(window.dbg)dbg.warn('scene','unknown world '+activeWorld+' — falling back to space sky');

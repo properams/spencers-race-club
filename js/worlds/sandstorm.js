@@ -1301,19 +1301,26 @@ function buildSandstormEnvironment(){
   g.rotation.x=-Math.PI/2;g.position.y=-.15;g.receiveShadow=true;
   g.userData._isProcGround=true;
   scene.add(g);
-  // ── Lighting (warm desert — Phase-2 retune per visual-richness pilot)
-  // Sky + fog set in core/scene.js. The biggest visual upgrade comes from
-  // the HEMISPHERE: previous sky=#9bd0e0 (cyan) gave canyon walls a cool
-  // sky-bounce that fought the warm sun. New sky=#d4b890 (warm sand) +
-  // ground=#7a4a25 with intensity 0.8 (mobile 0.6) lights the canyon
-  // shadow-side warm — fixes the "platte" cliff/sphinx feel WITHOUT any
-  // geometry changes. Sun bumped to #fff0d0 / 2.5 (mobile 2.0). Ambient
-  // cut to 0.3 because hemisphere now provides the diffuse fill.
-  sunLight.color.setHex(0xfff0d0); sunLight.intensity = window._isMobile ? 2.0 : 2.5;
-  ambientLight.color.setHex(0x5a3a20); ambientLight.intensity = 0.3;
-  hemiLight.color.setHex(0xd4b890);
-  hemiLight.groundColor.setHex(0x7a4a25);
-  hemiLight.intensity = window._isMobile ? 0.6 : 0.8;
+  // ── Lighting (warm sunset — v2 retune per visual-fix-v2 pilot)
+  // Goal: cinematic golden-hour. Low-angle warm sun for long shadows on
+  // cliffs + dramatic rim-light, peach hemisphere for warm shadow-side
+  // bounce, deep rust ambient for the unlit sand crevices. Skybox + fog
+  // (set in core/scene.js) match this palette so sky/ground/fog seam is
+  // invisible. Scene.js creates a fresh sunLight at (180,320,80) per
+  // world-build, so our low-angle reposition is sandstorm-local and
+  // doesn't leak — next buildScene gets default position back.
+  sunLight.color.setHex(0xff8c42);
+  // Mobile sun caps at 1.7 (not 2.2): shadows are disabled on mobile, so a
+  // 2.8-bright sun on the warm Lambert sand-ground (0xd4a55a) clips to
+  // white. Desktop has shadow projection that grounds the highlights.
+  sunLight.intensity = window._isMobile ? 1.7 : 2.8;
+  // Low + angled sun (height 35, lateral 80, depth -60). Shadow camera
+  // bounds (±500 from sun perspective) easily accommodate the new vantage.
+  sunLight.position.set(80, 35, -60);
+  ambientLight.color.setHex(0x5a2818); ambientLight.intensity = 0.35;
+  hemiLight.color.setHex(0xffb87a);
+  hemiLight.groundColor.setHex(0x8b3a1d);
+  hemiLight.intensity = window._isMobile ? 0.7 : 1.0;
   // Sand-haze fill light (warm, modest range — pulses subtly in update)
   _sandstormSandSwept=new THREE.PointLight(0xffe4a8,1.4,500);
   _sandstormSandSwept.position.set(0,8,0);scene.add(_sandstormSandSwept);
