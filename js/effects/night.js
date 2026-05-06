@@ -229,7 +229,7 @@ function toggleNight(){
   // Linear THREE.Fog (sandstorm) has no .density — skip the cache write so
   // updateWeather's rainAdd doesn't produce NaN against an undefined base.
   if(scene&&scene.fog&&typeof scene.fog.density==='number')_fogBaseDensity=scene.fog.density;
-  if(_sunBillboard)_sunBillboard.visible=!isDark&&!isRain&&activeWorld!=='space'&&activeWorld!=='deepsea';
+  if(_sunBillboard)_sunBillboard.visible=!isDark&&!isRain&&!_isVoidWorld(activeWorld);
   // Bloom intensifies bij night (lower threshold, higher strength) — neon
   // emissives gloeien dan dramatischer. Day = subtieler.
   if(typeof setBloomDayNight==='function')setBloomDayNight(isDark);

@@ -42,7 +42,7 @@ function checkWallCollisions(dt){
   if(typeof trackCurve==='undefined' || !trackCurve) return;
   if(typeof TW==='undefined') return;
 
-  const skipTrackWall = activeWorld==='space' || activeWorld==='deepsea';
+  const skipTrackWall = _isVoidWorld(activeWorld);
   if(skipTrackWall) return;
 
   const wallEdge = TW + 4;       // 17u from curve

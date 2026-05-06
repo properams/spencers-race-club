@@ -245,7 +245,7 @@ function updateCrowd(){
 
 function buildSpectators(){
   // Skip on space/deepsea — niet thematisch passend.
-  if(activeWorld==='space'||activeWorld==='deepsea')return;
+  if(_isVoidWorld(activeWorld))return;
   _crowdMaterials.length=0;
   const crowdTex=_buildCrowdTex();
   // Two grandstand sections aan weerszijden van het start/finish-stuk.

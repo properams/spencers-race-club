@@ -34,6 +34,18 @@
 // material can still wrap a shared texture (e.g. cloned headlight beam
 // material wrapping the cached alpha-mask).
 function _shared(x){ return !!(x && x.userData && x.userData._sharedAsset); }
+
+// World-classification helper. The "void worlds" — space and deepsea —
+// share fall-into-void mechanics: off-track triggers a fall+rescue
+// sequence instead of a recovery-circle, gravity is reduced, and the
+// soft-wall track-edge collision is skipped (you're meant to be able to
+// fly off into the void). The pair appears together in 3 places across
+// the codebase (wall-collision.js, collectibles.js, night.js sun-billboard
+// gate); centralising the check here means a future third void world
+// only needs to be added in one place.
+function _isVoidWorld(world){
+  return world === 'space' || world === 'deepsea';
+}
 // Alle texture-slots die op een r134 MeshPhysicalMaterial kunnen voorkomen.
 // _disposeMat itereert deze lijst zodat per-instance physical materials uit
 // Phase 2/3 (transmission lenses, Tesla glass roof, Mustang stripe-canvas)
