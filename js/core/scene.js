@@ -971,6 +971,8 @@ function buildScene(){
   _tpFireworkTimer=2;
   if(typeof _p47LampEmissives!=='undefined')_p47LampEmissives.length=0;
   if(typeof _p47Bridge!=='undefined')_p47Bridge=null;
+  if(typeof _p47Drizzle!=='undefined')_p47Drizzle=null;
+  if(typeof _p47DrizzleGeo!=='undefined')_p47DrizzleGeo=null;
 
   const isSpace=activeWorld==='space';
   const isDeepSea=activeWorld==='deepsea';

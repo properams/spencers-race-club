@@ -1,13 +1,13 @@
 // js/worlds/pier47.js — Pier 47 (industrial harbour by night) world builders.
-// Non-module script. Sessie 2 = props + lighting + wet-rendering:
-//   • sodium-lamp poles along the kade (always-on warm orange spillover)
-//   • container stacks along the Container Run + The Yard sectors
-//   • warehouse (loods) at the WP9 90° right
-//   • cranes on the kade
-//   • ophaalbrug (drawbridge) at sector 4
-//   • wet-asphalt rendering on the track surface
-// Plassen / regen / mist / stoom particles arrive in sessie 3. Optional
-// wet-physics is sessie 4.
+// Non-module script. Sessie history:
+//   sessie 1 — bones + skybox + lighting + WORLDS registration
+//   sessie 2 — props (lamp poles + containers + warehouse + cranes
+//              + ophaalbrug) + wet-asphalt rendering
+//   sessie 3 — atmosphere prep: motregen-default + drizzle particle pool
+//   CINEMATIC FOUNDATION — Pier 47 upgraded to its cinematic visual
+//              language. See docs/CINEMATIC_PATTERN.md and
+//              js/effects/cinematic.js for the reusable helper layer.
+// Optional wet-physics is sessie 4.
 //
 // ── Track-waypoints (data/tracks.json#pier47) ────────────────────────────
 // 12 waypoints, counter-clockwise loop, bbox 440 × 405, perimeter 1311 units.
@@ -38,6 +38,8 @@
 // shimmer state here.
 let _p47LampEmissives=[];   // [{mat, phase}] for sodium-lamp flicker
 let _p47Bridge=null;         // ophaalbrug ref (sessie-2 static)
+let _p47DrizzleGeo=null;     // BufferGeometry for motregen particle pool
+let _p47Drizzle=null;        // THREE.Points mesh (the drizzle streaks)
 
 // Single source of truth for Pier 47 day lighting. Mirrors the sandstorm /
 // candy / volcano helper pattern. buildPier47Environment + night.js's
@@ -708,9 +710,51 @@ function _p47BuildOphaalbrug(){
   _p47Bridge=grp;
 }
 
+// ── Drizzle particle pool (motregen) ─────────────────────────────────────
+//
+// 3D depth-tested rain streaks orbiting the player. Combined with the
+// shared canvas-rain overlay (already on at 0.6 intensity from buildPier47-
+// Environment), the world reads as actual volumetric motregen instead of
+// a flat-canvas-overlay-on-top-of-3D-scene.
+//
+// Particle pool is centred on the player; positions wrap in updatePier47-
+// World as the camera moves so the rain follows. Each particle has a
+// per-instance vertical velocity baked in via the position.y accumulation
+// in the update loop.
+//
+// Material is a PointsMaterial with sizeAttenuation OFF so streaks look
+// uniform at any distance (real rain doesn't become invisible far away —
+// it becomes a haze, which the canvas overlay supplies). Color is a
+// cool desaturated blue-grey (#9aa6b8) at low opacity (0.45) — visible
+// against the dark sky but doesn't compete with the sodium lamps.
+function _p47BuildDrizzle(){
+  const N=window._isMobile?180:340;
+  const geo=new THREE.BufferGeometry();
+  const pos=new Float32Array(N*3);
+  // Initial random positions inside a 220×30×220 volume around origin.
+  // updatePier47World re-parents positions to follow the player.
+  for(let i=0;i<N;i++){
+    pos[i*3]  =(Math.random()-0.5)*220;
+    pos[i*3+1]=Math.random()*30;
+    pos[i*3+2]=(Math.random()-0.5)*220;
+  }
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  const mat=new THREE.PointsMaterial({
+    color:0x9aa6b8,
+    size:0.95,
+    transparent:true,
+    opacity:0.45,
+    sizeAttenuation:false,    // uniform streak size at all distances
+    depthWrite:false           // don't occlude transparent fog/lights behind
+  });
+  _p47Drizzle=new THREE.Points(geo,mat);
+  scene.add(_p47Drizzle);
+  _p47DrizzleGeo=geo;
+}
+
 // ── Main environment builder ──────────────────────────────────────────────
 //
-// Sessie 2 expansion:
+// Sessie 3 expansion (cumulative):
 //   1. Concrete kade ground (sessie-1)
 //   2. Day-lighting (sessie-1)
 //   3. Barriers + start line (sessie-1)
@@ -718,18 +762,23 @@ function _p47BuildOphaalbrug(){
 //   5. Containers in Container Run + The Yard (sessie-2 commit 2)
 //   6. Warehouse at sector 3 → 4 corner (sessie-2 commit 2)
 //   7. Cranes on the kade (sessie-2 commit 2)
-//   8. Ophaalbrug at sector 4 (sessie-2 commit 3 — NEW)
-//   9. Wet-asphalt material swap in track.js (sessie-2 commit 3 — NEW)
+//   8. Ophaalbrug at sector 4 (sessie-2 commit 3)
+//   9. Wet-asphalt material swap in track.js (sessie-2 commit 3)
 //  10. Headlights + sparse always-off stars (sessie-1)
+//  11. Motregen default + drizzle particle pool (sessie-3 commit 1 — NEW)
 function buildPier47Environment(){
-  // Weather reset — Pier 47's signature mood is motregen, but sessie 1 has
-  // no rain renderer yet. Clear any inherited weather state so the dry
-  // baseline reads correctly.
-  if(typeof isRain!=='undefined'&&isRain){
-    isRain=false;
-    if(typeof _rainTarget!=='undefined')_rainTarget=0;
-    if(typeof _rainIntensity!=='undefined')_rainIntensity=0;
-    if(rainCanvas)rainCanvas.style.display='none';
+  // Pier 47 default weather = motregen (sessie 3). Unlike sandstorm which
+  // clears any inherited rain, pier47 LEANS INTO it: rain on, intensity
+  // capped at 0.6 (drizzle, not pouring). The shared updateWeather() lerp
+  // smoothly settles _rainIntensity toward _rainTarget — we set both to
+  // 0.6 here so the canvas-rain visual is at motregen level immediately,
+  // not a 1-second fade-up. _p47BuildDrizzle() spawns the additional
+  // depth-tested 3D drizzle streaks (more atmospheric than canvas alone).
+  if(typeof isRain!=='undefined'){
+    isRain=true;
+    if(typeof _rainTarget!=='undefined')_rainTarget=0.6;
+    if(typeof _rainIntensity!=='undefined')_rainIntensity=0.6;
+    if(rainCanvas){rainCanvas.style.display='block';rainCanvas.style.opacity='0.6';}
   }
   // Ground — flat dark-concrete kade. 2400² to fill the world; matches the
   // sandstorm/arctic pattern. y=-0.15 sits below the y=0.005 track ribbon.
@@ -756,6 +805,10 @@ function buildPier47Environment(){
   _p47BuildWarehouse();
   _p47BuildCranes();
   _p47BuildOphaalbrug();
+  // Sessie 3 atmosphere: drizzle-particle pool gives depth-tested rain
+  // streaks in 3D (the canvas rain is a flat overlay; combining both
+  // reads as actual volumetric motregen). Plassen + stoom land separately.
+  _p47BuildDrizzle();
   // Player + AI headlight refs — Pier 47 is dark, headlights matter even
   // before sessie-2 sodium lamps land.
   plHeadL=new THREE.SpotLight(0xffffff,0,50,Math.PI*.16,.5);
@@ -791,13 +844,45 @@ function buildPier47Environment(){
 // Sessie 3 will extend this with rain-puddle shimmer, drifting fog, and
 // optional ophaalbrug bascule animation. For now: just lamp flicker.
 function updatePier47World(dt){
-  if(!_p47LampEmissives.length)return;
   const t=_nowSec;
+  // Sodium-lamp emissive flicker — one mat-mutation drives all instances
+  // sharing the head material.
   for(let i=0;i<_p47LampEmissives.length;i++){
     const e=_p47LampEmissives[i];
     if(!e||!e.mat)continue;
-    // Baseline 1.4 ± 0.18 — visible breathing without strobing.
     const v=Math.sin(t*1.7+e.phase);
     e.mat.emissiveIntensity=1.4+v*0.18;
+  }
+  // Drizzle particle pool — 3D depth-tested rain streaks. Particles fall
+  // straight down at ~12u/s with a slight wind-drift on X (motregen often
+  // has a horizontal component from harbour wind). When a particle drops
+  // below ground OR drifts > 130u from the player it respawns above the
+  // player at random X/Z within the active volume — the pool effectively
+  // tracks the player without per-frame allocations.
+  if(_p47DrizzleGeo){
+    const car=carObjs&&carObjs[playerIdx];
+    const cx=car?car.mesh.position.x:0;
+    const cz=car?car.mesh.position.z:0;
+    const arr=_p47DrizzleGeo.attributes.position.array;
+    const n=arr.length/3|0;
+    // Rolling-buffer update — process ~60/frame so a 340-particle pool
+    // recycles fully every ~6 frames at 60fps. Mirrors the volcano-ember
+    // / sandstorm-fleck pattern.
+    const step=(Math.floor(t*40)*60)%n;
+    const end=Math.min(step+60,n);
+    for(let i=step;i<end;i++){
+      // Rain velocity — ~12u/s downward + ~2u/s horizontal drift
+      arr[i*3]   += dt*2.0;
+      arr[i*3+1] -= dt*12.0;
+      // Respawn condition: hit ground OR drifted outside follow-volume
+      if(arr[i*3+1]<-0.5
+         || arr[i*3]   > cx+130 || arr[i*3]   < cx-130
+         || arr[i*3+2] > cz+130 || arr[i*3+2] < cz-130){
+        arr[i*3]   = cx + (Math.random()-0.5)*220;
+        arr[i*3+1] = 22 + Math.random()*10;
+        arr[i*3+2] = cz + (Math.random()-0.5)*220;
+      }
+    }
+    _p47DrizzleGeo.attributes.position.needsUpdate=true;
   }
 }
