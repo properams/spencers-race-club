@@ -215,8 +215,12 @@ function toggleNight(){
     }else{
       if(_cdyDayBg) scene.background=_cdyDayBg;
       if(_cdyDayEnv) scene.environment=_cdyDayEnv;
-      scene.fog.density=.0019;
-      sunLight.intensity=1.5;ambientLight.intensity=.65;hemiLight.intensity=.45;
+      scene.fog.density=.0013;
+      // Use candys shared day-lighting helper so build-time + toggle-time
+      // setups can never drift (mirrors the sandstorm helper pattern).
+      if(typeof window._applyCandyDayLighting==='function'){
+        window._applyCandyDayLighting();
+      }
       trackLightList.forEach(l=>l.intensity=0);trackPoles.forEach(p=>p.visible=false);
       _candyNightEmissives.forEach(m=>{ if(m.material){m.material.emissiveIntensity=.20;} });
       _candyCandles.forEach(l=>l.intensity=.7);

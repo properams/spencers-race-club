@@ -317,27 +317,47 @@ function makeDeepSeaSkyTex(){
   return _skyTexFromCanvas(c);
 }
 
-// Candy — pastel with sparkle stars + cotton-candy clouds
+// Candy — 4-stop pastel gradient (deep pink zenith → mint mid → cream
+// horizon → soft lilac foot) with cotton-candy cloud puffs. Visual-polish
+// pass mirrors sandstorm V2: rich layered gradient instead of single pink
+// fade, soft clouds backed by horizon glow. The candy-bit sparkle field
+// painted by the older version is dropped — the night skybox owns sparkles
+// (see makeCandyNightSkyTex), the day skybox is intentionally smoother
+// for a sun-drenched-pastel mood.
 function makeCandySkyTex(){
-  const {c,g}=_newSkyCanvas('#ff88cc','#ffe4f0');
-  // Cotton-candy cloud puffs (white/pink)
+  // Two-stop bg = zenith → mid. Lower bands painted on top for the 4-stop
+  // gradient feel without altering _newSkyCanvas.
+  const {c,g}=_newSkyCanvas('#ff5fb4','#7fffd4');
+  // Mid-band mint → cream horizon transition.
+  const midBand=g.createLinearGradient(0,260,0,420);
+  midBand.addColorStop(0,'rgba(127,255,212,0)');
+  midBand.addColorStop(.5,'rgba(255,220,200,0.55)');
+  midBand.addColorStop(1,'rgba(255,240,214,0.85)');
+  g.fillStyle=midBand;g.fillRect(0,260,1024,160);
+  // Cream → soft lilac foot. Picks up the fog-color so the seam between
+  // fogged distant geometry and skybox is invisible.
+  const foot=g.createLinearGradient(0,410,0,512);
+  foot.addColorStop(0,'rgba(255,240,214,0.85)');
+  foot.addColorStop(1,'rgba(217,179,255,1)');
+  g.fillStyle=foot;g.fillRect(0,410,1024,102);
+  // Cotton-candy cloud puffs — white + pink at zenith, fewer toward
+  // horizon so the cream glow stays clean. Soft radial gradients.
   for(let i=0;i<14;i++){
-    const x=Math.random()*1024,y=80+Math.random()*220;
-    const r=40+Math.random()*70;
-    const gr=g.createRadialGradient(x,y,0,x,y,r);
+    const x=Math.random()*1024;
+    const y=70+Math.random()*220;
+    const r=50+Math.random()*70;
     const tone=Math.random()<0.5?'255,235,250':'255,255,255';
-    gr.addColorStop(0,`rgba(${tone},0.85)`);
+    const gr=g.createRadialGradient(x,y,0,x,y,r);
+    gr.addColorStop(0,`rgba(${tone},0.78)`);
     gr.addColorStop(1,`rgba(${tone},0)`);
     g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2);
   }
-  // Sparkles (4-point cross stars)
-  for(let i=0;i<60;i++){
-    const x=Math.random()*1024,y=Math.random()*300;
-    const s=Math.random()*1.5+0.7;
-    g.fillStyle='rgba(255,255,255,0.9)';
-    g.fillRect(x-s,y-.5,s*2,1);
-    g.fillRect(x-.5,y-s,1,s*2);
-  }
+  // Subtle horizon-line cream-pink glow strip, picks up sun warmth.
+  const horizGlow=g.createLinearGradient(0,360,0,440);
+  horizGlow.addColorStop(0,'rgba(255,200,220,0)');
+  horizGlow.addColorStop(.5,'rgba(255,200,220,0.22)');
+  horizGlow.addColorStop(1,'rgba(255,200,220,0)');
+  g.fillStyle=horizGlow;g.fillRect(0,360,1024,80);
   return _skyTexFromCanvas(c);
 }
 
@@ -954,8 +974,11 @@ function buildScene(){
     _fogColorDay.setHex(0x003355);_fogColorNight.setHex(0x03202e);
   }else if(isCandy){
     scene.background=makeCandySkyTex();
-    scene.fog=new THREE.FogExp2(0xffe4f0,.0015);
-    _fogColorDay.setHex(0xffe4f0);_fogColorNight.setHex(0x3e0c52);
+    // Pastel-pink fog matches the new 4-stop skybox foot so the seam
+    // between fogged geometry and horizon is invisible. Density slightly
+    // lower than the previous .0015 for a more spacious sun-drenched feel.
+    scene.fog=new THREE.FogExp2(0xffe6f7,.0013);
+    _fogColorDay.setHex(0xffe6f7);_fogColorNight.setHex(0x3e0c52);
   }else if(isNeon){
     scene.background=makeNeonCitySkyTex();
     scene.fog=new THREE.FogExp2(0x030012,.0017);

@@ -14,7 +14,34 @@ let _candyLollipops=[];
 let _candyNightEmissives=[]; // meshes that glow at night
 let _candyCandles=[];        // candle flame lights on cake
 
+// Single source of truth for candy day lighting. Called from
+// buildCandyEnvironment at world-build, AND from night.js when toggling
+// back from night to day so the two code paths can never drift (mirrors
+// the sandstorm _applySandstormDayLighting pattern from V4).
+//
+// Goal palette (pastel sun-drenched):
+//   sun #ffb3e6 (soft magenta-white) / 1.5 mobile, 2.4 desktop
+//   sun position (60, 80, -40) — high-mid angle, playful (vs sandstorms
+//     low-angle dramatic), keeps shadows short and the pastel mood light
+//   ambient #f0d9ff (lilac tint) / 0.5
+//   hemi sky #ffd9f0 (soft pink) / ground #b3e6ff (soft turquoise) / 0.8
+//
+// Mobile sun caps at 1.5 — shadows are off on mobile so the unshadowed
+// pink fondant ground (#cc7799) clips toward white at full brightness.
+function _applyCandyDayLighting(){
+  if(!sunLight||!ambientLight||!hemiLight)return;
+  sunLight.color.setHex(0xffb3e6);
+  sunLight.intensity = window._isMobile ? 1.5 : 2.4;
+  sunLight.position.set(60, 80, -40);
+  ambientLight.color.setHex(0xf0d9ff); ambientLight.intensity = 0.5;
+  hemiLight.color.setHex(0xffd9f0);
+  hemiLight.groundColor.setHex(0xb3e6ff);
+  hemiLight.intensity = 0.8;
+}
+if(typeof window!=='undefined')window._applyCandyDayLighting=_applyCandyDayLighting;
+
 function buildCandyEnvironment(){
+  _applyCandyDayLighting();
   buildCandyGround();
   buildCandySky();
   buildLollipopTrees();
