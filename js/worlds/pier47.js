@@ -328,6 +328,119 @@ function _p47BuildCinematicLamps(){
   }
 }
 
+// ── Distant cinematic markers (crane-tops + radio towers) ───────────────
+//
+// Tiny far-away warning lights that read as silhouettes-with-life on the
+// horizon. Each is built via the shared cinematic.js helper and registers
+// itself with _cinemaState.blinkingMarkers — patterns drive brightness
+// modulation in updateCinematic() per frame.
+//
+// Pier 47 marker placement (positions deliberately FAR from track centre
+// so they read as harbour-distance silhouettes, not foreground props):
+//   • 3 red slow-pulse warning lights on tall structures
+//   • 1 white fast-pulse on a lower structure (variation)
+//   • 1 amber morse-style on the warehouse roof corner
+//
+// The PointLight on each marker is heavy at scale, so distant ones use
+// includeLight:false (halo-only) — Three.js forward-renderer light budget
+// stays clean.
+function _p47BuildDistantMarkers(){
+  if (typeof buildCinematicBlinkingMarker !== 'function') return;
+  // Red slow-pulse aviation-style warning lights, far from track centre
+  // at heights matching the world's silhouette-skyline cylinder layer.
+  // Halo-only (includeLight:false) — these are 200u+ from player so
+  // PointLight contribution is negligible anyway, but the halo billboard
+  // reads beautifully through fog.
+  const reds = [
+    new THREE.Vector3( 280,  72,  220),
+    new THREE.Vector3(-310,  84,  180),
+    new THREE.Vector3( 220,  78, -260),
+  ];
+  reds.forEach((pos, i) => {
+    buildCinematicBlinkingMarker(scene, pos, {
+      color: 0xff3030,
+      pattern: 'slow-pulse',
+      blinkInterval: 2.0 + i * 0.3,    // slight de-sync
+      intensity: 1.4,
+      range: 60,
+      haloSize: 4.2,
+      includeLight: false
+    });
+  });
+  // White fast-pulse on a lower structure — variation for visual rhythm
+  buildCinematicBlinkingMarker(scene, new THREE.Vector3(-180, 42, -240), {
+    color: 0xffffff,
+    pattern: 'fast-pulse',
+    blinkInterval: 0.5,
+    intensity: 0.9,
+    range: 50,
+    haloSize: 2.6,
+    includeLight: false
+  });
+  // Amber morse on the warehouse roof corner — close-ish so it gets a
+  // PointLight too, but low intensity (the lamp poles are the heroes).
+  // Position pulled from _p47BuildWarehouse anchor (WP9-area, t≈0.665).
+  const wp = trackCurve.getPoint(0.665);
+  const wpTg = trackCurve.getTangent(0.665).normalize();
+  const wpNr = new THREE.Vector3(-wpTg.z, 0, wpTg.x);
+  const warehouseTopX = wp.x + wpNr.x * (BARRIER_OFF + 18) + 14;
+  const warehouseTopZ = wp.z + wpNr.z * (BARRIER_OFF + 18);
+  buildCinematicBlinkingMarker(scene,
+    new THREE.Vector3(warehouseTopX, 9.2, warehouseTopZ), {
+      color: 0xffaa44,
+      pattern: 'morse',
+      blinkInterval: 4.5,
+      intensity: 0.6,
+      range: 24,
+      haloSize: 1.6,
+      includeLight: true
+    });
+}
+
+// ── City-glow halo on the horizon ────────────────────────────────────────
+//
+// Een gerichte oranje-roze glow op één positie aan de horizon, suggereert
+// dat dáár de stad ligt. Niet een hele horizon, één gerichte band van
+// ~30-40° breed. Statisch, geen animatie. Implementatie: sprite met
+// radial gradient texture, ver weg, hoog genoeg om door de fog te
+// piercen.
+function _p47BuildCityGlow(){
+  // Procedural soft glow texture
+  const S = 256, c = document.createElement('canvas');
+  c.width = S; c.height = S;
+  const g = c.getContext('2d');
+  // Off-axis radial: glow center sits in lower 1/3 (horizon-level), tapers
+  // upward to nothing
+  const cx = S * 0.5, cy = S * 0.72, r = S * 0.55;
+  const grd = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+  grd.addColorStop(0,    'rgba(255,150,90,0.85)');   // oranje-roze hot center
+  grd.addColorStop(0.25, 'rgba(255,110,80,0.45)');
+  grd.addColorStop(0.55, 'rgba(180,80,90,0.18)');
+  grd.addColorStop(1.0,  'rgba(140,60,80,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, S, S);
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  // Sprite — large, far away, slightly below horizon-line so the upper
+  // half spills above the city silhouette. Position is chosen to sit
+  // OUTSIDE the track loop on a specific bearing (the "stad daar verderop"
+  // suggestion) — picked to be visible from the kade-sweep sector 5.
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.85,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    fog: false   // glow shouldn't fade — it's a horizon hint
+  });
+  const sp = new THREE.Sprite(mat);
+  sp.scale.set(420, 280, 1);   // wide, lower aspect — band-like
+  sp.position.set(440, 70, 380);
+  sp.renderOrder = -8;          // before transparent props
+  scene.add(sp);
+}
+
 function _p47BuildContainers(){
   const mob=window._isMobile;
   // Container Run: tight single-stack rows along t in [0.0, 0.25]
@@ -791,6 +904,10 @@ function buildPier47Environment(){
   _p47BuildWarehouse();
   _p47BuildCranes();
   _p47BuildOphaalbrug();
+  // Cinematic distant accents — far horizon markers + city-glow hint.
+  // Both via shared cinematic.js helpers; pulses driven by updateCinematic.
+  _p47BuildDistantMarkers();
+  _p47BuildCityGlow();
   // Sessie 3 atmosphere: drizzle-particle pool gives depth-tested rain
   // streaks in 3D (the canvas rain is a flat overlay; combining both
   // reads as actual volumetric motregen).

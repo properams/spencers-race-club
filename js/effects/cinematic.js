@@ -508,9 +508,51 @@ function _cinematicConeGradientTex(hexColor){
 //                                            (keeps shader light count down)
 // @returns {Object}  { light, halo } refs (caller may dispose)
 //
-// IMPLEMENTATION SLOT — wired in commit 3.
 function buildCinematicBlinkingMarker(scene, position, opts){
-  return null;  // stub — implemented in commit 3
+  const o = opts || {};
+  const color    = (o.color != null) ? o.color : 0xff3030;
+  const pattern  = o.pattern || 'slow-pulse';
+  const interval = (o.blinkInterval != null) ? o.blinkInterval : 2.0;
+  const peakI    = (o.intensity != null) ? o.intensity : 2.0;
+  const range    = (o.range != null) ? o.range : 80;
+  const haloSize = (o.haloSize != null) ? o.haloSize : 2.4;
+  const wantLight= (o.includeLight !== false);
+  // Halo billboard — visible from any angle, additive blending
+  const haloTex = _cinematicHaloTex(color);
+  const haloMat = new THREE.SpriteMaterial({
+    map: haloTex,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.95,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    fog: true
+  });
+  const halo = new THREE.Sprite(haloMat);
+  halo.scale.set(haloSize, haloSize, 1);
+  halo.position.copy(position);
+  scene.add(halo);
+  // Optional PointLight — many distant markers should NOT each carry a
+  // PointLight (Three.js forward-renderer light budget). Default opt-in
+  // for foreground markers, opt-out for distant background markers.
+  let light = null;
+  if (wantLight){
+    light = new THREE.PointLight(color, peakI, range, 2);
+    light.position.copy(position);
+    scene.add(light);
+  }
+  const ref = {
+    halo: halo,
+    haloMat: haloMat,
+    light: light,
+    pattern: pattern,
+    interval: interval,
+    peakI: peakI,
+    baseHaloOpacity: 0.95,
+    t: Math.random() * interval   // randomise so multiple markers don't sync
+  };
+  _cinemaState.blinkingMarkers.push(ref);
+  return ref;
 }
 
 // ╔═════════════════════════════════════════════════════════════════════════╗
@@ -617,13 +659,37 @@ function updateCinematic(dt){
       p.headMat.emissiveIntensity = p.baseEmissive + v * 0.18;
     }
   }
-  // Blinking markers — implemented in commit 3 (reads pattern + blinkInterval)
+  // Blinking markers — pattern-driven brightness modulation. Solid stays
+  // at full; pulses use cosine waves; morse uses a discrete on-off sequence
+  // per cycle. Per-marker phase is randomised at build to prevent visual
+  // synchronisation across the marker array.
   if (_cinemaState.blinkingMarkers.length){
     for (let i = 0; i < _cinemaState.blinkingMarkers.length; i++){
       const m = _cinemaState.blinkingMarkers[i];
       if (!m) continue;
       m.t += dt;
-      // Stub — pattern logic lands with the marker implementation
+      let mul = 1.0;  // 0..1 — both halo opacity and light intensity scale
+      if (m.pattern === 'solid'){
+        mul = 1.0;
+      } else if (m.pattern === 'fast-pulse'){
+        // 2 Hz sine — full pulse cycle every 0.5s
+        mul = 0.40 + 0.60 * (0.5 + 0.5 * Math.cos(m.t * Math.PI * 4));
+      } else if (m.pattern === 'morse'){
+        // Long-short-long over m.interval — phase divides interval into 5 slots:
+        // [long-on, off, short-on, off, long-on]. Approximation that reads as
+        // an aviation morse-style code without locking us into real Morse.
+        const phase = (m.t % m.interval) / m.interval;
+        if      (phase < 0.30) mul = 1.0;
+        else if (phase < 0.45) mul = 0.05;
+        else if (phase < 0.55) mul = 1.0;
+        else if (phase < 0.70) mul = 0.05;
+        else                   mul = 1.0;
+      } else { // slow-pulse (default)
+        // 0.5 Hz sine — full pulse cycle every 2s
+        mul = 0.30 + 0.70 * (0.5 + 0.5 * Math.cos(m.t * Math.PI * 2 / m.interval));
+      }
+      if (m.haloMat) m.haloMat.opacity = m.baseHaloOpacity * mul;
+      if (m.light)   m.light.intensity = m.peakI * mul;
     }
   }
   // Camera shake — applied from gameplay/camera.js via the public helper
