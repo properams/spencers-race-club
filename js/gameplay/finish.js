@@ -151,7 +151,7 @@ function showFinish(){
     const gc=document.getElementById('goldCelebration');
     if(gc){gc.style.opacity='1';setTimeout(()=>{gc.style.opacity='0';},3500);}
     // Staggered personal message
-    setTimeout(()=>showBanner('🏆 CHAMPION, SPENCER!','#ffd700',3000),800);
+    setTimeout(()=>{const _pl=carObjs[playerIdx],_n=_pl&&_pl.def&&_pl.def.name;showBanner(_n?'🏆 CHAMPION, '+_n.toUpperCase()+'!':'🏆 CHAMPION!','#ffd700',3000);},800);
   }
   // Start title music on finish screen after a short delay (let fanfare/silence settle)
   setTimeout(()=>{

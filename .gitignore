@@ -31,25 +31,27 @@ assets/_inbox/*
 !assets/_inbox/README.md
 !assets/_inbox/.gitkeep
 
-# Perf Phase A: runner output (raw JSON) — niet committen, regenereerbaar
-# via tools/perf-run.mjs. Het rapport (PERF_PHASE_A_REPORT.md) blijft wél
-# tracked zodat we 'm kunnen reviewen.
-tools/perf-output.json
-# Baselines onder tools/baselines/ DO get tracked — die zijn juist het
-# referentiemateriaal voor toekomstige delta-vergelijkingen.
-!tools/baselines/
-!tools/baselines/*.json
-# .txt-export van het rapport (voor Claude Chat upload) — wegwerp, kopie
-# van de .md. Regenereren met: cp PERF_PHASE_A_REPORT.md PERF_PHASE_A_REPORT.txt
-PERF_PHASE_A_REPORT.txt
+# ── Dev-workspace blanket rules ───────────────────────────────────────
+# All DEV-WORKSPACE markdowns and tooling live in the private
+# properams/srclub-workspace repo. The patterns below prevent accidental
+# leakage of new dev-context into the public repo.
 
-# Werk-documentatie / planning — lokaal houden, niet publiceren
-CLAUDE.md
-CLAUDE_CODE_PROMPTS.md
-REFACTOR_PLAN.md
-PHASE_0_1.md
-PHASE_2.md
-PHASE_3_4.md
-MUSIC_CHANGES.md
-VOLCANO_PILOT_PROMPT.md
-WORLDS_SIGNATURE_PROMPTS.md
+# Root-level *.md files are dev-workspace by default — only the public
+# README.md is allowed in the repo root.
+/*.md
+!/README.md
+
+# tools/ is dev-only (perf-runners + screenshots + baselines)
+/tools/
+
+# docs/ — the only files we keep public are .gitkeep markers if any.
+# Anything else (CINEMATIC_PATTERN, SESSION_HANDOVER, PRIVACY_AUDIT)
+# belongs in the private workspace.
+/docs/SESSION_HANDOVER.md
+/docs/PRIVACY_AUDIT_REPORT.md
+/docs/CINEMATIC_PATTERN.md
+
+# Common cruft
+.DS_Store
+node_modules/
+*.log

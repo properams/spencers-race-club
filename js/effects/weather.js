@@ -235,6 +235,10 @@ function updateWeatherForecast(dt){
   // 45-90s into the race, re-injecting rain after buildSandstormEnvironment's
   // build-time reset has already passed.
   if(activeWorld==='sandstorm'){_weatherForecastFired=true;return;}
+  // Pier 47 is a permanently-rainy world by design (motregen default).
+  // Lock out the forecast — toggleRain() would flip rain off mid-race
+  // and break the bewolkte-nacht atmosphere the world is built around.
+  if(activeWorld==='pier47'){_weatherForecastFired=true;return;}
   _weatherForecastTimer-=dt;
   if(_weatherForecastTimer<=8&&_weatherForecastTimer>7.9){
     // 8s warning before change. Use the lightweight top-banner (one-line,

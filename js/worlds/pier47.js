@@ -1,13 +1,13 @@
 // js/worlds/pier47.js — Pier 47 (industrial harbour by night) world builders.
-// Non-module script. Sessie 2 = props + lighting + wet-rendering:
-//   • sodium-lamp poles along the kade (always-on warm orange spillover)
-//   • container stacks along the Container Run + The Yard sectors
-//   • warehouse (loods) at the WP9 90° right
-//   • cranes on the kade
-//   • ophaalbrug (drawbridge) at sector 4
-//   • wet-asphalt rendering on the track surface
-// Plassen / regen / mist / stoom particles arrive in sessie 3. Optional
-// wet-physics is sessie 4.
+// Non-module script. Sessie history:
+//   sessie 1 — bones + skybox + lighting + WORLDS registration
+//   sessie 2 — props (lamp poles + containers + warehouse + cranes
+//              + ophaalbrug) + wet-asphalt rendering
+//   sessie 3 — atmosphere prep: motregen-default + drizzle particle pool
+//   CINEMATIC FOUNDATION — Pier 47 upgraded to its cinematic visual
+//              language. See docs/CINEMATIC_PATTERN.md and
+//              js/effects/cinematic.js for the reusable helper layer.
+// Optional wet-physics is sessie 4.
 //
 // ── Track-waypoints (data/tracks.json#pier47) ────────────────────────────
 // 12 waypoints, counter-clockwise loop, bbox 440 × 405, perimeter 1311 units.
@@ -36,8 +36,12 @@
 // flicker pulses subtly in updatePier47World) and the ophaalbrug ref so
 // future polish can animate the bascule. Sessie-3 will park rain-puddle
 // shimmer state here.
-let _p47LampEmissives=[];   // [{mat, phase}] for sodium-lamp flicker
+// (Removed: _p47LampEmissives — sessie-2 lamp flicker registry. Cinematic
+//  lamps register themselves with _cinemaState.lightPoles in cinematic.js
+//  instead; flicker is driven by updateCinematic().)
 let _p47Bridge=null;         // ophaalbrug ref (sessie-2 static)
+let _p47DrizzleGeo=null;     // BufferGeometry for motregen particle pool
+let _p47Drizzle=null;        // THREE.Points mesh (the drizzle streaks)
 
 // Single source of truth for Pier 47 day lighting. Mirrors the sandstorm /
 // candy / volcano helper pattern. buildPier47Environment + night.js's
@@ -58,13 +62,17 @@ let _p47Bridge=null;         // ophaalbrug ref (sessie-2 static)
 // Lambert ground at full intensity would clip to white under no-shadow lighting.
 function _applyPier47DayLighting(){
   if(!sunLight||!ambientLight||!hemiLight)return;
-  sunLight.color.setHex(0xd8d0c0);
-  sunLight.intensity = window._isMobile ? 0.9 : 1.4;
+  // Cinematic foundation: ambient global lighting pulled WAY down so the
+  // praktische lichtbronnen (sodium poles, koplampen, blinkende markers)
+  // doen het narrative werk. "Pools of light, not floods." This is the
+  // single biggest tonal shift between sessie-2 and the cinematic upgrade.
+  sunLight.color.setHex(0x9aa6b8);                          // koel blauw-grijs ipv warm wit
+  sunLight.intensity = window._isMobile ? 0.30 : 0.40;       // was 0.9 / 1.4
   sunLight.position.set(60, 110, 80);
-  ambientLight.color.setHex(0x1a1a22); ambientLight.intensity = 0.30;
-  hemiLight.color.setHex(0xa0a8b0);
-  hemiLight.groundColor.setHex(0x4a3828); // warmer than sessie-1 (#403838) — sodium spillover from lamp poles
-  hemiLight.intensity = 0.5;
+  ambientLight.color.setHex(0x14141c); ambientLight.intensity = 0.15; // was 0.30
+  hemiLight.color.setHex(0x6a7080);                          // was #a0a8b0
+  hemiLight.groundColor.setHex(0x2a2028);                    // donkerder grond-bounce
+  hemiLight.intensity = 0.20;                                // was 0.5
 }
 // Expose to non-module consumers — night.js reads from window.* scope.
 if(typeof window!=='undefined')window._applyPier47DayLighting=_applyPier47DayLighting;
@@ -187,95 +195,13 @@ function _pier47GroundTex(){
   return t;
 }
 
-// ── Sodium lamp poles (always-on industrial lighting) ────────────────────
-//
-// Pier 47's defining detail: warm orange (#ff8830) high-pressure sodium
-// lamps lining the kade. Always on (the world is permanently overcast-
-// nacht), pulsing subtly via _p47LampEmissives in updatePier47World.
-//
-// Geometry budget:
-//   • Pole shaft: shared CylinderGeometry, InstancedMesh (POLE_COUNT * 2
-//     instances, one IM call)
-//   • Lamp head:  shared BoxGeometry, InstancedMesh (one IM call). Heads
-//     share a single emissive material reference so flicker animation
-//     mutates one mat for all lamps simultaneously.
-//   • PointLights: spaced out (every 2nd pole on desktop, every 3rd on
-//     mobile) so total active scene lights stay within Three.js's
-//     forward-rendering budget. Range 28u — illuminates barrier + kerb
-//     edge plus ~12u of the kade beyond.
-//
-// Disposal: pole + head InstancedMeshes get cleaned up by disposeScene's
-// generic mesh traversal. PointLights are scene children — auto-removed.
-// _p47LampEmissives is reset in scene.js's per-world array clear block.
-function _p47BuildLampPoles(){
-  const mob=window._isMobile;
-  const POLE_COUNT=mob?14:22;                       // pairs (each pole on both sides)
-  const LIGHT_EVERY=mob?3:2;                        // 1 PointLight per N poles
-  const N_PER_SIDE=POLE_COUNT;
-  const TOTAL=N_PER_SIDE*2;
-  // Shared geometry/materials — one mat per IM, mutated for flicker.
-  const poleGeo=new THREE.CylinderGeometry(0.10,0.16,8.5,6);
-  const poleMat=new THREE.MeshLambertMaterial({color:0x222018});
-  const armGeo=new THREE.BoxGeometry(0.10,0.10,1.4);  // arm reaching toward track
-  const armMat=poleMat;                                // share — same material
-  const headGeo=new THREE.BoxGeometry(0.95,0.32,0.95);
-  // Sodium-orange emissive — high intensity baseline; flicker mutates this.
-  const headMat=new THREE.MeshLambertMaterial({
-    color:0xff8830,
-    emissive:0xff8830,
-    emissiveIntensity:1.4
-  });
-  _p47LampEmissives.push({mat:headMat,phase:Math.random()*Math.PI*2});
-  const poleIM=new THREE.InstancedMesh(poleGeo,poleMat,TOTAL);
-  const armIM =new THREE.InstancedMesh(armGeo,armMat,TOTAL);
-  const headIM=new THREE.InstancedMesh(headGeo,headMat,TOTAL);
-  const dummy=new THREE.Object3D();
-  let idx=0;
-  for(let i=0;i<N_PER_SIDE;i++){
-    const t=i/N_PER_SIDE;
-    const p=trackCurve.getPoint(t);
-    const tg=trackCurve.getTangent(t).normalize();
-    const nr=new THREE.Vector3(-tg.z,0,tg.x);
-    const ang=Math.atan2(tg.x,tg.z);
-    [-1,1].forEach(side=>{
-      const off=BARRIER_OFF+2.4;
-      const px=p.x+nr.x*side*off;
-      const pz=p.z+nr.z*side*off;
-      // Pole shaft — vertical cylinder, base at y=0, height 8.5 → centered at 4.25
-      dummy.position.set(px,4.25,pz);
-      dummy.rotation.set(0,0,0);
-      dummy.scale.set(1,1,1);
-      dummy.updateMatrix();
-      poleIM.setMatrixAt(idx,dummy.matrix);
-      // Arm — extends from top of pole inward toward the track
-      const armX=px-nr.x*side*0.7;
-      const armZ=pz-nr.z*side*0.7;
-      dummy.position.set(armX,8.2,armZ);
-      // Rotate arm so its long axis points along inward-normal (cross-track)
-      dummy.rotation.set(0,ang+Math.PI/2,0);
-      dummy.updateMatrix();
-      armIM.setMatrixAt(idx,dummy.matrix);
-      // Head — sits at end of arm, hangs below it slightly
-      const headX=px-nr.x*side*1.4;
-      const headZ=pz-nr.z*side*1.4;
-      dummy.position.set(headX,7.95,headZ);
-      dummy.rotation.set(0,ang,0);
-      dummy.updateMatrix();
-      headIM.setMatrixAt(idx,dummy.matrix);
-      // PointLight every Nth pole — staggered between sides for spread.
-      if((i+(side>0?0:1))%LIGHT_EVERY===0){
-        const pl=new THREE.PointLight(0xff8830,1.2,28);
-        pl.position.set(headX,7.6,headZ);
-        scene.add(pl);
-      }
-      idx++;
-    });
-  }
-  poleIM.instanceMatrix.needsUpdate=true;
-  armIM.instanceMatrix.needsUpdate=true;
-  headIM.instanceMatrix.needsUpdate=true;
-  scene.add(poleIM);scene.add(armIM);scene.add(headIM);
-}
+// (Removed: _p47BuildLampPoles — sessie-2 minimal lamp pole implementation.
+//  Replaced by _p47BuildCinematicLamps() which composes the shared
+//  cinematic.js helpers. The previous InstancedMesh-based version was
+//  removed wholesale; the cinematic version emits per-pole groups for
+//  variation flexibility (broken/tilted/working) at the cost of slightly
+//  higher draw-call count. Mobile-degradation lives inside the helper
+//  rather than this caller.)
 
 // ── Containers (Container Run sector 1 + Yard sector 2) ──────────────────
 //
@@ -340,6 +266,180 @@ const _P47_CONTAINER_COLORS=[
   [0.55,0.45,0.20],   // dirty mustard
   [0.30,0.30,0.36]    // dark slate
 ];
+
+// ── Cinematic lamp-pole array along the kade ─────────────────────────────
+//
+// Replaces the sessie-2 _p47BuildLampPoles() with calls into the shared
+// cinematic.js helpers (buildCinematicLightPole). Each pole gets a
+// volumetric cone, ground pool, halo billboard, and per-mat flicker —
+// the "praktische lichtbronnen zijn heroes" pillar.
+//
+// Variation rules:
+//   • Total: 22 desktop / 14 mobile pole-pairs along the track curve
+//   • ~12% of lamps are "uit" (working:false) — paal staat er, geen licht
+//   • ~12% are subtly tilted (~3-5°) — leaning/oude palen
+//   • Even-side lamps face inward toward the track (facingY = ang + π/2)
+//   • Odd-side lamps face the opposite direction (facingY = ang - π/2)
+//
+// Pier 47 palette pin: amber (#ff8830) — same hex as the sodium-lamp
+// emissive on containers/warehouse. Future cinematic worlds pass their
+// own color via the buildCinematicLightPole opts.
+function _p47BuildCinematicLamps(){
+  if (typeof buildCinematicLightPole !== 'function') return;
+  const mob = window._isMobile;
+  const COUNT = mob ? 14 : 22;
+  const TILT_FRAC = 0.12;     // ~12% of lamps subtly tilted
+  const BROKEN_FRAC = 0.12;   // ~12% of lamps "uit"
+  // Stable pseudo-random pattern for variety: deterministic by index so
+  // the same lamps stay broken / tilted across builds (no surprise drift
+  // when the user retoggles night).
+  const rng = (i) => { const x = Math.sin(i * 12.9898 + 78.233) * 43758.5453; return x - Math.floor(x); };
+  for (let i = 0; i < COUNT; i++){
+    const t = i / COUNT;
+    const p = trackCurve.getPoint(t);
+    const tg = trackCurve.getTangent(t).normalize();
+    const nr = new THREE.Vector3(-tg.z, 0, tg.x);
+    const ang = Math.atan2(tg.x, tg.z);
+    [-1, 1].forEach((side, sIdx) => {
+      const seed = i * 2 + sIdx;
+      const off = BARRIER_OFF + 2.4;
+      const px = p.x + nr.x * side * off;
+      const pz = p.z + nr.z * side * off;
+      const isTilted = rng(seed) < TILT_FRAC;
+      const isBroken = rng(seed + 0.5) < BROKEN_FRAC;
+      // facingY: arm reaches inward toward the track. Side -1 vs +1
+      // mirrors the arm direction. Pole-internal +X axis = arm direction.
+      const facingY = (side === 1) ? ang + Math.PI / 2 : ang - Math.PI / 2;
+      buildCinematicLightPole(scene, new THREE.Vector3(px, 0, pz), {
+        color: 0xff8830,
+        intensity: 1.5,
+        range: 26,
+        height: 8.2,
+        armLength: 1.4,
+        poolRadius: 11,
+        working: !isBroken,
+        tilt: isTilted ? ((rng(seed + 0.7) - 0.5) * 0.10) : 0,  // ±~3°
+        facingY: facingY,
+        castGroundPool: true,
+        castVolumetricCone: true,
+        castHalo: true
+      });
+    });
+  }
+}
+
+// ── Distant cinematic markers (crane-tops + radio towers) ───────────────
+//
+// Tiny far-away warning lights that read as silhouettes-with-life on the
+// horizon. Each is built via the shared cinematic.js helper and registers
+// itself with _cinemaState.blinkingMarkers — patterns drive brightness
+// modulation in updateCinematic() per frame.
+//
+// Pier 47 marker placement (positions deliberately FAR from track centre
+// so they read as harbour-distance silhouettes, not foreground props):
+//   • 3 red slow-pulse warning lights on tall structures
+//   • 1 white fast-pulse on a lower structure (variation)
+//   • 1 amber morse-style on the warehouse roof corner
+//
+// The PointLight on each marker is heavy at scale, so distant ones use
+// includeLight:false (halo-only) — Three.js forward-renderer light budget
+// stays clean.
+function _p47BuildDistantMarkers(){
+  if (typeof buildCinematicBlinkingMarker !== 'function') return;
+  // Red slow-pulse aviation-style warning lights, far from track centre
+  // at heights matching the world's silhouette-skyline cylinder layer.
+  // Halo-only (includeLight:false) — these are 200u+ from player so
+  // PointLight contribution is negligible anyway, but the halo billboard
+  // reads beautifully through fog.
+  const reds = [
+    new THREE.Vector3( 280,  72,  220),
+    new THREE.Vector3(-310,  84,  180),
+    new THREE.Vector3( 220,  78, -260),
+  ];
+  reds.forEach((pos, i) => {
+    buildCinematicBlinkingMarker(scene, pos, {
+      color: 0xff3030,
+      pattern: 'slow-pulse',
+      blinkInterval: 2.0 + i * 0.3,    // slight de-sync
+      intensity: 1.4,
+      range: 60,
+      haloSize: 4.2,
+      includeLight: false
+    });
+  });
+  // White fast-pulse on a lower structure — variation for visual rhythm
+  buildCinematicBlinkingMarker(scene, new THREE.Vector3(-180, 42, -240), {
+    color: 0xffffff,
+    pattern: 'fast-pulse',
+    blinkInterval: 0.5,
+    intensity: 0.9,
+    range: 50,
+    haloSize: 2.6,
+    includeLight: false
+  });
+  // Amber morse on the warehouse roof corner — close-ish so it gets a
+  // PointLight too, but low intensity (the lamp poles are the heroes).
+  // Position pulled from _p47BuildWarehouse anchor (WP9-area, t≈0.665).
+  const wp = trackCurve.getPoint(0.665);
+  const wpTg = trackCurve.getTangent(0.665).normalize();
+  const wpNr = new THREE.Vector3(-wpTg.z, 0, wpTg.x);
+  const warehouseTopX = wp.x + wpNr.x * (BARRIER_OFF + 18) + 14;
+  const warehouseTopZ = wp.z + wpNr.z * (BARRIER_OFF + 18);
+  buildCinematicBlinkingMarker(scene,
+    new THREE.Vector3(warehouseTopX, 9.2, warehouseTopZ), {
+      color: 0xffaa44,
+      pattern: 'morse',
+      blinkInterval: 4.5,
+      intensity: 0.6,
+      range: 24,
+      haloSize: 1.6,
+      includeLight: true
+    });
+}
+
+// ── City-glow halo on the horizon ────────────────────────────────────────
+//
+// Een gerichte oranje-roze glow op één positie aan de horizon, suggereert
+// dat dáár de stad ligt. Niet een hele horizon, één gerichte band van
+// ~30-40° breed. Statisch, geen animatie. Implementatie: sprite met
+// radial gradient texture, ver weg, hoog genoeg om door de fog te
+// piercen.
+function _p47BuildCityGlow(){
+  // Procedural soft glow texture
+  const S = 256, c = document.createElement('canvas');
+  c.width = S; c.height = S;
+  const g = c.getContext('2d');
+  // Off-axis radial: glow center sits in lower 1/3 (horizon-level), tapers
+  // upward to nothing
+  const cx = S * 0.5, cy = S * 0.72, r = S * 0.55;
+  const grd = g.createRadialGradient(cx, cy, 0, cx, cy, r);
+  grd.addColorStop(0,    'rgba(255,150,90,0.85)');   // oranje-roze hot center
+  grd.addColorStop(0.25, 'rgba(255,110,80,0.45)');
+  grd.addColorStop(0.55, 'rgba(180,80,90,0.18)');
+  grd.addColorStop(1.0,  'rgba(140,60,80,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, S, S);
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  // Sprite — large, far away, slightly below horizon-line so the upper
+  // half spills above the city silhouette. Position is chosen to sit
+  // OUTSIDE the track loop on a specific bearing (the "stad daar verderop"
+  // suggestion) — picked to be visible from the kade-sweep sector 5.
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    color: 0xffffff,
+    transparent: true,
+    opacity: 0.85,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    fog: false   // glow shouldn't fade — it's a horizon hint
+  });
+  const sp = new THREE.Sprite(mat);
+  sp.scale.set(420, 280, 1);   // wide, lower aspect — band-like
+  sp.position.set(440, 70, 380);
+  sp.renderOrder = -8;          // before transparent props
+  scene.add(sp);
+}
 
 function _p47BuildContainers(){
   const mob=window._isMobile;
@@ -708,9 +808,51 @@ function _p47BuildOphaalbrug(){
   _p47Bridge=grp;
 }
 
+// ── Drizzle particle pool (motregen) ─────────────────────────────────────
+//
+// 3D depth-tested rain streaks orbiting the player. Combined with the
+// shared canvas-rain overlay (already on at 0.6 intensity from buildPier47-
+// Environment), the world reads as actual volumetric motregen instead of
+// a flat-canvas-overlay-on-top-of-3D-scene.
+//
+// Particle pool is centred on the player; positions wrap in updatePier47-
+// World as the camera moves so the rain follows. Each particle has a
+// per-instance vertical velocity baked in via the position.y accumulation
+// in the update loop.
+//
+// Material is a PointsMaterial with sizeAttenuation OFF so streaks look
+// uniform at any distance (real rain doesn't become invisible far away —
+// it becomes a haze, which the canvas overlay supplies). Color is a
+// cool desaturated blue-grey (#9aa6b8) at low opacity (0.45) — visible
+// against the dark sky but doesn't compete with the sodium lamps.
+function _p47BuildDrizzle(){
+  const N=window._isMobile?180:340;
+  const geo=new THREE.BufferGeometry();
+  const pos=new Float32Array(N*3);
+  // Initial random positions inside a 220×30×220 volume around origin.
+  // updatePier47World re-parents positions to follow the player.
+  for(let i=0;i<N;i++){
+    pos[i*3]  =(Math.random()-0.5)*220;
+    pos[i*3+1]=Math.random()*30;
+    pos[i*3+2]=(Math.random()-0.5)*220;
+  }
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  const mat=new THREE.PointsMaterial({
+    color:0x9aa6b8,
+    size:0.95,
+    transparent:true,
+    opacity:0.45,
+    sizeAttenuation:false,    // uniform streak size at all distances
+    depthWrite:false           // don't occlude transparent fog/lights behind
+  });
+  _p47Drizzle=new THREE.Points(geo,mat);
+  scene.add(_p47Drizzle);
+  _p47DrizzleGeo=geo;
+}
+
 // ── Main environment builder ──────────────────────────────────────────────
 //
-// Sessie 2 expansion:
+// Sessie 3 expansion (cumulative):
 //   1. Concrete kade ground (sessie-1)
 //   2. Day-lighting (sessie-1)
 //   3. Barriers + start line (sessie-1)
@@ -718,18 +860,23 @@ function _p47BuildOphaalbrug(){
 //   5. Containers in Container Run + The Yard (sessie-2 commit 2)
 //   6. Warehouse at sector 3 → 4 corner (sessie-2 commit 2)
 //   7. Cranes on the kade (sessie-2 commit 2)
-//   8. Ophaalbrug at sector 4 (sessie-2 commit 3 — NEW)
-//   9. Wet-asphalt material swap in track.js (sessie-2 commit 3 — NEW)
+//   8. Ophaalbrug at sector 4 (sessie-2 commit 3)
+//   9. Wet-asphalt material swap in track.js (sessie-2 commit 3)
 //  10. Headlights + sparse always-off stars (sessie-1)
+//  11. Motregen default + drizzle particle pool (sessie-3 commit 1 — NEW)
 function buildPier47Environment(){
-  // Weather reset — Pier 47's signature mood is motregen, but sessie 1 has
-  // no rain renderer yet. Clear any inherited weather state so the dry
-  // baseline reads correctly.
-  if(typeof isRain!=='undefined'&&isRain){
-    isRain=false;
-    if(typeof _rainTarget!=='undefined')_rainTarget=0;
-    if(typeof _rainIntensity!=='undefined')_rainIntensity=0;
-    if(rainCanvas)rainCanvas.style.display='none';
+  // Pier 47 default weather = motregen (sessie 3). Unlike sandstorm which
+  // clears any inherited rain, pier47 LEANS INTO it: rain on, intensity
+  // capped at 0.6 (drizzle, not pouring). The shared updateWeather() lerp
+  // smoothly settles _rainIntensity toward _rainTarget — we set both to
+  // 0.6 here so the canvas-rain visual is at motregen level immediately,
+  // not a 1-second fade-up. _p47BuildDrizzle() spawns the additional
+  // depth-tested 3D drizzle streaks (more atmospheric than canvas alone).
+  if(typeof isRain!=='undefined'){
+    isRain=true;
+    if(typeof _rainTarget!=='undefined')_rainTarget=0.6;
+    if(typeof _rainIntensity!=='undefined')_rainIntensity=0.6;
+    if(rainCanvas){rainCanvas.style.display='block';rainCanvas.style.opacity='0.6';}
   }
   // Ground — flat dark-concrete kade. 2400² to fill the world; matches the
   // sandstorm/arctic pattern. y=-0.15 sits below the y=0.005 track ribbon.
@@ -744,10 +891,11 @@ function buildPier47Environment(){
   _applyPier47DayLighting();
   // Barriers + start line (shared environment helpers).
   buildBarriers();buildStartLine();
-  // Sodium-lamp poles along the kade — always-on industrial lighting.
-  // Defining detail of the world; placed AFTER barriers so the pole
-  // bases sit just outside the barrier line.
-  _p47BuildLampPoles();
+  // Sodium-lamp poles along the kade — cinematic upgrade. Each pole now
+  // has a volumetric light cone, ground pool, and halo billboard via the
+  // shared cinematic.js helpers, replacing the sessie-2 minimal version.
+  // Variation: 2-3 lamps "broken" (no light), 2-3 subtly tilted ("oude").
+  _p47BuildCinematicLamps();
   // Industrial props (sessie 2 commit 2):
   //   • Containers — sectors 1 + 2 (Container Run + The Yard)
   //   • Warehouse — sector 3 / 4 corner (loods at WP9 90° right)
@@ -756,6 +904,44 @@ function buildPier47Environment(){
   _p47BuildWarehouse();
   _p47BuildCranes();
   _p47BuildOphaalbrug();
+  // Cinematic distant accents — far horizon markers + city-glow hint.
+  // Both via shared cinematic.js helpers; pulses driven by updateCinematic.
+  _p47BuildDistantMarkers();
+  _p47BuildCityGlow();
+  // Cinematic motion: register subtle speed-scaled camera shake. Cleared
+  // automatically on world-switch via resetCinematicState().
+  if (typeof enableCinematicCameraShake === 'function'){
+    enableCinematicCameraShake({
+      intensityScale: 1.0,
+      speedThreshold: 0.20,   // no shake idle
+      maxOffset:      0.045   // ~0.05u offset at top speed — voelbaar niet storend
+    });
+  }
+  // Bloom boost is wired in postfx.js _BLOOM_WORLD_MUL.pier47 — see commit
+  // 4 of the cinematic foundation. The applyCinematicMotionBlur helper
+  // documents the limitation: real radial blur needs a postfx pipeline
+  // restructure that's out of scope.
+  // Sessie 3 atmosphere: drizzle-particle pool gives depth-tested rain
+  // streaks in 3D (the canvas rain is a flat overlay; combining both
+  // reads as actual volumetric motregen).
+  _p47BuildDrizzle();
+  // Cinematic foundation: low ground fog (js/effects/cinematic.js).
+  // Donkerpaars met subtiele warme tint die de amber lamp-pools
+  // straks complementeert. Slow scroll suggereert lichte harbour-wind.
+  // Mobile auto-clamps to 1 layer (vs 3 desktop) for budget.
+  if (typeof buildCinematicGroundFog === 'function'){
+    buildCinematicGroundFog(scene, {
+      color: 0x2a1a30,
+      density: 0.55,
+      height: 4.5,
+      layerCount: 3,
+      layerSpacing: 2.0,
+      size: 900,
+      scrollDir: [1, 0.3],
+      scrollSpeed: 0.012,
+      fadeWithDistance: true
+    });
+  }
   // Player + AI headlight refs — Pier 47 is dark, headlights matter even
   // before sessie-2 sodium lamps land.
   plHeadL=new THREE.SpotLight(0xffffff,0,50,Math.PI*.16,.5);
@@ -791,13 +977,42 @@ function buildPier47Environment(){
 // Sessie 3 will extend this with rain-puddle shimmer, drifting fog, and
 // optional ophaalbrug bascule animation. For now: just lamp flicker.
 function updatePier47World(dt){
-  if(!_p47LampEmissives.length)return;
   const t=_nowSec;
-  for(let i=0;i<_p47LampEmissives.length;i++){
-    const e=_p47LampEmissives[i];
-    if(!e||!e.mat)continue;
-    // Baseline 1.4 ± 0.18 — visible breathing without strobing.
-    const v=Math.sin(t*1.7+e.phase);
-    e.mat.emissiveIntensity=1.4+v*0.18;
+  // Sodium-lamp emissive flicker is now driven by updateCinematic()
+  // via _cinemaState.lightPoles — see js/effects/cinematic.js. The legacy
+  // _p47LampEmissives loop has been removed (cinematic lamps do not
+  // populate this array). The reset in scene.js is harmless (drains an
+  // empty array on world-switch).
+  // Drizzle particle pool — 3D depth-tested rain streaks. Particles fall
+  // straight down at ~12u/s with a slight wind-drift on X (motregen often
+  // has a horizontal component from harbour wind). When a particle drops
+  // below ground OR drifts > 130u from the player it respawns above the
+  // player at random X/Z within the active volume — the pool effectively
+  // tracks the player without per-frame allocations.
+  if(_p47DrizzleGeo){
+    const car=carObjs&&carObjs[playerIdx];
+    const cx=car?car.mesh.position.x:0;
+    const cz=car?car.mesh.position.z:0;
+    const arr=_p47DrizzleGeo.attributes.position.array;
+    const n=arr.length/3|0;
+    // Rolling-buffer update — process ~60/frame so a 340-particle pool
+    // recycles fully every ~6 frames at 60fps. Mirrors the volcano-ember
+    // / sandstorm-fleck pattern.
+    const step=(Math.floor(t*40)*60)%n;
+    const end=Math.min(step+60,n);
+    for(let i=step;i<end;i++){
+      // Rain velocity — ~12u/s downward + ~2u/s horizontal drift
+      arr[i*3]   += dt*2.0;
+      arr[i*3+1] -= dt*12.0;
+      // Respawn condition: hit ground OR drifted outside follow-volume
+      if(arr[i*3+1]<-0.5
+         || arr[i*3]   > cx+130 || arr[i*3]   < cx-130
+         || arr[i*3+2] > cz+130 || arr[i*3+2] < cz-130){
+        arr[i*3]   = cx + (Math.random()-0.5)*220;
+        arr[i*3+1] = 22 + Math.random()*10;
+        arr[i*3+2] = cz + (Math.random()-0.5)*220;
+      }
+    }
+    _p47DrizzleGeo.attributes.position.needsUpdate=true;
   }
 }

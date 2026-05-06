@@ -315,12 +315,11 @@ function toggleNight(){
     _aiHeadPool.forEach(l=>l.intensity=isDark?1.0:0);
     if(_sunBillboard)_sunBillboard.visible=!isDark;
   }else if(activeWorld==='pier47'){
-    // Pier 47 sessie-1 night-toggle: simple PMREM-cached skybox swap to a
-    // slightly-darker variant + ambient deepens. PMREM env-cache is wired
-    // (matches the cross-world pattern) so car lacquer reflections stay
-    // consistent across toggles. Sessie-3 will introduce a real "ochtend"
-    // day-mode and proper sodium-lamp night setup; for now the toggle is
-    // a small visual delta on top of the bewolkte-nacht baseline.
+    // Pier 47 cinematic night-toggle: PMREM-cached skybox swap + tighter
+    // ambient values that align with the cinematic foundation's
+    // "pools of light, not floods" pillar. Both day + night are dark by
+    // design — toggle is a small visual delta on top of the bewolkte-
+    // nacht baseline. Sessie-NEXT may introduce a real "ochtend"-mode.
     if(isDark){
       if(!_p47DayBg)_p47DayBg=scene.background;
       if(!_p47DayEnv)_p47DayEnv=scene.environment;
@@ -331,11 +330,13 @@ function toggleNight(){
       if(_p47NightBg) scene.background=_p47NightBg;
       if(_p47NightEnv) scene.environment=_p47NightEnv;
       scene.fog.density=.014;
-      sunLight.color.setHex(0xb0a8a0); sunLight.intensity=0.7;
-      ambientLight.color.setHex(0x14141c); ambientLight.intensity=0.22;
-      hemiLight.color.setHex(0x707880);
-      hemiLight.groundColor.setHex(0x282528);
-      hemiLight.intensity=0.35;
+      // Cinematic night — even darker than the cinematic-day baseline.
+      // The lamp poles + headlights do all the visual work.
+      sunLight.color.setHex(0x9aa6b8); sunLight.intensity=0.20;
+      ambientLight.color.setHex(0x0c0c14); ambientLight.intensity=0.10;
+      hemiLight.color.setHex(0x40485a);
+      hemiLight.groundColor.setHex(0x18141a);
+      hemiLight.intensity=0.14;
       if(scene&&scene.fog&&scene.fog.color)scene.fog.color.setHex(0x18141f);
       _fogColorDay.setHex(0x252030); _fogColorNight.setHex(0x18141f);
     }else{
