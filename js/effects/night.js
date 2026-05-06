@@ -11,6 +11,17 @@
 let _skyT=0,_skyTarget=0;
 const _fogColorDay=new THREE.Color(0x8ac0e0);
 const _fogColorNight=new THREE.Color(0x030610);
+
+// Sandstorm sky-cache. The sandstorm-branch of toggleNight swaps both
+// scene.background and scene.environment between a day and a night
+// version. Re-baking the night canvas + regenerating its PMREM env is
+// ~5-15ms desktop / 30+ms mobile per M-press — noticeable hitch on
+// rapid toggles. We cache both versions on first build, then just
+// reference-swap on subsequent toggles. disposeSandstormStorm calls
+// _disposeSandstormSkyCache() on world-switch / race-reset to release
+// the GPU memory before the next buildScene allocates fresh textures.
+let _sstNightBg=null, _sstNightEnv=null;
+let _sstDayBg=null,   _sstDayEnv=null;
 // Per-world "no rain" fog density. updateWeather() reads this so its rain-blend
 // adds rainAdd on top of the active world's base instead of clobbering all worlds
 // to GP-hardcoded values every frame. Set at end of toggleNight() and on
@@ -122,23 +133,21 @@ function toggleNight(){
     // moon-lit desert with deep purple sky baked into the skybox canvas.
     // Fog far stays driven by the storm hazard, NOT by night.js.
     if(isDark){
-      // ── Skybox swap to night canvas (moon + stars + Milky Way painted in)
-      if(typeof makeSandstormNightSkyTex==='function'){
-        const oldBg=scene.background;
-        scene.background=makeSandstormNightSkyTex();
-        // Drop GPU ref to the previous day-canvas so it gets released by
-        // the next disposeScene traversal (CanvasTexture .dispose).
-        if(oldBg&&oldBg.dispose)oldBg.dispose();
-        // Refresh PMREM env so car clearcoat reflects the moon, not the sun.
+      // ── Capture day refs (one-shot) so we can restore them later without
+      // re-baking. The current scene.background / scene.environment were set
+      // by buildScene → makeSandstormSkyTex / _buildWorldEnvFromSky.
+      if(!_sstDayBg)_sstDayBg=scene.background;
+      if(!_sstDayEnv)_sstDayEnv=scene.environment;
+      // ── Build night refs lazily, then cache. Subsequent toggles to dark
+      // skip the bake + PMREM and just reference-swap.
+      if(!_sstNightBg && typeof makeSandstormNightSkyTex==='function'){
+        _sstNightBg=makeSandstormNightSkyTex();
         if(typeof _buildWorldEnvFromSky==='function'){
-          const _newEnv=_buildWorldEnvFromSky(scene.background);
-          if(_newEnv){
-            const _oldEnv=scene.environment;
-            scene.environment=_newEnv;
-            if(_oldEnv&&_oldEnv.dispose)_oldEnv.dispose();
-          }
+          _sstNightEnv=_buildWorldEnvFromSky(_sstNightBg);
         }
       }
+      if(_sstNightBg) scene.background=_sstNightBg;
+      if(_sstNightEnv) scene.environment=_sstNightEnv;
       // ── Moon-light: cool blue-white directional, low intensity, high angle.
       sunLight.color.setHex(0xa8c0ff);
       sunLight.intensity=0.6;
@@ -154,20 +163,12 @@ function toggleNight(){
       }
       _fogColorDay.setHex(0xe8a468); _fogColorNight.setHex(0x1a1535);
     }else{
-      // ── Day: restore the warm sunset palette from buildSandstormEnvironment.
-      if(typeof makeSandstormSkyTex==='function'){
-        const oldBg=scene.background;
-        scene.background=makeSandstormSkyTex();
-        if(oldBg&&oldBg.dispose)oldBg.dispose();
-        if(typeof _buildWorldEnvFromSky==='function'){
-          const _newEnv=_buildWorldEnvFromSky(scene.background);
-          if(_newEnv){
-            const _oldEnv=scene.environment;
-            scene.environment=_newEnv;
-            if(_oldEnv&&_oldEnv.dispose)_oldEnv.dispose();
-          }
-        }
-      }
+      // ── Day: restore via cached refs if we ever toggled to night this
+      // build. If _sstDayBg is null (M never pressed yet, scene already has
+      // build-time day refs), we just leave scene.background/environment
+      // alone — they're already correct.
+      if(_sstDayBg) scene.background=_sstDayBg;
+      if(_sstDayEnv) scene.environment=_sstDayEnv;
       // Use sandstorm.js's shared day-lighting helper instead of inline
       // hex codes — single source of truth so the build-time and toggle-
       // time setups can never drift (code-reuse review v4 dedup).
@@ -243,6 +244,19 @@ function toggleNight(){
   const titleLbl=isDark?'☀ DAY':'🌙 NIGHT';
   const _tnb=document.getElementById('titleNightBtn');if(_tnb)_tnb.textContent=titleLbl;
   const _hnb=document.getElementById('hudNightBtn');if(_hnb)_hnb.textContent=iconOnly;
+}
+
+// Release the sandstorm sky-cache (day + night skybox + PMREM env). Called
+// from disposeSandstormStorm in worlds/sandstorm-storm.js when the user
+// leaves sandstorm or restarts the race — releases GPU memory before the
+// next buildScene allocates fresh textures. THREE dispose() is idempotent,
+// so a defensive try/catch is sufficient if the texture has already been
+// released by a different code path.
+function _disposeSandstormSkyCache(){
+  if(_sstNightBg){try{_sstNightBg.dispose();}catch(_){} _sstNightBg=null;}
+  if(_sstNightEnv){try{_sstNightEnv.dispose();}catch(_){} _sstNightEnv=null;}
+  if(_sstDayBg){try{_sstDayBg.dispose();}catch(_){} _sstDayBg=null;}
+  if(_sstDayEnv){try{_sstDayEnv.dispose();}catch(_){} _sstDayEnv=null;}
 }
 
 

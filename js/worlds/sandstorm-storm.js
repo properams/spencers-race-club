@@ -295,6 +295,11 @@ function updateSandstormStorm(dt,currentLap){
 }
 
 function disposeSandstormStorm(){
+  // Release the night.js sky-cache (day + night skybox + PMREM env). These
+  // outlive a single race because they're cached for instant M-toggle, so
+  // they need explicit cleanup before the next buildScene allocates fresh
+  // day textures (otherwise the old day-cache holds a stale reference).
+  if(typeof _disposeSandstormSkyCache==='function')_disposeSandstormSkyCache();
   // Reset hazard state so a re-build starts fresh. The Three meshes (particles,
   // curtain) are owned by the scene-graph and will be released by disposeScene()
   // on the next world-switch — we only clear our refs here.
