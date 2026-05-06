@@ -121,7 +121,10 @@ function makeAllCars(){
     // een wereld-thematische kleur. Geeft een herkenbare per-circuit feel
     // zonder de individuele car-colors te overschrijven. Met bloom = subtle
     // pulse-glow rondom alle racers.
-    if(!isPlayer){
+    // Sandstorm is uitgesloten: bright daylight desert + additive disc
+    // tegen warm zandgrond rendert als uitgewassen wit-grijze "blokjes"
+    // onder de auto's — fixt visual issue 7+8 in de v2-bugfix.
+    if(!isPlayer && activeWorld!=='sandstorm'){
       const livery={
         space:0x4488ff,deepsea:0x00ffaa,candy:0xff66cc,
         neoncity:0xff00cc,volcano:0xff5500,arctic:0x88ccff,
@@ -141,7 +144,7 @@ function makeAllCars(){
     // group; non-premium tiers laten dat veld leeg en krijgen geen glow.
     // Phase 3 patroon — vervangt de Bugatti-only hardcode uit Phase 2.
     const sig=mesh.userData&&mesh.userData._signature;
-    if(isPlayer && sig && sig.underglow!=null){
+    if(isPlayer && sig && sig.underglow!=null && activeWorld!=='sandstorm'){
       const ugMat=new THREE.MeshBasicMaterial({
         color:sig.underglow,transparent:true,opacity:.35,
         blending:THREE.AdditiveBlending,depthWrite:false,side:THREE.DoubleSide

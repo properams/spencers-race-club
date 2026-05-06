@@ -230,6 +230,11 @@ function updateWeather(dt){
 
 function updateWeatherForecast(dt){
   if(_weatherForecastFired||gameState!=='RACE')return;
+  // Sandstorm is desert — its dust-storm hazard owns the weather slot. The
+  // forecast timer is otherwise world-agnostic and would call toggleRain()
+  // 45-90s into the race, re-injecting rain after buildSandstormEnvironment's
+  // build-time reset has already passed.
+  if(activeWorld==='sandstorm'){_weatherForecastFired=true;return;}
   _weatherForecastTimer-=dt;
   if(_weatherForecastTimer<=8&&_weatherForecastTimer>7.9){
     // 8s warning before change. Use the lightweight top-banner (one-line,
