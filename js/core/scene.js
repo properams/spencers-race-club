@@ -991,6 +991,7 @@ function buildScene(){
   const isArctic=activeWorld==='arctic';
   const isSandstorm=activeWorld==='sandstorm';
   const isPier47=activeWorld==='pier47';
+  const isVolcanoCinematic=activeWorld==='volcano-cinematic';
   scene=new THREE.Scene();
   // scene.environment wordt per-world gezet ná het skybox-block hieronder
   // (zie _buildWorldEnvFromSky aanroep). Dit was eerder een generieke
@@ -1060,6 +1061,14 @@ function buildScene(){
     scene.background=makePier47SkyTex();
     scene.fog=new THREE.FogExp2(0x252030,.012);
     _fogColorDay.setHex(0x252030);_fogColorNight.setHex(0x18141f);
+  }else if(isVolcanoCinematic){
+    // Volcano Cinematic — extinct caldera, dormant heat. Fog tint matches
+    // the skybox foot-band (warm rust #3a1810) so distance-faded geometry
+    // blends into the blood-red horizon. Density 0.014 is the densest
+    // among cinematic worlds (the caldera air feels heavy, not draughty).
+    scene.background=makeVolcanoCinematicSkyTex();
+    scene.fog=new THREE.FogExp2(0x3a1810,.014);
+    _fogColorDay.setHex(0x3a1810);_fogColorNight.setHex(0x1a0a08);
   }else{
     // Onbekende world — val terug op space-sky zodat de scene niet crasht.
     if(window.dbg)dbg.warn('scene','unknown world '+activeWorld+' — falling back to space sky');
@@ -1138,6 +1147,12 @@ function buildScene(){
     // warehouse roofs / crane booms catching sodium-orange backlight).
     // Palette lives in track/environment.js _SILHOUETTE_PALETTES.pier47.
     buildBackgroundLayers();
+  }else if(isVolcanoCinematic){
+    buildVolcanoCinematicEnvironment();
+    // Sessie 1: no buildBackgroundLayers call — _SILHOUETTE_PALETTES has
+    // no 'volcano-cinematic' entry yet (would be a track/environment.js
+    // change touching other worlds' system). Sessie 2 may add a gothic-
+    // ridges palette there if the foreground feels under-populated.
   }else{
     if(window.dbg)dbg.warn('scene','unknown world '+activeWorld+' — no environment builder, scene will be sparse');
   }

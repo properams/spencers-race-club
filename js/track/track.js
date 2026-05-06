@@ -78,7 +78,15 @@ const WORLD_TRACK_PALETTE = {
   // faded warning-yellow (#aaa030); kerbEmissive picks up sodium-lamp tint
   // (#ff8830) so the kerbs glow under the planned street-pole lights in
   // sessie 2. Line color (#d0d0c8) is the broken-white edge marking.
-  pier47:    { asphalt:0x1a1a1e, kerbA:[.627,.251,.125], kerbB:[.667,.627,.188], kerbEmissive:0xff8830, kerbEmissiveInt:.45, gantryAccent:0xa04020, gantryEmissive:0xff8830 }
+  pier47:    { asphalt:0x1a1a1e, kerbA:[.627,.251,.125], kerbB:[.667,.627,.188], kerbEmissive:0xff8830, kerbEmissiveInt:.45, gantryAccent:0xa04020, gantryEmissive:0xff8830 },
+  // Volcano Cinematic (extinct caldera, gothic dark-fantasy palette).
+  // Asphalt is volcanic-black with a red undertone (#0a0303); kerbA is
+  // blood-red (#8c1408 — .549/.078/.031), kerbB is charcoal (#1a1612 —
+  // .102/.086/.071) for high contrast against red. kerbEmissive is intense
+  // lava-red (#ff3010) — pushes hard into bloom for the "molten-edge" feel.
+  // gantryAccent + gantryEmissive both hot orange-red so distant gantry
+  // strips read as molten.
+  'volcano-cinematic': { asphalt:0x0a0303, kerbA:[.549,.078,.031], kerbB:[.102,.086,.071], kerbEmissive:0xff3010, kerbEmissiveInt:.65, gantryAccent:0xaa1500, gantryEmissive:0xff4022 }
 };
 if(typeof window!=='undefined')window.WORLD_TRACK_PALETTE=WORLD_TRACK_PALETTE;
 

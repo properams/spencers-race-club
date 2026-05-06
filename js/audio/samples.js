@@ -92,6 +92,7 @@ const WORLD_DEFAULT_SURFACE = {
   themepark: 'asphalt',
   sandstorm: 'sand',
   pier47:    'asphalt',
+  'volcano-cinematic': 'sand',
 };
 
 // ── State ───────────────────────────────────────────────────────────────────
